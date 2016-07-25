@@ -1,0 +1,378 @@
+
+/*
+ * Class that represents a room, with an optional front wall (so that it can be used for portals' rooms, that don't have the front wall so the camera
+ * dosn't get obstructed when the room is rendered). It gives more flexibility than simply creating a box, and it's easier to maintain
+ */
+class Room
+{
+	// Sizes
+	var mFarWallWidth;
+	var mSideWallWidth;
+	var mRoomHeight;
+	var mHalfFarWidth;
+	var mHalfSideWidth;
+	var mHalfHeight;	
+	
+	// Meshes for the walls. I keep track of them in order to manipulate their shaders
+	var mFarWallMesh;
+	var mSideWallMesh;
+	var mRoofMesh; // Works also as floor
+	
+	// Walls that compose the room
+	var mFrontWallObj;
+	var mBackWallObj;
+	var mLeftWallObj;
+	var mRightWallObj;
+	var mRoofObj;
+	var mFloorObj;
+
+	// The CVmObj that contains the room
+	var mRoom;
+	
+	// Number of the OpenGL light used to render the room
+	var mLightsRangeMin;
+	var mLightsRangeMax;
+	
+	// Boolean that states if the front wall is present
+	var mHasFront;
+	
+	// Corners of the room (these are local coordinates)
+	var mLowerCornerPosition;
+	var mUpperCornerPosition;
+	
+	var mLowerCornerWorld;
+	var mUpperCornerWorld;
+	
+	// Shader to draw the silhouettes of the objects contained in the room
+	var mSilhouetteShader;
+	
+	var mBorderShader;
+	
+	// Array that contains any object that is added to the room with the apposite function
+	var mChildren;
+	
+	
+	// Public functions
+	Draw();
+	IsPointInRoom(point);
+	AddObject(object, x, y, z);
+	RemoveObject(object);
+	GetObj();
+	GetRoomWidth();
+	GetRoomDepth();
+	GetRoomHeight();
+	SetLightsRange(min, max);
+	GetLightsRange();
+	LocalToWorld(point);
+	SetPosition(position);
+	GetPosition();
+	Rotate(angle, x, y, z);
+	Translate(x, y, z);
+	Hide();
+	Unhide();
+};
+
+/*
+ * Constructor
+ * 
+ * farWallWidth: (float) width of the front and back wall
+ * height: (float) height of the room
+ * hasFront: (boolean) true if there is a front wall, false otherwise
+ * centerInOrigin: (boolean) if true, the room is moved to the center of the coordinate system
+ * lightNumber: (integer) the number of the opengl light that has to be used in the cel shader to render the room
+ */
+function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigin, lightsRangeMin, lightsRangeMax)
+{
+	mFarWallWidth = farWallWidth;
+	mSideWallWidth = sideWallWidth;
+	mRoomHeight = height;
+	
+	mHalfFarWidth = mFarWallWidth/2;
+	mHalfSideWidth = mSideWallWidth/2;
+	mHalfHeight = mRoomHeight/2;
+	
+	mHasFront = hasFront;
+	
+	mLightsRangeMin = lightsRangeMin;
+	mLightsRangeMax = lightsRangeMax;
+	
+	// Creating the meshes for the walls; all are perpendicular to the z axis, and will be rotated accordingly later
+	mFarWallMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfFarWidth, -mHalfHeight, 0], [mHalfFarWidth, mHalfHeight, 0], 2, 2);
+	mSideWallMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfSideWidth, -mHalfHeight, 0], [mHalfSideWidth, mHalfHeight, 0], 2, 2);
+	mRoofMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfFarWidth, -mHalfSideWidth, 0], [mHalfFarWidth, mHalfSideWidth, 0], 2, 2);
+	
+	// Adding the toon shader to the mesh's subset 0 (so the whole mesh in this case) and activating it
+	mFarWallMesh.ShaderAdd("toonShader.glsl", 0);
+	mFarWallMesh.ShaderActivate(true);
+	
+	// Passing the material parameters of the mesh to the shader, and also the light number that has to be used to render the lighting on the mesh
+	mFarWallMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
+	mFarWallMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
+	mFarWallMesh.ShaderSetParameter(0, "specular", 0, [0.1, 0.1, 0.1]);
+	mFarWallMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	
+	mSideWallMesh.ShaderAdd("toonShader.glsl", 0);
+	mSideWallMesh.ShaderActivate(true);
+	
+	mSideWallMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
+	mSideWallMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
+	mSideWallMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
+	mSideWallMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	
+	mRoofMesh.ShaderAdd("toonShader.glsl", 0);
+	mRoofMesh.ShaderActivate(true);
+	
+	mRoofMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
+	mRoofMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
+	mRoofMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
+	mRoofMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mRoofMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	
+	
+	// Created the meshes, time to create the CVmObjects
+	mBackWallObj = CVmObj(mFarWallMesh);
+	mRoofObj = CVmObj(mRoofMesh);
+	mFloorObj = CVmObj(mRoofMesh);
+	mLeftWallObj = CVmObj(mSideWallMesh);
+	mRightWallObj = CVmObj(mSideWallMesh);
+	
+	// If the room has a front wall I create that too
+	if(mHasFront)
+		mFrontWallObj = CVmObj(mFarWallMesh);
+	
+	// Rotating the roof and floor so they get perpendicular to the y axis
+	mRoofObj.Rotate(90, 1, 0, 0);
+	mFloorObj.Rotate(90, 1, 0, 0);
+
+	// Rotating the side walls so they get perpendicular to the x axis
+	mLeftWallObj.SetRotation(-90, 0, 1, 0);
+	mRightWallObj.SetRotation(90, 0, 1, 0);
+		
+	// Creating the container object. Each wall is translated to ro the right positions, sometimes using little offset so that they're 
+	// NOT completely attached; this way the black contour created using the silhouette shader can be seen. These offset values are a bit random
+	mRoom = CVmObj();
+	mRoom.AddChild(mBackWallObj, 0, 0, -0.09);
+	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0.05, mHalfSideWidth);
+	mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0.05, mHalfSideWidth);
+	mRoom.AddChild(mLeftWallObj, -mHalfFarWidth, 0, mHalfSideWidth);
+	mRoom.AddChild(mRightWallObj, mHalfFarWidth, 0, mHalfSideWidth);
+	
+	if(mHasFront)
+		mRoom.AddChild(mFrontWallObj, 0, 0, mSideWallWidth + 0.05);
+		
+	// Moving the room in the origin if the user chose so
+	if(centerInOrigin)
+		mRoom.Translate(0, mHalfHeight, -mHalfSideWidth);
+		
+			
+	// Computing the local coordinates of the bounding box of the room
+	mLowerCornerPosition = [-mHalfFarWidth, -mHalfHeight, mSideWallWidth];
+	mUpperCornerPosition = [mHalfFarWidth, mHalfHeight, 0];
+	
+	// Computing the world coordinates of the bounding box
+	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
+    mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
+	
+	// Silhouette shader, used to create the black outline in the walls
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	
+	mBorderShader = CVmShaderProgram(" void main() { gl_Position = ftransform();}", "void main() { gl_FragColor = vec4(vec3(0.0, 0.0, 0.0), 1.0); }", true);
+	
+	// List of objects in the room; initially empty. Mind that the children are only useful for drawing, meaning that the Room object will 
+	// only make sure to draw its children using the silhouette shader plus any shader they might have, nothing more
+	mChildren = {};
+}
+
+/*
+ * This method draws the room and any objects that was added to it. It makes sure to draw each object's silhouette and on top of it
+ * the object itself using any shader that was added to it
+ */
+function Room::Draw()
+{
+	// In order to draw the silhouette of a object, I need to first draw a black, bigger version of it (or any color you want for the outline) by culling 
+	// the front faces, so that only the back faces gets drawn. This way I can draw later the same object (the normal version) by culling the back faces instead,
+	// so that it looks like to be over the black mesh. So first, I enable face culling
+	glEnable(GL_CULL_FACE);
+
+	// I state that I want to cull the front faces; only the back faces will be drawn
+    glCullFace (GL_FRONT);
+    
+    // Enabling writes to Z-buffer and the depth test, in case these weren't active
+    glDepthMask(GL_TRUE); 
+    glEnable(GL_DEPTH_TEST); 
+    
+    // Since I'm using a shader to create the black enlarged mesh, I first need to deactivate any shader of any objects in the room, otherwise they will interfere
+    mFarWallMesh.ShaderActivate(false);
+    mSideWallMesh.ShaderActivate(false);
+    mRoofMesh.ShaderActivate(false);
+    
+    // For each child, I check if the child has a mesh (so if the child is a CVmObj linked to a mesh); if that's so, I deactivate the mesh's shader.
+    // I need to check if there is a mesh since the child could be a Text, or things like that, that do not have a mesh linked
+	foreach(var child in mChildren)
+	{
+		if(child.GetMesh() != Void)
+			child.GetMesh().ShaderActivate(false);
+	}
+   
+   // Starting the silhouette shader
+    mSilhouetteShader.Start();
+    	// Setting its parameter; the offset tells the shader how the size of the mesh has to increase
+    	mSilhouetteShader.SetParameter("offset", 0.05);
+    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+    	
+    	// Drawing the silhouette of the room and of any objects in it
+		mRoom.Draw();
+	mSilhouetteShader.Stop();
+	
+	// Now I enable back faces culling, since I'm ready to draw the normal version of the room
+	glCullFace (GL_BACK); 
+	
+	// I reactivate the shaders of any mesh in the room
+	mFarWallMesh.ShaderActivate(true);
+    mSideWallMesh.ShaderActivate(true);
+    mRoofMesh.ShaderActivate(true);
+    
+    foreach(var child in mChildren)
+	{
+		if(child.GetMesh() != Void)
+			child.GetMesh().ShaderActivate(true);
+	}
+	
+	// And finally draw the room
+	mRoom.Draw();
+	
+	// Disabling the face culling; no longer needed for the moment
+	glDisable(GL_CULL_FACE); 
+}
+
+/*
+ * This method checks whether the point passed as parameter is in the room or not
+ * 
+ * point: (vector) the point, in world coordinates
+ */
+function Room::IsPointInRoom(point)
+{
+	// I check if the point is in the bounding box, using the world coordinates. I'm also using little offset to account for the fact that 
+	// the walls are not completely attached, so the bounding box is a little bit bigger
+//	return (point.x >= mLowerCornerWorld.x + 0.5 && point.x <= mUpperCornerWorld.x - 0.5) &&
+//    	   (point.y >= mLowerCornerWorld.y + 0.5 && point.y <= mUpperCornerWorld.y - 0.5) &&
+//       	   (point.z <= mLowerCornerWorld.z - 0.5 && point.z >= mUpperCornerWorld.z + 0.5);
+
+	return (point.x >= mLowerCornerWorld.x - 0.5 && point.x <= mUpperCornerWorld.x + 0.5) &&
+    	   (point.y >= mLowerCornerWorld.y - 0.5 && point.y <= mUpperCornerWorld.y + 0.5) &&
+       	   (point.z <= mLowerCornerWorld.z + 0.5 && point.z >= mUpperCornerWorld.z - 0.5);
+}
+
+/*
+ * Method that adds an object fo the room. Mind that the children are only useful for drawing, meaning that the Room object will 
+ * only make sure to draw its children using the silhouette shader plus any shader they might have, nothing more
+ */
+function Room::AddObject(object, x, y, z)
+{
+	mRoom.AddChild(object, x, y, z);
+	
+	aadd(mChildren, object);
+}
+
+
+function Room::RemoveObject(object)
+{
+	mRoom.RemoveChild(object);
+}
+
+function Room::GetObj()
+{
+	return mRoom;
+}
+
+function Room::GetRoomWidth()
+{
+	return mFarWallWidth;
+}
+
+function Room::GetRoomDepth()
+{
+	return mSideWallWidth;
+}
+
+function Room::GetRoomHeight()
+{
+	return mRoomHeight;
+}
+
+function Room::SetLightsRange(min, max)
+{
+	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, min);
+	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, max);
+	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, min);
+	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, max);
+	mRoofMesh.ShaderSetParameter(0, "lightsRangeMin", 0, min);
+	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, max);
+	
+	foreach(var child in mChildren)
+	{
+		if(child.GetMesh() != Void)
+		{
+			child.GetMesh().ShaderSetParameter(0, "lightsRangeMin", 0, min);
+			child.GetMesh().ShaderSetParameter(0, "lightsRangeMax", 0, max);
+		}
+	}
+	
+	mLightsRangeMin = min;
+	mLightsRangeMax = max;
+}
+
+function Room::GetLightsRange()
+{
+	return [mLightsRangeMin, mLightsRangeMax];
+}
+
+function Room::SetPosition(position)
+{
+	mRoom.SetPosition(position);
+	
+	// When setting a new position I also update the world coordinates of the bounding box of the room
+	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
+	mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
+}
+
+function Room::Translate(x, y, z)
+{
+	mRoom.Translate(x, y, z);
+	
+	// When setting a new position I also update the world coordinates of the bounding box of the room
+	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
+	mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
+}
+
+function Room::Rotate(angle, x, y, z)
+{
+	mRoom.Rotate(angle, x, y, z);
+}
+
+
+function Room::GetPosition()
+{
+	return mRoom.GetPosition();
+}
+
+
+function Room::LocalToWorld(point)
+{
+	return mRoom.LocalToWorld(point);
+}
+
+function Room::Hide()
+{
+	return mRoom.Hide();
+}
+
+function Room::Unhide()
+{
+	return mRoom.Unhide();
+}

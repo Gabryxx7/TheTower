@@ -1,0 +1,91 @@
+
+#define USE_KEYBOARD 1
+
+#include <KeyboardManager.s3d>
+
+/*
+ * This class works as an interface between the game and whatever it's being used for inputs. It will instantiates the corresponding 
+ * manager that will handle the actual inputs, and will communicate with the game when needed
+ */
+class InputManager
+{
+	// Actual input manager used
+	var mManager;
+	
+	// Camera that the chosen input manager will update. It needs to be passed AFTER the creation of the InputManager object
+	var mCamera;
+	
+	// Previous camera position, in case it gets moved to a wrong position and needs to be moved back at the last good position
+	var mPreviousCameraPosition;
+	
+	// Public functions
+	UpdateCameraOrientation();
+	UpdateCameraPosition();
+	RestoreCameraPosition();
+	SetActiveCamera(camera);
+	GetActiveCamera();
+	HasClicked();
+};
+
+
+/*
+ * Constructor
+ */
+function InputManager::InputManager()
+{
+	if(USE_KEYBOARD == 1)
+		mManager = KeyboardManager();
+}
+
+/*
+ * Method that updates the camera's orientation (i.e. the direction the use is looking at)
+ */
+function InputManager::UpdateCameraOrientation()
+{
+	mManager.UpdateCameraOrientation();
+}
+
+/*
+ * Method that updates the camera's position. Used when the user moves around
+ */
+function InputManager::UpdateCameraPosition()
+{
+	// Saving the current position, in case the new movement will not be valid to the game. It's the game's job to check that
+	mPreviousCameraPosition = mCamera.GetPosition();
+	
+	mManager.UpdateCameraPosition();
+}
+
+
+/*
+ * Method that restores the camera's position to the last correct position used
+ */
+function InputManager::RestoreCameraPosition()
+{
+	mCamera.SetPosition(mPreviousCameraPosition);
+}
+
+/*
+ * Method that activates the camera that will be updated by the manager
+ */
+function InputManager::SetActiveCamera(camera)
+{
+	mCamera = camera;
+	
+	mManager.SetActiveCamera(camera);
+}
+
+
+/*
+ * Method that returns the active camera
+ */
+function InputManager::GetActiveCamera()
+{	
+	return mCamera;
+}
+
+function InputManager::HasClicked()
+{
+	return mManager.HasClicked();
+}
+

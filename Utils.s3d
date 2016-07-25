@@ -1,0 +1,299 @@
+function Print(strings, objects)
+{
+	if(valtype(strings) == "A")
+	{
+			output(strings[0] + ": ");
+		output(objects[0]);
+		
+		for(var i = 1; i < len(strings); i++)
+		{
+			output("; " + strings[i] + ": ");
+			output(objects[i]);
+		}
+		
+		output("\n");
+	}
+	else
+	{
+		output(strings + ": ");
+		output(objects);
+		output("\n");
+	}
+}
+
+// Doesn't support arrays
+function PrintDebugBox(strings, objects)
+{
+	var totalText = "";
+	
+	if(valtype(strings) == "A")
+	{
+		for(var i = 0; i < len(strings); i++)
+		{
+			totalText += strings[i] + ": ";
+			
+			if(valtype(objects[i]) == "B")
+				totalText += objects[i] ? "True" : "False";
+			else
+				totalText += str(objects[i]);
+				
+			totalText += ";\n ";
+		}
+		
+		totalText += "\n";
+	}
+	else
+	{
+		totalText = strings;
+	
+		if(valtype(objects) == "B")
+			totalText += objects ? "True" : "False";
+		else
+			totalText += str(objects);
+	}
+	
+	ConsoleColor(1, 1, 0, 0.5);
+	ConsoleFilledRect(0.4, 0.94, 0.2, 0.05);
+	ConsoleColor(0, 0, 0, 1);
+	ConsoleFont("Arial", 20);
+	ConsoleText(0.40, 0.9, totalText);
+	
+}
+
+/*
+ * This function checks if a line segment intersects the given object; if it does, it returns the contact point, or Void otherwise
+ * 
+ * raycastOrigin: (vector) the start point of the line segment
+ * raycastEnd: (vector) the end point of the line segment
+ * object: (object) the object to check
+ */
+function IsObjectSelected(raycastOrigin, raycastEnd, object)
+{	
+	var contactPoint = Void;
+	
+	object.IsColliding(raycastOrigin, raycastEnd, &contactPoint);
+	
+	return contactPoint;
+}
+
+/*
+ * This function checks if a line segment intersects a plane; if it does, it returns the contact point, or Void otherwise.
+ * A line segment is defined by the start point and the end point. 
+ * A plane is defined with a point belonging to the plane and the normal to the plane
+ * 
+ * raycastOrigin: (vector) the start point of the line segment
+ * raycastEnd: (vector) the end point of the line segment
+ * planePoint: (vector) the point belonging to the plane
+ * planeNormal: (vector) the vector perpendicular to the plane
+ */
+function FindIntersectionInPlane(raycastOrigin, raycastEnd, planePoint, planeNormal)
+{
+	var pointInPlane = Void;
+	
+	// I first need to check if the raycast intersects the plane. To do that, I first get the direction of the raycast and I normalize it. The idea is 
+	// to do the dot product between the direction of the raycast and the plane normal, and study the sign of the result. But this is not enough,
+	// since the plane has a physical point where it's placed in the space, so we also need to check whether the raycast starts from one side of the plane or the other
+	var raycastDirection = Norm(raycastOrigin - raycastEnd);
+	
+	// I get the direction between the starting point of the line and the plane, and normalize it. This helps me to find out on which side of the plane the ray
+	// starts, by doing the dot product with the normal. The result will have positive values if the ray starts from one side, and negative values from the other side
+	var directionToPlane = Norm(raycastOrigin - planePoint);
+	
+	// Doing the dot products
+	var raycastNormalProduct = raycastDirection * planeNormal;
+	var directionToPlaneNormalProduct = directionToPlane * planeNormal;
+	
+	// If the dot products have the same sign then the raycast is intersecting the plane. So, to check that easily I multiply the results and check the sign; if
+	// it's positive, the ray intersects the plane, so we can look for the contact point
+	if(raycastNormalProduct * directionToPlaneNormalProduct > 0)
+	{
+		/* Consider the ray as a line, with line equation r(t) = p0 + p1 * T where p0 is the starting point of the ray and p1 the ending point. To find the
+		 * contact point on the plane, we have to find the right T and solve the equation. 
+		 * Now consider a point q in the plane and the plane's normal n. For a point x to be on the plane this has to be true: n * (q - x) = 0 where the "*" 
+		 * is the dot product. This has to be true because all points in the plane have to be perpendicular to n, so if we take from the point q that we
+		 * know belongs to the plane and a random point x and take the vector that goes from one to the other, this vector has to be perpendicular to n for
+		 * x to be on the plane; so the dot product has to be zero.
+		 * Now, from that equation we need to substitute the "x" with the ray's equation:
+		 * n * (q - p0 - p1 * T) = 0 --> n * (q - p0) - n * p1 * T = 0 --> n * (q - p0) = n * p1 * T --> n * (q - p0) / (p1 * n) = T 
+		 * This is the equation we need to solve to get the right T; we have all the ingredients */
+		var T = planeNormal * (planePoint - raycastOrigin) / (planeNormal * raycastEnd);
+		
+		// Now that we have T, let's solve the ray's equation and we've got our point
+		pointInPlane = raycastOrigin + (raycastEnd * T);
+	}
+	
+	return pointInPlane;
+}
+
+
+
+
+class Clock
+{
+	var mMinutesArrowObj;
+	var mHoursArrowObj;
+	var mClockObj;
+	
+	var mDeltaAngle;
+	var mMinutesArrowAngle;
+	var mAccumulator;
+	
+	// Public functions
+	Draw();
+	GetObj();
+	SetLightsRange(min, max);
+	GetLightsRange();
+	LocalToWorld(point);
+	SetPosition(position);
+	GetPosition();
+	Rotate(angle, x, y, z);
+	SetRotation(angle, x, y, z);
+	Translate(x, y, z);
+	IsColliding(raycastStart, raycastEnd, contactPoint);
+	UpdateMinutesArrow(raycastStart, raycastEnd);
+	GetMinutesArrowAngle();
+	GetDeltaAngle();
+};
+
+function Clock::Clock()
+{
+	var minutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.02, 0.8, 0.02]); 
+	mMinutesArrowObj = CVmObj(minutesArrowMesh);
+	
+	var hoursArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.02, 0.1, 0.02]); 
+	mHoursArrowObj = CVmObj(hoursArrowMesh);
+	
+	
+	var clockMesh = CVmNewMesh(VRP_SPHERE, 30, 1, 1);  	
+	clockMesh.Scale(1, 1, 0.03);
+	mClockObj = CVmObj(clockMesh);
+	
+	mClockObj.AddChild(mMinutesArrowObj, 0.0, 0.10, -0.05);
+
+	mMinutesArrowAngle = 0;
+	
+	mAccumulator = 0;
+}
+
+function Clock::Draw()
+{
+	mClockObj.Draw();
+}
+
+
+function Clock::SetPosition(position)
+{
+	mClockObj.SetPosition(position);
+}
+
+function Clock::Translate(x, y, z)
+{
+	mClockObj.Translate(x, y, z);
+}
+
+function Clock::Rotate(angle, x, y, z)
+{
+	mClockObj.Rotate(angle, x, y, z);
+}
+
+function Clock::SetRotation(angle, x, y, z)
+{
+	mClockObj.SetRotation(angle, x, y, z);
+}
+
+
+function Clock::GetPosition()
+{
+	return mClockObj.GetPosition();
+}
+
+
+function Clock::LocalToWorld(point)
+{
+	return mClockObj.LocalToWorld(point);
+}
+
+function Clock::GetObj()
+{
+	return mClockObj.GetObj();
+}
+
+function Clock::IsColliding(raycastStart, raycastEnd, contactPoint)
+{	
+	return mClockObj.IsColliding(raycastStart, raycastEnd, &contactPoint);
+}
+
+function Clock::UpdateMinutesArrow(raycastStart, raycastEnd)
+{
+	var p0 = mClockObj.LocalToWorld([0, 0, 0]);
+	var p1 = mClockObj.LocalToWorld([0, 1, 0]);
+	var p2 = mClockObj.LocalToWorld([0, 0, 0]);
+	var p3 = mClockObj.LocalToWorld([1, 0, 0]);
+	
+	var vec1 = p1 - p0;
+	var vec2 = p3 - p2;
+	
+	var normal = Norm(vec1 ^ vec2);
+	
+	var minutesArrowPos = mMinutesArrowObj.GetPosition() + mClockObj.GetPosition(); 
+	
+	var pointInPlane = FindIntersectionInPlane(raycastStart, raycastEnd, minutesArrowPos, normal);
+	
+	if(pointInPlane != Void)
+	{
+		var dx = pointInPlane.x - minutesArrowPos.x;
+		var dy = pointInPlane.y - minutesArrowPos.y;
+//		var dx = minutesArrowPos.x - pointInPlane.x;
+//		var dy = minutesArrowPos.y - pointInPlane.y;
+
+		var angle = Atan2(dy, dx) * RAD_TO_GRAD - 90;
+		
+		mMinutesArrowObj.SetPivotPoint(0, 0, 0);
+		mMinutesArrowObj.SetRotation(angle, 0, 0, 1);
+		
+		
+		angle += 270;
+		
+		print({"mMinutesArrowAngle", "angle + 270"}, {mMinutesArrowAngle, angle});
+		
+		
+//		if((mMinutesArrowAngle > 357 && angle < 3) || (mMinutesArrowAngle < 3 && angle > 357))
+//			{
+//				mDeltaAngle = 1;
+//				output("YOOOO\n");
+//			}
+//		else
+//			mDeltaAngle = (angle - mMinutesArrowAngle);
+
+		var delta = angle - mMinutesArrowAngle;
+		
+		if(delta > 0)
+			mDeltaAngle = 1;
+		else if(delta < 0)
+			mDeltaAngle = -1;
+		else
+			mDeltaAngle = 0;
+//		mDeltaAngle = angle - mMinutesArrowAngle > 0 ? 1 : -1;
+		
+		mMinutesArrowAngle = angle > 359.5 ? 0 : angle;
+		
+		mAccumulator += mDeltaAngle;
+		
+		var quat = EulerToQuaternion([0, 0, angle]);
+		
+//		output(mDeltaAngle);
+//		output("\n");
+//		output(mMinutesArrowAngle + 90 + 90 + 90);
+//		output("\n");
+	}
+}
+
+function Clock::GetMinutesArrowAngle()
+{
+	return mMinutesArrowAngle;
+}
+
+function Clock::GetDeltaAngle()
+{
+	return mDeltaAngle;
+}

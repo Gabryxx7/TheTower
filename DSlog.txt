@@ -1,0 +1,28 @@
+The device supports all sample rates between the dwMinSecondarySampleRate and dwMaxSecondarySampleRate member values. Typically, this means that the actual output rate will be within +/- 10 hertz (Hz) of the requested frequency.
+The device supports primary sound buffers with 16-bit samples.  
+The device supports primary buffers with 8-bit samples.  
+The device supports monophonic primary buffers.  
+The device supports stereo primary buffers.  
+The device supports hardware-mixed secondary sound buffers with 16-bit samples.  
+The device supports hardware-mixed secondary buffers with 8-bit samples.  
+The device supports hardware-mixed monophonic secondary buffers.  
+The device supports hardware-mixed stereo secondary buffers  
+There are 0 FreeHw3DAllBuffers
+There are 0 FreeHw3DStaticBuffers
+There are 0 FreeHw3DStreamingBuffers
+There are 0 FreeHwMemBytes
+There are 0 FreeHwMixingAllBuffers
+There are 0 FreeHwMixingStaticBuffers
+There are 0 FreeHwMixingStreamingBuffers
+There are 0 MaxContigFreeHwMemBytes
+There are 0 MaxHw3DAllBuffers
+There are 0 MaxHw3DStaticBuffers
+There are 0 MaxHw3DStreamingBuffers
+There are 0 FreeHw3DAllBuffers
+There are 0 FreeHw3DStaticBuffers
+There are 0 FreeHw3DStreamingBuffers
+There are 0 TotalHwMemBytes
+There are 0 FreeHwMemBytes
+There are 0 MaxContigFreeHwMemBytes
+The UnlockTransferRate to HwBuffers is 0.000000 kbps
+The Overhead of the CPU in mixing SW buffers is 0.000000 percent

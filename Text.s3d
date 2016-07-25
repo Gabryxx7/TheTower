@@ -1,0 +1,214 @@
+
+/*
+ * This class is basically a CVmText but a little better, since it allows to put string with "\n" and automatically center the position of the strings
+ */
+class Text 
+{
+	// The complete text string
+	var mString;
+	
+	// The array of the substrings, i.e. the parts of the complete text string that are separated by "\n"
+	var mStringList;
+	
+	// Each substring has its own CVmObj; this array contains all of them
+	var mStringObjList;
+	
+	// Multiplier for the text, used to position the string in the center of its containing CVmObj; it's constant, but depends on the font used 
+	// for the text and the scale set
+	var mStringWidthMultiplier;
+	
+	// Height of the string; depends on the font used and the scale set
+	var mStringHeight;
+	
+	// Total number of substrings
+	var mNumberOfSubstrings;
+
+	// Container object; it contains all the other CVmObjects containg the substrings
+	var mTextContainerObj;
+
+	// Public functions
+	LoadString(string);
+	SetPosition(position);
+	GetPosition();
+	GetObj();
+	Rotate(angle, x, y, z);
+	RotateABS(angle, x, y, z);
+	SetRotation(angle, x, y, z);
+	Translate(x, y, z);
+	Draw();
+	Hide();
+	Unhide();
+};
+
+/*
+ * Constructor
+ */
+function Text::Text(string)
+{
+	mString = string;
+	mStringList = {};
+	mStringObjList = {};
+	mStringWidthMultiplier = 0.085; // The multiplier was found by trial and error
+	mStringHeight = 0.5; // The height was found by trial and error
+	mTextContainerObj = CVmObj();
+	
+	// I obtain the substrings by using the Split function with "\n" as separator
+	var substrings = Split(mString, "\n");
+	mNumberOfSubstrings = len(substrings);
+	
+	// For each substring found, I create a CVmObj with the substring as CVmText
+	for(var i = 0; i < mNumberOfSubstrings; i++)
+	{
+		var txt = CVmText();
+		txt.Load(substrings[i]);
+		txt.SetScale(0.5, 0.5);
+		txt.SetColor(0, 0, 0);
+						
+		var txtObj = CVmObj();
+		txtObj.LinkToText(txt);
+		
+		aadd(mStringList, txt);
+		aadd(mStringObjList, txtObj);
+		
+		// Computing the string width 
+		var stringWidth = len(substrings[i]) * mStringWidthMultiplier;
+		
+		// Adding the new object as child of the main container, positioning it so that it stays in the center and each new object stays below the previous
+		mTextContainerObj.AddChild(txtObj, -stringWidth, -(i * mStringHeight), 0);
+	}
+	
+	// Tmp for a bug that doesn't show any strings added to mTextContainerObj after the creation, even though they are put as children 
+	// of mTextContainerObj. As a workaround I'm manually creating 5 more CVmObjects that are empty at the beginning
+	for(var i = mNumberOfSubstrings; i < mNumberOfSubstrings + 5; i++)
+	{
+		var txt = CVmText();
+		txt.Load("");
+		txt.SetScale(0.5, 0.5);
+		txt.SetColor(0, 0, 0);
+		var txtObj = CVmObj();
+		txtObj.LinkToText(txt);
+		aadd(mStringList, txt);
+		aadd(mStringObjList, txtObj);
+		var stringWidth = 1;
+		mTextContainerObj.AddChild(txtObj, -stringWidth, -(i * mStringHeight), 0);
+	}
+	
+	// Tmp for the bug
+	mNumberOfSubstrings += 5;
+}
+
+/*
+ * Method that loads a new string
+ */
+function Text::LoadString(string)
+{
+	mString = string;
+	
+	// I divide the new string in substrings as before
+	var substrings = Split(string, "\n");
+	var n = len(substrings);
+	
+	// It might be that there are more substrings than before, or viceversa. First, I find the min between them and fill the first "min" 
+	// objects with the new substrings
+	var min = n < mNumberOfSubstrings ? n : mNumberOfSubstrings;
+	
+	for(var i = 0; i < min; i++)
+	{
+		mStringList[i].Load(substrings[i]);
+		
+		var stringWidth = len(substrings[i]) * mStringWidthMultiplier;
+		
+		mStringObjList[i].SetPosition(-stringWidth, -(i * mStringHeight), 0);
+		
+		// In case the current object was hidden (because maybe was there but wasn't used anymore), I make it visible
+		mStringObjList[i].Unhide();
+	}
+	
+	// Now, if the new substrings are greater than the previous ones, I have to create new CVmObj objects.
+	// Note: there is a bug and what is done in this part actually doesn't work, meaning that the code gets executed but the outcome seems to be nothing
+	if(n > mNumberOfSubstrings)
+	{
+		// I iterate over the difference between the previous number of substrings and the current one
+		for(var i = mNumberOfSubstrings; i < n; i++)
+		{			
+			var txt = CVmText();
+			txt.Load(substrings[i]);
+			txt.SetScale(0.5, 0.5);
+			txt.SetColor(0, 0, 0);
+						
+			var txtObj = CVmObj();
+			txtObj.LinkToText(txt);
+			
+			aadd(mStringList, txt);
+			aadd(mStringObjList, txtObj);
+			
+			var stringWidth = len(substrings[i]) * mStringWidthMultiplier;
+			
+			mTextContainerObj.AddChild(txtObj, -stringWidth, -(i * mStringHeight), 0);
+		}
+		
+		mNumberOfSubstrings = n;
+	}
+	// If the current substrings are less then the previous ones, I hide the previous remaining objects
+	else if(n < mNumberOfSubstrings)
+	{
+		for(var i = n; i < mNumberOfSubstrings; i++)
+			mStringObjList[i].Hide();
+	}
+}
+/*
+ * In order to use this class with some pre-built XVR methods, I need to pass the container CVmObj of the text from time to time, 
+ * so I need a method that gets it
+ */
+function Text::GetObj()
+{
+	return mTextContainerObj;
+}
+
+/////// The methods below just call the homonymous CVmObj's methods \\\\\\\
+
+function Text::SetPosition(position)
+{
+	mTextContainerObj.SetPosition(position);
+}
+
+function Text::Rotate(angle, x, y, z)
+{
+	mTextContainerObj.Rotate(angle, x, y, z);
+}
+
+function Text::RotateABS(angle, x, y, z)
+{
+	mTextContainerObj.RotateABS(angle, x, y, z);
+}
+
+function Text::SetRotation(angle, x, y, z)
+{
+	mTextContainerObj.SetRotation(angle, x, y, z);
+}
+
+function Text::Translate(x, y, z)
+{
+	mTextContainerObj.Translate(x, y, z);
+}
+
+function Text::GetPosition()
+{
+	return mTextContainerObj.GetPosition();
+}
+
+function Text::Draw()
+{
+	mTextContainerObj.Draw();
+}
+
+function Text::Hide()
+{
+	mTextContainerObj.Hide();
+}
+
+function Text::Unhide()
+{
+	mTextContainerObj.Unhide();
+}
+

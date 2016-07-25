@@ -1,0 +1,122 @@
+
+/*
+ * Helper class that represents an event trigger, which is basically a rectangle area to be positioned in the world that signals when the player steps on it
+ */
+class EventTrigger 
+{
+	// To distinguish an event trigger from another, the user must associate an id to a given event trigger
+	var mEventID;
+	
+	// Size of the event trigger
+	var mWidth;
+	var mDepth;
+	var mHalfWidth;
+	var mHalfDepth;
+
+	// CVmObj of the event trigger
+	var mEventTriggerObj;
+
+	// Coordinates of the event trigger (these are local to the object)
+	var mLowerCornerPosition;
+	var mUpperCornerPosition;
+	
+	// Same coordinates as above, but in world space
+	var mLowerCornerWorld;
+	var mUpperCornerWorld;
+
+	// Public functions
+	IsPointInside(point);
+	SetPosition(position);
+	GetPosition();
+	GetId();
+	Rotate(angle, x, y, z);
+	Translate(x, y, z);
+	LocalToWorld(point);
+	AddObject();
+	Draw();
+	
+};
+
+/*
+ * Constructor
+ * 
+ * width: (float) width of the rectangle
+ * depth: (float) depth of the rectangle
+ * eventID: (anything) id of the event
+ */
+function EventTrigger::EventTrigger(width, depth, eventID)
+{
+	mWidth = width;
+	mDepth = depth;
+	mHalfWidth = mWidth/2; 
+	mHalfDepth = mDepth/2;
+	mEventID = eventID;
+	
+	// Computing the local coordinates of the rectangle
+	mLowerCornerPosition = [-mHalfWidth, 0, -mHalfDepth];
+	mUpperCornerPosition = [mHalfWidth, 0, mHalfDepth];
+		
+	// Creating a plane with the given size, perpendicular to the y axis and double faced (not that this last thing is important...)
+	var eventTriggerMesh = CVmNewMesh(VRP_PLANE, 1, mLowerCornerPosition, mUpperCornerPosition, 1, 2);
+    mEventTriggerObj = CVmObj(eventTriggerMesh);
+    
+    // Computing the world coordinates of the rectangle
+    mLowerCornerWorld = mEventTriggerObj.LocalToWorld(mLowerCornerPosition);
+    mUpperCornerWorld = mEventTriggerObj.LocalToWorld(mUpperCornerPosition);
+}
+
+/*
+ * This method has to be called in each call of the updateLogic() function in order to check if the given event trigger is triggered. It returns
+ * true if the point (usually the camera) is inside the event trigger
+ */
+function EventTrigger::IsPointInside(point)
+{	
+	// Checking if the point is inside the rectangle. Note that I don't use the y coordinate; for these kind of event triggers it's not relevant, 
+	// since the player can't fly
+	return (point.x >= mLowerCornerWorld.x && point.x <= mUpperCornerWorld.x ) &&
+       	   (point.z >= mLowerCornerWorld.z && point.z <= mUpperCornerWorld.z);
+}
+
+function EventTrigger::SetPosition(position)
+{
+	mEventTriggerObj.SetPosition(position);
+	
+	// When the trigger gets moved, I update the world coordinates of the rectangle
+	mLowerCornerWorld = mEventTriggerObj.LocalToWorld(mLowerCornerPosition);
+	mUpperCornerWorld = mEventTriggerObj.LocalToWorld(mUpperCornerPosition);
+}
+
+function EventTrigger::Translate(x, y, z)
+{
+	mEventTriggerObj.Translate(x, y, z);
+	
+	// When the trigger gets moved, I update the world coordinates of the rectangle
+	mLowerCornerWorld = mEventTriggerObj.LocalToWorld(mLowerCornerPosition);
+	mUpperCornerWorld = mEventTriggerObj.LocalToWorld(mUpperCornerPosition);
+}
+
+function EventTrigger::Rotate(angle, x, y, z)
+{
+	mEventTriggerObj.Rotate(angle, x, y, z);
+}
+
+
+function EventTrigger::GetPosition()
+{
+	return mEventTriggerObj.GetPosition();
+}
+
+function EventTrigger::GetId()
+{
+	return mEventID;
+}
+
+function EventTrigger::Draw()
+{
+	mEventTriggerObj.Draw();
+}
+
+function EventTrigger::LocalToWorld(point)
+{
+	return mEventTriggerObj.LocalToWorld(point);
+}

@@ -1,0 +1,344 @@
+
+#define STATUS_ELEVATOR_MOVING 0
+#define STATUS_ELEVATOR_ARRIVED 1
+#define STATUS_LEVEL_STARTED 2
+
+//#include <Utils.s3d>
+#include <MarcelloUtils.s3d>
+
+class Level1
+{
+	// Booleans that indicate if the level is starting or ending
+	var mEnding;
+	var mIsLevelCompleted;
+	var mEndTimer;
+	
+	var mLevelStatus;
+	
+	// Manager for user inputs
+	var mInputManager;
+	
+	// "Animator" object; used to create transitions and rotations for the objects
+	var mAnimator;
+	
+	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
+	var mSoundManager;
+	
+	// Active camera
+	var mCamera;
+	
+	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
+	var mLight0;
+	var mLight1;
+	var mLight2;
+	
+	
+	// "Room" object that contains the whole room
+	var mMainRoom;
+	
+	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
+	// draw the silhouettes for the portals' frames
+	var mSilhouetteShader;
+	
+	// Booleans that indicate whether the elevator has appeared and if it's already open or not
+	var mIsElevatorPresent;
+	var mIsElevatorOpen;
+	
+	// "Room" object that represent the elevator
+	var mElevator;
+	
+	var mElevatorFinalPosition;
+	var mElevatorTravelDistance;
+	var mElevatorTravelTime;
+	var mCameraYoffset;
+	
+	
+	var mIsUsingClock;
+	
+	var mMainClock;
+//	var mPreviousArrowAngle;
+	
+	
+	// Private functions
+	DrawAllPortals();
+	DrawPortal(portalFrame, portalRoom);
+	FadeToBlackScreen(fadeIn);
+	
+	intersect3D_SegmentPlane( p0, p1, v0, normal);
+	
+	Selection(object);
+	
+	// Public functions
+	Init(lights, elevator);
+	Render();
+	UpdateLogic(dt);
+	IsLevelCompleted();
+	GetElevator();
+};
+
+
+/*
+ * Constructor. Takes as parameter the input manager of the application
+ */
+function Level1::Level1(inputManager, soundManager)
+{		
+	mInputManager = inputManager;
+	mSoundManager = soundManager;
+	
+	// Creating the main room
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+	
+	// Instantiating the silhouette shader, to draw outlines
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+		
+	global var boxMesh3 = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.02, 0.02, 0.02]); 
+	global var boxObj3 = CVmObj(boxMesh3);
+	
+//	boxObj2.Translate(-0.5, 5, 10.03);
+
+
+	mMainClock = Clock();
+	mMainClock.Translate(0, 5, 14);
+	
+	var num_seg = 30;
+	var radius = 2;
+	var hemisphere = 1;  // 0.5 = hemisphere, 1 = sphere
+	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
+	global var sphere = CVmObj(sphereMesh1);
+	sphere.SetPosition(0, 5, 20);
+}
+
+
+ 
+ function Level1::Init(lights, elevator)
+{	
+	foreach(var light in lights)
+		light.Disable();
+	
+	mLight0 = lights[0];
+	mLight0.SetPosition([-10.0, 10.0, 10.0] + [0, -100, 0]);
+	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.Enable();
+	
+	mLight1 = lights[1];
+	mLight1.SetPosition([0, 10.0, 10.0]);
+	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetPosition([0, 10.0, -20.0]);
+	mLight2.Enable();
+	
+		
+	mElevator = elevator;
+	mElevator.SetLightsRange(0,0);
+	
+	// Retrieving the input manager and setting the initial camera's position
+	mCamera = mInputManager.GetActiveCamera();
+	
+	// Creating the object that will handle transitions and rotations of objects
+	mAnimator = Animator();
+
+	
+	mEnding = false;
+	mIsLevelCompleted = false;
+	
+	mElevatorTravelDistance = 100.0;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 5.0;
+	
+	output(mElevatorTravelTime);
+	
+	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	var lightPos = mLight1.GetPosition();
+	
+	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
+//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
+	
+	mCameraYoffset = mCamera.GetPosition().y - mElevatorFinalPosition.y;
+	
+	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
+	mIsUsingClock = false;
+	
+	
+		
+	var first = sphere.GetPosition();
+	var second = first + [0, 0, 6];
+	var third = second + [4.5, 0, 0];
+	var fourth  = third + [0, 0, -6];
+	
+	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 1.0, true);
+}
+
+
+/* ****************************************************** *
+ * **************** RENDER METHODS ********************** *
+ * ****************************************************** */
+
+/*
+ * Render method
+ */
+function Level1::Render()
+{
+	// Starting the scene with the default camera
+	SceneBegin(mCamera);		
+			
+		switch(mLevelStatus)
+		{
+			case STATUS_ELEVATOR_MOVING:
+				break;
+			case STATUS_ELEVATOR_ARRIVED:
+			case STATUS_LEVEL_STARTED:
+				mMainRoom.Draw();
+				boxObj3.Draw();
+				mMainClock.Draw();
+				sphere.Draw();
+				break;
+		}
+		
+		// The elevator is always present, so it's always drawn
+		mElevator.Draw();
+	
+	
+	SceneEnd();
+}
+
+
+/* ****************************************************** *
+ * **************** LOGIC METHODS ********************** *
+ * ****************************************************** */
+ 
+ global var firstClick = false;
+ 
+/*
+ * Updates the logic of the game
+ * 
+ * dt: (float) delta time, i.e. the time between the last update and this one
+ */
+function Level1::UpdateLogic(dt)
+{
+	// First off, let's update the player's position and orientation
+	mInputManager.UpdateCameraOrientation();
+	mInputManager.UpdateCameraPosition();
+	
+	var cameraPosition = mCamera.GetPosition();
+	
+	switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING: 
+		{
+//			output(!mElevator.IsPointInElevator(cameraPosition));
+			
+		    // I make sure that the camera doesn't go out of the elevator while it's going up
+		    if(!mElevator.IsPointInElevator(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
+			
+			var elevatorPos = mElevator.GetPosition();
+	
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2 && mElevator.GetLightsRange().y < 1)
+				 mElevator.SetLightsRange(1,2);
+			
+			var currentCameraPosition = mCamera.GetPosition();
+
+			currentCameraPosition.y = mCameraYoffset + elevatorPos.y;
+	   	    
+
+		    currentCameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+		    currentCameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+			
+			mCamera.SetPosition(currentCameraPosition);
+			
+			if(elevatorPos.y >= mElevatorFinalPosition.y)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+				
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, leftDoorPos - [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, rightDoorPos + [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
+				
+				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+			}
+			
+			mAnimator.UpdateTransitions(dt);
+			
+			break;
+		}		
+		case STATUS_ELEVATOR_ARRIVED:
+		{
+			if(!mElevator.IsPointInElevator(cameraPosition))
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+				
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, leftDoorPos + [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, rightDoorPos - [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
+				
+				output("yolooo\n");
+				
+				mLevelStatus = STATUS_LEVEL_STARTED;
+			}
+			
+			mAnimator.UpdateTransitions(dt);
+			
+			break;
+		}
+		case STATUS_LEVEL_STARTED:
+		{
+			if(mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
+				    	
+	    	if(mInputManager.HasClicked())
+	    	{
+	    		var raycastOrigin = mCamera.GetPosition();
+	    		var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+	    		
+	    		var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mMainClock);
+	    		
+	    		if(!mIsUsingClock && contactPoint != Void)
+	    			mIsUsingClock = true;
+	    		
+	    		if(mIsUsingClock)
+    			{
+    				firstClick = true;
+    				
+					mMainClock.UpdateMinutesArrow(raycastOrigin, raycastEnd);
+					
+					var deltaAngle = mMainClock.GetDeltaAngle();
+					
+					mAnimator.ChangeScaleFactors(deltaAngle * 5.0);
+					
+					if(deltaAngle / 10.0 < 0)
+					{
+//						output(deltaAngle / 10.0);
+//						output("\n");
+					
+					}
+					
+					mAnimator.UpdateTransitions(dt);
+    			}
+	    	}
+	    	else
+	    		mIsUsingClock = false;
+	    		
+	    		if(!firstClick)
+	    			mAnimator.UpdateTransitions(dt);
+	    	
+			break;
+		}
+	}
+		
+	// I update the methods of the managers
+//	mAnimator.UpdateTransitions(dt);
+	mSoundManager.UpdateMusic(dt);
+}
+
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function Level1::IsLevelCompleted()
+{
+	return mIsLevelCompleted;
+}
+
+

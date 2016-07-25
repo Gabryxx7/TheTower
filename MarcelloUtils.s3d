@@ -1,0 +1,613 @@
+#ifdef __COMPILEMARCELLOUTILS
+
+// ******************************************************************************************************************************************
+//
+// 		MarcelloUtils.s3d
+//		
+//		A collection of utility functions for use in XVR
+//
+//		by Marcello Carrozzino, marcello 'AT' sssup.it
+//
+//		Released 31/8/2006
+//
+//      ---------------------------------------------------------------------------------------
+//
+//		Includes:
+//
+//		KeyStatus(keycode) 			- returns true if the key specified in 'keycode' has changed status from unpressed to pressed
+//
+//      DebugBox class     			- allows to display text information (for instance, variable values) on screen, in a customizable box
+//
+//		Selection(ob,mode,compID)   - return true if the mouse is currently over the object (obj or character) 'ob', depending on the value specified in 'mode': 
+//									  mode = SEL_PASS	-	true if the mouse is over the object
+//									  mode = SEL_PICK	-	true if the mouse is over the object and the left button is pressed
+//									  mode = SEL_MOVE	-	true if the mouse is over the object and the left button is pressed, additionally moving the mouse
+//															will result in dragging the object
+//									  Moreover, it returns the character component (or mesh subset) currently selected in 'compID'
+//
+//		MoveCameraTo(dest)			- moves smoothly the camera position to 'dest' with the speed specified in the constant CAMERA_SPEED. 
+//									  Returns true when 'dest' is reached.
+//
+//		MoveCameraTarget(dest)		- moves smoothly the camera target to 'dest' with the speed specified in the constant CAMERA_SPEED. 
+//
+//									  Returns true when 'dest' is reached.
+//      MoveCameraAndTarget			- Moves camera to 'cdest' and camera target to 'tdest' in 'nframes' frames
+//		(cdest,tdest,nframes)
+//
+//		ProgressBar class			- allows to display a fully customizable progress bar
+//
+//		ToolTip
+//      (s_text, rev, bkg, fgd)		- Draws a tooltip at the mouse coordinates, with the text specified in 's_text'. If 'rev' = true, the tooltip extends
+//									  to the left, otherwise to the right. Background and text colors may be specified in 'bkg' and 'fgd'
+// 		qsort 				
+//		(vec, fpos, lpos, ind)		- Sorts the vector 'vec', starting from the initial position 'fpos' to the ending position 'lpos'. The result is stored
+//									  in the vector 'ind' which contains the ordered indices (vec[ind[fpos]] is the first element of the ordered vector, etc.
+//
+// ******************************************************************************************************************************************
+
+
+#define SEL_PASS 0
+#define SEL_PICK 1
+#define SEL_MOVE 2
+
+#define CAMERA_SPEED 0.95
+#define CAMERA_DIST  0.005
+
+#define SPLASH_SIZE 0.3
+
+//----------------------------------------------------------------------
+function KeyStatus(keycode)
+//----------------------------------------------------------------------
+{
+	if (valtype(keycode) == "S")
+	{
+		keycode = asc(keycode);
+	}
+		
+	static var keys_stati = vector(255);
+	if (KeyPressed(keycode))
+	{	
+		if (keys_stati[keycode] == 0.0)
+		{
+			keys_stati[keycode] = 1.0;
+			return true;
+			
+		}
+	}
+	else
+	{
+		keys_stati[keycode] = 0.0;
+		return false;
+	}
+	return false;		
+}
+
+//----------------------------------------------------------------------
+class DebugBox
+//----------------------------------------------------------------------
+{
+	var items_array;
+	var last_item;
+	var startx;
+	var starty;
+	var linespacing;
+	var font;
+	var fontsize;
+	var updirection;
+	var xsize;
+	var margin_left;
+	var margin_bottom;	
+	var color;
+	var fill_color;
+	
+	Initialize();
+	SetItem(t,v);
+	SetPosition(x,y);
+	Draw(vx,vy);
+	SetColor(col);
+	SetFillColor(fill);
+	SetMargins(mleft, mbottom);
+};
+
+function DebugBox::Initialize()
+{
+	items_array = array(0);
+	last_item = 0;
+	xsize = 0;
+	updirection = false;
+	linespacing = 1;
+	font = "Arial";
+	fontsize = 14;
+	margin_left   = 4;
+	margin_bottom = 4;
+	color = [0.0,0.0,0.0,1.0];
+	fill_color = [1.0, 1.0, 0.5, 0.5];
+}
+
+function DebugBox::SetColor(col)
+{
+	color = col;
+}
+
+function DebugBox::SetFillColor(col)
+{
+	fill_color = col;
+}
+
+function DebugBox::SetMargins(mleft,mbottom)
+{
+	margin_left = mleft;
+	margin_bottom = mbottom;
+}
+
+function DebugBox::SetPosition(x,y)
+{
+	startx = x;
+	starty = y;
+}
+
+function DebugBox::SetItem(testo,value)
+{	
+	var testo_item = sprintf("%s: %.3f", testo, value);
+	Aadd(items_array, testo_item);
+	var lun = len(testo_item);
+	if (lun > xsize) xsize = lun;
+	last_item ++;
+}
+
+function DebugBox::Draw(viewportx, viewporty)
+{
+	
+	ConsoleFont(font,fontsize);
+	
+	var vspace;
+	if (viewporty == -1)
+		vspace = linespacing * 0.02;
+	else
+	{	
+		vspace = linespacing * fontsize / viewporty;
+	}
+	var i,j;
+		
+	var startbox_x = startx-margin_left/viewportx;
+	var startbox_y = vspace*last_item + starty;	
+	var dim_x = 0.75*(xsize*fontsize)/viewportx;
+	var dim_y = startbox_y-starty+margin_bottom/viewporty ;
+	
+	ConsoleColor(fill_color[0],fill_color[1],fill_color[2],fill_color[3]);
+	ConsoleFilledRect(startbox_x,startbox_y, dim_x , dim_y);
+	ConsoleColor(color[0],color[1],color[2],color[3]);
+	ConsoleRect(startbox_x,startbox_y, dim_x , dim_y);
+	
+	for (i=0;i<last_item;i++)
+	{
+		if (!updirection)
+			j = last_item - i - 1;
+		else 
+			j = i;
+			
+		ConsoleText(startx,starty+vspace*i,items_array[j]);	
+	}
+	
+	items_array = array(0);
+	last_item = 0;
+}
+
+
+//-------------------------------------------
+function Selection(vr_obj, mode, compID)
+//-------------------------------------------
+{
+	var retval;	
+	var viewport = array(4);
+	var winx,winy;
+
+	static var p0 = [0.0,0.0,0.0];
+	static var p1 = [0.0,0.0,0.0];
+	var pInt = [0.0,0.0,0.0];
+	var nrml = [0.0,0.0,0.0];
+	var n_tr;	
+//	var width, height;
+
+	
+	viewport = glget(GL_VIEWPORT);
+	
+	winx = Mouse.X;						//x*1.0f/width;
+	winy = viewport[3] - 1 - Mouse.Y;	//1.0f - y*1.0f/height;
+
+	var vec0 = [0.0,0.0,0.0];
+	var vec1 = [0.0,0.0,0.0];
+	vec0[0] = winx;
+	vec0[1] = winy ;
+	vec0[2] = 0.0;
+	vec1[0] = winx;
+	vec1[1] = winy ;
+	vec1[2] = 1.0;
+	
+	p0 = gluUnProject(vec0);
+	p1 = gluUnProject(vec1);
+	
+	if ( vr_obj.IsColliding(p0, p1, &pInt, &nrml, &n_tr, &compID) )	
+	{
+		retval = true;
+		if (compID == -1 && vr_obj.GetMesh() !=  VOID)
+			compID = vr_obj.GetMesh().GetSubSetFromTriIndex(n_Tr); 
+	}
+	else
+		retval = false;
+	
+	
+	if ((mode == SEL_PICK || mode == SEL_MOVE) && !Mouse.ButtonL)
+		retval = false;
+
+				
+	if (retval && mode == SEL_MOVE)
+	{	
+		p0 = gluProject(pInt);		//	p0:   punto di intersezione in screen coordinates		
+		vec0[2] = p0[2];			//  vec0: mouse pointer in screen coordinates con z = quella di p0	
+		p0 = gluUnProject(vec0);	//  p0:	  vec0 in world coordinates	
+		trace(p0);
+		
+		vr_obj.SetPosition(p0);
+	}
+	
+	return retval;
+}
+
+
+//-------------------------------------------
+function MoveCameraTo(dest)
+//-------------------------------------------
+{	
+	var temp;
+	var dist;
+	var speed=CAMERA_SPEED;	
+	temp = GetCameraPosition();	
+	temp = speed * temp + (1.0-speed) * dest;
+	SetCameraPosition(temp);	
+	
+	dist = ((temp[0]-dest[0])^2)+((temp[1]-dest[1])^2)+((temp[2]-dest[2])^2);
+	
+	if (dist < CAMERA_DIST) 
+	{
+		return true;		
+	}
+	else return false;
+}
+
+
+//-------------------------------------------
+function MoveCameraTarget(dest)
+//-------------------------------------------
+{	
+	var temp;
+	var dist;
+	var speed=CAMERA_SPEED;	
+	temp=GetCameraTarget();	
+	temp=speed*temp+(1.0-speed)*dest;
+	var temp2=temp;	
+	SetCameraTarget(temp);
+	
+	dist = ((temp[0]-dest[0])^2)+((temp[1]-dest[1])^2)+((temp[2]-dest[2])^2);
+	
+	if (dist < CAMERA_DIST) 
+	{
+		return true;		
+	}
+	else return false;
+}
+
+
+//-------------------------------------------
+function MoveCameraAndTarget(cdest,tdest,frames)
+//-------------------------------------------
+{	
+	var temp;
+	static var cdist,tdist;
+	static var start = true;
+	static var nframes = 1;
+	static var cvm,tvm;
+	static var cdir,tdir;
+	if (start == true)
+	{
+		nframes = 0;
+		var sqdi;
+		
+		temp = GetCameraPosition();			
+		sqdi = ((temp[0]-cdest[0])^2)+((temp[1]-cdest[1])^2)+((temp[2]-cdest[2])^2);			
+		cdist = sqrt(sqdi);				
+		cdir = norm(cdest-temp);
+		cvm = cdist/frames;				
+				
+		temp = GetCameraTarget();
+		sqdi = ((temp[0]-tdest[0])^2)+((temp[1]-tdest[1])^2)+((temp[2]-tdest[2])^2);		
+		tdist = sqrt(sqdi);
+		tdir = norm(tdest-temp);
+		tvm = tdist/frames;				
+		
+	}
+		
+	var cspeed, tspeed;	
+	var coeff = (frames+1)/2;
+	
+	if (nframes < frames/2)
+	{
+		cspeed = nframes*cvm/coeff;
+		tspeed = nframes*tvm/coeff;
+	}
+	else
+	{
+		cspeed = (frames-nframes)*cvm/coeff;	
+		tspeed = (frames-nframes)*tvm/coeff;	
+	}
+	
+	var cv = (2*cspeed);
+	var tv = (2*tspeed);
+	
+	temp=GetCameraPosition();
+	temp=temp + cv * cdir;
+	SetCameraPosition(temp);
+		
+	temp=GetCameraTarget();
+	temp=temp + tv * tdir;
+	SetCameraTarget(temp);
+	
+
+	nframes ++;
+	if (nframes == frames || cdist == 0)
+	{			
+		start = true;
+	}
+	else
+		start = false;
+	return start;
+}
+
+//----------------------------------------------------------------------
+class ProgressBar
+//----------------------------------------------------------------------
+{
+	// progress: 	expressed in %
+	// s_text:   	string to display
+	// t_index:  	index of the texture array (if -1 no texture is present)
+	// tex_splash:	array of splash textures
+
+	var progress;
+	var s_text;
+	var a_splash_textures;
+	var n_textures;
+	var cur_index;
+	var bkg_color;	
+	var fgd_color;
+	var m_bar_top;
+	var m_bar_bottom;
+	var m_bar_left;
+	var m_bar_right;
+	var m_pic_top;
+	var m_pic_left;
+	var m_pic_sizex;
+	var m_pic_sizey;
+
+		
+	SetProgress(prf);
+	InitTextures(tex_array);
+	SetText(txt);
+	SetTextureIndex(ind);
+	Draw(pr,txt,ind);
+};
+
+function ProgressBar::ProgressBar()
+//-------------------------------------------
+{
+	progress 		= 0;
+	s_text   		= "";
+	n_textures		= 0;
+	a_splash_textures = array(0);
+	cur_index       = -1;
+	bkg_color   	= [0.0, 0.0, 0.0];
+	fgd_color   	= [1.0, 1.0, 1.0];
+	m_bar_top		=  0.01;
+	m_bar_bottom	= -0.01;
+	m_bar_left		= -0.5;
+	m_bar_right		=  0.5;
+	m_pic_top		=  0.3;
+	m_pic_left		= -0.3;
+	m_pic_sizex		=  0.6;
+	m_pic_sizey		=  0.6;
+	
+}
+
+function ProgressBar::InitTextures(tex_array)
+//-------------------------------------------
+{
+	a_splash_textures = tex_array;
+	n_textures        = len(a_splash_textures);
+}
+
+function ProgressBar::SetProgress(pr)
+//-------------------------------------------
+{
+	progress = pr;
+}
+
+function ProgressBar::SetText(txt)
+//-------------------------------------------
+{
+	s_text = txt;
+}
+
+function ProgressBar::SetTextureIndex(ind)
+//-------------------------------------------
+{
+	cur_index = ind;
+}
+
+
+function ProgressBar::Draw(pr, txt, ind)
+//-------------------------------------------
+{
+	if ( valtype(pr) !="" ) progress  = pr;
+	if ( valtype(txt)!="" ) s_text    = txt;
+	if ( valtype(ind)!="" ) cur_index = ind;
+		
+	var p = progress/100.0;
+	
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+			
+	glClearColor(0.0,0.0,0.0,1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glDisable(GL_LIGHTING);
+		
+	if(cur_index != -1 && n_textures > 0)
+	{		
+		SetActiveTexture(a_splash_textures[cur_index]);
+		glEnable(GL_TEXTURE_2D);
+		glBegin(GL_QUADS);	
+			glColor(1.0,1.0,1.0);//	++ -+ -- +-
+			glTexcoord(1,0);
+			glVertex( m_pic_left+m_pic_sizex,  m_pic_top, 0);
+			glTexcoord(0,0);
+			glVertex( m_pic_left,  m_pic_top, 0);
+			glTexcoord(0,1);
+			glVertex( m_pic_left,  m_pic_top-m_pic_sizey, 0);
+			glTexcoord(1,1);
+			glVertex( m_pic_left+m_pic_sizex,  m_pic_top-m_pic_sizey, 0);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
+	}
+	
+	glTranslate(0,-0.53,0);
+										
+	if (progress>=0)
+	{
+		//Barra
+		if (progress>=100.0)
+		{
+			glBegin(GL_QUADS);		//Barra verde finita
+				glColor(0.6, 1.0, 0.0); glVertex(m_bar_left, m_bar_bottom, 0.0);
+				glColor(0.6, 1.0, 0.0);	glVertex(m_bar_right, m_bar_bottom, 0.0);
+				glColor(0.6, 1.0, 0.0);	glVertex(m_bar_right, m_bar_top, 0.0);
+				glColor(0.6, 1.0, 0.0);	glVertex(m_bar_left, m_bar_top, 0.0);
+			glEnd();
+		}
+		else
+		{		
+			glColor(1.0-p*0.4,p,0.0,1.0); 				
+			glBegin(GL_QUADS);		//Barra cangiante
+				glVertex(m_bar_left, 	  m_bar_bottom, 0.0);
+				glVertex(m_bar_left+p,  m_bar_bottom, 0.0);
+				glVertex(m_bar_left+p,  m_bar_top, 0.0);
+				glVertex(m_bar_left, 	  m_bar_top, 0.0);
+			glEnd();
+		}		
+	}
+	
+	glEnable(GL_LIGHTING);
+	
+	glPopMatrix();
+	glLoadIdentity();
+	
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	
+	glMatrixMode(GL_MODELVIEW);
+		
+	ConsoleText(0.249, 0.2, s_text);	
+	SwapBuffers();
+}
+
+
+
+//-------------------------------------------
+function ToolTip(s_text, reverse, bkg_color, fgd_color)
+//-------------------------------------------
+{
+	var mx = 0.0;
+	var my = 0.0;
+	var viewport = glget(GL_VIEWPORT);
+	
+	if ( valtype(reverse)=="" )
+		reverse = false;	
+	
+	if ( valtype(bkg_color)=="" )
+		bkg_color = [1.0,1.0,0.0,0.5];
+	
+	if ( valtype(fgd_color)=="" )
+		fgd_color = [0.0,0.0,0.0,1.0];	
+	
+	glColor(1.0,1.0,1.0,0.1);
+	
+	var fontsize = 12;
+	var pixelx = 1.0/viewport[2];
+	var pixely = 1.0/viewport[3];				
+	var dim = len(s_text)*pixelx*fontsize*0.9;		
+	var ydim = (fontsize+4)*pixely;
+	
+	mx = (Mouse.x/Viewport[2]);
+	if (reverse)
+		mx = mx-dim;			
+	my = (Mouse.y/Viewport[3]);
+	
+	
+	
+	ConsoleFont("Arial",fontsize);
+	
+	ConsoleColor( bkg_color[0], bkg_color[1], bkg_color[2], bkg_color[3]);
+	ConsoleFilledRect(mx,1-my+ydim, dim, ydim );
+	
+	ConsoleColor( fgd_color[0], fgd_color[1], fgd_color[2], fgd_color[3]);
+	ConsoleText(mx+pixelx*4, 0.997-my+ydim/3,s_text);	//-my+margin
+}
+
+
+
+function swap (vett, i, j)
+{
+	var v = vett;
+	var temp = v[i];
+	v[i] = v[j];
+	v[j] = temp;
+	return v;
+}
+
+//-------------------------------------------
+function qsort (vettore, prim, ult, indices)
+//-------------------------------------------
+{
+	var last,v,i;
+	var vind = indices;
+	
+	if (prim >= ult)
+		return vettore;
+		
+	var ind =  (prim+ult)/2;	
+	v = swap (vettore, prim, ind);
+	vind = swap (vind, prim, ind);
+	last = prim;
+	
+	for (i=prim+1;i<=ult;i++) 	
+		if (v[i] < v[prim])
+		{
+			last++;
+			v = swap (v, last, i);
+			vind = swap (vind, last,i);			
+		}
+	
+	v = swap (v,prim,last);
+	indices = swap (vind, prim, last);
+	
+	v =	qsort (v,prim,last-1,indices);
+	v =	qsort (v,last+1,ult,indices);
+	
+	return v;			
+}
+
+
+#endif

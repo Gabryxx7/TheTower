@@ -1,0 +1,84 @@
+/*
+ *	Ship Race VR
+ *  (c) Carlo Casta 2007
+ *
+ *  ShipRaceVR.s3d - Application "Entry Point"
+ */
+
+#include <Script3d.h>
+#include <Camera.s3d.h>
+#include "GameManager.s3d"
+
+/* Set global parameters */
+SET SCENE_FOV  = 60;
+SET SCENE_NEAR = 0.5;
+SET SCENE_FAR  = 1000;
+SET AUDIO_MODE = 2;
+
+var mGameManager;
+
+var oldTime = GetTime();
+var newTime;
+var dt;
+
+/* Download essential files for game menus */
+function OnDownload()
+{
+	FileDownload("silhouetteShader.glsl");
+	FileDownload("toonShader.glsl");
+	FileDownload("data.zip");
+}
+
+/* Init system - Start GameManager */
+function OnInit(params)
+{
+	mGameManager = GameManager();
+	
+	SceneSetParam(VR_VERTICAL_SYNC, 1);
+	
+	// Non so perchè ma bisogna rimuovere il cursore sia da qua che nel KeyboardManager
+	ShowCursor(false);
+
+//	SetCursorShape(VR_CUR_CROSS); 
+}
+
+/* Render recursively */
+function OnFrame()
+{
+	mGameManager.Render();
+}
+
+/* Game Logic update - recursive */
+function OnTimer()
+{
+	// Delta time computation
+	newTime = GetTime();
+	dt = (newTime - oldTime) * 0.001;
+	oldTime = newTime;
+	
+	mGameManager.UpdateLogic(dt);
+}
+
+/* get rid of warnings by declaring required functions */
+function OnExit()
+{
+}
+
+function DownloadReady()
+{
+}
+
+function OnError()
+{
+}
+
+function OnEvent(eventId, param1, param2)
+{
+	// A scopo di debug c'è un evento che viene chiamato quando si entra nel debug mode; l'id dell'evento è deciso arbitrariamente a 5000 (fino a 2023 
+	// sono riservati, quindi ho messo un valore più alto per evitare potenziali overwrite)
+	if(eventId == 5000)
+	{
+		// Il parametro 1 ricevuto dall'evento indica se si sta entrando o uscendo dalla fase di debug (true -> mostra il cursore, false -> nascondi)
+		ShowCursor(param1);
+	}
+}

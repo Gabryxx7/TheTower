@@ -1,0 +1,217 @@
+
+/*
+ * Class that represents a room, with an optional front wall (so that it can be used for portals' rooms, that don't have the front wall so the camera
+ * dosn't get obstructed when the room is rendered). It gives more flexibility than simply creating a box, and it's easier to maintain
+ */
+class Elevator
+{
+	var mElevatorDoorLeftMesh;
+	var mElevatorDoorRightMesh;
+	
+	var mElevatorDoorLeftObj;
+	var mElevatorDoorRightObj;
+
+	// The CVmObj that contains the room
+	var mElevatorRoom;
+	
+	var mDistanceBetweenClosedDoors;
+	
+
+	// Corners of the room (these are local coordinates)
+	var mLowerCornerPosition;
+	var mUpperCornerPosition;
+	
+	var mLowerCornerWorld;
+	var mUpperCornerWorld;
+	
+	
+	// Public functions
+	Draw();
+	IsElevatorOpen();
+	GetLeftDoor();
+	GetRightDoor();
+	IsPointInElevator(point);
+	AddObject(object, x, y, z);
+	RemoveObject(object);
+	GetObj();
+	GetRoomWidth();
+	GetRoomDepth();
+	GetRoomHeight();
+	SetLightsRange(min, max);
+	GetLightsRange();
+	LocalToWorld(point);
+	SetPosition(position);
+	GetPosition();
+	Rotate(angle, x, y, z);
+	Translate(x, y, z);
+	Hide();
+	Unhide();
+};
+
+/*
+ * Constructor
+ * 
+ * farWallWidth: (float) width of the front and back wall
+ * height: (float) height of the room
+ * hasFront: (boolean) true if there is a front wall, false otherwise
+ * centerInOrigin: (boolean) if true, the room is moved to the center of the coordinate system
+ * lightNumber: (integer) the number of the opengl light that has to be used in the cel shader to render the room
+ */
+function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin, lightsRangeMax)
+{
+	mElevatorRoom = Room(elevatorWidth, sideWallWidth, height, false, true, lightsRangeMin, lightsRangeMax);	
+	
+	var halfHeight = height/2;
+	
+	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1, -halfHeight - 0.1, 0], [elevatorWidth/4 + 0.1, halfHeight + 0.1, 0], 2, 2);
+	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1, -halfHeight - 0.1, 0], [elevatorWidth/4 + 0.1, halfHeight + 0.1, 0], 2, 2);
+	
+	// Adding the cel shader to the doors; the material is the same as for every wall
+	mElevatorDoorLeftMesh.ShaderAdd("toonShader.glsl", 0);
+	mElevatorDoorLeftMesh.ShaderActivate(true);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "specular", 0, [0.1, 0.1, 0.1]);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	
+	mElevatorDoorRightMesh.ShaderAdd("toonShader.glsl", 0);
+	mElevatorDoorRightMesh.ShaderActivate(true);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "specular", 0, [0.1, 0.1, 0.1]);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	
+	mElevatorDoorLeftObj = CVmObj(mElevatorDoorLeftMesh);
+	mElevatorDoorRightObj = CVmObj(mElevatorDoorRightMesh);
+	
+	// Adding the doors to the room
+	mElevatorRoom.AddObject(mElevatorDoorLeftObj, -elevatorWidth/4 - 0.1, 0, sideWallWidth);
+	mElevatorRoom.AddObject(mElevatorDoorRightObj, elevatorWidth/4 - 0.1, 0, sideWallWidth);
+	
+	mDistanceBetweenClosedDoors = Modulus(mElevatorDoorLeftObj.GetPosition() - mElevatorDoorRightObj.GetPosition());
+	
+	mLowerCornerPosition = [-elevatorWidth/2, -height/2, sideWallWidth];
+	mUpperCornerPosition = [elevatorWidth/2, height/2, 0];
+	
+	// Computing the world coordinates of the bounding box
+	mLowerCornerWorld = mElevatorRoom.LocalToWorld(mLowerCornerPosition);
+    mUpperCornerWorld = mElevatorRoom.LocalToWorld(mUpperCornerPosition);
+}
+
+function Elevator::Draw()
+{
+	mElevatorRoom.Draw();
+}
+
+
+function Elevator::IsElevatorOpen()
+{
+	var distanceBetweenDoors = Modulus(mElevatorDoorLeftObj.GetPosition() - mElevatorDoorRightObj.GetPosition());
+	
+	return distanceBetweenDoors > mDistanceBetweenClosedDoors;
+}
+
+function Elevator::GetLeftDoor()
+{
+	return mElevatorDoorLeftObj;
+}
+
+function Elevator::GetRightDoor()
+{
+	return mElevatorDoorRightObj;
+}
+
+/*
+ * This method checks whether the point passed as parameter is in the room or not
+ * 
+ * point: (vector) the point, in world coordinates
+ */
+function Elevator::IsPointInElevator(point)
+{
+	return mElevatorRoom.IsPointInRoom(point);
+}
+
+/*
+ * Method that adds an object fo the room. Mind that the children are only useful for drawing, meaning that the Room object will 
+ * only make sure to draw its children using the silhouette shader plus any shader they might have, nothing more
+ */
+function Elevator::AddObject(object, x, y, z)
+{
+	mElevatorRoom.AddObject(object, x, y, z);
+}
+
+
+function Elevator::RemoveObject(object)
+{
+	mElevatorRoom.RemoveObject(object);
+}
+
+function Elevator::GetObj()
+{
+	return mElevatorRoom.GetObj();
+}
+
+function Elevator::GetRoomWidth()
+{
+	return mElevatorRoom.GetRoomWidth();
+}
+
+function Elevator::GetRoomDepth()
+{
+	return mElevatorRoom.GetRoomDepth();
+}
+
+function Elevator::GetRoomHeight()
+{
+	return mElevatorRoom.GetRoomHeight();
+}
+
+function Elevator::SetLightsRange(min ,max)
+{
+	mElevatorRoom.SetLightsRange(min, max);
+}
+
+function Elevator::GetLightsRange()
+{
+	return mElevatorRoom.GetLightsRange();
+}
+
+function Elevator::SetPosition(position)
+{
+	mElevatorRoom.SetPosition(position);
+}
+
+function Elevator::Translate(x, y, z)
+{
+	mElevatorRoom.Translate(x, y, z);
+}
+
+function Elevator::Rotate(angle, x, y, z)
+{
+	mElevatorRoom.Rotate(angle, x, y, z);
+}
+
+function Elevator::GetPosition()
+{
+	return mElevatorRoom.GetPosition();
+}
+
+
+function Elevator::LocalToWorld(point)
+{
+	return mElevatorRoom.LocalToWorld(point);
+}
+
+function Elevator::Hide()
+{
+	return mElevatorRoom.Hide();
+}
+
+function Elevator::Unhide()
+{
+	return mElevatorRoom.Unhide();
+}

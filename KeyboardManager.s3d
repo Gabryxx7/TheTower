@@ -1,0 +1,250 @@
+
+// Move speed while walking
+#define MOVE_SPEED 0.15
+#define SPRINT_SPEED 0.45
+
+// Event ID that signals that debug mode is on; it's a random number, high enough to not overwrite any potential "real" events. It's more like a "tmp" thing
+#define DEBUG_MODE_EVENT 5000
+
+
+// Mouse sensitivity when turning around
+#define MOUSE_SENSITIVITY 0.07
+
+// Pause in milliseconds between a key pressed input and the next one, so not to "spam" keystrokes
+#define KEY_PRESSED_PAUSE 500
+
+class KeyboardManager
+{
+	// Camera used for movements
+	var mCamera;
+	
+	// "up" vector of the camera; it defines what direction is "up"; it's constant, as in real life
+	var mCameraUp;
+	
+	// Current move speed; it's one of the 2 constants defined above
+	var mMoveSpeed;
+	
+	// Bool that is true when the left button of the mouse is being pressed
+	var mIsPressingMouseL;
+	
+	// Previous mouse values for X and Y; used to update the camera's orientation
+	var mPreviousX;
+	var mPreviousY;
+	
+	// Current rotation values for the orientation of the camera
+	var mRotationX;
+	var mRotationY;
+	
+	// Boolean; is true when de debug mode is active
+	var mDebugMode;
+	
+	// This variable contains the time when a key was hit; used to determine the pause duration between a keystroke and another
+	var mKeyPressedTime;
+		
+	// Public functions
+	UpdateCameraOrientation();
+	UpdateCameraPosition();
+	SetActiveCamera(camera);
+	HasClicked();
+};
+
+
+/*
+ * Constructor
+ */
+function KeyboardManager::KeyboardManager()
+{
+	mMoveSpeed = MOVE_SPEED;
+	mRotationX = 0;
+	mRotationY = 0;
+	mCameraUp = [0.0, 1.0,  0.0];
+	
+	mIsPressingMouseL = false;
+	mPreviousX = 0;
+	mPreviousY = 0;
+	
+	mDebugMode = false;
+	
+	mKeyPressedTime = 0;
+	
+	// I don't know why, but I have to remove the cursor both here and in the main file of the project, otherwise it doesn't disappear
+	ShowCursor(false);
+}
+
+
+/*
+ * This function has to be called at each "updateLogic()" function call. It updates the rotation matrix of the camera, 
+ * so it's rotated according to mouse movements
+ */
+function KeyboardManager::UpdateCameraOrientation()
+{	
+	var xoffset = 0;
+	var yoffset = 0;
+	
+	// Debug mode: in this mode the view needs to be dragged with the mouse
+	if(mDebugMode && Mouse.ButtonL)
+  	{
+  		if(mIsPressingMouseL)
+   		{
+   			// Computing the difference between the previous values and the current ones
+			xoffset = Mouse.X - mPreviousX;
+			yoffset = mPreviousY - Mouse.Y;
+			
+			// Updating what are the previous values
+			mPreviousX = Mouse.X;
+   			mPreviousY = Mouse.Y;
+			
+			// Incrementing the offset by a multiplier to slow down the movement
+			xoffset = xoffset * 0.05;
+			yoffset = yoffset * 0.05;
+	   }
+	  	else
+   		{
+	   		mPreviousX = Mouse.X;
+   			mPreviousY = Mouse.Y;
+   		}
+   		
+ 	 	mIsPressingMouseL = true;
+  	}
+ 	else if(mDebugMode && !Mouse.ButtonL)
+ 	{
+  		mIsPressingMouseL = false;
+	}
+	// This is the case where we're NOT in debug mode, and the view must "follow" the mouse movements. I only procede if the program has focus
+	else if(HasFocus())
+	{
+		// In this case I update the offset with the "DeltaX" and "DeltaY" values, which are calculated taking into account even 
+		// if the mouse in windows is not actually inside the program's window.
+		// The multiplier defines the sensibility of the rotation
+  		xoffset = Mouse.DeltaX * MOUSE_SENSITIVITY;
+  		yoffset = Mouse.DeltaY * MOUSE_SENSITIVITY;
+	}
+	
+	// Incrementing the rotation values
+	mRotationX += xoffset;
+    mRotationY += yoffset;
+	 			
+	// Setting the new rotation. For the Y, we completely overwrite the previous rotation, while for the X we add the current rotation value to the old one
+    CameraSetRotation(mRotationY, 1,0,0);
+    CameraRotate(mRotationX, 0,1,0);
+  	
+}
+
+/*
+ * This function has to be called at each "updateLogic()" function call. It updates the camera's position according to keystrokes
+ */
+function KeyboardManager::UpdateCameraPosition()
+{
+	var currentTime = GetTime();
+	
+	// If we press P we enter in debug mode, but only if the time between this keystroke and the last one is greater than the threshold
+	if(keyPressed("P") && !mDebugMode && currentTime - mKeyPressedTime > KEY_PRESSED_PAUSE)
+	{
+		mDebugMode = true;
+		
+		// Sending an event to the main file that we're in debug mode. This is needed so that the mouse cursor can reappar; the call to ShowCursor(true) 
+		// must be done in the thread that process the events, otherwise it won't have any effect. This is why I use an event like this
+		EventPost(DEBUG_MODE_EVENT, true);
+		
+		mKeyPressedTime = GetTime();
+	}
+	else if(keyPressed("P") && mDebugMode && currentTime - mKeyPressedTime > KEY_PRESSED_PAUSE)
+	{
+		mDebugMode = false;
+		
+		EventPost(DEBUG_MODE_EVENT, false);
+
+		mKeyPressedTime = GetTime();
+	}
+
+	
+	// If shift is pressed, sprint is activated
+	if(KeyPressed(VK_SHIFT))
+		mMoveSpeed = SPRINT_SPEED;
+	else
+		mMoveSpeed = MOVE_SPEED;
+		
+	// If we press space in debug mode, the view goes up
+	if (KeyPressed(VK_SPACE) && mDebugMode)
+	{
+		var cameraPos = mCamera.GetPosition();
+						
+		cameraPos.y += 0.5 * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		mCamera.SetPosition(cameraPos); 
+	}
+	
+	// If we press C in debug mode, the view goes down
+	if (KeyPressed("C") && mDebugMode)
+	{
+		var cameraPos = CameraGetCurrent().GetPosition();
+						
+		cameraPos.y -= 0.5 * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		CameraGetCurrent().SetPosition(cameraPos); 
+	}
+	
+	
+	// Case where we press W
+	if (KeyPressed("W"))
+	{
+		var cameraPos = mCamera.GetPosition();
+		var cameraDir = mCamera.GetDirection();
+				
+		if(mDebugMode)		
+			cameraPos += cameraDir * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		else
+		{
+			// I update the camera's position across the current direction it's facing, with the given speed. The y axis does not change, since we can't fly
+			cameraPos.x += cameraDir.x * mMoveSpeed;
+			cameraPos.z += cameraDir.z * mMoveSpeed;
+		}
+
+		mCamera.SetPosition(cameraPos); 
+	}
+	
+	if (KeyPressed("S"))
+	{
+		var cameraPos = mCamera.GetPosition();
+		var cameraDir = mCamera.GetDirection();
+		
+		if(mDebugMode)	
+			cameraPos -= cameraDir * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		else
+		{
+			cameraPos.x -= cameraDir.x * mMoveSpeed;
+			cameraPos.z -= cameraDir.z * mMoveSpeed;
+		}
+		mCamera.SetPosition(cameraPos); 
+	}
+	
+	// Case where we press A
+	if (KeyPressed("A"))
+	{
+		var cameraPos = mCamera.GetPosition();
+		var cameraDir = mCamera.GetDirection();
+		
+		// To obtain the new position, we need to compute the cross product (i.e. the product between vectors, which results in a vector)
+		// between the current direction and the "up" vector
+		cameraPos -= Norm((cameraDir ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		mCamera.SetPosition(cameraPos); 
+	}
+	
+	if (KeyPressed("D"))
+	{
+		var cameraPos = mCamera.GetPosition();
+				
+		cameraPos += Norm((mCamera.GetDirection() ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		mCamera.SetPosition(cameraPos); 
+	}
+}
+
+
+function KeyboardManager::SetActiveCamera(camera)
+{
+	mCamera = camera;
+}
+
+function KeyboardManager::HasClicked()
+{
+	return Mouse.ButtonL;
+}
+

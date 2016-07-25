@@ -1,0 +1,301 @@
+
+#define STATUS_MENU     0
+#define STATUS_INGAME   1
+
+global var DEBUG_MODE = true;
+
+#include "Level0.s3d"
+#include "Level1.s3d"
+#include "InputManager.s3d"
+//#include "Utils.s3d"
+//#include <Room.s3d>
+//#include <EventTrigger.s3d>
+//#include <Text.s3d>
+//#include <Animator.s3d>
+//#include <SoundManager.s3d>
+//#include <Elevator.s3d>
+//#include <Utils.s3d>
+
+/*
+ * This class manages the whole game and the transition between levels
+ */
+class GameManager
+{
+	var mGameStatus;
+	var mGameStarted;
+	var mGameReady;
+	var mCurrentLevel;
+	var mCurrentLevelNumber;
+	var mMenu;
+	
+	var mElevator;
+	
+	var mCamera;
+	var mFadeToBlackAlpha;
+	
+	var mInputManager;
+	var mSoundManager;
+	
+	var mFadingIn;
+	var mFadingOut;
+	
+	var mLights;
+	
+	var mLevel1;
+
+	Render();
+	UpdateLogic(dt);
+	DrawCrosshair();
+	FadeToBlackScreen(fadeIn);
+};
+
+
+function GameManager::GameManager()
+{
+	mGameStatus = STATUS_INGAME;
+		
+	mGameStarted = false;
+	mGameReady = false;
+	
+	
+	
+	mCamera = CameraGetCurrent();
+	
+	mInputManager = InputManager();
+	mInputManager.SetActiveCamera(mCamera);
+	
+	mSoundManager = SoundManager();
+	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.5, true);
+	mSoundManager.PlayMusic();
+	
+	mLights = {};
+	
+	
+	var light0 = CVmLight();
+	light0.SetPosition([-10.0, 10.0, 10.0]);
+	light0.SetDiffuse(1, 1, 1);
+	light0.SetParameter(GL_CONSTANT_ATTENUATION, 1.0);
+	light0.SetParameter(GL_LINEAR_ATTENUATION, 0.0000);
+	light0.SetParameter(GL_QUADRATIC_ATTENUATION, 0.0000);
+	light0.Disable();	
+	
+	var light1 = CVmLight();
+	light1.SetPosition([-10.0, 10.0, 10.0]);
+	light1.SetDiffuse(1, 1, 1);
+	light1.SetParameter(GL_CONSTANT_ATTENUATION, 1.0);
+	light1.SetParameter(GL_LINEAR_ATTENUATION, 0.0000);
+	light1.SetParameter(GL_QUADRATIC_ATTENUATION, 0.0000);
+	light1.Disable();	
+	
+	var light2 = CVmLight();
+	light2.SetPosition([-10.0, 10.0, 10.0]);
+	light2.SetDiffuse(1, 1, 1);
+	light2.SetParameter(GL_CONSTANT_ATTENUATION, 1.0);
+	light2.SetParameter(GL_LINEAR_ATTENUATION, 0.9000);
+	light2.SetParameter(GL_QUADRATIC_ATTENUATION, 0.0000);
+	light2.Disable();
+	
+	aadd(mLights, light0);
+	aadd(mLights, light1);
+	aadd(mLights, light2);
+	
+	if(DEBUG_MODE)
+	{
+		// The current level takes as parameter the input manager, which is shared among every level
+		mCurrentLevel = Level0(mInputManager, mSoundManager, mLights);
+		mCurrentLevelNumber = 0;
+		
+		mElevator = mCurrentLevel.GetElevator();
+		mElevator.Unhide();
+		
+		// Sposto la camera in modo che sia dentro l'ascensore
+		mCamera.SetPosition(0, 6, -4);
+		
+		mCurrentLevel = Level1(mInputManager, mSoundManager);
+		mCurrentLevel.Init(mLights, mElevator);
+		
+		mFadingIn = false;
+		mFadingOut = false;
+	}
+	else 
+	{
+	
+		// The current level takes as parameter the input manager, which is shared among every level
+		mCurrentLevel = Level0(mInputManager, mSoundManager, mLights);
+		mCurrentLevelNumber = 0;
+		
+		mElevator = mCurrentLevel.GetElevator();
+		
+		mLevel1 = Level1(mInputManager, mSoundManager);
+
+		mFadeToBlackAlpha = 1;
+		mFadingIn = true;
+		mFadingOut = false;
+	}
+}
+
+
+/*
+ * Render function. It delegates the job to the current level or the menu manager
+ */
+function GameManager::Render()
+{
+	switch (mGameStatus) 
+	{
+		case STATUS_MENU:
+	//		mMenu.Render();
+			break;
+		case STATUS_INGAME:
+				mCurrentLevel.Render();
+				
+				DrawCrosshair();
+				
+				if(mFadingIn)
+				{
+					FadeToBlackScreen(true);
+					mFadingIn = mFadeToBlackAlpha > 0.0;
+				}
+				else if(mFadingOut)
+				{
+					FadeToBlackScreen(false);
+					mFadingOut = mFadeToBlackAlpha < 1.0;
+				}
+			break;
+		default:
+			break;
+	}
+}
+
+/*
+ * Update logic function. It delegates the job to the current level or the menu manager
+ */
+function GameManager::UpdateLogic(dt)
+{
+	
+	switch (mGameStatus) {
+		
+		case STATUS_MENU:
+		
+			break;
+		case STATUS_INGAME:	
+			
+			
+	//		if (KeyPressed(VK_ESCAPE, false)) {
+	//			mMenu.SetMenuType(MENU_INGAME);
+	//			mGameStatus = GAME_MENU;
+	//		}
+				
+			mCurrentLevel.UpdateLogic(dt);
+			
+			if(mCurrentLevel.IsLevelCompleted())
+			{
+	//			mCurrentLevel = Level1(mInputManager, mSoundManager, mElevator);
+				mCurrentLevel = mLevel1;
+				mCurrentLevel.Init(mLights, mElevator);
+	//			mSoundManager.FadeOutMusic(10, 0);
+	//			mFadingOut = true;
+			}
+			
+			break;
+			
+		default:
+			break;
+	}
+}
+
+function GameManager::DrawCrosshair()
+{
+	// This array will contain at position 2 the width of the viewport, and at 3 its height
+	var viewport = array(4);
+	viewport = glget(GL_VIEWPORT);
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, viewport[2], viewport[3], 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    
+    glEnable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    
+    glDisable( GL_LIGHTING );
+    
+    glLineWidth(2.0);
+    
+    
+    glBegin(GL_LINES);
+    	glColor(0.0, 0.0, 0.0, 1.0);
+        //horizontal line
+        glVertex(viewport[2] / 2 - 7, viewport[3] / 2);
+        glVertex(viewport[2] / 2 + 7, viewport[3] / 2);
+        glEnd();
+        //vertical line
+        glBegin(GL_LINES);
+        glVertex(viewport[2] / 2, viewport[3] / 2 + 7);
+        glVertex(viewport[2] / 2, viewport[3] / 2 - 7);
+    glEnd();
+        
+    // Drawing the crosshair as a really small black rectangle; I don't know why, but drawing points doesn't work (they simply don't appear)
+//    glBegin(GL_QUADS);              
+//      glColor(0.0, 0.0, 0.0, 1.0); 
+//      glVertex(-0.002, -0.002);    
+//      glVertex( 0.002, -0.002);
+//      glVertex( 0.002,  0.002);
+//      glVertex(-0.002,  0.002);
+////		glPointSize(100.0);
+////		glVertex(0.0, 0.0);
+////		glVertex(0.5, 0.5);
+//   	glEnd();
+	
+	glMatrixMode(GL_PROJECTION);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	
+	glEnable( GL_LIGHTING );
+}
+
+
+/*
+ * 
+ */
+function GameManager::FadeToBlackScreen(fadeIn)
+{
+	var viewport = array(4);
+	viewport = glget(GL_VIEWPORT);
+
+	if(fadeIn)
+		mFadeToBlackAlpha -= 0.006;
+	else
+		mFadeToBlackAlpha += 0.004;
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, viewport[2], viewport[4], 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    
+    glEnable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    
+    glDisable( GL_LIGHTING );
+    
+    glBegin(GL_QUADS);
+	    glColor(0.0, 0.0, 0.0, mFadeToBlackAlpha);
+	    glVertex(-1.0, -1.0);
+	    glVertex(1.0, -1.0);
+	    glVertex(1.0, 1.0);
+	    glVertex(-1.0, 1.0);
+	glEnd();
+	
+	glMatrixMode(GL_PROJECTION);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	
+	glEnable( GL_LIGHTING );
+}

@@ -1,0 +1,209 @@
+
+/*
+ * This class handles music and sounds. 
+ * Regarding sounds, it basically keeps track of them and little more.
+ * Regarding music, it implements a new useful methods such "fadeIn" or "fadeOut". In order to use these functionalities, the user must call 
+ * the method "UpdateMusic" inside its updateLogic method
+ */
+class SoundManager
+{
+	// List of sounds and the id for each of them
+	var mSounds;
+	var mIdList;
+	
+	// Current active music and its volume. There can be only 1 music at a time
+	var mMusic;
+	var mMusicVolume;
+	
+	// Booleans that states whether the music is fading in or out
+	var mIsFadingIn;
+	var mIsFadingOut;
+	
+	// Fading step, used to increase/decrease the volume smoothly; only used if the music is actually fading
+	var mFadingStep;
+	
+	// Ending volume for the fading effect; only used if the music is actually fading
+	var mFadingEndingVolume;
+	
+	// Public functions for sounds
+	AddSound(filename, id, volume);
+	PlaySound(id, resetFirst, volume);
+
+	// Public functions for music
+	SetMusic(name, volume, fadeIn);
+	PlayMusic();
+	StopMusic();
+	PauseMusic();
+	SetMusicVolume(value);
+	GetMusicVolume();
+	FadeInMusic(time, endingVolume);
+	FadeOutMusic(time, endingVolume);
+	UpdateMusic(dt);
+};
+
+/*
+ * Constructor
+ */
+function SoundManager::SoundManager()
+{
+	mSounds = {};
+	mIdList = {};
+	
+	mMusic = CVmMMMp3();
+	mIsFadingIn = false;
+	mIsFadingOut = false;
+	mFadingStep = 0;
+	mMusicVolume = 0;
+}
+
+/*
+ * Method that adds a new sound to the list
+ * 
+ * filename: (string) name of the sound file
+ * id: (anything) the id associated to the sound; it's used to play it
+ * volume: (float) the volume of the sound; not mandatory, can be set when the sound gets played
+ */
+function SoundManager::AddSound(filename, id, volume)
+{
+	var sound = CVmVRAWav(filename);
+	
+	if(volume != Void)
+		sound.SetVolume(volume);
+	else
+		sound.SetVolume(1);
+		
+	aadd(mSounds, sound);
+	aadd(mIdList, id);
+}
+
+/*
+ * Method to play the sound with the given id
+ * 
+ * id: (anything) the id associated to the sound
+ * resetFirst: (boolean) if true, the sound is played from the start; if false, it's played from where it was left off
+ * volume: (float) the volume of the sound
+ */
+function SoundManager::PlaySound(id, resetFirst, volume)
+{	
+	var found = false;
+		
+	// I find the sound with the given id (a map or an associative array would be best, but in XVR there is none)
+	for(var i = 0; i < len(mIdList) && !found; i++)
+	{
+		if(mIdList[i] == id)
+		{
+			found = true;
+			
+			if(volume != Void)
+				mSounds[i].SetVolume(volume);
+				
+			// If it needs to be reseted, I use the seek method to put it at 0%
+			if(resetFirst)
+				mSounds[i].Seek(0);
+		
+			mSounds[i].Play();
+		}
+	}
+}
+
+
+/////// The methods below are for music management \\\\\\\
+
+
+/*
+ * Sets a new music
+ * 
+ * name: (string) the filename
+ * volume: (float) starting volume
+ * fadeIn: (boolean) if true, the music is fade in from volume 0 to the passed volume value, in a fixed time
+ * 
+ */
+function SoundManager::SetMusic(name, volume, fadeIn)
+{
+	mMusic.Load(name);
+
+	if(fadeIn)
+	{
+		mMusic.SetVolume(0);
+		FadeInMusic(7, volume);
+	}
+	else
+		mMusic.SetVolume(volume);
+}
+
+/*
+ * This method creates a "fade in" transition for the music. It can be used also to smoothly increase the volume from the current value to another one
+ * 
+ * time: (int) the time to go from the current music volume to the endingVolume; it's expressed in seconds
+ * endingVolume: (float) the volume it has to reach
+ */
+function SoundManager::FadeInMusic(time, endingVolume)
+{
+	// Only one of the 2 states can be true at one time; in this case, the music is fading in
+	mIsFadingIn = true;
+	mIsFadingOut = false;
+	
+	// I compute the fading step, i.e. the value the music's volume has to increase to at each update
+	mFadingStep = (endingVolume - mMusicVolume) / (time);
+	mFadingEndingVolume = endingVolume;
+}
+
+/*
+ * This method is the same as FadeInMusic, only it decreases the volume until it reaches the given endingVolume
+ */
+function SoundManager::FadeOutMusic(time, endingVolume)
+{
+	mIsFadingOut = true;
+	mIsFadingIn = false;
+	
+	mFadingStep = (endingVolume - mMusicVolume) / (time);
+	mFadingEndingVolume = endingVolume;
+}
+
+/*
+ * This method updates the music volume when there is an active fade in/out transition; it does nothing otherwise
+ * 
+ * dt: (float) the delta time between the previous frame and the current one
+ */
+function SoundManager::UpdateMusic(dt)
+{
+	if(mIsFadingIn || mIsFadingOut)
+	{
+		// I'm setting the new volume taking into account the step and the dt increment to make it smooth as requested
+		SetMusicVolume(mMusicVolume + mFadingStep * dt);
+
+		// Check to see if the volume as reached the desidered level; in that case I state that the music is no longer fading, so when
+		// this method will be called it will do nothing
+		if((mIsFadingIn && mMusicVolume >= mFadingEndingVolume) || (mIsFadingOut && mMusicVolume <= mFadingEndingVolume))
+		{
+			mIsFadingIn = false;
+			mIsFadingOut = false;
+		}
+	}	
+}
+
+function SoundManager::PlayMusic()
+{
+	mMusic.Play();
+}
+
+function SoundManager::StopMusic()
+{
+	mMusic.Stop();
+}
+
+function SoundManager::PauseMusic()
+{
+	mMusic.Pause();
+}
+
+function SoundManager::SetMusicVolume(value)
+{
+	mMusic.SetVolume(value);
+	mMusicVolume = value;
+}
+
+function SoundManager::GetMusicVolume()
+{
+	return mMusicVolume;
+}
