@@ -254,7 +254,7 @@ function Clock::UpdateMinutesArrow(raycastStart, raycastEnd)
 		
 		angle += 270;
 		
-		print({"mMinutesArrowAngle", "angle + 270"}, {mMinutesArrowAngle, angle});
+//		print({"mMinutesArrowAngle", "angle + 270"}, {mMinutesArrowAngle, angle});
 		
 		
 //		if((mMinutesArrowAngle > 357 && angle < 3) || (mMinutesArrowAngle < 3 && angle > 357))
@@ -267,22 +267,34 @@ function Clock::UpdateMinutesArrow(raycastStart, raycastEnd)
 
 		var delta = angle - mMinutesArrowAngle;
 		
+		
+//		if(delta > 3)
+//			mDeltaAngle = 1;
+//		else
+//			mDeltaAngle = delta;
+		
 		if(delta > 0)
 			mDeltaAngle = 1;
 		else if(delta < 0)
 			mDeltaAngle = -1;
 		else
 			mDeltaAngle = 0;
+			
+			
+			
 //		mDeltaAngle = angle - mMinutesArrowAngle > 0 ? 1 : -1;
 		
 		mMinutesArrowAngle = angle > 359.5 ? 0 : angle;
 		
 		mAccumulator += mDeltaAngle;
 		
-		var quat = EulerToQuaternion([0, 0, angle]);
 		
-//		output(mDeltaAngle);
-//		output("\n");
+		if(mDeltaAngle > 2)
+		{
+//			output(mDeltaAngle);
+//			output("\n");
+		
+		}
 //		output(mMinutesArrowAngle + 90 + 90 + 90);
 //		output("\n");
 	}

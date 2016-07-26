@@ -56,7 +56,7 @@ class Level1
 	var mIsUsingClock;
 	
 	var mMainClock;
-//	var mPreviousArrowAngle;
+	var mTimeDirection;
 	
 	
 	// Private functions
@@ -143,9 +143,8 @@ function Level1::Level1(inputManager, soundManager)
 	mIsLevelCompleted = false;
 	
 	mElevatorTravelDistance = 100.0;
-	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 5.0;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
-	output(mElevatorTravelTime);
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
@@ -168,6 +167,8 @@ function Level1::Level1(inputManager, soundManager)
 	var fourth  = third + [0, 0, -6];
 	
 	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 1.0, true);
+	
+	mTimeDirection = 0;
 }
 
 
@@ -305,14 +306,27 @@ function Level1::UpdateLogic(dt)
 					
 					var deltaAngle = mMainClock.GetDeltaAngle();
 					
-					mAnimator.ChangeScaleFactors(deltaAngle * 5.0);
 					
-					if(deltaAngle / 10.0 < 0)
+					if(mTimeDirection == 0)
 					{
-//						output(deltaAngle / 10.0);
-//						output("\n");
-					
+						mTimeDirection = deltaAngle;
 					}
+					
+//					if(deltaAngle != 0){
+//						output(mTimeDirection);
+//						output("\n");
+//					}
+					
+					if(mTimeDirection != deltaAngle && deltaAngle != 0)
+					{
+//						output(mTimeDirection);
+//						output("\n");
+						mAnimator.InvertDirections();
+						mTimeDirection = deltaAngle;
+					}
+					
+					mAnimator.ChangeScaleFactors(abs(deltaAngle) * 5.0);
+					
 					
 					mAnimator.UpdateTransitions(dt);
     			}

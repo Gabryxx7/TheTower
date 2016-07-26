@@ -2,7 +2,7 @@
 #define STATUS_MENU     0
 #define STATUS_INGAME   1
 
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 
 #include "Level0.s3d"
 #include "Level1.s3d"
