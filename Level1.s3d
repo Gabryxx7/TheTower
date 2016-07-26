@@ -166,7 +166,10 @@ function Level1::Level1(inputManager, soundManager)
 	var third = second + [4.5, 0, 0];
 	var fourth  = third + [0, 0, -6];
 	
-	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 1.0, true);
+//	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 1.0, true);
+//	mAnimator.CreateTransition(sphere, first, {second, third}, 1.0, true);
+	
+	mAnimator.CreateTransition(sphere, first, second, 1.0, true);
 	
 	mTimeDirection = 0;
 }

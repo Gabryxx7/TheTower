@@ -63,6 +63,7 @@ class Animator
 	
 	
 	var mAreWaypointsInverted;
+	var mEndingPositionsArray;
 	
 	// Public functions
 	CreateTransition(object, startingPos, endingPos, time, loop);
@@ -102,6 +103,7 @@ function Animator::Animator()
 	mReverseArray = {};
 	
 	mAreWaypointsInverted = false;
+	mEndingPositionsArray = {};
 }
 
 /* Method that creates a transition from startingPos to endingPos in the given time. Ending pos can be an array of positions, and if it is it will
@@ -155,7 +157,7 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 	{		
 		// If this object doesn't have transitions, I state so by putting "false" in the array; the other values in the other arrays are not meaningful
 		aadd(mHasWaypointsArray, false);
-		aadd(mWaypointsArray, Void);
+		aadd(mWaypointsArray, endingPos);
 		aadd(mWaypointsCounterArray, 0);
 	}
 	
@@ -269,6 +271,8 @@ function Animator::UpdateTransitions(dt)
 			
 //			print({"i", "startingPosition", "currentPosition", "counter", "distanceNow", "distanceEnd"}, {i, startingPosition, currentPosition, mWaypointsCounterArray[i], Modulus(startingPosition - currentPosition), distance});
 			
+//			print("pos", currentPosition);
+			
 	
 			// Now I compute the distance traveled from the starting position to the current one; if it's greater or equal than the total distance, I'm done
 			if(Modulus(startingPosition - currentPosition) >= distance)
@@ -289,6 +293,10 @@ function Animator::UpdateTransitions(dt)
 						// I compute the new distance and direction
 						distance = Modulus(endpoint - currentPosition);
 						direction = Norm(endpoint - currentPosition);
+						
+						output("\nYO new direction: ");	
+						output(direction);
+						output("\n");
 						
 						// I modify the previous distance and direction in the given arrays with the new ones
 						mDistanceArray[i] = distance;
@@ -330,7 +338,14 @@ function Animator::UpdateTransitions(dt)
 				else if(mIsLoopArray[i])
 			    {
 				 	mDirectionsArray[i] = -mDirectionsArray[i];
+				 	mWaypointsArray[i] = mStartingPositions[i];
 				 	mStartingPositions[i] = currentPosition;
+				 	
+//				 	output("new starting: ");
+//				 	output(mStartingPositions[i]);
+//				 	output("new ending: ");
+//				 	output(mWaypointsArray[i]);
+//				 	output("\n");
 				}
 				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
 				else
@@ -404,10 +419,21 @@ function Animator::InvertDirections()
 		{		
 			output("mAreWaypointsInverted: " );
 			output(mAreWaypointsInverted);
-			output("; previous counter: ");	
+			output("; waypoints: ");	
+			output(waypoints);
+			output(";\n previous counter: ");	
 			output(mWaypointsCounterArray[i]);
 			output("; prev distance: ");	
 			output(mDistanceArray[i]);
+			output("; prev endpoint: ");	
+			output(waypoints[mWaypointsCounterArray[i]]);
+			output("; prev direction: ");	
+			output(mDirectionsArray[i]);
+			output("; prev start: ");	
+			output(mStartingPositions[i]);
+			
+			
+			mStartingPositions[i] = waypoints[mWaypointsCounterArray[i]];
 			
 			if(mAreWaypointsInverted && mWaypointsCounterArray[i] > 0)
 				mWaypointsCounterArray[i]--;
@@ -419,57 +445,60 @@ function Animator::InvertDirections()
 			if(mIsLoopArray[i])
 				mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
 			
-			output("; next counter: ");	
+			
+			output("\n prev endpoint - mStartingPositions[i]: ");
+			output(Norm(waypoints[mWaypointsCounterArray[i]] - mStartingPositions[i]));
+			output("; opposite: ");
+			output(Norm(mStartingPositions[i] - waypoints[mWaypointsCounterArray[i]]));
+			output("\n");
+			output(";\n next counter: ");	
 			output(mWaypointsCounterArray[i]);
-			output("; waypoints: ");	
-			output(waypoints);
+
 			
 			
 			
-			mStartingPositions[i] = mObjects[i].GetPosition();
-			var endpoint = waypoints[mWaypointsCounterArray[i]];
+//			mStartingPositions[i] = mObjects[i].GetPosition();
+//			var endpoint = waypoints[mWaypointsCounterArray[i]];
 			
-			var distance = Modulus(endpoint - mStartingPositions[i]);
-			var direction = Norm(endpoint - mStartingPositions[i]);
+//			var distance = Modulus(endpoint - mStartingPositions[i]);
+//			var direction = -Norm(endpoint - mStartingPositions[i]);
 			
 			// I modify the previous distance and direction in the given arrays with the new ones
-			mDistanceArray[i] = distance;
-			mDirectionsArray[i] = direction;
+//			mDistanceArray[i] = distance;
+			mDirectionsArray[i] = -mDirectionsArray[i];
 			
-			output("; new distance: ");	
-			output(distance);
-			output(";\n new endpoint: ");	
-			output(endpoint);
-			output("\n");
-			
-			var xSpeed = abs((mStartingPositions[i].x - endpoint.x) / mTimeArray[i]);
-			var ySpeed = abs((mStartingPositions[i].y - endpoint.y) / mTimeArray[i]);
-			var zSpeed = abs((mStartingPositions[i].z - endpoint.z) / mTimeArray[i]);
-									
-			mXSpeedArray[i] = xSpeed;
-			mYSpeedArray[i] = ySpeed;
-			mZSpeedArray[i] = zSpeed;
-		}
-		
-//		if(mHasWaypointsArray[i])
-//		{
-//			var waypoints = mWaypointsArray[i];
-//			var length = len(waypoints);
-//			
-//			output("before: ");
-//			output(waypoints);
-//			
-//			for(var j = 0; j < length / 2; j++)
-//			{
-//			    var temp = waypoints[j];
-//			    waypoints[j] = waypoints[length - j - 1];
-//			    waypoints[length - j - 1] = temp;
-//			}
-//			
-//			output("; after: ");
-//			output(waypoints);
+//			output("; new distance: ");	
+//			output(distance);
+//			output("; new endpoint: ");	
+//			output(endpoint);
+//			output("; new direction: ");	
+//			output(direction);
+//			output("; new start: ");	
+//			output(mStartingPositions[i]);
 //			output("\n");
-//		}
+//			output("endpoint - mStartingPositions[i]: ");
+//			output(Norm(endpoint - mStartingPositions[i]));
+//			output("; opposite: ");
+//			output(Norm(mStartingPositions[i] - endpoint));
+//			output("\n");
+			
+//			var xSpeed = abs((mStartingPositions[i].x - endpoint.x) / mTimeArray[i]);
+//			var ySpeed = abs((mStartingPositions[i].y - endpoint.y) / mTimeArray[i]);
+//			var zSpeed = abs((mStartingPositions[i].z - endpoint.z) / mTimeArray[i]);
+//									
+//			mXSpeedArray[i] = xSpeed;
+//			mYSpeedArray[i] = ySpeed;
+//			mZSpeedArray[i] = zSpeed;
+		}
+		else
+		{
+			
+			mDirectionsArray[i] = -mDirectionsArray[i];
+			
+			var tmp = mStartingPositions[i];
+		 	mStartingPositions[i] = mWaypointsArray[i];
+		 	mWaypointsArray[i] = tmp;
+		}
 	}
 }
 
