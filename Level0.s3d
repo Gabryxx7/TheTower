@@ -808,8 +808,8 @@ function Level0::UpdateLogic(dt)
 			var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 			var rightDoorPos = mElevator.GetRightDoor().GetPosition();
 			
-			mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, leftDoorPos - [PORTAL_ROOM_FAR_WALL_WIDTH/3 + 0.1, 0, 0], 2.0, false);
-			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, rightDoorPos + [PORTAL_ROOM_FAR_WALL_WIDTH/3 + 0.1, 0, 0], 2.0, false);
+			mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 			
 			mIsElevatorOpen = true;
 			mSoundManager.PlaySound(6, true, 1);
@@ -820,10 +820,10 @@ function Level0::UpdateLogic(dt)
 			var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 			var rightDoorPos = mElevator.GetRightDoor().GetPosition();
 			
-			mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, leftDoorPos + [PORTAL_ROOM_FAR_WALL_WIDTH/3 + 0.1, 0, 0], 1.0, false);
-			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, rightDoorPos - [PORTAL_ROOM_FAR_WALL_WIDTH/3 + 0.1, 0, 0], 1.0, false);
+			mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+			
 			mIsElevatorOpen = false;
-//			mSoundManager.FadeOutMusic(10, 0);
 			endText.Unhide();
 			
 			mElevator.SetLightsRange(1, 1);

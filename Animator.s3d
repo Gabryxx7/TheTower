@@ -61,19 +61,18 @@ class Animator
 	var mAxisArray;
 	var mReverseArray;
 	
-	
-	var mAreWaypointsInverted;
-	var mEndingPositionsArray;
+	// Boolean used to indicate whether the waypoints of transitions are inverted or not
+	var mAreTransitionsInverted;
 	
 	// Public functions
 	CreateTransition(object, startingPos, endingPos, time, loop);
-	RemoveTransitionByObject(object);
+	RemoveTransitionByObject(object, isRotating);
 	CreatePathTransition(object, waypoints, time, loop);
 	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	ChangeScaleFactors(newFactor);
 	
 	// Private functions
-	InvertDirections();
+	InvertTransitions();
 	UpdateTransitions(dt);
 	RemoveTransitionByIndex(index);
 };
@@ -102,8 +101,7 @@ function Animator::Animator()
 	mAngleDeltaArray = {};
 	mReverseArray = {};
 	
-	mAreWaypointsInverted = false;
-	mEndingPositionsArray = {};
+	mAreTransitionsInverted = false;
 }
 
 /* Method that creates a transition from startingPos to endingPos in the given time. Ending pos can be an array of positions, and if it is it will
@@ -118,6 +116,9 @@ function Animator::Animator()
  */
 function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 {
+	// If there is already a transition active for the object, I remove it ("false" indicates a movement transition); if there isn't this doesn't do anything
+	RemoveTransitionByObject(object, false);
+	
 	// For starter, I move the object to the starting position, in case it wasn't there already
 	object.SetPosition(startingPos);
 	
@@ -155,7 +156,8 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 	}
 	else
 	{		
-		// If this object doesn't have transitions, I state so by putting "false" in the array; the other values in the other arrays are not meaningful
+		// If this object doesn't have transitions, I state so by putting "false" in the array; I also save the ending position in the waypoints array, even though
+		// technically there are no waypoints (but it saves space)
 		aadd(mHasWaypointsArray, false);
 		aadd(mWaypointsArray, endingPos);
 		aadd(mWaypointsCounterArray, 0);
@@ -202,6 +204,9 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
  */
 function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse)
 {		
+	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
+	RemoveTransitionByObject(object, true);
+	
 	// First off, I'm setting the starting rotation
 	object.SetRotation(startingAngle, axis);
 	
@@ -268,11 +273,6 @@ function Animator::UpdateTransitions(dt)
 			
 			// Setting the new position
 			object.SetPosition(currentPosition);
-			
-//			print({"i", "startingPosition", "currentPosition", "counter", "distanceNow", "distanceEnd"}, {i, startingPosition, currentPosition, mWaypointsCounterArray[i], Modulus(startingPosition - currentPosition), distance});
-			
-//			print("pos", currentPosition);
-			
 	
 			// Now I compute the distance traveled from the starting position to the current one; if it's greater or equal than the total distance, I'm done
 			if(Modulus(startingPosition - currentPosition) >= distance)
@@ -283,9 +283,13 @@ function Animator::UpdateTransitions(dt)
 					// Getting all the waypoints
 					var waypoints = mWaypointsArray[i];
 					
+					// If waypoints are inverted and we reached the first one (which now is the last) and the transition isn't looping, I end the transition
+					if(mAreTransitionsInverted && mWaypointsCounterArray[i] == 0 && !mIsLoopArray[i]) 
+						RemoveTransitionByIndex(i);
 					// Checking if there is still at least one waypoints to travel to
-					if(mWaypointsCounterArray[i] < len(waypoints))
+					else if(mWaypointsCounterArray[i] < len(waypoints))
 					{
+						
 						// In that case I take the new waypoint and I set as new starting position the current one
 						var endpoint = waypoints[mWaypointsCounterArray[i]];
 						mStartingPositions[i] = currentPosition;
@@ -293,11 +297,7 @@ function Animator::UpdateTransitions(dt)
 						// I compute the new distance and direction
 						distance = Modulus(endpoint - currentPosition);
 						direction = Norm(endpoint - currentPosition);
-						
-						output("\nYO new direction: ");	
-						output(direction);
-						output("\n");
-						
+										
 						// I modify the previous distance and direction in the given arrays with the new ones
 						mDistanceArray[i] = distance;
 						mDirectionsArray[i] = direction;
@@ -314,18 +314,18 @@ function Animator::UpdateTransitions(dt)
 						// If this object has also to loop, I increment the waypoint counter with the modulo, so that when it reaches the last waypoint it 
 						// starts again from the starting position (which was put as element 0 in the array "waypoints" when the rotation transition was created);
 						// otherwise I simply update the waypoint counter
-//						if(mIsLoopArray[i])
-//							mWaypointsCounterArray[i] = (mWaypointsCounterArray[i] + 1 ) % len(waypoints);
-//						else
-//							mWaypointsCounterArray[i]++;
-							
-						if(mAreWaypointsInverted && mWaypointsCounterArray[i] > 0)
+
+						// Now I have to change the counter to point to the transition I will have to visit after the current one (i.e., if I have waypoints
+						// X, Y and Z and I'm moving from X to Y, the counter will point to Z); this changes whether waypoints are reversed or not; in that 
+						// case we must decrement the counter, otherwise increment it
+						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
 							mWaypointsCounterArray[i]--;
-						else if(mAreWaypointsInverted)
+						else if(mAreTransitionsInverted)
 							mWaypointsCounterArray[i] = len(waypoints) - 1;
 						else
 							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
 						
+						// If we're also looping, we take the modulo of the counter so that we start from the beginning (this is only useful if we're incrementing)
 						if(mIsLoopArray[i])
 							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
 					}
@@ -333,19 +333,14 @@ function Animator::UpdateTransitions(dt)
 					else
 						RemoveTransitionByIndex(i);
 				}
-				// If the object doesn't have waypoints but is looping, I invert the sign of the direction and putting as starting position the current one.
-				// The rest (distance to travel, speed and so on) obviously stay the same
+				// If the object doesn't have waypoints but is looping, I invert the sign of the direction and putting as starting position the current one;
+				// I also save the final position in the mWaypointsArray, although technically it doesn't have waypoints.
+				// The rest (distance to travel, speed and so on) obviously stays the same
 				else if(mIsLoopArray[i])
 			    {
 				 	mDirectionsArray[i] = -mDirectionsArray[i];
 				 	mWaypointsArray[i] = mStartingPositions[i];
 				 	mStartingPositions[i] = currentPosition;
-				 	
-//				 	output("new starting: ");
-//				 	output(mStartingPositions[i]);
-//				 	output("new ending: ");
-//				 	output(mWaypointsArray[i]);
-//				 	output("\n");
 				}
 				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
 				else
@@ -369,12 +364,18 @@ function Animator::UpdateTransitions(dt)
 			object.Rotate(increment, axis);
 			
 			// I update the current angle with the absolute value of the current increment; I always consider the angle positive to simplify computations
-			//  in case the rotation is in a loop and also needs to be reversed
-			currentAngle += abs(increment);
+			// in case the rotation is in a loop and also needs to be reversed.
+			// If the transitions are inverted, I decrement
+			if(!mAreTransitionsInverted)
+				currentAngle += abs(increment);
+			else
+				currentAngle -= abs(increment);
 			
-			
+			// If the transitions are inverted, we're NOT looping and the angle reached the starting angle, I end the transition
+			if(mAreTransitionsInverted && !mIsLoopArray[i] && currentAngle <= startingAngle)
+				RemoveTransitionByIndex(i);
 			// If the current angle is greater or equal then the total angle distance it has to rotate to, we're done (almost)
-			if(currentAngle >= abs(finalAngle - startingAngle))
+			else if(currentAngle >= abs(finalAngle - startingAngle))
 			{
 				// If the object has to loop and also reverse (i.e. go back from the final angle to the starting angle and repeat), I invert the speed 
 				// value so that it rotates in the opposite direction and reset the delta value so I can check again the angle distance
@@ -397,117 +398,116 @@ function Animator::UpdateTransitions(dt)
 	}
 }
 
+/*
+ * This method changes che scaling factor used when updating the objects positions. Higher values means that the objects will move faster, while lower values
+ * means slower objects. The default value is 1; below 1 they get slower.
+ * 
+ * newFactor: (float) the new factor; must be a positive number. 
+ * 					  If it's 0, the objects will be static; 
+ * 					  if it's between 0 and 1, the objects will be slower;
+ * 				      if it's 1, the objects will move normally;
+ * 				      if it's between 1 and infinite, the objects will move faster.
+ */
 function Animator::ChangeScaleFactors(newFactor)
 {
+	// I change the scaling factor for every object
 	for(var i = 0; i < len(mScaleFactorArray); i++)
 		mScaleFactorArray[i] = newFactor;
 }
 
-function Animator::InvertDirections()
+/*
+ * This method will invert the directions of EVERY transitions (both movements and rotations); calling it twice will put things as they were
+ */
+function Animator::InvertTransitions()
 {
-	mAreWaypointsInverted = !mAreWaypointsInverted;
-	
-//	output("INVERTING\n");
-	
+	// I update the boolean that tells whether we're inverting or not
+	mAreTransitionsInverted = !mAreTransitionsInverted;
+		
+	// Scanning all the objects; we need to update some things for every type of transitions we have
 	for(var i = 0; i < len(mObjects); i++)
 	{
-//		output(i);
-//		output("\n");
-		var waypoints = mWaypointsArray[i];
-
-		if(mHasWaypointsArray[i])
-		{		
-			output("mAreWaypointsInverted: " );
-			output(mAreWaypointsInverted);
-			output("; waypoints: ");	
-			output(waypoints);
-			output(";\n previous counter: ");	
-			output(mWaypointsCounterArray[i]);
-			output("; prev distance: ");	
-			output(mDistanceArray[i]);
-			output("; prev endpoint: ");	
-			output(waypoints[mWaypointsCounterArray[i]]);
-			output("; prev direction: ");	
-			output(mDirectionsArray[i]);
-			output("; prev start: ");	
-			output(mStartingPositions[i]);
-			
-			
-			mStartingPositions[i] = waypoints[mWaypointsCounterArray[i]];
-			
-			if(mAreWaypointsInverted && mWaypointsCounterArray[i] > 0)
-				mWaypointsCounterArray[i]--;
-			else if(mAreWaypointsInverted)
-				mWaypointsCounterArray[i] = len(waypoints) - 1;
+		// If it's not rotating...
+		if(!mIsRotatingArray[i])
+		{
+			// If it has waypoints we need to change the current waypoint's starting poisition with the ending position, and invert the directions;
+			// i.e., if we're moving from A to B with direction 1, we need to use as new starting position B and ending position A, with direction -1
+			if(mHasWaypointsArray[i])
+			{		
+				var waypoints = mWaypointsArray[i];
+				
+				var newStartingPosCounter = 0;
+				
+				// Finding the new starting point is a bit messy; the whole thing could have been handled better. Basically if we're going backwards we need
+				// to take as starting position the previous one in the counter of the waypoints, but I need to make sure that if the counter is at position 0
+				// it goes to the last waypoint instead. Otherwise, if we're going forward (and previously we were going backward) I simply increment
+				// the counter and do the modulo operation so that we start at the beginning of the array if we're at the end
+				if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+					newStartingPosCounter = mWaypointsCounterArray[i] - 1;
+				else if(mAreTransitionsInverted)
+					newStartingPosCounter = len(waypoints) - 1;
+				else 
+					newStartingPosCounter = (mWaypointsCounterArray[i] + 1) % len(waypoints);
+					
+				// Setting the new starting position from the counter we found
+				mStartingPositions[i] = waypoints[newStartingPosCounter];
+				
+				// Now I need to find the new counter, i.e. the index of the waypoint we're going to move to next. NEXT. Not the waypoint we're moving to now.
+				// It's a bit confusing and I could have handle it better. To find the new counter I first need to find the index of the current
+				var newCounter = 0;
+				var found = false;
+				
+				for(newCounter = 0; newCounter < len(waypoints) && !found; newCounter++)
+				{
+					if(mStartingPositions[i].x == waypoints[newCounter].x && mStartingPositions[i].y == waypoints[newCounter].y && mStartingPositions[i].z == waypoints[newCounter].z)
+					{
+						found = true;
+					}
+				}
+					
+				newCounter--;
+	
+				if(mAreTransitionsInverted)
+				{
+					if(newCounter > 1)
+						newCounter -= 2;
+					else if (newCounter == 1)
+						newCounter = len(waypoints) - 1;
+					else
+						newCounter = len(waypoints) - 2;
+				}
+				else
+					newCounter = (newCounter + 2) % len(waypoints);
+	
+					
+				mWaypointsCounterArray[i] = newCounter;
+	
+				mDirectionsArray[i] = -mDirectionsArray[i];
+			}
 			else
-				mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
-			
-			if(mIsLoopArray[i])
-				mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
-			
-			
-			output("\n prev endpoint - mStartingPositions[i]: ");
-			output(Norm(waypoints[mWaypointsCounterArray[i]] - mStartingPositions[i]));
-			output("; opposite: ");
-			output(Norm(mStartingPositions[i] - waypoints[mWaypointsCounterArray[i]]));
-			output("\n");
-			output(";\n next counter: ");	
-			output(mWaypointsCounterArray[i]);
-
-			
-			
-			
-//			mStartingPositions[i] = mObjects[i].GetPosition();
-//			var endpoint = waypoints[mWaypointsCounterArray[i]];
-			
-//			var distance = Modulus(endpoint - mStartingPositions[i]);
-//			var direction = -Norm(endpoint - mStartingPositions[i]);
-			
-			// I modify the previous distance and direction in the given arrays with the new ones
-//			mDistanceArray[i] = distance;
-			mDirectionsArray[i] = -mDirectionsArray[i];
-			
-//			output("; new distance: ");	
-//			output(distance);
-//			output("; new endpoint: ");	
-//			output(endpoint);
-//			output("; new direction: ");	
-//			output(direction);
-//			output("; new start: ");	
-//			output(mStartingPositions[i]);
-//			output("\n");
-//			output("endpoint - mStartingPositions[i]: ");
-//			output(Norm(endpoint - mStartingPositions[i]));
-//			output("; opposite: ");
-//			output(Norm(mStartingPositions[i] - endpoint));
-//			output("\n");
-			
-//			var xSpeed = abs((mStartingPositions[i].x - endpoint.x) / mTimeArray[i]);
-//			var ySpeed = abs((mStartingPositions[i].y - endpoint.y) / mTimeArray[i]);
-//			var zSpeed = abs((mStartingPositions[i].z - endpoint.z) / mTimeArray[i]);
-//									
-//			mXSpeedArray[i] = xSpeed;
-//			mYSpeedArray[i] = ySpeed;
-//			mZSpeedArray[i] = zSpeed;
+			{
+				mDirectionsArray[i] = -mDirectionsArray[i];
+				
+				var tmp = mStartingPositions[i];
+			 	mStartingPositions[i] = mWaypointsArray[i];
+			 	mWaypointsArray[i] = tmp;
+			}
 		}
 		else
 		{
-			
-			mDirectionsArray[i] = -mDirectionsArray[i];
-			
-			var tmp = mStartingPositions[i];
-		 	mStartingPositions[i] = mWaypointsArray[i];
-		 	mWaypointsArray[i] = tmp;
+//			mDirectionsArray[i] = -mDirectionsArray[i];
+//				
+//			var tmp = mStartingPositions[i];
+//		 	mStartingPositions[i] = mWaypointsArray[i];
+//		 	mWaypointsArray[i] = tmp;
+			mXSpeedArray[i] = -mXSpeedArray[i];
 		}
 	}
 }
 
 /*
- * This (public) method that removes an object from the active transitions/rotations;
- * Note: if the object has more than one transition or rotation active, this method will remove only one of them, so it could be improved.
- * Or simply, if there are N transition active, the user could call this method N times in a row
+ * This (public) method that removes an object from the active transitions/rotations. To use it, you have to specify the type of transition (rotating or not)
  */
-function Animator::RemoveTransitionByObject(object)
+function Animator::RemoveTransitionByObject(object, isRotating)
 {
 	var found = false;
 	
@@ -515,8 +515,10 @@ function Animator::RemoveTransitionByObject(object)
 	{
 		found = mObjects[i] == object;
 		
-		if(found)
+		if(found && mIsRotatingArray[i] == isRotating)
 			RemoveTransitionByIndex(i);
+		else
+			found = false;
 	}
 }
 
@@ -544,127 +546,6 @@ function Animator::RemoveTransitionByIndex(index)
 	adel(mFinalAngleArray, index);
 	adel(mAxisArray, index);
 	adel(mAngleDeltaArray, index);
-	
-	output("yeah: ");
-	output(len(mObjects));
-	output("\n");
 }
 
-
-/* This function has a different version of the waypoints system, in which the loop is basically implemented as "reversed", meaning that
- * when the object reaches the last waypoint it doesn't go back to the starting position but visits the waypoints in the opposite order.
- * The code is kinda bad, but I leave it as a reference in case it's needed in the future
- */
- 
-//function Animator::UpdateTransitions(dt)
-//{
-//	for(var i = 0; i < len(mObjects); i++)
-//	{
-//		var object = mObjects[i];
-//		var currentPosition = object.GetPosition();
-//		var startingPosition = mStartingPositions[i];
-//		var distance = mDistanceArray[i];
-//		var direction = mDirectionsArray[i];
-//		var xSpeed = mXSpeedArray[i];
-//		var ySpeed = mYSpeedArray[i];
-//		var zSpeed = mZSpeedArray[i];
-//
-//		currentPosition.x += direction.x * dt * xSpeed;
-//		currentPosition.y += direction.y * dt * ySpeed;
-//		currentPosition.z += direction.z * dt * zSpeed;
-//		
-//		object.SetPosition(currentPosition);
-//		
-//		if(Modulus(startingPosition - currentPosition) >= distance)
-//		{
-//			if(mHasWaypointsArray[i])
-//			{
-//				var waypoints = mWaypointsArray[i];
-//				
-//				if(mIsLoopArray[i] && mFinishedWaypointsArray[i])
-//				{				
-//					var endpoint = waypoints[mWaypointsCounterArray[i]];
-//					mStartingPositions[i] = currentPosition;
-//					
-//					distance = Modulus(endpoint - currentPosition);
-//					direction = Norm(endpoint - currentPosition);
-//					
-//					mDistanceArray[i] = distance;
-//					mDirectionsArray[i] = direction;
-//					
-//					xSpeed = abs((currentPosition.x - endpoint.x) / mTime);
-//					ySpeed = abs((currentPosition.y - endpoint.y) / mTime);
-//					zSpeed = abs((currentPosition.z - endpoint.z) / mTime);
-//					
-//					mXSpeedArray[i] = xSpeed;
-//					mYSpeedArray[i] = ySpeed;
-//					mZSpeedArray[i] = zSpeed;
-//										
-//					mWaypointsCounterArray[i]--;
-//
-//					
-//					if(mWaypointsCounterArray[i] < 0)
-//					{
-//						mFinishedWaypointsArray[i] = false;
-//						mWaypointsCounterArray[i]++;
-//						mWaypointsCounterArray[i]++;
-//					}
-//										
-//					output("mWaypointsCounterArray ");
-//					output(mWaypointsCounterArray);
-//					output("; currentPosition ");
-//					output(currentPosition);
-//					output("\n");
-//				}
-//				else if(mWaypointsCounterArray[i] < len(waypoints) && !mFinishedWaypointsArray[i])
-//				{
-//					var endpoint = waypoints[mWaypointsCounterArray[i]];
-//					mStartingPositions[i] = currentPosition;
-//					
-//					distance = Modulus(endpoint - currentPosition);
-//					direction = Norm(endpoint - currentPosition);
-//					
-//					mDistanceArray[i] = distance;
-//					mDirectionsArray[i] = direction;
-//					
-//					xSpeed = abs((currentPosition.x - endpoint.x) / mTime);
-//					ySpeed = abs((currentPosition.y - endpoint.y) / mTime);
-//					zSpeed = abs((currentPosition.z - endpoint.z) / mTime);
-//					
-//					mXSpeedArray[i] = xSpeed;
-//					mYSpeedArray[i] = ySpeed;
-//					mZSpeedArray[i] = zSpeed;
-//										
-//					mWaypointsCounterArray[i]++;
-//					
-//					if(mWaypointsCounterArray[i] == len(waypoints))
-//					{
-//						mFinishedWaypointsArray[i] = true;
-//						mWaypointsCounterArray[i]--;
-//						mWaypointsCounterArray[i]--;
-//						
-//						output("yeah");
-//					output("\n");
-//					}
-//					
-//				}
-//				else
-//				{
-//					RemoveTransitionByIndex(i);
-//					output("yoooo");
-//					output("\n");
-//					}
-//			}
-//			else if(mIsLoopArray[i])
-//		    {
-//			 	mDirectionsArray[i] = -mDirectionsArray[i];
-//			 	mStartingPositions[i] = currentPosition;
-//			 	
-//			 	output("asdsadasd\n");
-//			}
-//			else
-//				RemoveTransitionByIndex(i);
-//		}
-//	}
-//}
 

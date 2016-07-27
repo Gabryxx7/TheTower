@@ -165,11 +165,20 @@ function Level1::Level1(inputManager, soundManager)
 	var second = first + [0, 0, 6];
 	var third = second + [4.5, 0, 0];
 	var fourth  = third + [0, 0, -6];
+	var fifth  = fourth + [1, 0, 2];
 	
+	mAnimator.CreateTransition(sphere, first, {second, third, fourth, fifth}, 2.0, true);
 //	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 1.0, true);
 //	mAnimator.CreateTransition(sphere, first, {second, third}, 1.0, true);
 	
-	mAnimator.CreateTransition(sphere, first, second, 1.0, true);
+//	mAnimator.CreateTransition(sphere, first, second, 1.0, true);
+
+	global var flyingFuck2 = Text("Flying Fact");
+	flyingFuck2.SetPosition(sphere.GetPosition() + [-3, 0, 0]);
+	flyingFuck2.Rotate(90, 0, 1, 0);
+
+	// Transition and rotation for the flying fuck
+	mAnimator.CreateRotatingTransition(flyingFuck2, 0, 360 + 180, [0, 1, 0], 10.0, false, false);
 	
 	mTimeDirection = 0;
 }
@@ -197,6 +206,7 @@ function Level1::Render()
 				boxObj3.Draw();
 				mMainClock.Draw();
 				sphere.Draw();
+				flyingFuck2.Draw();
 				break;
 		}
 		
@@ -257,8 +267,8 @@ function Level1::UpdateLogic(dt)
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
 				
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, leftDoorPos - [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, rightDoorPos + [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
 			}
@@ -273,12 +283,10 @@ function Level1::UpdateLogic(dt)
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-				
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, leftDoorPos + [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, rightDoorPos - [mElevator.GetRoomWidth()/3 + 0.1, 0, 0], 2.0, false);
-				
-				output("yolooo\n");
-				
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
 				mLevelStatus = STATUS_LEVEL_STARTED;
 			}
 			
@@ -322,9 +330,7 @@ function Level1::UpdateLogic(dt)
 					
 					if(mTimeDirection != deltaAngle && deltaAngle != 0)
 					{
-//						output(mTimeDirection);
-//						output("\n");
-						mAnimator.InvertDirections();
+						mAnimator.InvertTransitions();
 						mTimeDirection = deltaAngle;
 					}
 					

@@ -24,12 +24,22 @@ class Elevator
 	var mLowerCornerWorld;
 	var mUpperCornerWorld;
 	
+	var mLeftDoorClosedPosition;
+	var mRightDoorClosedPosition;
+	
+	var mLeftDoorOpenPosition;
+	var mRightDoorOpenPosition;
+	
 	
 	// Public functions
 	Draw();
 	IsElevatorOpen();
 	GetLeftDoor();
 	GetRightDoor();
+	GetLeftDoorClosedPosition();
+	GetRightDoorClosedPosition();
+	GetLeftDoorOpenPosition();
+	GetRightDoorOpenPosition();
 	IsPointInElevator(point);
 	AddObject(object, x, y, z);
 	RemoveObject(object);
@@ -88,9 +98,15 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	mElevatorDoorLeftObj = CVmObj(mElevatorDoorLeftMesh);
 	mElevatorDoorRightObj = CVmObj(mElevatorDoorRightMesh);
 	
+	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0.1, 0, sideWallWidth];
+	mRightDoorClosedPosition = [elevatorWidth/4 - 0.1, 0, sideWallWidth];
+	
+	mLeftDoorOpenPosition = mLeftDoorClosedPosition - [GetRoomWidth()/3 + 0.1, 0, 0];
+	mRightDoorOpenPosition = mRightDoorClosedPosition + [GetRoomWidth()/3 + 0.1, 0, 0];
+	
 	// Adding the doors to the room
-	mElevatorRoom.AddObject(mElevatorDoorLeftObj, -elevatorWidth/4 - 0.1, 0, sideWallWidth);
-	mElevatorRoom.AddObject(mElevatorDoorRightObj, elevatorWidth/4 - 0.1, 0, sideWallWidth);
+	mElevatorRoom.AddObject(mElevatorDoorLeftObj, mLeftDoorClosedPosition.x, mLeftDoorClosedPosition.y, mLeftDoorClosedPosition.z);
+	mElevatorRoom.AddObject(mElevatorDoorRightObj, mRightDoorClosedPosition.x, mRightDoorClosedPosition.y, mRightDoorClosedPosition.z);
 	
 	mDistanceBetweenClosedDoors = Modulus(mElevatorDoorLeftObj.GetPosition() - mElevatorDoorRightObj.GetPosition());
 	
@@ -123,6 +139,30 @@ function Elevator::GetLeftDoor()
 function Elevator::GetRightDoor()
 {
 	return mElevatorDoorRightObj;
+}
+
+function Elevator::GetLeftDoorClosedPosition()
+{
+//	return [-elevatorWidth/4 - 0.1, 0, sideWallWidth];
+	return mLeftDoorClosedPosition;
+}
+
+function Elevator::GetRightDoorClosedPosition()
+{
+//	return [elevatorWidth/4 - 0.1, 0, sideWallWidth];
+	return mRightDoorClosedPosition;
+}
+
+function Elevator::GetLeftDoorOpenPosition()
+{
+//	return GetLeftDoorClosePosition + [GetRoomWidth()/3 + 0.1, 0, 0];
+	return mLeftDoorOpenPosition;
+}
+
+function Elevator::GetRightDoorOpenPosition()
+{
+//	return GetRightClosedPosition - [GetRoomWidth()/3 + 0.1, 0, 0];
+	return mRightDoorOpenPosition;
 }
 
 /*
