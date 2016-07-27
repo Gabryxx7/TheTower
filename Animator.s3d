@@ -430,7 +430,8 @@ function Animator::InvertTransitions()
 		if(!mIsRotatingArray[i])
 		{
 			// If it has waypoints we need to change the current waypoint's starting poisition with the ending position, and invert the directions;
-			// i.e., if we're moving from A to B with direction 1, we need to use as new starting position B and ending position A, with direction -1
+			// i.e., if we're moving from A to B with direction 1, we need to use as new starting position B and ending position A, with direction -1.
+			// These information are needed in order to the determine where the object needs to stop; simply inverting the direction doesn't work
 			if(mHasWaypointsArray[i])
 			{		
 				var waypoints = mWaypointsArray[i];
@@ -451,56 +452,46 @@ function Animator::InvertTransitions()
 				// Setting the new starting position from the counter we found
 				mStartingPositions[i] = waypoints[newStartingPosCounter];
 				
-				// Now I need to find the new counter, i.e. the index of the waypoint we're going to move to next. NEXT. Not the waypoint we're moving to now.
-				// It's a bit confusing and I could have handle it better. To find the new counter I first need to find the index of the current
-				var newCounter = 0;
-				var found = false;
+				var newWaypointsCounter = newStartingPosCounter;
 				
-				for(newCounter = 0; newCounter < len(waypoints) && !found; newCounter++)
-				{
-					if(mStartingPositions[i].x == waypoints[newCounter].x && mStartingPositions[i].y == waypoints[newCounter].y && mStartingPositions[i].z == waypoints[newCounter].z)
-					{
-						found = true;
-					}
-				}
-					
-				newCounter--;
-	
+				// Now I need to find the new counter, i.e. the index of the waypoint we're going to move to next. NEXT. Not the waypoint we're moving to now.
+				// It's a bit confusing and I could have handle it better. To find the new counter we start from the index of the starting position.
+				// The counter needs to point 2 indices AFTER this index, but depending whether we're reversing of going forward it's 2 indices before or after
+				// this one. So I need to check the cases and make sure that the counter remains in the boundaries of the array
 				if(mAreTransitionsInverted)
 				{
-					if(newCounter > 1)
-						newCounter -= 2;
-					else if (newCounter == 1)
-						newCounter = len(waypoints) - 1;
+					if(newWaypointsCounter > 1)
+						newWaypointsCounter -= 2;
+					else if (newWaypointsCounter == 1)
+						newWaypointsCounter = len(waypoints) - 1;
 					else
-						newCounter = len(waypoints) - 2;
+						newWaypointsCounter = len(waypoints) - 2;
 				}
 				else
-					newCounter = (newCounter + 2) % len(waypoints);
+					newWaypointsCounter = (newWaypointsCounter + 2) % len(waypoints);
 	
-					
-				mWaypointsCounterArray[i] = newCounter;
+				// Setting the new counter
+				mWaypointsCounterArray[i] = newWaypointsCounter;
 	
+				// Inverting the direction, so that the object goes back where it came from
 				mDirectionsArray[i] = -mDirectionsArray[i];
 			}
+			// If the object doesn't have waypoints...
 			else
 			{
+				// I invert the direction
 				mDirectionsArray[i] = -mDirectionsArray[i];
 				
+				// I swap the starting position with the ending position (which is held in the mWaypointsArray to save space), so we can check 
+				// in the update method if the object reached the end of the transition or not
 				var tmp = mStartingPositions[i];
 			 	mStartingPositions[i] = mWaypointsArray[i];
 			 	mWaypointsArray[i] = tmp;
 			}
 		}
+		// If the object is involved in a rotation transition, I simply need to invert its speed, so it goes backward
 		else
-		{
-//			mDirectionsArray[i] = -mDirectionsArray[i];
-//				
-//			var tmp = mStartingPositions[i];
-//		 	mStartingPositions[i] = mWaypointsArray[i];
-//		 	mWaypointsArray[i] = tmp;
 			mXSpeedArray[i] = -mXSpeedArray[i];
-		}
 	}
 }
 

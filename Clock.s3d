@@ -1,0 +1,233 @@
+
+/*
+ * Class that represents a Clock, with methods that handle rotating the arrows with certain angles
+ */
+class Clock
+{
+	var mArrowsWidth;
+	var mArrowsDepth;
+	var mMinutesArrowHeight;
+	var mHoursArrowHeight;
+	
+	var clockSphereSegments;
+	var clockSphereRadius;
+	var clockSphereThickness;
+	
+	var mMinutesArrowObj;
+	var mHoursArrowObj;
+	var mClockObj;
+	
+	// Angle of the minutes arrow
+	var mMinutesArrowAngle;
+	
+	// Direction of the minutes arrow; it's 1 if the arrow is going clockwise, 0 if it's still and -1 if it's counter-clockwise
+	var mArrowDirection;
+	
+	// Increment value of the hour arrow when the minute's arrow is manually moved
+	var mHourArrowRotationIncrement;
+	
+	
+	// Public functions
+	Draw();
+	GetObj();
+	SetLightsRange(min, max);
+	GetLightsRange();
+	LocalToWorld(point);
+	SetPosition(position);
+	GetPosition();
+	Rotate(angle, x, y, z);
+	SetRotation(angle, x, y, z);
+	Translate(x, y, z);
+	IsColliding(raycastStart, raycastEnd, contactPoint);
+	UpdateMinutesArrow(raycastStart, raycastEnd);
+	GetArrowDirection();
+};
+
+function Clock::Clock()
+{
+	mArrowsWidth = 0.02;
+	mArrowsDepth = 0.01;
+	mMinutesArrowHeight = 0.8;
+	mHoursArrowHeight = 0.4;
+	
+	clockSphereSegments = 30;
+	clockSphereRadius = 1;
+	clockSphereThickness = 0.02;
+	
+	var minutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
+	mMinutesArrowObj = CVmObj(minutesArrowMesh);
+	mMinutesArrowObj.SetPivotPoint(0, 0, 0);
+	
+	var hoursArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mHoursArrowHeight, mArrowsDepth]); 
+	mHoursArrowObj = CVmObj(hoursArrowMesh);
+	mHoursArrowObj.SetPivotPoint(0, 0, 0);
+	
+	var clockMesh = CVmNewMesh(VRP_SPHERE, clockSphereSegments, clockSphereRadius, 1);  	
+	clockMesh.Scale(1, 1, clockSphereThickness);
+	mClockObj = CVmObj(clockMesh);
+	
+	mClockObj.AddChild(mMinutesArrowObj, 0.0, 0.10, -0.06);
+	mClockObj.AddChild(mHoursArrowObj, 0.0, 0.09, -0.05);
+
+	mMinutesArrowAngle = 0;
+	mArrowDirection = 0;
+	
+	// This value is not perfect, meaning that if the minute arrow move "1 hour", the hour arrow won't necessarily move 1 hour. I found a value that seemed good
+	// enough; the exact value is irrelevant, since when the minute arrow gets moved for example by a click somewhere in the clock, the minute arrow will
+	// start moving from there; they basically have different times anyway, unless the player starts moving the arrow exactly where it starts (at noon o'clock)
+	mHourArrowRotationIncrement = 0.3;
+}
+
+/*
+ * Method that checks wheteher the given ray intersects the clock
+ */
+function Clock::IsColliding(raycastStart, raycastEnd, contactPoint)
+{	
+	return mClockObj.IsColliding(raycastStart, raycastEnd, &contactPoint);
+}
+
+/*
+ * This method updates the minutes arrow position in respect of the angle between the arrow and the intersection of the ray with the plane where the arrow lays
+ * 
+ * raycastStart: (vector) the point where the ray starts
+ * raycastEnd: (vector) the point where the ray ends
+ */
+function Clock::UpdateMinutesArrow(raycastStart, raycastEnd)
+{
+	// First, I need to create the plane with the clock on it. It's not a physical plane, I just need a point of the plane and the plane's normal to define it;
+	// what I want to do now is find the normal. To do that, I consider the clock as a plane itself, and get 2 vectors from its local coordinate system and convert
+	// them to point in world coordinates.
+	// I'm basically getting 2 pseudo-random vectors (created by subtracting 2 points on the clock) that are on the clock and that are perpendicular
+	// to the Z axis. The idea is to do the cross product of these 2 vectors, which outputs a vector that is normal to both, which is the normal I'm looking for.
+	// By using points local to the clock and converting them to world coordinates, I'm assuring that the normal will be correct regardless of the position
+	// of the object in the world and regardless of its orientation
+	var p0 = mClockObj.LocalToWorld([0, 0, 0]);
+	var p1 = mClockObj.LocalToWorld([0, 1, 0]);
+	var p2 = mClockObj.LocalToWorld([0, 0, 0]);
+	var p3 = mClockObj.LocalToWorld([1, 0, 0]);
+	
+	// I get the 2 vectors by subtracting the 4 points witch each other
+	var vec1 = p1 - p0;
+	var vec2 = p3 - p2;
+	
+	// I do the cross product; the result is a vector perpendicular to the 2; since I don't care about its values but only the fact that is perpendicular,
+	// I normalize the resulting vector
+	var normal = Norm(vec1 ^ vec2);
+	
+	// I get the position of the arrow. Since the arrow is a child of the clock object, its position is relative to the clock, but I need the world coordinates.
+	// To get them, I get its position and add it to the clock's position, WHICH IS ASSUMED TO BE IN WORLD COORDINATES.
+	// Note that this not always work; for example, if I rotate the clock by some weird angle, its position won't change, and so won't the arrow's with respect
+	// of the parent. But actually the world coordinates of the arrow WOULD change; maybe not much, but they would. This means that the position I'm considering
+	// as in world coordinates would be wrong, and so would be the computations to come; the more the clock moves the arrow away from its "actual" starting position,
+	// the more the mistakes. The only way to fix this would be to have an actual method that gets the world coordinates of objects, but there isn't...
+	// So this is the best approximation for now
+	var minutesArrowPos = mMinutesArrowObj.GetPosition() + mClockObj.GetPosition(); 
+	
+	// Now I check if the ray intersects the plane, and if so where; I will then compute the angle between the arrow and that point
+	var pointInPlane = FindIntersectionInPlane(raycastStart, raycastEnd, minutesArrowPos, normal);
+	
+	// If the ray intersects the plane I continue
+	if(pointInPlane != Void)
+	{
+		// Now I compute the difference between the arrow's point and the point from the plane where the ray intersected.
+		// NOTE: I'm only considering the x and y axis. The rotation will only work IF the clock si perpendicular to the Z axis, which is what I want.
+		// To make it work with the clock at different orientation's I need to take the diference of the 2 axis that are 0 in the normal vector.
+		// For instance, if I rotate the clock by 90 degrees so that it's perpendicular to the x axis (with normal [1, 0, 0]) I would have to subtract
+		// the components of the axis that are 0: pointInPlane.y - minutesArrowPos.y and pointInPlane.z - minutesArrowPos.z in this case.
+		// To do it, I don't think that there is a better way than simply looking at each coordinates and do the separate cases, but since I don't care
+		// and the code is long enough I'm not going to do that.
+		// NOTE 2: the problem with the arrow's position that I described above will still be present though; so the rotation might be in the right plane,
+		// but it won't follow the mouse right
+		var dx = pointInPlane.x - minutesArrowPos.x;
+		var dy = pointInPlane.y - minutesArrowPos.y;
+
+		// I compute the angle using the Atan2 function, and convert the radiant angle to degrees; I shift the result by 90 degrees, since the arrow starts
+		// in the upright position instead of "at 3 o'clock".
+		// Note: the Atan2 function returns an angle between -180 and 180 degrees. Setting the rotation directly using this angle works fine
+		var angle = Atan2(dy, dx) * RAD_TO_GRAD - 90;
+		
+
+		// Changing the angle with the one found; I'm rotating on the Z axis, so if the clock is facing down or up for example there will be problems		
+		mMinutesArrowObj.SetRotation(angle, 0, 0, 1);
+
+		// I get the difference between this angle and the last one, to check the direction of the clock. At first I wanted to use this difference
+		// as input for the Animator to speedup objects, but the difference between angle is tricky: there is a point where the angle goes from -270 to 90 for
+		// example, and it's not easy to make sure that it counts that jump as 1 degree only. So I'm using constant speedup instead, and only checking here
+		// whether the arrow is moving clockwise or counter-clockwise
+		var delta = angle - mMinutesArrowAngle;
+		
+		// Clockwise case
+		if(delta > 0)
+		{
+			// I also rotate the hour arrow by a small step
+			mArrowDirection = 1;
+			mHoursArrowObj.Rotate(mHourArrowRotationIncrement, 0, 0, 1);
+		}
+		// Counter-clockwise
+		else if(delta < 0)
+		{
+			mArrowDirection = -1;
+			mHoursArrowObj.Rotate(-mHourArrowRotationIncrement, 0, 0, 1);
+		}
+		// If the angle is zero, the arrow is not moving
+		else
+			mArrowDirection = 0;
+			
+		// I update the current angle
+		mMinutesArrowAngle = angle;
+	}
+}
+
+/*
+ * Returns the direction of the arrow:
+ * 1 -> moving clockwise
+ * 0 -> not moving
+ * -1 -> moving counter-clockwise
+ */
+function Clock::GetArrowDirection()
+{
+	return mArrowDirection;
+}
+
+
+function Clock::Draw()
+{
+	mClockObj.Draw();
+}
+
+function Clock::SetPosition(position)
+{
+	mClockObj.SetPosition(position);
+}
+
+function Clock::Translate(x, y, z)
+{
+	mClockObj.Translate(x, y, z);
+}
+
+function Clock::Rotate(angle, x, y, z)
+{
+	mClockObj.Rotate(angle, x, y, z);
+}
+
+function Clock::SetRotation(angle, x, y, z)
+{
+	mClockObj.SetRotation(angle, x, y, z);
+}
+
+
+function Clock::GetPosition()
+{
+	return mClockObj.GetPosition();
+}
+
+
+function Clock::LocalToWorld(point)
+{
+	return mClockObj.LocalToWorld(point);
+}
+
+function Clock::GetObj()
+{
+	return mClockObj.GetObj();
+}

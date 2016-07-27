@@ -165,7 +165,7 @@ void main()
      	color += ambient * gl_LightSource[i].ambient;
      	
      	// Aggiungo poi la componente diffusiva, moltiplicata per l'intensità calcolata sopra
-	    color += diffuseFactor * diffuse;
+	    color += diffuseFactor * diffuse * gl_LightSource[i].diffuse;
 //	    color += diffuseFactor * gl_FrontMaterial.diffuse.xyz;
 	
 		// Infine aggiungo la componente speculare dell'oggetto, moltiplicata per il fattore calcolato sopra e per il valore speculare della luce
