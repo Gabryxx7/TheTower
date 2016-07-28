@@ -63,6 +63,10 @@ class Level1
 	var mTimeDirection;
 	
 	
+	var mClocks;
+	var mNumberOfClocks;
+	var mNumberOfClockRows;
+	
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
@@ -96,7 +100,7 @@ function Level1::Level1(inputManager, soundManager)
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 		
 
-	mMainClock = Clock();
+	mMainClock = Clock(1, 2);
 	mMainClock.Translate(0, 5, 14);
 	
 	var num_seg = 30;
@@ -105,6 +109,8 @@ function Level1::Level1(inputManager, soundManager)
 	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
 	global var sphere = CVmObj(sphereMesh1);
 	sphere.SetPosition(0, 5, 20);
+	
+
 }
 
 
@@ -121,10 +127,12 @@ function Level1::Level1(inputManager, soundManager)
 	
 	mLight1 = lights[1];
 	mLight1.SetPosition([0, 10.0, 10.0]);
+	mLight1.SetDiffuse(1, 1, 1);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
 	mLight2.SetPosition([0, 10.0, -20.0]);
+//	mLight2.SetDiffuse(1, 1, 1);
 	mLight2.Enable();
 	
 		
@@ -180,6 +188,44 @@ function Level1::Level1(inputManager, soundManager)
 	mAnimator.CreateRotatingTransition(flyingFuck2, 0, (360*5 + 180), [0, 1, 0], 40.0, false, false);
 	
 	mTimeDirection = 1;
+	
+	mNumberOfClocks = 6;
+	mNumberOfClockRows = 4;
+	mClocks = {};
+	
+	var step = mMainRoom.GetRoomWidth()/mNumberOfClocks;
+	var heightStep = mMainRoom.GetRoomHeight()/mNumberOfClockRows;
+	
+	for(var i = 0; i < mNumberOfClockRows; i++)
+	{
+		for(var j = 0; j < mNumberOfClocks; j++)
+		{
+			aadd(mClocks, Clock(1, 2));
+			
+//			var x = (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * j;
+//			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+//			var y = mMainRoom.GetRoomHeight() - 4.0 - heightStep*i;
+//			var z = mMainRoom.GetRoomDepth()/2.0 - 0.3;
+
+			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 - heightStep*i) ;
+			var z = mMainRoom.GetRoomDepth() - 0.3;
+			
+			var position = [x, y, z];
+		
+			position.x += Rand(1) == 0 ? Rand(8)/30.0 : -Rand(8)/30.0;
+			position.y += Rand(1) == 0 ? Rand(8)/10.0 : -Rand(8)/10.0;
+			
+			var newClock = mClocks[i*mNumberOfClocks + j];
+			
+//			newClock.SetPosition(position);
+			
+			mAnimator.CreateRotatingTransition(newClock.GetMinutesArrowObj(), 0, (360), [0, 0, 1], 10.0, true, false);
+			mAnimator.CreateRotatingTransition(newClock.GetHoursArrowObj(), 0, (360), [0, 0, 1], 80.0, true, false);
+			
+			mMainRoom.AddObject(newClock.GetObj(), position.x, position.y, position.z);
+		}
+	}
 }
 
 
@@ -205,6 +251,12 @@ function Level1::Render()
 				mMainClock.Draw();
 				sphere.Draw();
 				flyingFuck2.Draw();
+				
+//				for(var i = 0; i < mNumberOfClockRows * mNumberOfClocks; i++)
+//				{
+//					mClocks[i].Draw();
+//				}
+				
 				break;
 		}
 		
@@ -296,8 +348,8 @@ function Level1::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-		    	mInputManager.RestoreCameraPosition();
+//			if(mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
 				 
 			// I check if the user has clicked with the mouse or whatever; if that is the case I need to check "where" he clicked    	
 	    	if(mInputManager.HasClicked())

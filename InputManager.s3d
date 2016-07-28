@@ -1,5 +1,5 @@
 
-#define USE_KEYBOARD 0
+#define USE_KEYBOARD 1
 
 #include <KeyboardManager.s3d>
 #include <GamepadManager.s3d>
