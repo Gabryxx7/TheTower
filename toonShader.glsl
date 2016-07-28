@@ -78,7 +78,8 @@ void main()
     const float A = 0.1;
     const float B = 0.3;
     const float C = 0.6;
-    const float D = 1.0;
+    const float D = 0.8;
+    const float E = 1.0;
     
     vec3 color = vec3(0.0, 0.0, 0.0);
     
@@ -132,6 +133,8 @@ void main()
 	    	diffuseFactor = stepmix(B, C, epsilon, diffuseFactor);
 	    else if (diffuseFactor > C - epsilon && diffuseFactor < C + epsilon) 
 	    	diffuseFactor = stepmix(C, D, epsilon, diffuseFactor);
+    	else if (diffuseFactor > D - epsilon && diffuseFactor < D + epsilon) 
+	    	diffuseFactor = stepmix(D, E, epsilon, diffuseFactor);
 	    	
     	// Controllo l'intervallo su cui ricadiamo e fisso il valore diffusivo, in modo da avere dei contrasti forti tra i colori dei vari intervalli
 		if (diffuseFactor < A) 
@@ -140,8 +143,10 @@ void main()
 	    	diffuseFactor = B;
 	    else if (diffuseFactor < C) 
 	    	diffuseFactor = C;
-	     else 
+	     else if (diffuseFactor < D) 
 	    	diffuseFactor = D;
+    	else
+	    	diffuseFactor = E;
 	    	
     	// Calcolo il fattore speculare come il diffuseFactor, invece di usare direttamente la direzione della luce normalizzata uso l'half-vector (come dice
 	   	// l'equazione del lighting che semplifica il modello di Phong)

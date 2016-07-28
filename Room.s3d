@@ -101,6 +101,16 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mSideWallMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfSideWidth, -mHalfHeight, 0], [mHalfSideWidth, mHalfHeight, 0], 2, 2);
 	mRoofMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfFarWidth, -mHalfSideWidth, 0], [mHalfFarWidth, mHalfSideWidth, 0], 2, 2);
 	
+//	var mat = CVmMaterial();
+//	mat.ambient = [1,1,1];
+//	mat.diffuse = [1, 1, 1];
+//	mat.specular = [0, 0, 0];
+//	
+//	mFarWallMesh.forceMaterial(mat);
+//	mSideWallMesh.forceMaterial(mat);
+//	mRoofMesh.forceMaterial(mat);
+	
+	
 	// Adding the toon shader to the mesh's subset 0 (so the whole mesh in this case) and activating it
 	mFarWallMesh.ShaderAdd("toonShader.glsl", 0);
 	mFarWallMesh.ShaderActivate(true);
