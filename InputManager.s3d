@@ -1,7 +1,8 @@
 
-#define USE_KEYBOARD 1
+#define USE_KEYBOARD 0
 
 #include <KeyboardManager.s3d>
+#include <GamepadManager.s3d>
 
 /*
  * This class works as an interface between the game and whatever it's being used for inputs. It will instantiates the corresponding 
@@ -35,6 +36,8 @@ function InputManager::InputManager()
 {
 	if(USE_KEYBOARD == 1)
 		mManager = KeyboardManager();
+	else
+		mManager = GamepadManager();
 }
 
 /*

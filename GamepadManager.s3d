@@ -8,12 +8,13 @@
 
 
 // Mouse sensitivity when turning around
-#define MOUSE_SENSITIVITY 0.07
+#define STICK_SENSITIVITY_X 3
+#define STICK_SENSITIVITY_Y 2.5
 
 // Pause in milliseconds between a key pressed input and the next one, so not to "spam" keystrokes
 #define KEY_PRESSED_PAUSE 500
 
-class KeyboardManager
+class GamepadManager
 {
 	// Camera used for movements
 	var mCamera;
@@ -40,6 +41,8 @@ class KeyboardManager
 	
 	// This variable contains the time when a key was hit; used to determine the pause duration between a keystroke and another
 	var mKeyPressedTime;
+	
+	var joystick;
 		
 	// Public functions
 	UpdateCameraOrientation();
@@ -52,7 +55,7 @@ class KeyboardManager
 /*
  * Constructor
  */
-function KeyboardManager::KeyboardManager()
+function GamepadManager::GamepadManager()
 {
 	mMoveSpeed = MOVE_SPEED;
 	mRotationX = 0;
@@ -67,6 +70,8 @@ function KeyboardManager::KeyboardManager()
 	
 	mKeyPressedTime = 0;
 	
+	joystick = CVmJoystick();
+	
 	// I don't know why, but I have to remove the cursor both here and in the main file of the project, otherwise it doesn't disappear
 	ShowCursor(false);
 }
@@ -76,7 +81,7 @@ function KeyboardManager::KeyboardManager()
  * This function has to be called at each "updateLogic()" function call. It updates the rotation matrix of the camera, 
  * so it's rotated according to mouse movements
  */
-function KeyboardManager::UpdateCameraOrientation()
+function GamepadManager::UpdateCameraOrientation()
 {	
 	var xoffset = 0;
 	var yoffset = 0;
@@ -116,30 +121,39 @@ function KeyboardManager::UpdateCameraOrientation()
 		// In this case I update the offset with the "DeltaX" and "DeltaY" values, which are calculated taking into account even 
 		// if the mouse in windows is not actually inside the program's window.
 		// The multiplier defines the sensibility of the rotation
-		var dx = Mouse.DeltaX; 
-		var dy = Mouse.DeltaY; 
-  		xoffset = dx * MOUSE_SENSITIVITY;
-  		yoffset = dy * MOUSE_SENSITIVITY;
+		var deadzone = 0.06;
+		var deltaU = joystick.u - 0.5;
+		var deltaV = joystick.v -0.5;
+		
+		if(deltaV < -deadzone || deltaV > deadzone){
+  			xoffset = deltaV * STICK_SENSITIVITY_X;
+		}else xoffset = 0;		
+		
+		if(deltaU < -deadzone || deltaU > deadzone){
+  			yoffset = deltaU * STICK_SENSITIVITY_Y;
+		}else yoffset = 0;	
 	}
 	
 	// Incrementing the rotation values
 	mRotationX += xoffset;
     mRotationY += yoffset;
 	 			
-	// Setting the new rotation. For the Y, we completely overwrite the previous rotation, while for the X we add the current rotation value to the old one	    
+	// Setting the new rotation. For the Y, we completely overwrite the previous rotation, while for the X we add the current rotation value to the old one
+    
     if(mRotationY > 85)
     	mRotationY = 85;
 	else if( mRotationY < -85)
     	mRotationY = -85;   
     	
-    CameraSetRotation(mRotationY, 1,0,0);
-    CameraRotate(mRotationX, 0,1,0);  	
+	CameraSetRotation(mRotationY, 1,0,0);
+    CameraRotate(mRotationX, 0,1,0);
+  	
 }
 
 /*
  * This function has to be called at each "updateLogic()" function call. It updates the camera's position according to keystrokes
  */
-function KeyboardManager::UpdateCameraPosition()
+function GamepadManager::UpdateCameraPosition()
 {
 	var currentTime = GetTime();
 	
@@ -190,7 +204,11 @@ function KeyboardManager::UpdateCameraPosition()
 	
 	
 	// Case where we press W
-	if (KeyPressed("W"))
+	var deltaX = joystick.x - 0.5;
+	var deltaY = joystick.y - 0.5;
+	var deadzone = 0.1;
+
+	if (deltaY < -deadzone)
 	{
 		var cameraPos = mCamera.GetPosition();
 		var cameraDir = mCamera.GetDirection();
@@ -207,7 +225,7 @@ function KeyboardManager::UpdateCameraPosition()
 		mCamera.SetPosition(cameraPos); 
 	}
 	
-	if (KeyPressed("S"))
+	if (deltaY > deadzone)
 	{
 		var cameraPos = mCamera.GetPosition();
 		var cameraDir = mCamera.GetDirection();
@@ -223,7 +241,7 @@ function KeyboardManager::UpdateCameraPosition()
 	}
 	
 	// Case where we press A
-	if (KeyPressed("A"))
+	if (deltaX < -deadzone)
 	{
 		var cameraPos = mCamera.GetPosition();
 		var cameraDir = mCamera.GetDirection();
@@ -234,23 +252,23 @@ function KeyboardManager::UpdateCameraPosition()
 		mCamera.SetPosition(cameraPos); 
 	}
 	
-	if (KeyPressed("D"))
+	if (deltaX > deadzone)
 	{
 		var cameraPos = mCamera.GetPosition();
 				
 		cameraPos += Norm((mCamera.GetDirection() ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
 		mCamera.SetPosition(cameraPos); 
-	}
+	}	
 }
 
 
-function KeyboardManager::SetActiveCamera(camera)
+function GamepadManager::SetActiveCamera(camera)
 {
 	mCamera = camera;
 }
 
-function KeyboardManager::HasClicked()
+function GamepadManager::HasClicked()
 {
-	return Mouse.ButtonL;
+	return joystick.button6;
 }
 
