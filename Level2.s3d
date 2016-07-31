@@ -82,6 +82,7 @@ function Level2::Level2(inputManager, soundManager)
 {
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
+	mIsElevatorPresent = false;
 	
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
@@ -510,6 +511,50 @@ function Level2::SetOpenglTransformOffset(openglTransformOffset)
 function Level2::GetElevator()
 {
 	return mElevator;
+}
+
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
+function Level2::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+{
+	// I'm stating that there is no intersection
+	var intersectedPlane = -1;
+
+	// I scan each of the currently visible portal's frames, to find any interception
+//	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
+//	{
+//		// Check collision
+//		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
+//		
+//		if(flag)
+//		{
+//			isWall = false;
+//			return false;
+//		}
+//	}
+		
+	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
+	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
+	// one is not relevant in this case)
+	if(mIsElevatorPresent)
+		intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+
+	// If still no interception was found, I check the boundaries of the room
+	if(intersectedPlane == -1)
+		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+	// If I'm here, I definitely found a wall
+	isWall = true;
+	
+	// If the intersection value is 0, a good point was found
+	return intersectedPlane == 0;
 }
 
 
