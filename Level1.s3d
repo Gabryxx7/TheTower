@@ -67,6 +67,8 @@ class Level1
 	var mNumberOfClocks;
 	var mNumberOfClockRows;
 	
+	var mOpenglTranslationOffset;
+	
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
@@ -77,12 +79,13 @@ class Level1
 	Selection(object);
 	
 	// Public functions
-	Init(lights, elevator);
+	Init(lights, elevator, openglTranslationOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
 	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	SetOpenglTransformOffset(mOpenglTranslationOffset);
 };
 
 
@@ -93,6 +96,10 @@ function Level1::Level1(inputManager, soundManager)
 {		
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
+	
+		
+	// Creating the object that will handle transitions and rotations of objects
+	mAnimator = Animator();
 	
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
@@ -111,60 +118,6 @@ function Level1::Level1(inputManager, soundManager)
 	global var sphere = CVmObj(sphereMesh1);
 	sphere.SetPosition(0, 5, 20);
 	
-}
-
-
- 
- function Level1::Init(lights, elevator)
-{	
-	foreach(var light in lights)
-		light.Disable();
-	
-	mLight0 = lights[0];
-	mLight0.SetPosition([-10.0, 10.0, 10.0] + [0, -100, 0]);
-	mLight0.SetDiffuse(1, 1, 1);
-	mLight0.Enable();
-	
-	mLight1 = lights[1];
-	mLight1.SetPosition([0, 10.0, 10.0]);
-	mLight1.SetDiffuse(1, 1, 1);
-	mLight1.Enable();
-	
-	mLight2 = lights[2];
-	mLight2.SetPosition([0, 10.0, -20.0]);
-//	mLight2.SetDiffuse(1, 1, 1);
-	mLight2.Enable();
-	
-		
-	mElevator = elevator;
-	mElevator.SetLightsRange(0,0);
-	
-	// Retrieving the input manager and setting the initial camera's position
-	mCamera = mInputManager.GetActiveCamera();
-	
-	// Creating the object that will handle transitions and rotations of objects
-	mAnimator = Animator();
-
-	
-	mEnding = false;
-	mIsLevelCompleted = false;
-	
-	mElevatorTravelDistance = 100.0;
-	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
-	
-	
-	mElevatorFinalPosition = mElevator.GetPosition();
-	
-	var lightPos = mLight1.GetPosition();
-	
-	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
-//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
-	
-	mCameraYoffset = mCamera.GetPosition().y - openglTranslationOffset.y - mElevatorFinalPosition.y;
-	
-	mLevelStatus = STATUS_ELEVATOR_MOVING;
-	
-	mIsUsingClock = false;
 	
 	
 		
@@ -269,14 +222,66 @@ function Level1::Level1(inputManager, soundManager)
 	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
 	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0];
 	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
-	
-	print({"waypoint0", "waypoint2"}, {waypoint0, waypoint2});
-	
+		
 	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
 	mAnimator.CreateRotatingTransition(pyramidObj, 0, 360, [1, 0, 0], 5.0, true, false);
 	
 	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
 	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
+}
+
+
+ 
+ function Level1::Init(lights, elevator, openglTransformOffset)
+{	
+	mOpenglTranslationOffset = openglTransformOffset;
+	
+	foreach(var light in lights)
+		light.Disable();
+	
+	mLight0 = lights[0];
+	mLight0.SetPosition([-10.0, 10.0, 10.0] + [0, -100, 0] + mOpenglTranslationOffset);
+	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.Enable();
+	
+	mLight1 = lights[1];
+	mLight1.SetPosition([0, 10.0, 10.0] + mOpenglTranslationOffset);
+	mLight1.SetDiffuse(1, 1, 1);
+	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetPosition([0, 10.0, -20.0] + mOpenglTranslationOffset);
+	mLight2.SetDiffuse(1, 1, 1);
+	mLight2.Enable();
+	
+		
+	mElevator = elevator;
+	mElevator.SetLightsRange(0,0);
+	
+	// Retrieving the input manager and setting the initial camera's position
+	mCamera = mInputManager.GetActiveCamera();
+
+
+	
+	mEnding = false;
+	mIsLevelCompleted = false;
+	
+	mElevatorTravelDistance = 100.0;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
+	
+	
+	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	var lightPos = mLight1.GetPosition();
+	
+	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
+//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
+	
+	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
+	
+	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
+	mIsUsingClock = false;
 }
 
 
@@ -289,8 +294,10 @@ function Level1::Level1(inputManager, soundManager)
  */
 function Level1::Render()
 {	
-	mLight1.SetPosition([0, 10.0, 35.0] + openglTranslationOffset);
-	mLight2.SetPosition([0, 10.0, -20.0] + openglTranslationOffset);
+	// If the user teleported modifying the mOpenglTranslationOffset, the lights will be in the wrong places. So at each frame I reset their 
+	// position according to the offset
+	mLight1.SetPosition([0, 10.0, 35.0] + mOpenglTranslationOffset);
+	mLight2.SetPosition([0, 10.0, -20.0] + mOpenglTranslationOffset);
 	
 	switch(mLevelStatus)
 	{
@@ -325,7 +332,7 @@ function Level1::UpdateLogic(dt)
 	mInputManager.UpdateCameraOrientation();
 	mInputManager.UpdateCameraPosition();
 	
-	var cameraPosition = mCamera.GetPosition() - openglTranslationOffset;
+	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	switch(mLevelStatus)
 	{
@@ -351,7 +358,7 @@ function Level1::UpdateLogic(dt)
 		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
 			
 			// I set the new (shaken and at level with the elevator) position
-			mCamera.SetPosition(cameraPosition + openglTranslationOffset);
+			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
 			
 			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
@@ -454,6 +461,15 @@ function Level1::UpdateLogic(dt)
 }
 
 
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
 function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
 {
 	var intersectedPlane = -1;
@@ -477,4 +493,8 @@ function Level1::IsLevelCompleted()
 	return mIsLevelCompleted;
 }
 
+function Level1::SetOpenglTransformOffset(openglTransformOffset)
+{
+	mOpenglTranslationOffset = openglTransformOffset;
+}
 

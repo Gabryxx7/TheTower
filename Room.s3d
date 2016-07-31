@@ -261,21 +261,43 @@ function Room::Draw()
 }
 
 
-
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * 
+ * The method returns:
+ * -1 -> if no interception was found
+ *  0 -> if it intercepts the floor
+ *  1 -> if it intercepts the back wall
+ *  2 -> if it intercepts the roof
+ *  3 -> if it intercepts the left wall
+ *  4 -> if it intercepts the right wall
+ *  5 -> if it intercepts the front wall
+ */
 function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 {	
-//	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
+	// To find the interception of a plane I first need one of its point: I get the coordinates of the floor first. Since it's a child of the mRoom object
+	// I need to add its position (NOTE: this will work only if the room is NOT a child of something else); I then add 1 to make sure that
+	// the plane is considered inside the room
 	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
+	
+	// I compute the normal of the plane
 	normal = ComputeNormalOfPlanarObject(mFloorObj);
 	
+	// I check for interceptions
 	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
 	
+	// If one was found and it's inside the room (remember, planes are infinite, so maybe there was an interception but outside the room, so it's no good)
+	// I return the 0 to indicate that
 	if(contactPoint != Void && IsPointInRoom(contactPoint))
 		return 0;
 		
 		
 	/* Back wall */
-//	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
 	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
 	normal = ComputeNormalOfPlanarObject(mBackWallObj);
 	
@@ -285,7 +307,6 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 		return 1;
 		
 	/* Roof */
-//	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
 	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
 	normal = ComputeNormalOfPlanarObject(mRoofObj);
 	
@@ -295,7 +316,6 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 		return 2;
 		
 	/* Left wall */
-//	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
 	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
 	normal = ComputeNormalOfPlanarObject(mLeftWallObj);
 	
@@ -305,7 +325,6 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 		return 3;
 		
 	/* Right wall */
-//	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
 	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
 	normal = ComputeNormalOfPlanarObject(mRightWallObj);
 	
@@ -317,7 +336,6 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	/* Front wall */
 	if(mHasFront)
 	{
-//		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
 		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
 		normal = ComputeNormalOfPlanarObject(mFrontWallObj);
 		
@@ -327,6 +345,7 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 			return 5;
 	}
 	
+	// If I reached this, I didn't find any interceptions
 	return -1;
 }
 
