@@ -1,5 +1,8 @@
 
-#define USE_KEYBOARD 1
+// 1 -> Keyboard
+// 2 -> Gamepad
+// 3 -> HTC Vive
+#define USE_INPUT_MANAGER 1
 
 #include <KeyboardManager.s3d>
 #include <GamepadManager.s3d>
@@ -25,7 +28,8 @@ class InputManager
 	RestoreCameraPosition();
 	SetActiveCamera(camera);
 	GetActiveCamera();
-	HasClicked();
+	IsPressingPrimaryButton();
+	IsPressingSecondaryButton();
 };
 
 
@@ -34,9 +38,9 @@ class InputManager
  */
 function InputManager::InputManager()
 {
-	if(USE_KEYBOARD == 1)
+	if(USE_INPUT_MANAGER == 1)
 		mManager = KeyboardManager();
-	else
+	else if(USE_INPUT_MANAGER == 2)
 		mManager = GamepadManager();
 }
 
@@ -87,8 +91,13 @@ function InputManager::GetActiveCamera()
 	return mCamera;
 }
 
-function InputManager::HasClicked()
+function InputManager::IsPressingPrimaryButton()
 {
-	return mManager.HasClicked();
+	return mManager.IsPressingPrimaryButton();
+}
+
+function InputManager::IsPressingSecondaryButton()
+{
+	return mManager.IsPressingSecondaryButton();
 }
 

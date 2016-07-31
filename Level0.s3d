@@ -21,6 +21,9 @@
 #include <SoundManager.s3d>
 #include <Elevator.s3d>
 
+ global var mouseRightClickPressed = false;
+
+
 class Level0
 {
 	// Booleans that indicate if the level is starting or ending
@@ -59,6 +62,9 @@ class Level0
 	var mPortalRooms;
 	var mPortalFrames;
 	var mPortalFramesNormals;
+	
+	// This array contains the reference to the currently visible portal's frames
+	var mCurrentlyVisiblePortalFrames;
 		
 	// World coordinates for the bounding box that contains the "square" of portals' frames
 	var mPortalsBoxLowerCorner;
@@ -101,6 +107,9 @@ class Level0
 	// "Room" object that represent the elevator
 	var mElevator;
 	
+	// This offset is used to get the actual position of the player in the world. More information on the GameManager class
+	var mOpenglTranslationOffset;
+	
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
@@ -111,6 +120,8 @@ class Level0
 	UpdateLogic(dt);
 	IsLevelCompleted();
 	GetElevator();
+	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	SetOpenglTransformOffset(mOpenglTranslationOffset);
 };
 
 
@@ -119,6 +130,8 @@ class Level0
  */
 function Level0::Level0(inputManager, soundManager, lights)
 {
+	mOpenglTranslationOffset = [0, 0, 0];
+	
 	// Updating the booleans, the level is now starting
 	mStarting = true;
 	mEnding = false;
@@ -443,48 +456,31 @@ function Level0::Level0(inputManager, soundManager, lights)
 	endText.Rotate(180, 0, 1, 0);
 	endText.Translate(0, 7, -0.3);
 	endText.Hide();
+	
 }
 
 /* ****************************************************** *
  * **************** RENDER METHODS ********************** *
  * ****************************************************** */
 
+
 /*
  * Render method
  */
 function Level0::Render()
-{
-	// Starting the scene with the default camera
-	SceneBegin(mCamera);
-		// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-		DrawAllPortals();
-		
-		// We draw the main room
-		if(!mEnding || mElevator.IsElevatorOpen())
-			mMainRoom.Draw();
-
-		
-		// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
-		mElevator.Draw();
-		
-		flyingFuck.Draw();
-		endText.Draw();
-		
-		// If the game is starting, I apply the fade to black transition
-		if(mStarting)
-		{
-//			FadeToBlackScreen(true);
-					
-			// If the fade to black alpha becomes negative, it means that the game is started, so we can stop fading
-//			mStarting = mFadeToBlackAlpha > 0;
-		}
-	//	else if(mEnding && mFadeToBlackAlpha < 1)
-		else if(mEnding)
-		{
-//			FadeToBlackScreen(false);
-		}
+{				
+	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
+	DrawAllPortals();
 	
-	SceneEnd();
+	// We draw the main room
+	if(!mEnding || mElevator.IsElevatorOpen())
+		mMainRoom.Draw();
+	
+	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
+	mElevator.Draw();
+	
+	flyingFuck.Draw();
+	endText.Draw();
 }
 
 /*
@@ -493,11 +489,15 @@ function Level0::Render()
  */
 function Level0::DrawAllPortals()
 {
-	// We need to find out which portals are visible from the player's perspective, so we need its position
-	var currentCameraPosition = mCamera.GetPosition();
+	// We need to find out which portals are visible from the player's perspective, so we need its position.
+	// Note: to get the ACTUAL position I need to subtract the opengl offset, in case the user has teleported previously
+	var currentCameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// To render the portal we need the stencil buffer
 	glEnable(GL_STENCIL_TEST);
+	
+	// I empty at each frame the array with the currently visible frames, so that I can re-fill it
+	mCurrentlyVisiblePortalFrames = {};
 		
 	// I iterate over all the portals to check which one is visible by the user
 	for(var i = 0; i < PORTALS_NUMBER; i++) 
@@ -506,8 +506,8 @@ function Level0::DrawAllPortals()
 		var normal = mPortalFramesNormals[i];
 		var framePos = mPortalFrames[i].GetPosition();
 		
-		// I compute the scalar product between the normal and the direction vector between the camera's position and the frame's position
-		var dotProduct = normal * (currentCameraPosition - framePos);
+		// I compute the scalar product between the normal and the direction vector between the camera's position and the frame's position.
+		var dotProduct = normal * ((currentCameraPosition) - framePos);
 		
 		// If the dot product is positive, the portal is visible.
 		// Note: in reality, if for example I move the camera around so that it gives its back to the portal, this one is still considered visible. For simplicity, 
@@ -517,11 +517,16 @@ function Level0::DrawAllPortals()
 		{
 			// I render the portal
 			DrawPortal(mPortalFrames[i], mPortalRooms[i]);
+			
+			// Since it's visible, I add this to the array
+			aadd(mCurrentlyVisiblePortalFrames, mPortalFrames[i]);
 
 			// While drawing the portal, the camera was moved in order to render the portal's room. So I put it back where it was before proceding
-			mCamera.SetPosition(currentCameraPosition);
+			// Note: I need to add the opengl offset otherwise the position would not be correct
+			mCamera.SetPosition(currentCameraPosition + mOpenglTranslationOffset);
 		}
 	}
+	
 	
 	// A very important thing to note is that when the portals are drawn, the camera is moved to where the portals' rooms are located. Basically what happened
 	// was that the light was somehow moved to the position of the camera when it was moved, and it stayed there. So basically the rest of the scene was rendered
@@ -603,12 +608,19 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// I draw the portal frame; now the stencil buffer will contain 1s where the frame was rendered and 0s outside
 	portalFrame.Draw();
 	
+	
+	
 	// Chiudo il blocco correntemente attivo. Adesso dovrò infatti modificare la prospettiva della camera in modo che sia posizionata nella camera del portale,
 	// e per farlo in XVR bisogna prima chiudere il blocco SceneBegin/SceneEnd, altrimenti la modifica non ha effetto
 	
 	// Now I need to close the Scene block currently open. This is because I need to modify the camera's position so that it will be positioned where the portal's
 	// room is located, and to do that in XVR we need to close the SceneBegin/SceneEnd block first, otherwise the update won't have effect until the next frame
 	SceneEnd();
+	
+	// In order to draw the portal room, I need translate BACK the world by the opengl offset, and translate it back FORWARD when I'm done with the portal,
+	// otherwise the camera's position will be wrong, and so will the rendering of the portal's room
+	glTranslate(-mOpenglTranslationOffset);
+	
 	
 	// Getting the positions of the frame, the room and the camera
 	var framePos = portalFrame.GetPosition();
@@ -629,7 +641,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// shouldn't increase the Z axis but the X axis. Drawying the example in a piace of paper helps understand the concept.
 	// So, in this case I'm assuming that they both have the same orientation, to make things easier
 	var translation = camPos - framePos;
-	translation = translation + virtualCameraPos;
+	translation = translation + virtualCameraPos - mOpenglTranslationOffset; // Note that I subtract the opengl offset
 	
 	// Setto quindi la nuova posizione, e cambio anche la matrice di rotazione.
 	// Nota: in realtà la matrice di rotazione non cambia in quanto sto usando sempre la stessa camera e assumo che i frame dei portali e le rispettive stanze
@@ -663,6 +675,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// Now that the changes to the camera and light are done, I can start the scene again in order to render the portal's room
 	SceneBegin(mCamera);
 	
+	
 	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
@@ -676,6 +689,9 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	
 	// Drawing the actual portal's room where the stencil is 1
 	portalRoom.Draw();
+	
+	// I translate back the world where it was before drawing the portal
+	glTranslate(mOpenglTranslationOffset);
 
 	// I reset the light's position. Note that this won't actually have a graphic effect until the next frame (I think)
 	mLight0.SetPosition(oldLightPos);
@@ -691,6 +707,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
  * **************** LOGIC METHODS ********************** *
  * ****************************************************** */
  
+ 
 /*
  * Updates the logic of the game
  * 
@@ -702,7 +719,7 @@ function Level0::UpdateLogic(dt)
 	mInputManager.UpdateCameraOrientation();
 	mInputManager.UpdateCameraPosition();
 	
-	var cameraPosition = mCamera.GetPosition();
+	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 	// I restore the previous porisiotn
@@ -712,10 +729,11 @@ function Level0::UpdateLogic(dt)
        	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8) &&
        	    !mIsElevatorPresent)
    	    mInputManager.RestoreCameraPosition();
-   	    
+
     // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
     if(mEnding && !mElevator.IsPointInElevator(cameraPosition))
     	mInputManager.RestoreCameraPosition();
+    	
    	    
     // Now I look if the player is on an event trigger
     var outsideEventTrigger = true;
@@ -844,6 +862,50 @@ function Level0::UpdateLogic(dt)
 	mSoundManager.UpdateMusic(dt);
 }
 
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
+function Level0::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+{
+	// I'm stating that there is no intersection
+	var intersectedPlane = -1;
+
+	// I scan each of the currently visible portal's frames, to find any interception
+	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
+	{
+		// Check collision
+		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+		if(flag)
+		{
+			isWall = false;
+			return false;
+		}
+	}
+		
+	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
+	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
+	// one is not relevant in this case)
+	if(mIsElevatorPresent)
+		intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+
+	// If still no interception was found, I check the boundaries of the room
+	if(intersectedPlane == -1)
+		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+	// If I'm here, I definitely found a wall
+	isWall = true;
+	
+	// If the intersection value is 0, a good point was found
+	return intersectedPlane == 0;
+}
+
 function Level0::~Level0()
 {
 
@@ -857,6 +919,10 @@ function Level0::IsLevelCompleted()
 	return mIsLevelCompleted;
 }
 
+function Level0::SetOpenglTransformOffset(openglTransformOffset)
+{
+	mOpenglTranslationOffset = openglTransformOffset;
+}
 
 /*
  * Method called by the GameManager to check if the level is completed

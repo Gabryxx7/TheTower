@@ -1,6 +1,4 @@
 
-#include "Utils.s3d"
-
 /*
  * This class handles simple transitions and rotations of CVmObj objects.
  * To use the class, the user must create a Animator object; then by calling its method he can create transitions and rotations of any CVmObject. The
@@ -208,7 +206,7 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 	RemoveTransitionByObject(object, true);
 	
 	// First off, I'm setting the starting rotation
-	object.SetRotation(startingAngle, axis);
+//	object.SetRotation(startingAngle, axis);
 	
 	aadd(mObjects, object);
 	aadd(mStartingPositions, startingAngle);
