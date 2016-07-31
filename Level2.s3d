@@ -2,7 +2,7 @@
 #include <MarcelloUtils.s3d>
 
 #define PIT_WIDTH 25
-#define PIT_HEIGHT 100
+#define PIT_HEIGHT 1000
 
 class Level2
 {
@@ -88,7 +88,7 @@ function Level2::Level2(inputManager, soundManager)
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
 	mPortalRoom = Room(PIT_WIDTH , PIT_HEIGHT, PIT_WIDTH, false, true, 0, 0);	
 	mPortalRoom.Translate(0, 0, -50);	
-	mPortalRoom.Rotate(90, 1, 0, 0);	
+	mPortalRoom.Rotate(-90, 1, 0, 0);	
 	
 	var halfWidth = PIT_WIDTH/2;
 	var halfHeight = PIT_WIDTH/2;
@@ -126,6 +126,7 @@ function Level2::Level2(inputManager, soundManager)
 	mLight1.SetDiffuse(1, 0, 0);
 	mLight1.Enable();
 	
+   lights[2].Disable();
 		
 	mElevator = elevator;
 	mElevator.SetLightsRange(0,0);
@@ -176,6 +177,7 @@ function Level2::Render()
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
 		mMainRoom.Draw();
+		
 	
 	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
@@ -213,18 +215,16 @@ function Level2::DrawAllPortals()
 	// Note: in reality, if for example I move the camera around so that it gives its back to the portal, this one is still considered visible. For simplicity, 
 	// I don't check the direction where the camera is facing; in any case even though it is considered visible, in the end the portal won't be rendered
 	// because  XVR will know that the portal isn't actually visible from the camera perspective
-	if(dotProduct >= 0)
-	{
-		// I render the portal
-		DrawPortal(mPortalFrame, mPortalRoom);
-		
-		// Since it's visible, I add this to the array
-		aadd(mCurrentlyVisiblePortalFrames, mPortalFrame);
 
-		// While drawing the portal, the camera was moved in order to render the portal's room. So I put it back where it was before proceding
-		// Note: I need to add the opengl offset otherwise the position would not be correct
-		mCamera.SetPosition(currentCameraPosition + mOpenglTranslationOffset);
-	}
+	// I render the portal
+	DrawPortal(mPortalFrame, mPortalRoom);
+	
+	// Since it's visible, I add this to the array
+	aadd(mCurrentlyVisiblePortalFrames, mPortalFrame);
+
+	// While drawing the portal, the camera was moved in order to render the portal's room. So I put it back where it was before proceding
+	// Note: I need to add the opengl offset otherwise the position would not be correct
+	mCamera.SetPosition(currentCameraPosition + mOpenglTranslationOffset);
 	
 	
 	// A very important thing to note is that when the portals are drawn, the camera is moved to where the portals' rooms are located. Basically what happened
@@ -325,7 +325,7 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 	var camPos = mCamera.GetPosition();
 	
 	// First I need to place the camera at the end of the portal's room
-	var localPoint = [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH];
+	var localPoint = [0, 0, PIT_HEIGHT];
 	var virtualCameraPos = portalRoom.LocalToWorld(localPoint);
 	
 	// Now I need to compute the translation I need to apply to the camera. For example, imagine being really close to the portal's frame: the portal room
@@ -353,7 +353,6 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 	// re-setting the same rotation matrix to the same camera)
 	mCamera.SetPosition(translation);
 	mCamera.SetRotationMatrix(mCamera.GetRotationMatrix());
-	
 		
 	// Now I want to move the first opengl light so that it's in front of the portal and it moves around. The change of position must be done outside the
 	// SceneBegin/SceneEnd block, just like for the camera, otherwise (in XVR) it doesn't have any effect.
@@ -392,6 +391,8 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 
 	// I reset the light's position. Note that this won't actually have a graphic effect until the next frame (I think)
 	mLight0.SetPosition(oldLightPos);
+	
+//	mCamera.Rotate(-90, 1, 0, 0);
 
 	// I'm done with this portal, so I pop the matrix from the stack
 	glPopMatrix();
