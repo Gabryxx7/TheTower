@@ -6,6 +6,7 @@ global var DEBUG_MODE = true;
 
 #include "Level0.s3d"
 #include "Level1.s3d"
+#include "Level2.s3d"
 #include "InputManager.s3d"
 //#include "Utils.s3d"
 //#include <Room.s3d>
@@ -111,7 +112,7 @@ function GameManager::GameManager()
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6, -4);
 		
-		mCurrentLevel = Level1(mInputManager, mSoundManager);
+		mCurrentLevel = Level2(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator);
 		
 		mFadingIn = false;

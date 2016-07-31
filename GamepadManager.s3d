@@ -9,10 +9,11 @@
 
 // Mouse sensitivity when turning around
 #define STICK_SENSITIVITY_X 3
-#define STICK_SENSITIVITY_Y 2.5
+#define STICK_SENSITIVITY_Y 3
 
 // Pause in milliseconds between a key pressed input and the next one, so not to "spam" keystrokes
 #define KEY_PRESSED_PAUSE 500
+#define XBOX_CONTROLLER 0
 
 class GamepadManager
 {
@@ -122,8 +123,18 @@ function GamepadManager::UpdateCameraOrientation()
 		// if the mouse in windows is not actually inside the program's window.
 		// The multiplier defines the sensibility of the rotation
 		var deadzone = 0.06;
-		var deltaU = joystick.u - 0.5;
-		var deltaV = joystick.v -0.5;
+		var deltaU = 0;
+		var deltaV = 0;	
+			
+		if(XBOX_CONTROLLER == 1){
+			deltaU = joystick.u - 0.5;
+			deltaV = joystick.v -0.5;			
+		}		
+		else {
+			deadzone = 0.1;
+			deltaU = joystick.r - 0.5;
+			deltaV = joystick.u -0.5;	
+		}
 		
 		if(deltaV < -deadzone || deltaV > deadzone){
   			xoffset = deltaV * STICK_SENSITIVITY_X;
@@ -140,10 +151,10 @@ function GamepadManager::UpdateCameraOrientation()
 	 			
 	// Setting the new rotation. For the Y, we completely overwrite the previous rotation, while for the X we add the current rotation value to the old one
     
-    if(mRotationY > 85)
-    	mRotationY = 85;
-	else if( mRotationY < -85)
-    	mRotationY = -85;   
+    if(mRotationY > 75)
+    	mRotationY = 75;
+	else if( mRotationY < -75)
+    	mRotationY = -75;   
     	
 	CameraSetRotation(mRotationY, 1,0,0);
     CameraRotate(mRotationX, 0,1,0);
@@ -207,6 +218,10 @@ function GamepadManager::UpdateCameraPosition()
 	var deltaX = joystick.x - 0.5;
 	var deltaY = joystick.y - 0.5;
 	var deadzone = 0.1;
+	
+	if(XBOX_CONTROLLER == 0){
+		deadzone = 0.2;
+	}
 
 	if (deltaY < -deadzone)
 	{

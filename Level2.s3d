@@ -1,0 +1,476 @@
+//#include <Utils.s3d>
+#include <MarcelloUtils.s3d>
+
+#define PIT_WIDTH 25
+#define PIT_HEIGHT 100
+
+class Level2
+{
+	// Booleans that indicate if the level is starting or ending
+	var mEnding;
+	var mIsLevelCompleted;
+	var mEndTimer;
+	
+	var mLevelStatus;
+	
+	// Manager for user inputs
+	var mInputManager;
+	
+	// "Animator" object; used to create transitions and rotations for the objects
+	var mAnimator;
+	
+	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
+	var mSoundManager;
+	
+	// Active camera
+	var mCamera;
+	
+	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
+	var mLight0;
+	var mLight1;
+	var mLight1Position;	
+	
+	// These variables are temporary (or not?) floats used to move the light in a semi-random way, to create a nice dynamic effect
+	var mIncrement;
+	var mOffset;
+	
+	// "Room" object that contains the whole room
+	var mMainRoom;
+	
+	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
+	// draw the silhouettes for the portals' frames
+	var mSilhouetteShader;
+	
+	// Booleans that indicate whether the elevator has appeared and if it's already open or not
+	var mIsElevatorPresent;
+	var mIsElevatorOpen;
+	
+	// "Room" object that represent the elevator
+	var mElevator;
+	var mPortalRoom;
+	var mPortalFrame;
+	var mPortalFrameNormal;
+	
+	var mElevatorFinalPosition;
+	var mElevatorTravelDistance;
+	var mElevatorTravelTime;
+	var mCameraYoffset;
+		
+	// Private functions
+	DrawAllPortals();
+	DrawPortal(portalFrame, portalRoom);
+	FadeToBlackScreen(fadeIn);
+			
+	// Public functions
+	Init(lights, elevator);
+	Render();
+	UpdateLogic(dt);
+	IsLevelCompleted();
+	GetElevator();
+};
+
+
+/*
+ * Constructor. Takes as parameter the input manager of the application
+ */
+function Level2::Level2(inputManager, soundManager)
+{		
+	mInputManager = inputManager;
+	mSoundManager = soundManager;
+	
+	// Creating the main room
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+	mPortalRoom = Room(PIT_WIDTH , PIT_HEIGHT, PIT_WIDTH, false, true, 0, 0);	
+	mPortalRoom.Translate(0, 0, -50);	
+	mPortalRoom.Rotate(90, 1, 0, 0);	
+	
+	var halfWidth = PIT_WIDTH/2;
+	var halfHeight = PIT_WIDTH/2;
+	
+	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfWidth, 0], 2, 2);
+	mPortalFrame = CVmObj(portalFrameMesh);
+	mPortalFrame.Translate(0, 1, 15);
+	mPortalFrame.Rotate(90, 1, 0, 0);
+	mPortalFrameNormal = [0, 0, 1];
+	
+	// Instantiating the silhouette shader, to draw outlines
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");	
+}
+
+
+ 
+ function Level2::Init(lights, elevator)
+{	
+	foreach(var light in lights)
+		light.Disable();
+	
+	// Setting up the lights of the scene. They're both positional lights
+	mLight0 = lights[0];
+	mLight0.SetPosition([-10.0, 10.0, 10.0]);
+	mLight0.SetDiffuse(0, 0, 1);
+	mLight0.Enable();	
+	
+	mLight1Position = [-10.0, -2000.0, 10.0];
+	
+	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
+	mLight1 = lights[1];
+	mLight1.SetPosition(mLight1Position);
+	mLight1.SetDiffuse(1, 0, 0);
+	mLight1.Enable();
+	
+		
+	mElevator = elevator;
+	mElevator.SetLightsRange(0,0);
+	
+	// Retrieving the input manager and setting the initial camera's position
+	mCamera = mInputManager.GetActiveCamera();
+	
+	// Values used to move the portals' rooms light around, for a dynamic effect
+	mIncrement = 0.03;
+	mOffset = 0;
+	
+	// Creating the object that will handle transitions and rotations of objects
+	mAnimator = Animator();
+
+	
+	mEnding = false;
+	mIsLevelCompleted = false;
+	
+	mElevatorTravelDistance = 100.0;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
+	
+	
+	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	var lightPos = mLight1.GetPosition();
+	
+	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
+//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
+	
+	mCameraYoffset = mCamera.GetPosition().y - mElevatorFinalPosition.y;
+	
+	mLevelStatus = STATUS_ELEVATOR_MOVING;
+}
+
+
+/* ****************************************************** *
+ * **************** RENDER METHODS ********************** *
+ * ****************************************************** */
+
+/*
+ * Render method
+ */
+function Level2::Render()
+{
+	// Starting the scene with the default camera
+	SceneBegin(mCamera);	
+		
+		switch(mLevelStatus)
+		{
+			case STATUS_ELEVATOR_MOVING:
+				break;
+			case STATUS_ELEVATOR_ARRIVED:
+			case STATUS_LEVEL_STARTED:
+				mMainRoom.Draw();			
+				DrawAllPortals();
+				break;
+		}
+		
+		// The elevator is always present, so it's always drawn
+		mElevator.Draw();
+	
+	
+	SceneEnd();
+}
+
+/*
+ * This method draws every portal in the scene. This function MUST be called after the opening of a SceneBegin()/SceneEnd() block, 
+ * otherwise it won't give out any results
+ */
+function Level2::DrawAllPortals()
+{
+	// We need to find out which portals are visible from the player's perspective, so we need its position
+	var currentCameraPosition = mCamera.GetPosition();
+	
+	// To render the portal we need the stencil buffer
+	glEnable(GL_STENCIL_TEST);
+		
+	// I iterate over all the portals to check which one is visible by the user
+	// I get the normal to the portal's frame, which was set manually; I also get the position of the frame
+	var normal = mPortalFrameNormal;
+	var framePos = mPortalFrame.GetPosition();
+	
+	// I compute the scalar product between the normal and the direction vector between the camera's position and the frame's position
+	var dotProduct = normal * (currentCameraPosition - framePos);
+	
+	// If the dot product is positive, the portal is visible.
+	// Note: in reality, if for example I move the camera around so that it gives its back to the portal, this one is still considered visible. For simplicity, 
+	// I don't check the direction where the camera is facing; in any case even though it is considered visible, in the end the portal won't be rendered
+	// because  XVR will know that the portal isn't actually visible from the camera perspective
+	if(dotProduct >= 0)
+	{
+		// I render the portal
+		DrawPortal(mPortalFrame, mPortalRoom);
+
+		// While drawing the portal, the camera was moved in order to render the portal's room. So I put it back where it was before proceding
+		mCamera.SetPosition(currentCameraPosition);
+	}
+
+
+	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]);
+	
+	// After drawing the portals, the stencil test is no longer needed
+	glDisable(GL_STENCIL_TEST);
+	
+	// Now the portals are drawn, but NOT in the depth buffer. This means that when we'll draw the rest of the scene, the computed depth will be wrong.
+	// To solve this, I re-draw the portal's frame, but without actually applying colors, and I do it while the depth buffer is active and clear, so that
+	// the frames will be put in there and will be taken into account when drawing the rest of the scene.
+	// So, first off, I dsable the color buffer
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	
+	// I enable writing to the depth buffer, enable the depth test and clear the buffer
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	
+	// Now I draw each portal, even the ones that weren't actually visible, because they still need to "occupy space"
+
+	// I use the silhouette shader so that the outline of the frames will be there
+	mSilhouetteShader.Start();
+		mSilhouetteShader.SetParameter("offset", 0.08);
+		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);		
+		mPortalFrame.Draw();
+	mSilhouetteShader.Stop();
+	
+	mPortalFrame.Draw();
+
+	// I enable the color buffer again for the rest of the scene
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
+ /*
+  * Method for drawing a single portal room in a single portal frame.
+  * Note: this method modifyes the currently active SceneBegin/SceneEnd block, meaning that it closes the currently active block and opens a new one without
+  * closing it. So, this function MUST be called after the opening of a SceneBegin() block, and it assures that at the end of the method a block will
+  * be still open for further use (so that outside this function we still have to call SceneEnd())
+  * 
+  * portalFrame: (CVmObj) the frame from which the portal's room will be visible
+  * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
+  */
+function Level2::DrawPortal(portalFrame, portalRoom)
+{
+	// I add a matrix to the opengl stack; I will update the camera's position for the time being, so a copy of the current matrix 
+	// comes in handy when we need to go back to how thing where
+	glPushMatrix();
+	
+	// In order to draw the portal, I first need to draw the frame using the stencil buffer. To do that, I first disable the color, writing to the depht
+	// buffer and the depth buffer itself; they're not needed now
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	
+	// I make sure that the stencil test will fail for every pixel drawn (thanks to GL_NEVER)
+	glStencilFunc(GL_NEVER, 1, 0xFF);
+	
+	// I state that when the stencil test fails (so always, because I'm using GL_NEVER), the buffer will replace the current value in the buffer (0 initially)
+	// with the reference value I passed as parameter to glStencilFunc (1 in this case). Basically this means that when I'll draw the portal's frame soon,
+	// the stencil buffer will be filled with 1s for every fragment of the frame and 0s for every fragment outside the frame. This will help us
+	// render the portal's room ONLY where the frame was rendered
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	
+	// I enable writing to the stencil buffer
+	glStencilMask(0xFF);
+	
+	// I empty the stencil buffer
+	glClear(GL_STENCIL_BUFFER_BIT);
+	
+	// I draw the portal frame; now the stencil buffer will contain 1s where the frame was rendered and 0s outside
+	portalFrame.Draw();
+	
+	// Chiudo il blocco correntemente attivo. Adesso dovrò infatti modificare la prospettiva della camera in modo che sia posizionata nella camera del portale,
+	// e per farlo in XVR bisogna prima chiudere il blocco SceneBegin/SceneEnd, altrimenti la modifica non ha effetto
+	
+	// Now I need to close the Scene block currently open. This is because I need to modify the camera's position so that it will be positioned where the portal's
+	// room is located, and to do that in XVR we need to close the SceneBegin/SceneEnd block first, otherwise the update won't have effect until the next frame
+	SceneEnd();
+	
+	// Getting the positions of the frame, the room and the camera
+	var framePos = portalFrame.GetPosition();
+	var roomPos = portalRoom.GetPosition();
+	var camPos = mCamera.GetPosition();
+	
+	// First I need to place the camera at the end of the portal's room
+	var localPoint = [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH];
+	var virtualCameraPos = portalRoom.LocalToWorld(localPoint);
+	
+	// Now I need to compute the translation I need to apply to the camera. For example, imagine being really close to the portal's frame: the portal room
+	// will need to be rendered as if you're really close to the room; this means moving the camera in the portal's room so that it's closer.
+	// To get the right translation, we first need to compute how far is the player to the frame position, i.e. we take the difference between the player's
+	// position and the frame's position. Then, we add it to the default's camera's position in the room, and that's done.
+	// NOTE: this will only work if the orientation of the frame is the same as the orientation of the portal's room. If for example the room is rotated by 90°
+	// and the frame isn't, we can't simply add the distance vector, because we'll be updating the wrong components; in this example, if the frame has
+	// rotation 0 and the portal's room rotation 90, if we move away from the frame we move across the Z axis, while in the portal's room the camera
+	// shouldn't increase the Z axis but the X axis. Drawying the example in a piace of paper helps understand the concept.
+	// So, in this case I'm assuming that they both have the same orientation, to make things easier
+	var translation = camPos - framePos;
+	translation = translation + virtualCameraPos;
+	
+	// Setto quindi la nuova posizione, e cambio anche la matrice di rotazione.
+	// Nota: in realtà la matrice di rotazione non cambia in quanto sto usando sempre la stessa camera e assumo che i frame dei portali e le rispettive stanze
+	// abbiano la stessa orientazione. Se questo non fosse vero, e ad esempio la stanza del portale è ruotata di -90 gradi, dopo aver settato la matrice
+	// di rotazione avrei dovuto ruotare la camera di 90 gradi con "camera.RotateGlobal(-90, 0, 1 ,0)"
+	
+	// Now that I have the new position, I set it. I also need to set the rotation of the camera, so it faces the room. In this case I don't need to do anything,
+	// since I'm assuming that both the frame and the portal's room have the same orientation. For example, if the frame has rotation 0 and the portal's room
+	// rotation 90, I would also need to rotate the camera by 90 degrees before rendering, otherwise it would face the wrong direction.
+	// One other thing: if I would be using another camera to render the portals' rooms, I would need to get the rotation matrix from the player's cameras and
+	// set it to the second camera first. I'm still doing that so that I don't forget this, but you can see that it doesn't anything in this case (I'm just
+	// re-setting the same rotation matrix to the same camera)
+	mCamera.SetPosition(translation);
+	mCamera.SetRotationMatrix(mCamera.GetRotationMatrix());
+	
+			
+	// Now I want to move the first opengl light so that it's in front of the portal and it moves around. The change of position must be done outside the
+	// SceneBegin/SceneEnd block, just like for the camera, otherwise (in XVR) it doesn't have any effect.
+	mOffset += mIncrement;
+	
+	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
+	virtualCameraPos.x += mOffset;
+	virtualCameraPos.y += sin(mOffset*1);
+	
+	if(mOffset > 7 || mOffset < -7)
+		mIncrement = -mIncrement;
+	
+	var oldLightPos = mLight0.GetPosition();
+	mLight0.SetPosition(virtualCameraPos);	
+	
+	// Now that the changes to the camera and light are done, I can start the scene again in order to render the portal's room
+	SceneBegin(mCamera);
+	
+	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	
+	// I disable writing to the stencil buffer, and I make sure that a pixel passes the stencil test ONLY if its value in the buffer is 1. That is,
+	// only the pixels belonging to the previously rendered portal's frame will pass the test, so the portal's room will be rendered there and olny there
+	glStencilMask(0x00);
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	
+	// Drawing the actual portal's room where the stencil is 1
+	portalRoom.Draw();
+	
+	// I reset the light's position. Note that this won't actually have a graphic effect until the next frame (I think)
+	mLight0.SetPosition(oldLightPos);
+
+	// I reset the light's position. Note that this won't actually have a graphic effect until the next frame (I think)
+
+	// I'm done with this portal, so I pop the matrix from the stack
+	glPopMatrix();
+}
+
+
+
+
+
+
+
+/* ****************************************************** *
+ * **************** LOGIC METHODS ********************** *
+ * ****************************************************** */
+  
+/*
+ * Updates the logic of the game
+ * 
+ * dt: (float) delta time, i.e. the time between the last update and this one
+ */
+function Level2::UpdateLogic(dt)
+{
+	// First off, let's update the player's position and orientation
+	mInputManager.UpdateCameraOrientation();
+	mInputManager.UpdateCameraPosition();
+	
+	var cameraPosition = mCamera.GetPosition();
+	
+	switch(mLevelStatus)
+	{
+		// This is the case where the level is starting and the elevator is moving up
+		case STATUS_ELEVATOR_MOVING: 
+		{			
+		    // I make sure that the camera doesn't go out of the elevator while it's going up
+		    if(!mElevator.IsPointInElevator(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
+			
+			var elevatorPos = mElevator.GetPosition();
+	
+			// I check if the elevator is halfway through the transtition; if this is the case, I change its lights range for the rendering (but only
+			// if I didn't do so already)
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2 && mElevator.GetLightsRange().y < 1)
+				 mElevator.SetLightsRange(1,2);
+			
+			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
+			cameraPosition.y = mCameraYoffset + elevatorPos.y;
+	   	    
+			// To make the shaking camera effect, I randomly move the x and y axis with random values
+		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+			
+			// I set the new (shaken and at level with the elevator) position
+			mCamera.SetPosition(cameraPosition);
+			
+			// I check if the elevator reached its destination, and if this is so I open the door and change status
+			if(elevatorPos.y >= mElevatorFinalPosition.y)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+				
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+				
+				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+			}
+	
+			break;
+		}		
+		// This is the case where the elevator arrived, BUT the player is still inside
+		case STATUS_ELEVATOR_ARRIVED:
+		{
+			// I check if the player goes out from the elevator. Note: I'm not checking that he exits from the doors; he can pass through walls right now.
+			// If the player comes out, I close the doors and change status
+			if(!mElevator.IsPointInElevator(cameraPosition))
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				mLevelStatus = STATUS_LEVEL_STARTED;
+			}
+			
+			
+			break;
+		}
+		// Case where the player is out of the elevator. It's the main status of the level
+		case STATUS_LEVEL_STARTED:
+		{
+			break;
+		}
+	}
+		
+	// I update the methods of the managers
+	mAnimator.UpdateTransitions(dt);
+	mSoundManager.UpdateMusic(dt);
+}
+
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function Level2::IsLevelCompleted()
+{
+	return mIsLevelCompleted;
+}
+
+

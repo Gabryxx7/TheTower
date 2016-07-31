@@ -1,8 +1,8 @@
 
 // Sizes for the main room
-#define ROOM_FAR_WALL_WIDTH     70
+#define ROOM_FAR_WALL_WIDTH     100
 #define ROOM_SIDE_WALL_WIDTH    100
-#define ROOM_HEIGHT             15
+#define ROOM_HEIGHT             25
 
 // Number of portals and sizes for the portals' rooms
 #define PORTALS_NUMBER  4
@@ -136,7 +136,7 @@ function Level0::Level0(inputManager, soundManager, lights)
 	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
 	mLight0.SetPosition([-10.0, 10.0, 10.0]);
-	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.SetDiffuse(1, 0, 0);
 	mLight0.Enable();	
 	
 	mLight1Position = [-10.0, 10.0, 10.0];
@@ -144,7 +144,7 @@ function Level0::Level0(inputManager, soundManager, lights)
 	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
-	mLight1.SetDiffuse(1, 1, 1);
+	mLight1.SetDiffuse(0, 0, 1);
 	mLight1.Enable();	
 	
 	// The current event triggered is nothing, while the next one is the first event trigger in the array
@@ -359,8 +359,17 @@ function Level0::Level0(inputManager, soundManager, lights)
 	var sphereMesh4 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);    
 	
 	// I give each sphere the cel shader and a random color
-	sphereMesh1.ShaderAdd("toonShader.glsl", 0);
-	sphereMesh1.ShaderActivate(true);
+	if(USE_TOON_SHADER == 2){		
+		sphereMesh1.ShaderAdd("antishader.glsl", 0);
+		sphereMesh1.ShaderActivate(true);
+	}
+	else if(USE_TOON_SHADER == 1){
+		sphereMesh1.ShaderAdd("toonShader.glsl", 0);
+		sphereMesh1.ShaderActivate(true);		
+	}
+	else if(USE_TOON_SHADER == 0){
+		sphereMesh1.ShaderActivate(false);				
+	}
 	sphereMesh1.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
 	sphereMesh1.ShaderSetParameter(0, "diffuse", 0, [0.0, 0.25, 0.75]);
 	sphereMesh1.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
@@ -368,8 +377,17 @@ function Level0::Level0(inputManager, soundManager, lights)
 	sphereMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	
-	sphereMesh2.ShaderAdd("toonShader.glsl", 0);
-	sphereMesh2.ShaderActivate(true);
+	if(USE_TOON_SHADER == 2){		
+		sphereMesh2.ShaderAdd("antishader.glsl", 0);
+		sphereMesh2.ShaderActivate(true);
+	}
+	else if(USE_TOON_SHADER == 1){
+		sphereMesh2.ShaderAdd("toonShader.glsl", 0);
+		sphereMesh2.ShaderActivate(true);		
+	}
+	else if(USE_TOON_SHADER == 0){
+		sphereMesh2.ShaderActivate(false);				
+	}
 	sphereMesh2.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
 	sphereMesh2.ShaderSetParameter(0, "diffuse", 0, [0.0, 1.0, 0.75]);
 	sphereMesh2.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
@@ -377,8 +395,17 @@ function Level0::Level0(inputManager, soundManager, lights)
 	sphereMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	
-	sphereMesh3.ShaderAdd("toonShader.glsl", 0);
-	sphereMesh3.ShaderActivate(true);
+	if(USE_TOON_SHADER == 2){		
+		sphereMesh3.ShaderAdd("antishader.glsl", 0);
+		sphereMesh3.ShaderActivate(true);
+	}
+	else if(USE_TOON_SHADER == 1){
+		sphereMesh3.ShaderAdd("toonShader.glsl", 0);
+		sphereMesh3.ShaderActivate(true);		
+	}
+	else if(USE_TOON_SHADER == 0){
+		sphereMesh3.ShaderActivate(false);				
+	}
 	sphereMesh3.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
 	sphereMesh3.ShaderSetParameter(0, "diffuse", 0, [1.0, 0.25, 0.75]);
 	sphereMesh3.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
@@ -386,8 +413,17 @@ function Level0::Level0(inputManager, soundManager, lights)
 	sphereMesh3.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh3.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	
-	sphereMesh4.ShaderAdd("toonShader.glsl", 0);
-	sphereMesh4.ShaderActivate(true);
+	if(USE_TOON_SHADER == 2){		
+		sphereMesh4.ShaderAdd("antishader.glsl", 0);
+		sphereMesh4.ShaderActivate(true);
+	}
+	else if(USE_TOON_SHADER == 1){
+		sphereMesh4.ShaderAdd("toonShader.glsl", 0);
+		sphereMesh4.ShaderActivate(true);		
+	}
+	else if(USE_TOON_SHADER == 0){
+		sphereMesh4.ShaderActivate(false);				
+	}
 	sphereMesh4.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
 	sphereMesh4.ShaderSetParameter(0, "diffuse", 0, [1.0, 0.25, 0.0]);
 	sphereMesh4.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);

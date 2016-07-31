@@ -127,10 +127,10 @@ function KeyboardManager::UpdateCameraOrientation()
     mRotationY += yoffset;
 	 			
 	// Setting the new rotation. For the Y, we completely overwrite the previous rotation, while for the X we add the current rotation value to the old one	    
-    if(mRotationY > 85)
-    	mRotationY = 85;
-	else if( mRotationY < -85)
-    	mRotationY = -85;   
+    if(mRotationY > 75)
+    	mRotationY = 75;
+	else if( mRotationY < -75)
+    	mRotationY = -75;   
     	
     CameraSetRotation(mRotationY, 1,0,0);
     CameraRotate(mRotationX, 0,1,0);  	
