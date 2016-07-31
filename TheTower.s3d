@@ -27,6 +27,7 @@ function OnDownload()
 	FileDownload("silhouetteShader.glsl");
 	FileDownload("toonShader.glsl");
 	FileDownload("antishader.glsl");
+	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
 }
 
