@@ -2,7 +2,7 @@
 #define STATUS_MENU     0
 #define STATUS_INGAME   1
 
-global var DEBUG_MODE = false;
+global var DEBUG_MODE = true;
 
 #include "Utils.s3d"
 #include "Level0.s3d"
@@ -128,8 +128,7 @@ function GameManager::GameManager()
 	aadd(mLights, light2);
 	
 	// 
-	mOpenglTranslationOffset = [0, 0, 0];
-	
+	mOpenglTranslationOffset = [0, 0, 0];	
 	if(DEBUG_MODE)
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
@@ -141,15 +140,13 @@ function GameManager::GameManager()
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6, -4);
 		
-<<<<<<< HEAD
+//		mCurrentLevel = Level1(mInputManager, mSoundManager);
+//		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+				
 		mCurrentLevel = Level2(mInputManager, mSoundManager);
-		mCurrentLevel.Init(mLights, mElevator);
-=======
-		mCurrentLevel = Level1(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
-		mCurrentLevelNumber = 1;
->>>>>>> origin/master
+		mCurrentLevelNumber = 2;
 		
 		mFadingIn = false;
 		mFadingOut = false;
