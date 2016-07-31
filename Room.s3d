@@ -1,3 +1,4 @@
+//#include "Utils.s3d"
 
 /*
  * Class that represents a room, with an optional front wall (so that it can be used for portals' rooms, that don't have the front wall so the camera
@@ -70,6 +71,7 @@ class Room
 	Translate(x, y, z);
 	Hide();
 	Unhide();
+	CheckIntersection(rayOrigin, rayEnd, contactPoint, normal);
 };
 
 /*
@@ -185,8 +187,6 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mUpperCornerPosition = [mHalfFarWidth, mHalfHeight, 0];
 	
 	// Computing the world coordinates of the bounding box
-	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
-    mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
 	
 	// Silhouette shader, used to create the black outline in the walls
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -260,6 +260,76 @@ function Room::Draw()
 	glDisable(GL_CULL_FACE); 
 }
 
+
+
+function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
+{	
+//	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
+	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
+	normal = ComputeNormalOfPlanarObject(mFloorObj);
+	
+	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	
+	if(contactPoint != Void && IsPointInRoom(contactPoint))
+		return 0;
+		
+		
+	/* Back wall */
+//	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
+	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
+	normal = ComputeNormalOfPlanarObject(mBackWallObj);
+	
+	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	
+	if(contactPoint != Void && IsPointInRoom(contactPoint))
+		return 1;
+		
+	/* Roof */
+//	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
+	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
+	normal = ComputeNormalOfPlanarObject(mRoofObj);
+	
+	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	
+	if(contactPoint != Void && IsPointInRoom(contactPoint))
+		return 2;
+		
+	/* Left wall */
+//	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
+	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
+	normal = ComputeNormalOfPlanarObject(mLeftWallObj);
+	
+	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	
+	if(contactPoint != Void && IsPointInRoom(contactPoint))
+		return 3;
+		
+	/* Right wall */
+//	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
+	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
+	normal = ComputeNormalOfPlanarObject(mRightWallObj);
+	
+	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	
+	if(contactPoint != Void && IsPointInRoom(contactPoint))
+		return 4;
+		
+	/* Front wall */
+	if(mHasFront)
+	{
+//		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
+		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
+		normal = ComputeNormalOfPlanarObject(mFrontWallObj);
+		
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+		
+		if(contactPoint != Void && IsPointInRoom(contactPoint))
+			return 5;
+	}
+	
+	return -1;
+}
+
 /*
  * This method checks whether the point passed as parameter is in the room or not
  * 
@@ -267,15 +337,19 @@ function Room::Draw()
  */
 function Room::IsPointInRoom(point)
 {
+	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
+	mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
+	
 	// I check if the point is in the bounding box, using the world coordinates. I'm also using little offset to account for the fact that 
 	// the walls are not completely attached, so the bounding box is a little bit bigger
-//	return (point.x >= mLowerCornerWorld.x + 0.5 && point.x <= mUpperCornerWorld.x - 0.5) &&
-//    	   (point.y >= mLowerCornerWorld.y + 0.5 && point.y <= mUpperCornerWorld.y - 0.5) &&
-//       	   (point.z <= mLowerCornerWorld.z - 0.5 && point.z >= mUpperCornerWorld.z + 0.5);
+	return (point.x >= mLowerCornerWorld.x + 0.5 && point.x <= mUpperCornerWorld.x - 0.5) &&
+    	   (point.y >= mLowerCornerWorld.y + 0.5 && point.y <= mUpperCornerWorld.y - 0.5) &&
+       	   (point.z <= mLowerCornerWorld.z - 0.5 && point.z >= mUpperCornerWorld.z + 0.5);
 
-	return (point.x >= mLowerCornerWorld.x - 0.5 && point.x <= mUpperCornerWorld.x + 0.5) &&
-    	   (point.y >= mLowerCornerWorld.y - 0.5 && point.y <= mUpperCornerWorld.y + 0.5) &&
-       	   (point.z <= mLowerCornerWorld.z + 0.5 && point.z >= mUpperCornerWorld.z - 0.5);
+
+//	return (point.x >= mLowerCornerWorld.x - 0.5 && point.x <= mUpperCornerWorld.x + 0.5) &&
+//    	   (point.y >= mLowerCornerWorld.y - 0.5 && point.y <= mUpperCornerWorld.y + 0.5) &&
+//       	   (point.z <= mLowerCornerWorld.z + 0.5 && point.z >= mUpperCornerWorld.z - 0.5);
 }
 
 /*
@@ -345,19 +419,11 @@ function Room::GetLightsRange()
 function Room::SetPosition(position)
 {
 	mRoom.SetPosition(position);
-	
-	// When setting a new position I also update the world coordinates of the bounding box of the room
-	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
-	mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
 }
 
 function Room::Translate(x, y, z)
 {
 	mRoom.Translate(x, y, z);
-	
-	// When setting a new position I also update the world coordinates of the bounding box of the room
-	mLowerCornerWorld = mRoom.LocalToWorld(mLowerCornerPosition);
-	mUpperCornerWorld = mRoom.LocalToWorld(mUpperCornerPosition);
 }
 
 function Room::Rotate(angle, x, y, z)

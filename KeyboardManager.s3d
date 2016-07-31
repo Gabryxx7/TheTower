@@ -45,7 +45,8 @@ class KeyboardManager
 	UpdateCameraOrientation();
 	UpdateCameraPosition();
 	SetActiveCamera(camera);
-	HasClicked();
+	IsPressingPrimaryButton();
+	IsPressingSecondaryButton();
 };
 
 
@@ -249,8 +250,13 @@ function KeyboardManager::SetActiveCamera(camera)
 	mCamera = camera;
 }
 
-function KeyboardManager::HasClicked()
+function KeyboardManager::IsPressingPrimaryButton()
 {
 	return Mouse.ButtonL;
+}
+
+function KeyboardManager::IsPressingSecondaryButton()
+{
+	return Mouse.ButtonR;
 }
 

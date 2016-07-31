@@ -25,7 +25,8 @@ class InputManager
 	RestoreCameraPosition();
 	SetActiveCamera(camera);
 	GetActiveCamera();
-	HasClicked();
+	IsPressingPrimaryButton();
+	IsPressingSecondaryButton();
 };
 
 
@@ -87,8 +88,13 @@ function InputManager::GetActiveCamera()
 	return mCamera;
 }
 
-function InputManager::HasClicked()
+function InputManager::IsPressingPrimaryButton()
 {
-	return mManager.HasClicked();
+	return mManager.IsPressingPrimaryButton();
+}
+
+function InputManager::IsPressingSecondaryButton()
+{
+	return mManager.IsPressingSecondaryButton();
 }
 

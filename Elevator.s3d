@@ -56,6 +56,7 @@ class Elevator
 	Translate(x, y, z);
 	Hide();
 	Unhide();
+	CheckIntersection(rayOrigin, rayEnd, contactPoint, normal);
 };
 
 /*
@@ -143,25 +144,21 @@ function Elevator::GetRightDoor()
 
 function Elevator::GetLeftDoorClosedPosition()
 {
-//	return [-elevatorWidth/4 - 0.1, 0, sideWallWidth];
 	return mLeftDoorClosedPosition;
 }
 
 function Elevator::GetRightDoorClosedPosition()
 {
-//	return [elevatorWidth/4 - 0.1, 0, sideWallWidth];
 	return mRightDoorClosedPosition;
 }
 
 function Elevator::GetLeftDoorOpenPosition()
 {
-//	return GetLeftDoorClosePosition + [GetRoomWidth()/3 + 0.1, 0, 0];
 	return mLeftDoorOpenPosition;
 }
 
 function Elevator::GetRightDoorOpenPosition()
 {
-//	return GetRightClosedPosition - [GetRoomWidth()/3 + 0.1, 0, 0];
 	return mRightDoorOpenPosition;
 }
 
@@ -184,6 +181,30 @@ function Elevator::AddObject(object, x, y, z)
 	mElevatorRoom.AddObject(object, x, y, z);
 }
 
+
+function Elevator::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
+{
+	if(!IsElevatorOpen())
+	{
+		var planePoint = mElevatorDoorLeftObj.GetPosition() + GetPosition() + [0, 0, -1];
+		normal = ComputeNormalOfPlanarObject(mElevatorDoorLeftObj);
+		
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+		
+		if(contactPoint != Void && mElevatorRoom.IsPointInRoom(contactPoint))
+			return 5;
+	}
+	
+	var intersectedWall = mElevatorRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	
+	if(!IsElevatorOpen() && intersectedWall == 0)
+	{
+		intersectedWall = -2;
+		outputln("yolo");
+	}
+		
+	return intersectedWall;
+}
 
 function Elevator::RemoveObject(object)
 {

@@ -4,7 +4,7 @@
 #define STATUS_LEVEL_STARTED 2
 
 // The multiplier used to speedup the objects when the player uses the clock
-#define TIME_CLOCK_VELOCITY_MULTIPLIER 5.0
+#define TIME_CLOCK_VELOCITY_MULTIPLIER 3.0
 
 //#include <Utils.s3d>
 #include <Clock.s3d>
@@ -82,6 +82,7 @@ class Level1
 	UpdateLogic(dt);
 	IsLevelCompleted();
 	GetElevator();
+	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 };
 
 
@@ -110,7 +111,6 @@ function Level1::Level1(inputManager, soundManager)
 	global var sphere = CVmObj(sphereMesh1);
 	sphere.SetPosition(0, 5, 20);
 	
-
 }
 
 
@@ -160,7 +160,7 @@ function Level1::Level1(inputManager, soundManager)
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 //	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
 	
-	mCameraYoffset = mCamera.GetPosition().y - mElevatorFinalPosition.y;
+	mCameraYoffset = mCamera.GetPosition().y - openglTranslationOffset.y - mElevatorFinalPosition.y;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
@@ -202,7 +202,7 @@ function Level1::Level1(inputManager, soundManager)
 		{
 			aadd(mClocks, Clock(1, 2));
 			
-//			var x = (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * j;
+			// These coordinates are used if the clocks aren't put as children of the main room; I'll leave it for now as a reminder
 //			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
 //			var y = mMainRoom.GetRoomHeight() - 4.0 - heightStep*i;
 //			var z = mMainRoom.GetRoomDepth()/2.0 - 0.3;
@@ -226,6 +226,57 @@ function Level1::Level1(inputManager, soundManager)
 			mMainRoom.AddObject(newClock.GetObj(), position.x, position.y, position.z);
 		}
 	}
+	
+	
+	var pyramidHeight = 3;
+	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2, pyramidHeight);
+	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2, pyramidHeight);
+	
+	pyramidMesh1.ShaderAdd("toonShader.glsl", 0);
+	pyramidMesh1.ShaderActivate(true);
+	pyramidMesh1.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	pyramidMesh1.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.1, 0.1]);
+	pyramidMesh1.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
+	pyramidMesh1.ShaderSetParameter(0, "shininess", 0, 50);
+	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	
+	pyramidMesh2.ShaderAdd("toonShader.glsl", 0);
+	pyramidMesh2.ShaderActivate(true);
+	pyramidMesh2.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	pyramidMesh2.ShaderSetParameter(0, "diffuse", 0, [0.1, 0.9, 0.9]);
+	pyramidMesh2.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
+	pyramidMesh2.ShaderSetParameter(0, "shininess", 0, 50);
+	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	
+	var pyramidObj1 = CVmObj(pyramidMesh1); 
+	var pyramidObj2 = CVmObj(pyramidMesh2);  
+
+	
+	global var pyramidObj = CVmObj();
+	pyramidObj.AddChild(pyramidObj1, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
+//	pyramidObj2.SetPivotPoint(0, pyramidHeight, 0);
+	pyramidObj2.Rotate(180, 0, 0, 1);
+	pyramidObj2.Translate(0, pyramidHeight/2.0 + 0.47, 0);
+	
+	
+	
+	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0, mMainRoom.GetRoomHeight() / 2.0 - 5.0, mMainRoom.GetRoomDepth() - 10.0);
+	
+	var waypoint0 = pyramidObj.GetPosition();
+	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
+	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0];
+	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
+	
+	print({"waypoint0", "waypoint2"}, {waypoint0, waypoint2});
+	
+	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
+	mAnimator.CreateRotatingTransition(pyramidObj, 0, 360, [1, 0, 0], 5.0, true, false);
+	
+	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
+	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
 }
 
 
@@ -237,34 +288,25 @@ function Level1::Level1(inputManager, soundManager)
  * Render method
  */
 function Level1::Render()
-{
-	// Starting the scene with the default camera
-	SceneBegin(mCamera);		
-			
-		switch(mLevelStatus)
-		{
-			case STATUS_ELEVATOR_MOVING:
-				break;
-			case STATUS_ELEVATOR_ARRIVED:
-			case STATUS_LEVEL_STARTED:
-				mMainRoom.Draw();
-				mMainClock.Draw();
-				sphere.Draw();
-				flyingFuck2.Draw();
-				
-//				for(var i = 0; i < mNumberOfClockRows * mNumberOfClocks; i++)
-//				{
-//					mClocks[i].Draw();
-//				}
-				
-				break;
-		}
-		
-		// The elevator is always present, so it's always drawn
-		mElevator.Draw();
+{	
+	mLight1.SetPosition([0, 10.0, 35.0] + openglTranslationOffset);
+	mLight2.SetPosition([0, 10.0, -20.0] + openglTranslationOffset);
 	
+	switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING:
+			break;
+		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_STARTED:
+			mMainRoom.Draw();
+			mMainClock.Draw();
+			sphere.Draw();
+			flyingFuck2.Draw();
+			break;
+	}
 	
-	SceneEnd();
+	// The elevator is always present, so it's always drawn
+	mElevator.Draw();
 }
 
 
@@ -283,7 +325,7 @@ function Level1::UpdateLogic(dt)
 	mInputManager.UpdateCameraOrientation();
 	mInputManager.UpdateCameraPosition();
 	
-	var cameraPosition = mCamera.GetPosition();
+	var cameraPosition = mCamera.GetPosition() - openglTranslationOffset;
 	
 	switch(mLevelStatus)
 	{
@@ -309,7 +351,7 @@ function Level1::UpdateLogic(dt)
 		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
 			
 			// I set the new (shaken and at level with the elevator) position
-			mCamera.SetPosition(cameraPosition);
+			mCamera.SetPosition(cameraPosition + openglTranslationOffset);
 			
 			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
@@ -341,7 +383,6 @@ function Level1::UpdateLogic(dt)
 				mLevelStatus = STATUS_LEVEL_STARTED;
 			}
 			
-			
 			break;
 		}
 		// Case where the player is out of the elevator. It's the main status of the level
@@ -352,12 +393,12 @@ function Level1::UpdateLogic(dt)
 //		    	mInputManager.RestoreCameraPosition();
 				 
 			// I check if the user has clicked with the mouse or whatever; if that is the case I need to check "where" he clicked    	
-	    	if(mInputManager.HasClicked())
+	    	if(mInputManager.IsPressingPrimaryButton())
 	    	{
 	    		// I get the ray that starts from the camera and goes until the end of the rendering plane. Basically I take a ray in the direction
 	    		// the user is facing. It doesn't really matter where the ray ends, it's the starting point and its direction that really count.
 	    		// But to be safe I make sure that the ray ends "at the end of time"
-	    		var raycastOrigin = mCamera.GetPosition();
+	    		var raycastOrigin = cameraPosition;
 	    		var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
 	    		
 	    		// I check if the clock was selected
@@ -410,6 +451,21 @@ function Level1::UpdateLogic(dt)
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
+}
+
+
+function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+{
+	var intersectedPlane = -1;
+
+	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+
+	if(intersectedPlane == -1)
+		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+	isWall = true;
+	
+	return intersectedPlane == 0;
 }
 
 

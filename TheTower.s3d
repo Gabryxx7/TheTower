@@ -39,7 +39,6 @@ function OnInit(params)
 	// Non so perchè ma bisogna rimuovere il cursore sia da qua che nel KeyboardManager
 	ShowCursor(false);
 
-var a = 0;
 //	SetCursorShape(VR_CUR_CROSS); 
 }
 

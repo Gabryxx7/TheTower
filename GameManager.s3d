@@ -3,7 +3,9 @@
 #define STATUS_INGAME   1
 
 global var DEBUG_MODE = true;
+global var openglTranslationOffset = [0, 0, 0];
 
+#include "Utils.s3d"
 #include "Level0.s3d"
 #include "Level1.s3d"
 #include "InputManager.s3d"
@@ -42,6 +44,11 @@ class GameManager
 	var mLights;
 	
 	var mLevel1;
+	
+	var mPositionCircleObj;
+	var mIsPositionValid;
+	var mIsWall;
+	var mIsClickingSecondaryButton;
 
 	Render();
 	UpdateLogic(dt);
@@ -56,7 +63,6 @@ function GameManager::GameManager()
 		
 	mGameStarted = false;
 	mGameReady = false;
-	
 	
 	
 	mCamera = CameraGetCurrent();
@@ -132,6 +138,15 @@ function GameManager::GameManager()
 		mFadingIn = true;
 		mFadingOut = false;
 	}
+	
+	
+	
+	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, 1, 1);  
+	mPositionCircleObj = CVmObj(positionCircleMesh);
+	
+	mIsPositionValid = false;
+	mIsWall = false;
+	mIsClickingSecondaryButton = false;
 }
 
 
@@ -146,8 +161,38 @@ function GameManager::Render()
 	//		mMenu.Render();
 			break;
 		case STATUS_INGAME:
+			SceneBegin(mCamera);
+				glTranslate(openglTranslationOffset);
+	
 				mCurrentLevel.Render();
+	
+				if(mIsClickingSecondaryButton)
+				{
+					var raycastOrigin = mCamera.GetPosition() - openglTranslationOffset - [-0.1, 0.1, 0.0];
+					var raycastEnd = mPositionCircleObj.GetPosition();
+					
+					
+					glLineWidth(2.5); 
+					
+					glDisable(GL_LIGHTING);
+					
+					if(mIsPositionValid)
+						glColor(0.0, 0.0, 1.0, 1.0);
+					else
+						glColor(1.0, 0.0, 0.0, 1.0);
+					
+					glBegin(GL_LINES);
+						glVertex(raycastOrigin);
+						glVertex(raycastEnd);
+					glEnd();
+					
+					glEnable(GL_LIGHTING);
+					
+					if(mIsWall)
+						mPositionCircleObj.Draw();
+				}
 				
+				// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff
 				DrawCrosshair();
 				
 				if(mFadingIn)
@@ -160,6 +205,8 @@ function GameManager::Render()
 					FadeToBlackScreen(false);
 					mFadingOut = mFadeToBlackAlpha < 1.0;
 				}
+			
+			SceneEnd();
 			break;
 		default:
 			break;
@@ -178,22 +225,66 @@ function GameManager::UpdateLogic(dt)
 		
 			break;
 		case STATUS_INGAME:	
-			
-			
-	//		if (KeyPressed(VK_ESCAPE, false)) {
-	//			mMenu.SetMenuType(MENU_INGAME);
-	//			mGameStatus = GAME_MENU;
-	//		}
-				
+
 			mCurrentLevel.UpdateLogic(dt);
+			
+			if(mInputManager.IsPressingSecondaryButton())
+			{				
+				var cameraPosition = mCamera.GetPosition() - openglTranslationOffset;
+				
+				var raycastOrigin = cameraPosition;
+				var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+				
+				var contactPoint;
+				var normal;
+				
+				mIsWall = true;
+				
+				mIsPositionValid = mCurrentLevel.IsPointedPositionValid(raycastOrigin, raycastEnd, &contactPoint, &normal, &mIsWall);
+				
+				
+				if(mIsPositionValid)
+					mPositionCircleObj.SetRotation(0, 0, 1, 0);
+				else
+				{
+					if(abs(normal.x) == 1)
+					{
+						mPositionCircleObj.SetRotation(90, 0, 0, 1);
+					}
+					else if(abs(normal.z) == 1)
+					{
+						mPositionCircleObj.SetRotation(90, 1, 0, 0);
+					}
+					else
+						mPositionCircleObj.SetRotation(0, 0, 1, 0);
+				}	
+				
+//				print({"contactPoint", "add"}, {contactPoint, contactPoint - mCamera.GetDirection()});
+					
+				if(contactPoint != Void)
+					mPositionCircleObj.SetPosition(contactPoint - mCamera.GetDirection());
+				
+				mIsClickingSecondaryButton = true;
+			}
+			else
+			{
+				if(mIsClickingSecondaryButton)
+				{
+					if(mIsPositionValid)
+					{
+						var cameraPosition = mCamera.GetPosition() - openglTranslationOffset;
+						openglTranslationOffset.x = cameraPosition.x +  openglTranslationOffset.x - mPositionCircleObj.GetPosition().x;
+						openglTranslationOffset.z = cameraPosition.z  + openglTranslationOffset.z - mPositionCircleObj.GetPosition().z;
+					}
+					
+					mIsClickingSecondaryButton = false;
+				}
+			}
 			
 			if(mCurrentLevel.IsLevelCompleted())
 			{
-	//			mCurrentLevel = Level1(mInputManager, mSoundManager, mElevator);
 				mCurrentLevel = mLevel1;
 				mCurrentLevel.Init(mLights, mElevator);
-	//			mSoundManager.FadeOutMusic(10, 0);
-	//			mFadingOut = true;
 			}
 			
 			break;
@@ -221,34 +312,24 @@ function GameManager::DrawCrosshair()
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     
-    glDisable( GL_LIGHTING );
+    glDisable(GL_LIGHTING);
     
     glLineWidth(2.0);
     
     
+    // Horizontal line
     glBegin(GL_LINES);
     	glColor(0.0, 0.0, 0.0, 1.0);
-        //horizontal line
+        
         glVertex(viewport[2] / 2 - 7, viewport[3] / 2);
         glVertex(viewport[2] / 2 + 7, viewport[3] / 2);
-        glEnd();
-        //vertical line
-        glBegin(GL_LINES);
+    glEnd();
+        
+    // Vertical line
+    glBegin(GL_LINES);
         glVertex(viewport[2] / 2, viewport[3] / 2 + 7);
         glVertex(viewport[2] / 2, viewport[3] / 2 - 7);
     glEnd();
-        
-    // Drawing the crosshair as a really small black rectangle; I don't know why, but drawing points doesn't work (they simply don't appear)
-//    glBegin(GL_QUADS);              
-//      glColor(0.0, 0.0, 0.0, 1.0); 
-//      glVertex(-0.002, -0.002);    
-//      glVertex( 0.002, -0.002);
-//      glVertex( 0.002,  0.002);
-//      glVertex(-0.002,  0.002);
-////		glPointSize(100.0);
-////		glVertex(0.0, 0.0);
-////		glVertex(0.5, 0.5);
-//   	glEnd();
 	
 	glMatrixMode(GL_PROJECTION);
 	glEnable(GL_DEPTH_TEST);
