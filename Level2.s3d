@@ -92,21 +92,21 @@ function Level2::Level2(inputManager, soundManager)
 	
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
-	mPortalRoom = Room(PIT_WIDTH , PIT_HEIGHT, PIT_WIDTH, false, true, 0, 0);	
+	mPortalRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, false, true, 0, 0);	
 	mPortalRoom.Translate(0, 0, -50);	
 	mPortalRoom.Rotate(-90, 1, 0, 0);	
 	
-	var halfWidth = PIT_WIDTH/2;
-	var halfHeight = PIT_WIDTH/2;
+	var halfWidth = ROOM_FAR_WALL_WIDTH/2;
+	var halfHeight = ROOM_SIDE_WALL_WIDTH/2;
 	
 	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfWidth, 0], 2, 2);
 	mPortalFrame = CVmObj(portalFrameMesh);
-	mPortalFrame.Translate(0, 0.4, 15);
+//	mPortalFrame.Translate(0, 0.4, 15);
 	mPortalFrame.Rotate(90, 1, 0, 0);
 	mPortalFrameNormal = [0, 0, 1];
 	
 	// Instantiating the silhouette shader, to draw outlines
-	mSilhouetteShader = CVmShaderProgram("spotShader.glsl");
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	mSpotShader = CVmShaderProgram("spotShader.glsl");	
 }
 
@@ -121,11 +121,11 @@ function Level2::Level2(inputManager, soundManager)
 	
 	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
-	mLight0.SetPosition([-10.0, 10.0, 10.0] + mOpenglTranslationOffset);
+	mLight0.SetPosition([-10.0, -50, 10.0] + mOpenglTranslationOffset);
 	mLight0.SetDiffuse(0, 0, 1);
 	mLight0.Enable();	
 	
-	mLight1Position = [-10.0, -2000.0, 10.0] + mOpenglTranslationOffset;
+	mLight1Position = [-10.0, -500, 10.0] + mOpenglTranslationOffset;
 	
 	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
 	mLight1 = lights[1];
@@ -186,7 +186,11 @@ function Level2::Level2(inputManager, soundManager)
 	provaMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	provaMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	provaMeshObj = CVmObj(provaMesh);
-	mPortalRoom.AddObject(provaMeshObj, -15, -15, PIT_HEIGHT);	
+	provaMeshObj.rotate(45,1,1,0);
+	mPortalRoom.AddObject(provaMeshObj, -18, -18, PIT_HEIGHT-50);	
+	provaMeshObj = CVmObj(provaMesh);
+	provaMeshObj.rotate(75,1,0,1);
+	mPortalRoom.AddObject(provaMeshObj, -25, -8, PIT_HEIGHT-18);	
 	
 	floorObj = generateFloorTiles();
 }
@@ -214,12 +218,21 @@ function Level2::Render()
 	
 	flyingFuck.Draw();
 	endText.Draw();
-	outputln(mCamera.GetPosition().x);
+		
 	mSpotShader.Start();
-		//mSpotShader.SetParameter("cameraPos", mCamera.GetPosition());
-		//mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+		mSpotShader.SetParameter("outline", false);
+		mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
 		floorObj.Draw();
 	mSpotShader.Stop();
+	
+	
+	mSpotShader.Start();
+		mSpotShader.SetParameter("outline", true);
+		mSpotShader.SetParameter("offset", 0.01);
+		mSpotShader.SetParameter("outlineColor", [1.0, 0.0, 0.0]);
+		floorObj.Draw();
+	mSpotShader.Stop();	
+	
 }
 
 /*
@@ -596,13 +609,13 @@ function Level2::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 function Level2::generateFloorTiles()
 {
 	var returnObj = CVmObj();
-	var tilesNum = 10;
-	var tilesSize = (PIT_WIDTH/2)/tilesNum;
+	var tilesNum = 33;
+	var tilesSize = (ROOM_FAR_WALL_WIDTH/2)/tilesNum;
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.4);
 	var xOffset = 0;
 	var yOffset = 0;
 	for(var i = 0; i < tilesNum; i++){
 		for(var j = 0; j < tilesNum; j++){
-			var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.6);
 //			if(USE_TOON_SHADER == 2){		
 //				tileMesh.ShaderAdd("antishader.glsl", 0);
 //				tileMesh.ShaderActivate(true);
@@ -620,13 +633,13 @@ function Level2::generateFloorTiles()
 //			tileMesh.ShaderSetParameter(0, "shininess", 0, 50);
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-			var tileObj = CVmObj(tileMesh);
+	var tileObj = CVmObj(tileMesh);
 			returnObj.AddChild(tileObj, 3*i, 3*j, 0);
 		}		
 	}
 	
 	returnObj.rotate(90, 1, 0, 0);
-	returnObj.Translate(-tilesNum-3, 0.7, 7);
+	returnObj.SetPosition(-tilesNum-15,0.3,-tilesNum-15);
 	
 	return returnObj;
 }
