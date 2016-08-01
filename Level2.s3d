@@ -40,6 +40,7 @@ class Level2
 	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
 	// draw the silhouettes for the portals' frames
 	var mSilhouetteShader;
+	var mSpotShader;
 	
 	// Booleans that indicate whether the elevator has appeared and if it's already open or not
 	var mIsElevatorPresent;
@@ -105,7 +106,8 @@ function Level2::Level2(inputManager, soundManager)
 	mPortalFrameNormal = [0, 0, 1];
 	
 	// Instantiating the silhouette shader, to draw outlines
-	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");	
+	mSilhouetteShader = CVmShaderProgram("spotShader.glsl");
+	mSpotShader = CVmShaderProgram("spotShader.glsl");	
 }
 
 
@@ -212,11 +214,12 @@ function Level2::Render()
 	
 	flyingFuck.Draw();
 	endText.Draw();
-	mSilhouetteShader.Start();
-		mSilhouetteShader.SetParameter("offset", 0.08);
-		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+	outputln(mCamera.GetPosition().x);
+	mSpotShader.Start();
+		//mSpotShader.SetParameter("cameraPos", mCamera.GetPosition());
+		//mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
 		floorObj.Draw();
-	mSilhouetteShader.Stop();
+	mSpotShader.Stop();
 }
 
 /*
@@ -600,30 +603,30 @@ function Level2::generateFloorTiles()
 	for(var i = 0; i < tilesNum; i++){
 		for(var j = 0; j < tilesNum; j++){
 			var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.6);
-			if(USE_TOON_SHADER == 2){		
-				tileMesh.ShaderAdd("antishader.glsl", 0);
-				tileMesh.ShaderActivate(true);
-			}
-			else if(USE_TOON_SHADER == 1){
-				tileMesh.ShaderAdd("toonShader.glsl", 0);
-				tileMesh.ShaderActivate(true);		
-			}
-			else if(USE_TOON_SHADER == 0){
-				tileMesh.ShaderActivate(false);				
-			}
-			tileMesh.ShaderSetParameter(0, "ambient", 0, [1, 1.0, 1.0]);
-			tileMesh.ShaderSetParameter(0, "diffuse", 0, [1.0, 1.0, 1.0]);
-			tileMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-			tileMesh.ShaderSetParameter(0, "shininess", 0, 50);
-			tileMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+//			if(USE_TOON_SHADER == 2){		
+//				tileMesh.ShaderAdd("antishader.glsl", 0);
+//				tileMesh.ShaderActivate(true);
+//			}
+//			else if(USE_TOON_SHADER == 1){
+//				tileMesh.ShaderAdd("toonShader.glsl", 0);
+//				tileMesh.ShaderActivate(true);		
+//			}
+//			else if(USE_TOON_SHADER == 0){
+//				tileMesh.ShaderActivate(false);				
+//			}
+//			tileMesh.ShaderSetParameter(0, "ambient", 0, [1, 1.0, 1.0]);
+//			tileMesh.ShaderSetParameter(0, "diffuse", 0, [1.0, 1.0, 1.0]);
+//			tileMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
+//			tileMesh.ShaderSetParameter(0, "shininess", 0, 50);
+//			tileMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
+//			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 			var tileObj = CVmObj(tileMesh);
 			returnObj.AddChild(tileObj, 3*i, 3*j, 0);
 		}		
 	}
 	
 	returnObj.rotate(90, 1, 0, 0);
-	returnObj.Translate(-tilesNum-3, 0.7, 3);
+	returnObj.Translate(-tilesNum-3, 0.7, 7);
 	
 	return returnObj;
 }

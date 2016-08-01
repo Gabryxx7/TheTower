@@ -4,7 +4,7 @@
  * Class that represents a room, with an optional front wall (so that it can be used for portals' rooms, that don't have the front wall so the camera
  * dosn't get obstructed when the room is rendered). It gives more flexibility than simply creating a box, and it's easier to maintain
  */
- #define USE_TOON_SHADER 1
+ #define USE_TOON_SHADER 2
  
 class Room
 {

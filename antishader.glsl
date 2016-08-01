@@ -190,5 +190,8 @@ void main()
     
     
 	// Moltiplico il colore per il fattore di attenuazione
+	vec4 outColor = vec4(color, 0.0);
+	outColor.a = 1.0 - smoothstep(15-2, 15+2, lightDistance);
+		
 	gl_FragColor = vec4(color, 1.0);
 }
