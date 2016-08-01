@@ -28,6 +28,8 @@ function OnDownload()
 	FileDownload("toonShader.glsl");
 	FileDownload("spotShader.glsl");
 	FileDownload("antishader.glsl");
+	FileDownload("dashedLineShader.glsl");
+	FileDownload("positionCircleShader.glsl");
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
 }

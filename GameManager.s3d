@@ -62,8 +62,20 @@ class GameManager
 	// This object is the circle that appears when the user wants to teleport to a destination
 	var mPositionCircleObj;
 	
+	// Radius of the position circle
+	var mPositionCircleRadius;
+		
+	// Shader used to render the position circle
+	var mPositionCircleShader;
+	
 	// Boolean that indicates if the current position of the circle is a valid position for teleportation
 	var mIsPositionValid;
+	
+	// Shader used to create the dashed lines when the player uses that teleportation feature
+	var mDashedLineShader;
+	
+	// Offset used by the "dashed line shader" to create the illusion that the line segments are moving
+	var mDashedLinesOffset;
 	
 	// If the current position of the circle isn't valid, this boolean indicates if it's placed on a wall; in that case the circle will be shown anyway, 
 	// otherwise it will be hidden for rendering simplicity (meaning that it would be hard to render correctly the circle to a surface that is not planar like a wall)
@@ -71,12 +83,15 @@ class GameManager
 	
 	// This boolean indicates whether the user is currently pressing the secondary button for teleportation
 	var mIsPressingSecondaryButton;
-	
 
-	Render();
-	UpdateLogic(dt);
+
+	// Private methods
 	DrawCrosshair();
 	FadeToBlackScreen(fadeIn);
+	
+	// Public methods
+	Render();
+	UpdateLogic(dt);
 };
 
 
@@ -143,10 +158,10 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level2(mInputManager, mSoundManager);
+		mCurrentLevel = Level1(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
-		mCurrentLevelNumber = 2;
+		mCurrentLevelNumber = 1;
 		
 		mFadingIn = false;
 		mFadingOut = false;
@@ -167,17 +182,23 @@ function GameManager::GameManager()
 		mFadingOut = false;
 	}
 	
-	
-	
-	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, 1, 1);  
+	// Creating the position circle object, used for the teleportation feature
+	mPositionCircleRadius = 1.0;
+	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
 	mPositionCircleObj = CVmObj(positionCircleMesh);
 	
+	// Booleans used for the teleportation feature
 	mIsPositionValid = false;
 	mIsWall = false;
 	mIsPressingSecondaryButton = false;
 	
+	// Shaders used to render the dashed line and the circle for the teleportation feature
+	mDashedLineShader = CVmShaderProgram("dashedLineShader.glsl");
+	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
+	
+	// Offset used for the teleportation feature rendering
+	mDashedLinesOffset = 0;
 }
-
 
 /*
  * Render function. It delegates the job to the current level or the menu manager
@@ -212,32 +233,54 @@ function GameManager::Render()
 					// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
 					var raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
 					var raycastEnd = mPositionCircleObj.GetPosition();
-					
-					
-					glLineWidth(2.5); 
-					
-					// Need to disable lighting in order to have the right color of the line
-					glDisable(GL_LIGHTING);
+															
+					var color;
 					
 					// If the position is valid the ray is blue, otherwise it's red
 					if(mIsPositionValid)
-						glColor(0.0, 0.0, 1.0, 1.0);
+						color = [0, 0, 1];
 					else
-						glColor(1.0, 0.0, 0.0, 1.0);
+						color = [1, 0, 0];
 					
-					// Drawing the ray
-					glBegin(GL_LINES);
-						glVertex(raycastOrigin);
-						glVertex(raycastEnd);
-					glEnd();
-					
-					// Re-enabling the lighting for future rendering
-					glEnable(GL_LIGHTING);
-					
-					// If the circle is in a wall, I also draw it
+					// Rendering of the ray
+					mDashedLineShader.Start();
+						// Parameters for the ray's shader
+						mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
+						mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
+						mDashedLineShader.SetParameter("color", color);
+						mDashedLineShader.SetParameter("ticksLength", 0.17);
+						mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
+						
+						glLineWidth(2.5); 
+						
+						// I draw the ray as a simple opengl line
+						glBegin(GL_LINES);
+							glVertex(raycastOrigin);
+							glVertex(raycastEnd);		
+						glEnd();
+					mDashedLineShader.Stop();
+											
+					// If the position is on a wall, I also draw the position circle
 					if(mIsWall)
-						mPositionCircleObj.Draw();
+					{
+						mPositionCircleShader.Start();
+							// Parameters for the circle's shader
+							mPositionCircleShader.SetParameter("color", color);
+							mPositionCircleShader.SetParameter("radius", mPositionCircleRadius);
+							mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
+							mPositionCircleShader.SetParameter("ticksNumber", 20.0);
+							mPositionCircleShader.SetParameter("ticksThickness", 0.02);
+
+							mPositionCircleObj.Draw();
+						mPositionCircleShader.Stop();
+					}
+					
+					// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift
+					mDashedLinesOffset += 0.01;
 				}
+				// If we don't have to draw the ray, I reset its offset, so that it doesn't increment too much in the course of the game
+				else
+					mDashedLinesOffset = 0;
 				
 				
 				// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff

@@ -309,73 +309,193 @@ function Room::Draw()
  */
 function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 {	
+	// At first I state that no intersection was found
+	var intersectedObject = -1;
+	var contactPointTmp;
+	var normalTmp;
+	
 	// To find the interception of a plane I first need one of its point: I get the coordinates of the floor first. Since it's a child of the mRoom object
 	// I need to add its position (NOTE: this will work only if the room is NOT a child of something else); I then add 1 to make sure that
 	// the plane is considered inside the room
 	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
 	
 	// I compute the normal of the plane
-	normal = ComputeNormalOfPlanarObject(mFloorObj);
+	normalTmp = ComputeNormalOfPlanarObject(mFloorObj);
 	
 	// I check for interceptions
-	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
 	// If one was found and it's inside the room (remember, planes are infinite, so maybe there was an interception but outside the room, so it's no good)
 	// I return the 0 to indicate that
-	if(contactPoint != Void && IsPointInRoom(contactPoint))
-		return 0;
+	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	{
+		contactPointTmp -= [0, 1, 0];
+		intersectedObject = 0;
+		
+		contactPoint = contactPointTmp;
+		normal = normalTmp;
+	}
 		
 		
 	/* Back wall */
 	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
-	normal = ComputeNormalOfPlanarObject(mBackWallObj);
+	normalTmp = ComputeNormalOfPlanarObject(mBackWallObj);
 	
-	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
-	if(contactPoint != Void && IsPointInRoom(contactPoint))
-		return 1;
+	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	{
+		// Firt I remove the point I added in order to make sure that the plane point was in the room
+		contactPointTmp -= [0, 0, 1];
+		
+		// If there was an intersection before and I found one in the rest of the elevator, I need to check which one "wins", i.e. which one
+		// is closest to the player (in this case the origin of the ray)
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			// If the new distance is lesser, it wins
+			if(currentDistance < previousDistance)
+			{
+				intersectedObject = 1;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		// If before there was no intersection, I update the values with the current ones
+		else
+		{
+			intersectedObject = 1;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
 		
 	/* Roof */
 	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
-	normal = ComputeNormalOfPlanarObject(mRoofObj);
+	normalTmp = ComputeNormalOfPlanarObject(mRoofObj);
 	
-	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
-	if(contactPoint != Void && IsPointInRoom(contactPoint))
-		return 2;
+	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	{
+		contactPointTmp -= [0, -1, 0];
+		
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			if(currentDistance < previousDistance)
+			{
+				intersectedObject = 2;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		else
+		{
+			intersectedObject = 2;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
 		
 	/* Left wall */
 	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
-	normal = ComputeNormalOfPlanarObject(mLeftWallObj);
+	normalTmp = ComputeNormalOfPlanarObject(mLeftWallObj);
 	
-	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
-	if(contactPoint != Void && IsPointInRoom(contactPoint))
-		return 3;
+	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	{
+		contactPointTmp -= [1, 0, 0];
+		
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			if(currentDistance < previousDistance)
+			{				
+				intersectedObject = 3;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		else
+		{
+			intersectedObject = 3;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
 		
 	/* Right wall */
 	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
-	normal = ComputeNormalOfPlanarObject(mRightWallObj);
+	normalTmp = ComputeNormalOfPlanarObject(mRightWallObj);
 	
-	contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
-	if(contactPoint != Void && IsPointInRoom(contactPoint))
-		return 4;
+	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	{
+		contactPointTmp -= [-1, 0, 0];
+		
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			if(currentDistance < previousDistance)
+			{
+				intersectedObject = 4;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		else
+		{
+			intersectedObject = 4;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
 		
 	/* Front wall */
 	if(mHasFront)
 	{
 		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
-		normal = ComputeNormalOfPlanarObject(mFrontWallObj);
+		normalTmp = ComputeNormalOfPlanarObject(mFrontWallObj);
 		
-		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
+		contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 		
-		if(contactPoint != Void && IsPointInRoom(contactPoint))
-			return 5;
+		if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+		{
+			contactPointTmp -= [0, 0, -1];
+			
+			if(intersectedObject != -1)
+			{
+				var previousDistance = Modulus(contactPoint - rayOrigin);
+				var currentDistance = Modulus(contactPointTmp - rayOrigin);
+				
+				if(currentDistance < previousDistance)
+				{
+					intersectedObject = 5;
+					contactPoint = contactPointTmp;
+					normal = normalTmp;
+				}
+			}
+			else
+			{
+				intersectedObject = 5;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
 	}
 	
-	// If I reached this, I didn't find any interceptions
-	return -1;
+	return intersectedObject;
 }
 
 /*

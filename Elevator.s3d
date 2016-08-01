@@ -220,6 +220,9 @@ function Elevator::AddObject(object, x, y, z)
  */
 function Elevator::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 {
+	// At first I state that no intersection was found
+	var intersectedWall = -1;
+	
 	// If the elevator is not open, I check if the ray intercepts the doors
 	if(!IsElevatorOpen())
 	{
@@ -230,11 +233,41 @@ function Elevator::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
 		
 		if(contactPoint != Void && mElevatorRoom.IsPointInRoom(contactPoint))
-			return 5;
+		{
+			contactPoint -= [0, 0, -1];
+			intersectedWall = 5;
+		}
 	}
 	
-	// If I reached this, I need to check the rest of the elevator
-	var intersectedWall = mElevatorRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	var contactPointTmp;
+	var normalTmp;
+	
+	// I check the rest of the elevator
+	var intersectedWallTmp = mElevatorRoom.CheckIntersection(rayOrigin, rayEnd, &contactPointTmp, &normalTmp);
+	
+	// If there was an intersection before and I found one in the rest of the elevator, I need to check which one "wins", i.e. which one
+	// is closest to the player (in this case the origin of the ray)
+	if(intersectedWall != -1 && intersectedWallTmp != -1)
+	{
+		var previousDistance = Modulus(contactPoint - rayOrigin);
+		var currentDistance = Modulus(contactPointTmp - rayOrigin);
+		
+		// If the new distance is lesser, it wins
+		if(currentDistance < previousDistance)
+		{
+			intersectedWall = intersectedWallTmp;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
+	// If before there was no intersection, I update the final values
+	else
+	{
+		intersectedWall = intersectedWallTmp;
+		contactPoint = contactPointTmp;
+		normal = normalTmp;
+	}
+	
 	
 	// If the elevator is closed and the floor was found, it's not a good position
 	if(!IsElevatorOpen() && intersectedWall == 0)
