@@ -3,7 +3,12 @@
 #define STATUS_ELEVATOR_ARRIVED 1
 #define STATUS_LEVEL_STARTED 2
 
-class Level1
+// The multiplier used to speedup the objects when the player uses the clock
+#define TIME_CLOCK_VELOCITY_MULTIPLIER 3.0
+
+#include <Clock.s3d>
+
+class Level3
 {
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
@@ -37,6 +42,10 @@ class Level1
 	// draw the silhouettes for the portals' frames
 	var mSilhouetteShader;
 	
+	// Booleans that indicate whether the elevator has appeared and if it's already open or not
+	var mIsElevatorPresent;
+	var mIsElevatorOpen;
+	
 	// "Room" object that represent the elevator
 	var mElevator;
 	
@@ -45,17 +54,18 @@ class Level1
 	var mElevatorTravelTime;
 	var mCameraYoffset;
 	
+	
+	var mIsUsingClock;
+	
+	var mMainClock;
+	var mTimeDirection;
+	
+	
+	var mClocks;
+	var mNumberOfClocks;
+	var mNumberOfClockRows;
+	
 	var mOpenglTranslationOffset;
-	
-	
-	var mDrawingShader;
-	var mIsDrawing;
-	var mPreviousPoint;
-	var mLineArray;	
-	
-	var mTime;
-	var mReversedTime;
-	var mVertexArray;
 	
 	// Private functions
 	DrawAllPortals();
@@ -80,13 +90,11 @@ class Level1
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level1::Level1(inputManager, soundManager)
+function Level3::Level3(inputManager, soundManager)
 {		
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
-	mIsDrawing = false;
-	mLineArray = {};
 		
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
@@ -98,15 +106,131 @@ function Level1::Level1(inputManager, soundManager)
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 		
 
-	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
+	mMainClock = Clock(1, 2);
+	mMainClock.Translate(0, 5, 14);
+	
+	var num_seg = 30;
+	var radius = 2;
+	var hemisphere = 1;  // 0.5 = hemisphere, 1 = sphere
+	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
+	global var sphere = CVmObj(sphereMesh1);
+	sphere.SetPosition(0, 5, 20);
+	
+	
+	
+		
+	var first = sphere.GetPosition();
+	var second = first + [0, 0, 6];
+	var third = second + [4.5, 0, 0];
+	var fourth  = third + [0, 0, -6];
+	var fifth  = fourth + [1, 0, 2];
+	
+	mAnimator.CreateTransition(sphere, first, {second, third, fourth, fifth}, 3.0, true);
+//	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 10.0, true);
+//	mAnimator.CreateTransition(sphere, first, {second, third}, 1.0, true);
+	
+//	mAnimator.CreateTransition(sphere, first, second, 1.0, true);
 
-	mTime = 0;
-	mReversedTime = 0;
+	global var flyingFuck2 = Text("Flying Fact");
+	flyingFuck2.SetPosition(sphere.GetPosition() + [-3, 0, 0]);
+	flyingFuck2.Rotate(90, 0, 1, 0);
+
+	// Transition and rotation for the flying fuck
+	mAnimator.CreateRotatingTransition(flyingFuck2, 0, (360*5 + 180), [0, 1, 0], 40.0, false, false);
+	
+	mTimeDirection = 1;
+	
+	mNumberOfClocks = 6;
+	mNumberOfClockRows = 4;
+	mClocks = {};
+	
+	var step = mMainRoom.GetRoomWidth()/mNumberOfClocks;
+	var heightStep = mMainRoom.GetRoomHeight()/mNumberOfClockRows;
+	
+	for(var i = 0; i < mNumberOfClockRows; i++)
+	{
+		for(var j = 0; j < mNumberOfClocks; j++)
+		{
+			aadd(mClocks, Clock(1, 2));
+			
+			// These coordinates are used if the clocks aren't put as children of the main room; I'll leave it for now as a reminder
+//			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+//			var y = mMainRoom.GetRoomHeight() - 4.0 - heightStep*i;
+//			var z = mMainRoom.GetRoomDepth()/2.0 - 0.3;
+
+			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 - heightStep*i) ;
+			var z = mMainRoom.GetRoomDepth() - 0.3;
+			
+			var position = [x, y, z];
+		
+			position.x += Rand(1) == 0 ? Rand(8)/30.0 : -Rand(8)/30.0;
+			position.y += Rand(1) == 0 ? Rand(8)/10.0 : -Rand(8)/10.0;
+			
+			var newClock = mClocks[i*mNumberOfClocks + j];
+			
+//			newClock.SetPosition(position);
+			
+			mAnimator.CreateRotatingTransition(newClock.GetMinutesArrowObj(), 0, (360), [0, 0, 1], 10.0, true, false);
+			mAnimator.CreateRotatingTransition(newClock.GetHoursArrowObj(), 0, (360), [0, 0, 1], 80.0, true, false);
+			
+			mMainRoom.AddObject(newClock.GetObj(), position.x, position.y, position.z);
+		}
+	}
+	
+	
+	var pyramidHeight = 3;
+	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2, pyramidHeight);
+	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2, pyramidHeight);
+	
+	pyramidMesh1.ShaderAdd("toonShader.glsl", 0);
+	pyramidMesh1.ShaderActivate(true);
+	pyramidMesh1.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	pyramidMesh1.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.1, 0.1]);
+	pyramidMesh1.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
+	pyramidMesh1.ShaderSetParameter(0, "shininess", 0, 50);
+	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	
+	pyramidMesh2.ShaderAdd("toonShader.glsl", 0);
+	pyramidMesh2.ShaderActivate(true);
+	pyramidMesh2.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	pyramidMesh2.ShaderSetParameter(0, "diffuse", 0, [0.1, 0.9, 0.9]);
+	pyramidMesh2.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
+	pyramidMesh2.ShaderSetParameter(0, "shininess", 0, 50);
+	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	
+	var pyramidObj1 = CVmObj(pyramidMesh1); 
+	var pyramidObj2 = CVmObj(pyramidMesh2);  
+
+	
+	global var pyramidObj = CVmObj();
+	pyramidObj.AddChild(pyramidObj1, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
+//	pyramidObj2.SetPivotPoint(0, pyramidHeight, 0);
+	pyramidObj2.Rotate(180, 0, 0, 1);
+	pyramidObj2.Translate(0, pyramidHeight/2.0 + 0.47, 0);
+	
+	
+	
+	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0, mMainRoom.GetRoomHeight() / 2.0 - 5.0, mMainRoom.GetRoomDepth() - 10.0);
+	
+	var waypoint0 = pyramidObj.GetPosition();
+	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
+	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0];
+	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
+		
+	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
+	mAnimator.CreateRotatingTransition(pyramidObj, 0, 360, [1, 0, 0], 5.0, true, false);
+	
+	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
+	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
 }
 
 
  
- function Level1::Init(lights, elevator, openglTransformOffset)
+ function Level3::Init(lights, elevator, openglTransformOffset)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
@@ -155,7 +279,7 @@ function Level1::Level1(inputManager, soundManager)
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
-	mVertexArray = {};
+	mIsUsingClock = false;
 }
 
 
@@ -163,20 +287,15 @@ function Level1::Level1(inputManager, soundManager)
  * **************** RENDER METHODS ********************** *
  * ****************************************************** */
 
-
 /*
  * Render method
  */
-function Level1::Render()
+function Level3::Render()
 {	
 	// If the user teleported modifying the mOpenglTranslationOffset, the lights will be in the wrong places. So at each frame I reset their 
 	// position according to the offset
 	mLight1.SetPosition([0, 10.0, 35.0] + mOpenglTranslationOffset);
 	mLight2.SetPosition([0, 10.0, -20.0] + mOpenglTranslationOffset);
-
-	// This array will contain at position 2 the width of the viewport, and at 3 its height
-	var viewport = array(4);
-	viewport = glget(GL_VIEWPORT);
 	
 	switch(mLevelStatus)
 	{
@@ -185,53 +304,9 @@ function Level1::Render()
 		case STATUS_ELEVATOR_ARRIVED:
 		case STATUS_LEVEL_STARTED:
 			mMainRoom.Draw();
-			
-//			if(mTime % 1.0 <= 0.01 && mReversedTime <= 0)
-//				mReversedTime = 1;
-//			
-//			if(mReversedTime > 0)
-//			{
-//				glLineWidth(10 * (mReversedTime));
-//				outputln("yo");
-//				mReversedTime -= 0.005;
-//			}
-//			else
-//				glLineWidth(10 * (mTime % 1.0));
-			
-			glLineWidth(5);
-			
-			mDrawingShader.Start();
-//				mDrawingShader.SetParameter("screenWidth", viewport[2]);
-//				mDrawingShader.SetParameter("screenHeight", viewport[3]);		
-				mDrawingShader.SetParameter("time", mTime);
-
-				for(var i = 0; i < len(mVertexArray); i += 2)
-				{
-					var point0 = mVertexArray[i];
-					var point1 = mVertexArray[i+1];
-					
-					glBegin(GL_LINES);
-						glVertex(point0);
-						glVertex(point1);		
-					glEnd();
-				}
-			
-			mDrawingShader.Stop();
-
-//			mDrawingShader.Start();
-//				mDrawingShader.SetParameter("screenWidth", viewport[2]);
-//				mDrawingShader.SetParameter("screenHeight", viewport[3]);
-//				
-//				foreach(var line in mLineArray)
-//				{
-//					mDrawingShader.SetParameter("time", mTime);
-//					line.Draw();
-//					
-//				}
-//			mDrawingShader.Stop();
-
-			mTime += 0.01;
-			
+			mMainClock.Draw();
+			sphere.Draw();
+			flyingFuck2.Draw();
 			break;
 	}
 	
@@ -249,7 +324,7 @@ function Level1::Render()
  * 
  * dt: (float) delta time, i.e. the time between the last update and this one
  */
-function Level1::UpdateLogic(dt)
+function Level3::UpdateLogic(dt)
 {
 	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCameraOrientation();
@@ -319,57 +394,60 @@ function Level1::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-		    	mInputManager.RestoreCameraPosition();
+//			if(mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
 				 
 			// I check if the user has clicked with the mouse or whatever; if that is the case I need to check "where" he clicked    	
 	    	if(mInputManager.IsPressingPrimaryButton())
 	    	{
+	    		// I get the ray that starts from the camera and goes until the end of the rendering plane. Basically I take a ray in the direction
+	    		// the user is facing. It doesn't really matter where the ray ends, it's the starting point and its direction that really count.
+	    		// But to be safe I make sure that the ray ends "at the end of time"
+	    		var raycastOrigin = cameraPosition;
+	    		var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
 	    		
-	    		if(!mIsDrawing)
+	    		// I check if the clock was selected
+	    		var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mMainClock);
+	    		
+	    		// If the clock wasn't being used and there actually is a contact point on the clock, I state that the player is using it
+	    		if(!mIsUsingClock && contactPoint != Void)
+	    			mIsUsingClock = true;
+	    		
+	    		// If the player is using the clock...
+	    		if(mIsUsingClock)
+    			{    				
+    				// I update the clock's arrow with regards on the direction of the previously computed ray
+					mMainClock.UpdateMinutesArrow(raycastOrigin, raycastEnd);
+					
+					// I get the resulting direction that the arrow moved to (1: clockwise, -1: counter-clockwise, 0: didn't move)
+					var timeDirection = mMainClock.GetArrowDirection();
+					
+					// If the direction found is different from the current direction, and the direction found wasn't 0 (in that case the arrow is still)...
+					if(mTimeDirection != timeDirection && timeDirection != 0)
+					{
+						// ...I invert the active transitions; ALL of them. I also save the new time direction
+						mAnimator.InvertTransitions();
+						mTimeDirection = timeDirection;
+					}
+					
+					// I change the scale factor of the objects, to speed them up. I always take the positive value of the direction.
+					// Note that when the arrow is still, timeDirection will be 0, so in that case the scale factor becomes 0 and the object stay still
+					mAnimator.ChangeScaleFactors(abs(timeDirection) * TIME_CLOCK_VELOCITY_MULTIPLIER);
+    			}
+	    	}
+	    	// If there are no clicks...
+	    	else
+	    	{
+	    		// The player was using the clock, now he isn't anymore
+	    		if(mIsUsingClock)
 	    		{
-	    			mIsDrawing = true;
-	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
-	    			mLineArray = {};
-	    			mVertexArray = {};
-	    		}
-	    		else
-	    		{
-	    			var currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
-								
-					// Taking the direction that goes from the previous point to the current one. Note that the order of the difference is important:
-					// I need the direction that goes from the previous point to the current one
-					var vec = Norm(mPreviousPoint - currentPoint);
-					
-					// To compute the angle around which to rotate the object, I compute the cross product between this vector and the up vector (the vector
-					// that tells me which way is up); the result will be a vector perpendicular to the 2, which I normalize to use it as a normal.
-					// I then switch sign, otherwise it turns on the opposite side
-					var axis = -Norm(vec ^ [0, 1, 0]);
-					
-					// I now compute the angle for the rotation. The formula derives from "easy" trigonometry (lookup "finding angle between 2 vectors").
-					// I'm not sure why the final angle is shifted by 180 degrees; that's why I subtract 180
-					var angle = acos((Norm(vec) * [0, 1, 0])) * RAD_TO_GRAD - 180; 
-				
-					// Creating the new mesh, a very thin box, as tall as the distance between the 2 points
-					var stickMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.003, Modulus(currentPoint - mPreviousPoint), 0.001]); 
-					var line = CVmObj(stickMesh);
-					
-					// Since the center of the box is at its feet, moving it at the coordinates of the previous point and then applying the rotation works perfectly
-					line.SetPosition(mPreviousPoint);
-					line.SetRotation(angle, axis.x, axis.y, axis.z);
-					
-					// Adding the 2 points to the array for drawing lines with simple opengl
-					aadd(mVertexArray, mPreviousPoint);
-					aadd(mVertexArray, currentPoint);
-					
-					// Adding the new mesh to the aray, to draw it in the render function
-					aadd(mLineArray, line);
-					
-					mPreviousPoint = currentPoint;
+		    		mIsUsingClock = false;
+	    		
+		    		// If the player is not using the clock anymore I also set the speed of the objects back to normal.
+		    		// Note: I don't invert make the direction go as default: the objects keep going in the direction they were going
+		    		mAnimator.ChangeScaleFactors(1);
 	    		}
     		}
-    		else
-    			mIsDrawing = false;
 	    		
 			break;
 		}
@@ -390,7 +468,7 @@ function Level1::UpdateLogic(dt)
  * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
  * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
  */
-function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+function Level3::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
 {
 	var intersectedPlane = -1;
 
@@ -408,12 +486,12 @@ function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 /*
  * Method called by the GameManager to check if the level is completed
  */
-function Level1::IsLevelCompleted()
+function Level3::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
 }
 
-function Level1::SetOpenglTransformOffset(openglTransformOffset)
+function Level3::SetOpenglTransformOffset(openglTransformOffset)
 {
 	mOpenglTranslationOffset = openglTransformOffset;
 }

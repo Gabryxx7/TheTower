@@ -30,6 +30,7 @@ function OnDownload()
 	FileDownload("antishader.glsl");
 	FileDownload("dashedLineShader.glsl");
 	FileDownload("positionCircleShader.glsl");
+	FileDownload("drawingShader.glsl");
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
 }

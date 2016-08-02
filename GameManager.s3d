@@ -8,6 +8,7 @@ global var DEBUG_MODE = true;
 #include "Level0.s3d"
 #include "Level1.s3d"
 #include "Level2.s3d"
+#include "Level3.s3d"
 #include "InputManager.s3d"
 
 /*
@@ -175,7 +176,7 @@ function GameManager::GameManager()
 		
 		mElevator = mCurrentLevel.GetElevator();
 		
-		mLevel1 = Level1(mInputManager, mSoundManager);
+		mLevel1 = Level0(mInputManager, mSoundManager);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
