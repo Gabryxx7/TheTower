@@ -37,6 +37,7 @@ function OnDownload()
 	FileDownload("drawingShader.glsl");
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
+	FileDownload("circleProva.AAM");
 }
 
 /* Init system - Start GameManager */
