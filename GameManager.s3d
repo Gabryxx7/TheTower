@@ -335,7 +335,7 @@ function GameManager::XVRRendering(){
 //				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
 //				mPositionCircleShader.SetParameter("ticksThickness", 0.02);
 //
-				if(frameNum == 9)
+				if(frameNum == 51)
 					frameNum = 0;
 					
 				mPositionCircleObj.Draw(VR_FRAMENUMBER,frameNum++,0);
