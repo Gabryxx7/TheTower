@@ -82,6 +82,9 @@ class GameManager
 	
 	// This boolean indicates whether the user is currently pressing the secondary button for teleportation
 	var mIsPressingSecondaryButton;
+	
+	
+	var frameNum;
 
 
 	// Private methods
@@ -97,6 +100,7 @@ class GameManager
 
 function GameManager::GameManager()
 {
+	frameNum = 0;
 	mGameStatus = STATUS_INGAME;
 		
 	mGameStarted = false;
@@ -184,7 +188,9 @@ function GameManager::GameManager()
 	
 	// Creating the position circle object, used for the teleportation feature
 	mPositionCircleRadius = 1.0;
-	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
+//	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
+	var positionCircleMesh = CVmNewMesh("circleProva.AAM");  
+	positionCircleMesh.Normalize(4);
 	mPositionCircleObj = CVmObj(positionCircleMesh);
 	
 	// Booleans used for the teleportation feature
@@ -301,36 +307,39 @@ function GameManager::XVRRendering(){
 			color = [1, 0, 0];
 		
 		// Rendering of the ray
-		mDashedLineShader.Start();
-			// Parameters for the ray's shader
-			mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
-			mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
-			mDashedLineShader.SetParameter("color", color);
-			mDashedLineShader.SetParameter("ticksLength", 0.17);
-			mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
-			
-			glLineWidth(2.5); 
-			
-			// I draw the ray as a simple opengl line
-			glBegin(GL_LINES);
-				glVertex(raycastOrigin);
-				glVertex(raycastEnd);		
-			glEnd();
-		mDashedLineShader.Stop();
+//		mDashedLineShader.Start();
+//			// Parameters for the ray's shader
+//			mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
+//			mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
+//			mDashedLineShader.SetParameter("color", color);
+//			mDashedLineShader.SetParameter("ticksLength", 0.17);
+//			mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
+//			
+//			glLineWidth(2.5); 
+//			
+//			// I draw the ray as a simple opengl line
+//			glBegin(GL_LINES);
+//				glVertex(raycastOrigin);
+//				glVertex(raycastEnd);		
+//			glEnd();
+//		mDashedLineShader.Stop();
 								
 		// If the position is on a wall, I also draw the position circle
 		if(mIsWall)
 		{
-			mPositionCircleShader.Start();
-				// Parameters for the circle's shader
-				mPositionCircleShader.SetParameter("color", color);
-				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius);
-				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
-				mPositionCircleShader.SetParameter("ticksNumber", 20.0);
-				mPositionCircleShader.SetParameter("ticksThickness", 0.02);
-
-				mPositionCircleObj.Draw();
-			mPositionCircleShader.Stop();
+//			mPositionCircleShader.Start();
+//				// Parameters for the circle's shader
+//				mPositionCircleShader.SetParameter("color", color);
+//				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius);
+//				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
+//				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
+//				mPositionCircleShader.SetParameter("ticksThickness", 0.02);
+//
+				if(frameNum == 9)
+					frameNum = 0;
+					
+				mPositionCircleObj.Draw(VR_FRAMENUMBER,frameNum++,0);
+//			mPositionCircleShader.Stop();
 		}
 		
 		// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift
