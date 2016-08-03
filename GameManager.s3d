@@ -2,8 +2,6 @@
 #define STATUS_MENU     0
 #define STATUS_INGAME   1
 
-global var DEBUG_MODE = true;
-
 #include "Utils.s3d"
 #include "Level0.s3d"
 #include "Level1.s3d"
@@ -87,6 +85,7 @@ class GameManager
 
 
 	// Private methods
+	XVRRendering();
 	DrawCrosshair();
 	FadeToBlackScreen(fadeIn);
 	
@@ -144,7 +143,7 @@ function GameManager::GameManager()
 	aadd(mLights, light2);
 	
 	// 
-	mOpenglTranslationOffset = [0, 0, 0];	
+	mOpenglTranslationOffset = [0, -3, 0]; //x,y,z	
 	if(DEBUG_MODE)
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
@@ -159,7 +158,7 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level1(mInputManager, mSoundManager);
+		mCurrentLevel = Level2(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -176,7 +175,7 @@ function GameManager::GameManager()
 		
 		mElevator = mCurrentLevel.GetElevator();
 		
-		mLevel1 = Level0(mInputManager, mSoundManager);
+		//mLevel1 = Level0(mInputManager, mSoundManager);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -212,91 +211,25 @@ function GameManager::Render()
 	//		mMenu.Render();
 			break;
 		case STATUS_INGAME:
-		
+				
 			SceneBegin(mCamera);
-				
-				/* This is very important: in order to move around with the HTC Vive using the teleportation, we need to translate everything when rendering by
-				 * the amount computed when the teleportation goes through. This means that the whole world will shift by this amount, BUT the XVR objects
-				 * won't move, meaning that their position taken with their GetPosition() methods will stay the same even after the translation.
-				 * So in the levels it's important to take this into account when making computations based on the player position. For example,
-				 * if I want to know where the player actually is, I need to to something like "mCamera.GetCamera() - mOpenglTranslationOffset": this
-				 * will be the REAL position of the player.
-				 * By letting the GameManager handle this, the levels stay pretty much the same, except for computing positions of some things (camera 
-				 * and lights), as I just mentioned */
-				glTranslate(mOpenglTranslationOffset);
-	
-				mCurrentLevel.Render();
-	
-				// Here we render the positional circle, if the user is pressing the button. Since it's common for every level, it's better to do it here
-				if(mIsPressingSecondaryButton)
-				{
-					// I also render a line from the controller to the position circle.
-					// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
-					var raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
-					var raycastEnd = mPositionCircleObj.GetPosition();
-															
-					var color;
-					
-					// If the position is valid the ray is blue, otherwise it's red
-					if(mIsPositionValid)
-						color = [0, 0, 1];
-					else
-						color = [1, 0, 0];
-					
-					// Rendering of the ray
-					mDashedLineShader.Start();
-						// Parameters for the ray's shader
-						mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
-						mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
-						mDashedLineShader.SetParameter("color", color);
-						mDashedLineShader.SetParameter("ticksLength", 0.17);
-						mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
-						
-						glLineWidth(2.5); 
-						
-						// I draw the ray as a simple opengl line
-						glBegin(GL_LINES);
-							glVertex(raycastOrigin);
-							glVertex(raycastEnd);		
-						glEnd();
-					mDashedLineShader.Stop();
-											
-					// If the position is on a wall, I also draw the position circle
-					if(mIsWall)
-					{
-						mPositionCircleShader.Start();
-							// Parameters for the circle's shader
-							mPositionCircleShader.SetParameter("color", color);
-							mPositionCircleShader.SetParameter("radius", mPositionCircleRadius);
-							mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
-							mPositionCircleShader.SetParameter("ticksNumber", 20.0);
-							mPositionCircleShader.SetParameter("ticksThickness", 0.02);
-
-							mPositionCircleObj.Draw();
-						mPositionCircleShader.Stop();
-					}
-					
-					// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift
-					mDashedLinesOffset += 0.01;
-				}
-				// If we don't have to draw the ray, I reset its offset, so that it doesn't increment too much in the course of the game
-				else
-					mDashedLinesOffset = 0;
-				
-				
-				// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff
-				DrawCrosshair();
-				
-				if(mFadingIn)
-				{
-					FadeToBlackScreen(true);
-					mFadingIn = mFadeToBlackAlpha > 0.0;
-				}
-				else if(mFadingOut)
-				{
-					FadeToBlackScreen(false);
-					mFadingOut = mFadeToBlackAlpha < 1.0;
-				}
+			
+			XVRRendering();
+			
+			if(VR_ON){		
+				var cameraMatrix = HMD.GetCameraMatrix();	
+				CameraSetMatrix(cameraMatrix);	
+				glLight(GL_LIGHT0, GL_POSITION, [mLights[0].GetPosition().x, mLights[0].GetPosition().y, mLights[0].GetPosition().z, 1.0]); 
+			 	glLight(GL_LIGHT1, GL_POSITION, [mLights[1].GetPosition().x, mLights[1].GetPosition().y, mLights[1].GetPosition().z, 1.0]); 
+			 	glLight(GL_LIGHT2, GL_POSITION, [mLights[2].GetPosition().x, mLights[2].GetPosition().y, mLights[2].GetPosition().z, 1.0]); 
+			 			
+				HMD.SceneBegin();
+					HMD.frame_left();
+						XVRRendering();
+					HMD.frame_right();
+						XVRRendering();
+				HMD.SceneEnd();
+			}	
 				
 				/*
 				 * ******************************** HERE GOES THE HTC VIVE RENDERING PART ***************************************
@@ -313,9 +246,7 @@ function GameManager::Render()
 				 *     var lights = mCurrentLevel.GetLights();
 				 * 
 				 * 	   // Need to pass as position a vector of 4 components, with the last one 1.0 to indicate that it's a positional light
-				 * 	   glLight(GL_LIGHT0, GL_POSITION, [lights[0].GetPosition().x, lights[0].GetPosition().y, lights[0].GetPosition().z, 1.0]); 
-				 * 	   glLight(GL_LIGHT1, GL_POSITION, [lights[1].GetPosition().x, lights[1].GetPosition().y, lights[1].GetPosition().z, 1.0]); 
-				 *     glLight(GL_LIGHT2, GL_POSITION, [lights[2].GetPosition().x, lights[2].GetPosition().y, lights[2].GetPosition().z, 1.0]); 
+
 				 * 
 				 * 	   // Mini-problem: how to make this iterative? We have to use a constant like GL_LIGHT0, so making iterative might not be possible.
 				 * 	   // Also, might need to add mOpenglTranslationOffset to the positions, in order to take into account transformations; need to check.
@@ -331,11 +262,97 @@ function GameManager::Render()
 				 * 
 				 * HMD.SceneEnd();
 				 */
+				 
 			
 			SceneEnd();
 			break;
 		default:
 			break;
+	}
+}
+
+function GameManager::XVRRendering(){
+	/* This is very important: in order to move around with the HTC Vive using the teleportation, we need to translate everything when rendering by
+	 * the amount computed when the teleportation goes through. This means that the whole world will shift by this amount, BUT the XVR objects
+	 * won't move, meaning that their position taken with their GetPosition() methods will stay the same even after the translation.
+	 * So in the levels it's important to take this into account when making computations based on the player position. For example,
+	 * if I want to know where the player actually is, I need to to something like "mCamera.GetCamera() - mOpenglTranslationOffset": this
+	 * will be the REAL position of the player.
+	 * By letting the GameManager handle this, the levels stay pretty much the same, except for computing positions of some things (camera 
+	 * and lights), as I just mentioned */
+	glTranslate(mOpenglTranslationOffset);
+
+	mCurrentLevel.Render();
+
+	// Here we render the positional circle, if the user is pressing the button. Since it's common for every level, it's better to do it here
+	if(mIsPressingSecondaryButton)
+	{
+		// I also render a line from the controller to the position circle.
+		// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
+		var raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
+		var raycastEnd = mPositionCircleObj.GetPosition();
+												
+		var color;
+		
+		// If the position is valid the ray is blue, otherwise it's red
+		if(mIsPositionValid)
+			color = [0, 0, 1];
+		else
+			color = [1, 0, 0];
+		
+		// Rendering of the ray
+		mDashedLineShader.Start();
+			// Parameters for the ray's shader
+			mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
+			mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
+			mDashedLineShader.SetParameter("color", color);
+			mDashedLineShader.SetParameter("ticksLength", 0.17);
+			mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
+			
+			glLineWidth(2.5); 
+			
+			// I draw the ray as a simple opengl line
+			glBegin(GL_LINES);
+				glVertex(raycastOrigin);
+				glVertex(raycastEnd);		
+			glEnd();
+		mDashedLineShader.Stop();
+								
+		// If the position is on a wall, I also draw the position circle
+		if(mIsWall)
+		{
+			mPositionCircleShader.Start();
+				// Parameters for the circle's shader
+				mPositionCircleShader.SetParameter("color", color);
+				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius);
+				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
+				mPositionCircleShader.SetParameter("ticksNumber", 20.0);
+				mPositionCircleShader.SetParameter("ticksThickness", 0.02);
+
+				mPositionCircleObj.Draw();
+			mPositionCircleShader.Stop();
+		}
+		
+		// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift
+		mDashedLinesOffset += 0.01;
+	}
+	// If we don't have to draw the ray, I reset its offset, so that it doesn't increment too much in the course of the game
+	else
+		mDashedLinesOffset = 0;
+	
+	
+	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff
+	DrawCrosshair();
+	
+	if(mFadingIn)
+	{
+		FadeToBlackScreen(true);
+		mFadingIn = mFadeToBlackAlpha > 0.0;
+	}
+	else if(mFadingOut)
+	{
+		FadeToBlackScreen(false);
+		mFadingOut = mFadeToBlackAlpha < 1.0;
 	}
 }
 
@@ -351,7 +368,8 @@ function GameManager::UpdateLogic(dt)
 	 * position in XVR.
 	 * Same thing goes for the controllers: here their position need to be updated
 	 */
-	
+			
+	var viveTriggerPressed = false;	
 	switch (mGameStatus) {
 		
 		case STATUS_MENU:
@@ -360,9 +378,14 @@ function GameManager::UpdateLogic(dt)
 		case STATUS_INGAME:	
 
 			mCurrentLevel.UpdateLogic(dt);
+			if(VR_ON){
+				if(HMD.IsTriggerPressed(1) == 1){
+					viveTriggerPressed = true;					
+				}					
+			}
 			
 			// Checking the user is pressing the button to teleport
-			if(mInputManager.IsPressingSecondaryButton())
+			if(mInputManager.IsPressingSecondaryButton() || viveTriggerPressed)
 			{				
 				// I get the camera's position- minus the offset so we get the actual position of the player in the world
 				// NOTE: if the Vive is active, this shouldn't be the camera's, but the controller's position. Need to modify the code
