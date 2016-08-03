@@ -162,7 +162,7 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level2(mInputManager, mSoundManager);
+		mCurrentLevel = Level1(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -189,7 +189,8 @@ function GameManager::GameManager()
 	// Creating the position circle object, used for the teleportation feature
 	mPositionCircleRadius = 1.0;
 //	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
-	var positionCircleMesh = CVmNewMesh("circleProva.AAM");  
+//	var positionCircleMesh = CVmNewMesh("circleProva.AAM");  
+	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, 0.1, 1);  
 	positionCircleMesh.Normalize(4);
 	mPositionCircleObj = CVmObj(positionCircleMesh);
 	
@@ -225,6 +226,9 @@ function GameManager::Render()
 			if(VR_ON){		
 				var cameraMatrix = HMD.GetCameraMatrix();	
 				CameraSetMatrix(cameraMatrix);	
+				glEnable(GL_LIGHT0);
+				glEnable(GL_LIGHT1);
+				glEnable(GL_LIGHT2);
 				glLight(GL_LIGHT0, GL_POSITION, [mLights[0].GetPosition().x, mLights[0].GetPosition().y, mLights[0].GetPosition().z, 1.0]); 
 			 	glLight(GL_LIGHT1, GL_POSITION, [mLights[1].GetPosition().x, mLights[1].GetPosition().y, mLights[1].GetPosition().z, 1.0]); 
 			 	glLight(GL_LIGHT2, GL_POSITION, [mLights[2].GetPosition().x, mLights[2].GetPosition().y, mLights[2].GetPosition().z, 1.0]); 
@@ -327,19 +331,21 @@ function GameManager::XVRRendering(){
 		// If the position is on a wall, I also draw the position circle
 		if(mIsWall)
 		{
-//			mPositionCircleShader.Start();
-//				// Parameters for the circle's shader
-//				mPositionCircleShader.SetParameter("color", color);
-//				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius);
-//				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
-//				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
-//				mPositionCircleShader.SetParameter("ticksThickness", 0.02);
-//
-				if(frameNum == 9)
-					frameNum = 0;
+			mPositionCircleShader.Start();
+				// Parameters for the circle's shader
+				mPositionCircleShader.SetParameter("color", color);
+				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius * 2.0);
+				mPositionCircleShader.SetParameter("innerCircleTickness", 0.06);
+				mPositionCircleShader.SetParameter("outerCircleTickness", 0.16);
+				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
+				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
+////
+//				if(frameNum == 9)
+//					frameNum = 0;
 					
-				mPositionCircleObj.Draw(VR_FRAMENUMBER,frameNum++,0);
-//			mPositionCircleShader.Stop();
+				mPositionCircleObj.Draw();
+//				mPositionCircleObj.Draw(VR_FRAMENUMBER,frameNum++,0);
+			mPositionCircleShader.Stop();
 		}
 		
 		// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift

@@ -16,7 +16,8 @@ void main()
 
 uniform float radius;           // Radius of the circle
 uniform vec3 color;             // Color of the circle
-uniform float ticksThickness;   // Defines the width of the lines
+uniform float innerCircleTickness;   // Defines the width of the lines
+uniform float outerCircleTickness;   // Defines the width of the lines
 uniform float ticksNumber;      // Defines how many ticks to draw
 uniform float offset;           // Defines the offset of the ticks' positions; it's used to create the illusion that they're moving
 
@@ -32,8 +33,8 @@ void main()
 	vec4 fragColor;
 
 	// If the distance is around the middle of the radius, it's in the first range; if it's almost at the end of the whole radius, it's at the second ragnge
-	bool range1 = dist > radius/2.0 && dist < radius/2.0 + ticksThickness;
-	bool range2 = dist > radius - ticksThickness;
+	bool range1 = dist > radius/2.0 && dist < radius/2.0 + innerCircleTickness;
+	bool range2 = dist > radius - outerCircleTickness;
 	
 	// If the fragment belongs to one of the 2 ranges, it's a tick
 	if(range1 || range2)
@@ -56,6 +57,8 @@ void main()
 		
 		// I compute where is the current fragment in this range, i.e. in which "bins" it falls into
 		float currentBin = round(angle / stepSize);
+		
+		float a = ceil(angle / stepSize);
 		
 		// I take the modulo of the bin: if the result is 1, it's a tick; if it's 0, it's the empty space, which I color with a lesser alpha
 		if(mod(currentBin, 2.0) != 0.0) 
