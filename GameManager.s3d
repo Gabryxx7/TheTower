@@ -339,8 +339,8 @@ function GameManager::XVRRendering(){
 				mPositionCircleShader.SetParameter("outerCircleTickness", 0.16);
 				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
 				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
-////
-//				if(frameNum == 9)
+
+//				if(frameNum == 51)
 //					frameNum = 0;
 					
 				mPositionCircleObj.Draw();
