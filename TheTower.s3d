@@ -7,7 +7,7 @@
 
 global var VR_ON = false;
 global var HMD = null;
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 
 #include <Script3d.h>
 #include <Camera.s3d.h>
@@ -38,6 +38,9 @@ function OnDownload()
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
 	FileDownload("circleProva.AAM");
+	FileDownload("viveController.AAM");
+	FileDownload("untitled.AAM");
+	FileDownload("onepointfive_texture.png");
 }
 
 /* Init system - Start GameManager */
