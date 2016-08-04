@@ -206,7 +206,7 @@ function Level2::Level2(inputManager, soundManager)
 function Level2::Render()
 {				
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-	DrawAllPortals();
+//	DrawAllPortals();
 	
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())

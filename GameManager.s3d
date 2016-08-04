@@ -162,7 +162,7 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level1(mInputManager, mSoundManager);
+		mCurrentLevel = Level2(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -190,7 +190,7 @@ function GameManager::GameManager()
 	mPositionCircleRadius = 1.0;
 //	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
 //	var positionCircleMesh = CVmNewMesh("circleProva.AAM");  
-	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, 0.1, 1);  
+	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, 0.2, 1);  
 	positionCircleMesh.Normalize(4);
 	mPositionCircleObj = CVmObj(positionCircleMesh);
 	
@@ -311,22 +311,22 @@ function GameManager::XVRRendering(){
 			color = [1, 0, 0];
 		
 		// Rendering of the ray
-//		mDashedLineShader.Start();
-//			// Parameters for the ray's shader
-//			mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
-//			mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
-//			mDashedLineShader.SetParameter("color", color);
-//			mDashedLineShader.SetParameter("ticksLength", 0.17);
-//			mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
-//			
-//			glLineWidth(2.5); 
-//			
-//			// I draw the ray as a simple opengl line
-//			glBegin(GL_LINES);
-//				glVertex(raycastOrigin);
-//				glVertex(raycastEnd);		
-//			glEnd();
-//		mDashedLineShader.Stop();
+		mDashedLineShader.Start();
+			// Parameters for the ray's shader
+			mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
+			mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
+			mDashedLineShader.SetParameter("color", color);
+			mDashedLineShader.SetParameter("ticksLength", 0.17);
+			mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
+			
+			glLineWidth(2.5); 
+			
+			// I draw the ray as a simple opengl line
+			glBegin(GL_LINES);
+				glVertex(raycastOrigin);
+				glVertex(raycastEnd);		
+			glEnd();
+		mDashedLineShader.Stop();
 								
 		// If the position is on a wall, I also draw the position circle
 		if(mIsWall)
@@ -383,8 +383,9 @@ function GameManager::UpdateLogic(dt)
 	 * position in XVR.
 	 * Same thing goes for the controllers: here their position need to be updated
 	 */
-			
-	var viveTriggerPressed = false;	
+	var viveTriggerPressed = false;	//can't define vars inside switch statement
+	var controllerMatrix;
+	 
 	switch (mGameStatus) {
 		
 		case STATUS_MENU:
@@ -395,7 +396,8 @@ function GameManager::UpdateLogic(dt)
 			mCurrentLevel.UpdateLogic(dt);
 			if(VR_ON){
 				if(HMD.IsTriggerPressed(1) == 1){
-					viveTriggerPressed = true;					
+					controllerMatrix = HMD.GetControllerRotationMatrix(1);
+					viveTriggerPressed = true;
 				}					
 			}
 			
@@ -404,11 +406,19 @@ function GameManager::UpdateLogic(dt)
 			{				
 				// I get the camera's position- minus the offset so we get the actual position of the player in the world
 				// NOTE: if the Vive is active, this shouldn't be the camera's, but the controller's position. Need to modify the code
-				var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+				var cameraPosition;
+				if(!VR_ON)
+					cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+				else
+					cameraPosition = [controllerMatrix[12] - mOpenglTranslationOffset.x, controllerMatrix[13] - mOpenglTranslationOffset.y, controllerMatrix[14] - mOpenglTranslationOffset.z];
 				
 				// Computing the ray that goes to infinity: I'm going to check were it collides
 				var raycastOrigin = cameraPosition;
-				var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+				var raycastEnd;
+				if(!VR_ON)
+					raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+				else
+					raycastEnd = raycastOrigin + [-controllerMatrix[8], -controllerMatrix[9], -controllerMatrix[10]] * mCamera.GetZFar();
 				
 				var contactPoint;
 				var normal;
