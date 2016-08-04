@@ -1,0 +1,86 @@
+
+class KeyboardManager
+{
+	// Camera used for movements
+	var mCamera;
+
+	var mHMD;
+	
+	var mControllerObj0;
+	var mControllerObj1;
+	
+	// Boolean; is true when de debug mode is active
+	var mDebugMode;
+		
+	// Public functions
+	UpdateCameraOrientation();
+	UpdateCameraPosition();
+	SetActiveCamera(camera);
+	IsPressingPrimaryButton(controllerIndex);
+	IsPressingSecondaryButton(controllerIndex);
+	VibrateController(controllerIndex);
+	GetControllerObj(controllerIndex);
+};
+
+
+/*
+ * Constructor
+ */
+function ViveManager::ViveManager(HMD)
+{
+	// I don't know why, but I have to remove the cursor both here and in the main file of the project, otherwise it doesn't disappear
+	ShowCursor(false);
+	
+	mHMD = HMD;
+	
+//	var controllerMesh = CVmNewMesh("nomefile.AAM");
+//	mControllerObj0 = CVmObj(controllerMesh);
+//	mControllerObj1 = CVmObj(controllerMesh);
+}
+
+
+/*
+ * This function has to be called at each "updateLogic()" function call. It updates the rotation matrix of the camera, 
+ * so it's rotated according to mouse movements
+ */
+function ViveManager::UpdateCameraOrientation()
+{	
+	mCamera.SetMatrix(HMD.GetCameraMatrix());
+}
+
+/*
+ * This function has to be called at each "updateLogic()" function call. It updates the camera's position according to keystrokes
+ */
+function ViveManager::UpdateCameraPosition()
+{
+	
+}
+
+
+function ViveManager::SetActiveCamera(camera)
+{
+	mCamera = camera;
+}
+
+function ViveManager::IsPressingPrimaryButton(controllerIndex)
+{
+	return mHMD.IsTriggerPressed(controllerIndex);
+}
+
+function ViveManager::IsPressingSecondaryButton(controllerIndex)
+{
+	return mHMD.IsTouchpadPressed(controllerIndex);
+}
+
+function ViveManager::VibrateController(controllerIndex)
+{
+	return mHMD.VibrateController(controllerIndex, 250);
+}
+
+function ViveManager::GetControllerObj(controllerIndex)
+{
+	if(controllerIndex == 0)
+		return mControllerObj0;
+	else if(controllerIndex == 1)
+		return mControllerObj1;
+}

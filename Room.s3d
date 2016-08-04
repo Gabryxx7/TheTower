@@ -210,17 +210,12 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	if(centerInOrigin)
 		mRoom.Translate(0, mHalfHeight, -mHalfSideWidth);
 		
-			
 	// Computing the local coordinates of the bounding box of the room
 	mLowerCornerPosition = [-mHalfFarWidth, -mHalfHeight, mSideWallWidth];
 	mUpperCornerPosition = [mHalfFarWidth, mHalfHeight, 0];
-	
-	// Computing the world coordinates of the bounding box
-	
+		
 	// Silhouette shader, used to create the black outline in the walls
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
-	
-	mBorderShader = CVmShaderProgram(" void main() { gl_Position = ftransform();}", "void main() { gl_FragColor = vec4(vec3(0.0, 0.0, 0.0), 1.0); }", true);
 	
 	// List of objects in the room; initially empty. Mind that the children are only useful for drawing, meaning that the Room object will 
 	// only make sure to draw its children using the silhouette shader plus any shader they might have, nothing more

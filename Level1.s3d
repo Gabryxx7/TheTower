@@ -102,6 +102,22 @@ function Level1::Level1(inputManager, soundManager)
 
 	mTime = 0;
 	mReversedTime = 0;
+	
+	
+	var base = CVmNewMesh(VRP_BOX, 3, [0, 0, 0], [2.0, 0.2, 0], 2.0);  
+	var column = CVmNewMesh(VRP_CYLINDER, 30, 0.8, 5, 1);  
+	var neck = CVmNewMesh(VRP_CONEFRUSTUM, 30, 0.3, 0.8, 0.8, 1);  
+	
+	var baseObj = CVmObj(base);
+	var columnObj = CVmObj(column);
+	var neckObj = CVmObj(neck);
+	
+	global var obj = CVmObj();
+	obj.AddChild(baseObj, 0, 0, 0);
+	obj.AddChild(columnObj, 2.0 / 2.0, 0.2, -1.0);
+	obj.AddChild(neckObj, 2.0 / 2.0, 0.2 + 5, -1.0);
+	
+	obj.SetPosition(0, 3, 5);
 }
 
 
@@ -229,6 +245,8 @@ function Level1::Render()
 //					
 //				}
 //			mDrawingShader.Stop();
+			
+			obj.Draw();
 
 			mTime += 0.01;
 			

@@ -1,0 +1,389 @@
+ 
+class ViveController
+{
+	var mControllerObj;
+
+	// Shader to draw the silhouettes of the objects contained in the ViveController
+	var mSilhouetteShader;
+	
+	
+	// Public functions
+	Draw();
+	GetObj();
+	SetActionAvailable(isActionAvailable);
+	GetPointCoordinates();
+	GetDirection();
+	LocalToWorld(point);
+	SetPosition(position);
+	GetPosition();
+	Hide();
+	Unhide();
+};
+
+
+function ViveController::ViveController()
+{
+//	var controllerMesh = CVmNewMesh("nomefile.AAM");
+//	mControllerObj = CVmObj(controllerMesh);
+
+	// Silhouette shader, used to create the black outline in the walls
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+}
+
+/*
+ * This method draws the ViveController and any objects that was added to it. It makes sure to draw each object's silhouette and on top of it
+ * the object itself using any shader that was added to it
+ */
+function ViveController::Draw()
+{
+	glEnable(GL_CULL_FACE);
+    glCullFace (GL_FRONT);
+    
+    glDepthMask(GL_TRUE); 
+    glEnable(GL_DEPTH_TEST); 
+
+    mSilhouetteShader.Start();
+    	mSilhouetteShader.SetParameter("offset", 0.05);
+    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 1.0]);
+    	
+		mViveController.Draw();
+	mSilhouetteShader.Stop();
+	
+	glCullFace (GL_BACK); 
+	
+	mViveController.Draw();
+	
+	glDisable(GL_CULL_FACE); 
+}
+
+
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * 
+ * The method returns:
+ * -1 -> if no interception was found
+ *  0 -> if it intercepts the floor
+ *  1 -> if it intercepts the back wall
+ *  2 -> if it intercepts the roof
+ *  3 -> if it intercepts the left wall
+ *  4 -> if it intercepts the right wall
+ *  5 -> if it intercepts the front wall
+ */
+function ViveController::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
+{	
+	// At first I state that no intersection was found
+	var intersectedObject = -1;
+	var contactPointTmp;
+	var normalTmp;
+	
+	// To find the interception of a plane I first need one of its point: I get the coordinates of the floor first. Since it's a child of the mViveController object
+	// I need to add its position (NOTE: this will work only if the ViveController is NOT a child of something else); I then add 1 to make sure that
+	// the plane is considered inside the ViveController
+	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
+	
+	// I compute the normal of the plane
+	normalTmp = ComputeNormalOfPlanarObject(mFloorObj);
+	
+	// I check for interceptions
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+	
+	// If one was found and it's inside the ViveController (remember, planes are infinite, so maybe there was an interception but outside the ViveController, so it's no good)
+	// I return the 0 to indicate that
+	if(contactPointTmp != Void && IsPointInViveController(contactPointTmp))
+	{
+		contactPointTmp -= [0, 1, 0];
+		intersectedObject = 0;
+		
+		contactPoint = contactPointTmp;
+		normal = normalTmp;
+	}
+		
+		
+	/* Back wall */
+	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
+	normalTmp = ComputeNormalOfPlanarObject(mBackWallObj);
+	
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+	
+	if(contactPointTmp != Void && IsPointInViveController(contactPointTmp))
+	{
+		// Firt I remove the point I added in order to make sure that the plane point was in the ViveController
+		contactPointTmp -= [0, 0, 1];
+		
+		// If there was an intersection before and I found one in the rest of the elevator, I need to check which one "wins", i.e. which one
+		// is closest to the player (in this case the origin of the ray)
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			// If the new distance is lesser, it wins
+			if(currentDistance < previousDistance)
+			{
+				intersectedObject = 1;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		// If before there was no intersection, I update the values with the current ones
+		else
+		{
+			intersectedObject = 1;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
+		
+	/* Roof */
+	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
+	normalTmp = ComputeNormalOfPlanarObject(mRoofObj);
+	
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+	
+	if(contactPointTmp != Void && IsPointInViveController(contactPointTmp))
+	{
+		contactPointTmp -= [0, -1, 0];
+		
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			if(currentDistance < previousDistance)
+			{
+				intersectedObject = 2;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		else
+		{
+			intersectedObject = 2;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
+		
+	/* Left wall */
+	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
+	normalTmp = ComputeNormalOfPlanarObject(mLeftWallObj);
+	
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+	
+	if(contactPointTmp != Void && IsPointInViveController(contactPointTmp))
+	{
+		contactPointTmp -= [1, 0, 0];
+		
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			if(currentDistance < previousDistance)
+			{				
+				intersectedObject = 3;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		else
+		{
+			intersectedObject = 3;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
+		
+	/* Right wall */
+	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
+	normalTmp = ComputeNormalOfPlanarObject(mRightWallObj);
+	
+	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+	
+	if(contactPointTmp != Void && IsPointInViveController(contactPointTmp))
+	{
+		contactPointTmp -= [-1, 0, 0];
+		
+		if(intersectedObject != -1)
+		{
+			var previousDistance = Modulus(contactPoint - rayOrigin);
+			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			
+			if(currentDistance < previousDistance)
+			{
+				intersectedObject = 4;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+		else
+		{
+			intersectedObject = 4;
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}
+	}
+		
+	/* Front wall */
+	if(mHasFront)
+	{
+		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
+		normalTmp = ComputeNormalOfPlanarObject(mFrontWallObj);
+		
+		contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+		
+		if(contactPointTmp != Void && IsPointInViveController(contactPointTmp))
+		{
+			contactPointTmp -= [0, 0, -1];
+			
+			if(intersectedObject != -1)
+			{
+				var previousDistance = Modulus(contactPoint - rayOrigin);
+				var currentDistance = Modulus(contactPointTmp - rayOrigin);
+				
+				if(currentDistance < previousDistance)
+				{
+					intersectedObject = 5;
+					contactPoint = contactPointTmp;
+					normal = normalTmp;
+				}
+			}
+			else
+			{
+				intersectedObject = 5;
+				contactPoint = contactPointTmp;
+				normal = normalTmp;
+			}
+		}
+	}
+	
+	return intersectedObject;
+}
+
+/*
+ * This method checks whether the point passed as parameter is in the ViveController or not
+ * 
+ * point: (vector) the point, in world coordinates
+ */
+function ViveController::IsPointInViveController(point)
+{
+	mLowerCornerWorld = mViveController.LocalToWorld(mLowerCornerPosition);
+	mUpperCornerWorld = mViveController.LocalToWorld(mUpperCornerPosition);
+	
+	// I check if the point is in the bounding box, using the world coordinates. I'm also using little offset to account for the fact that 
+	// the walls are not completely attached, so the bounding box is a little bit bigger
+	return (point.x >= mLowerCornerWorld.x + 0.5 && point.x <= mUpperCornerWorld.x - 0.5) &&
+    	   (point.y >= mLowerCornerWorld.y + 0.5 && point.y <= mUpperCornerWorld.y - 0.5) &&
+       	   (point.z <= mLowerCornerWorld.z - 0.5 && point.z >= mUpperCornerWorld.z + 0.5);
+
+
+//	return (point.x >= mLowerCornerWorld.x - 0.5 && point.x <= mUpperCornerWorld.x + 0.5) &&
+//    	   (point.y >= mLowerCornerWorld.y - 0.5 && point.y <= mUpperCornerWorld.y + 0.5) &&
+//       	   (point.z <= mLowerCornerWorld.z + 0.5 && point.z >= mUpperCornerWorld.z - 0.5);
+}
+
+/*
+ * Method that adds an object fo the ViveController. Mind that the children are only useful for drawing, meaning that the ViveController object will 
+ * only make sure to draw its children using the silhouette shader plus any shader they might have, nothing more
+ */
+function ViveController::AddObject(object, x, y, z)
+{
+	mViveController.AddChild(object, x, y, z);
+	
+	aadd(mChildren, object);
+}
+
+
+function ViveController::RemoveObject(object)
+{
+	mViveController.RemoveChild(object);
+}
+
+function ViveController::GetObj()
+{
+	return mViveController;
+}
+
+function ViveController::GetViveControllerWidth()
+{
+	return mFarWallWidth;
+}
+
+function ViveController::GetViveControllerDepth()
+{
+	return mSideWallWidth;
+}
+
+function ViveController::GetViveControllerHeight()
+{
+	return mViveControllerHeight;
+}
+
+function ViveController::SetLightsRange(min, max)
+{
+	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, min);
+	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, max);
+	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, min);
+	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, max);
+	mRoofMesh.ShaderSetParameter(0, "lightsRangeMin", 0, min);
+	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, max);
+	
+	foreach(var child in mChildren)
+	{
+		if(child.GetMesh() != Void)
+		{
+			child.GetMesh().ShaderSetParameter(0, "lightsRangeMin", 0, min);
+			child.GetMesh().ShaderSetParameter(0, "lightsRangeMax", 0, max);
+		}
+	}
+	
+	mLightsRangeMin = min;
+	mLightsRangeMax = max;
+}
+
+function ViveController::GetLightsRange()
+{
+	return [mLightsRangeMin, mLightsRangeMax];
+}
+
+function ViveController::SetPosition(position)
+{
+	mViveController.SetPosition(position);
+}
+
+function ViveController::Translate(x, y, z)
+{
+	mViveController.Translate(x, y, z);
+}
+
+function ViveController::Rotate(angle, x, y, z)
+{
+	mViveController.Rotate(angle, x, y, z);
+}
+
+
+function ViveController::GetPosition()
+{
+	return mViveController.GetPosition();
+}
+
+
+function ViveController::LocalToWorld(point)
+{
+	return mViveController.LocalToWorld(point);
+}
+
+function ViveController::Hide()
+{
+	return mViveController.Hide();
+}
+
+function ViveController::Unhide()
+{
+	return mViveController.Unhide();
+}
