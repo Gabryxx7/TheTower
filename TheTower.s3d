@@ -52,7 +52,7 @@ function OnInit(params)
 	if(VR_ON){
 		HMD = CVmExternDLL( "francodll.dll" );
 		
-		HMD.__AddFunction( C_VOID, "IsVRactive");	
+		HMD.__AddFunction( C_INT, "IsVRactive");	
 		HMD.__AddFunction( C_VOID, "SceneBegin");
 		HMD.__AddFunction( C_VOID, "frame_left");
 		HMD.__AddFunction( C_VOID, "frame_right");
