@@ -63,6 +63,9 @@ class Level2
 	var floorObj;
 	
 	var provaMeshObj;
+	
+	var mController1;
+	var mController2;
 		
 	// Private functions
 	DrawAllPortals();
@@ -108,6 +111,12 @@ function Level2::Level2(inputManager, soundManager)
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	mSpotShader = CVmShaderProgram("spotShader.glsl");	
+	
+	if(VR_ON)
+	{
+		mController1 = mInputManager.GetController(1);
+		mController2 = mInputManager.GetController(2);
+	}
 }
 
 
@@ -233,6 +242,12 @@ function Level2::Render()
 		floorObj.Draw();
 	mSpotShader.Stop();	
 	
+	
+	if(VR_ON)
+	{
+		mController1.Draw();
+		mController2.Draw();
+	}
 }
 
 /*
@@ -464,10 +479,10 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 function Level2::UpdateLogic(dt)
 {
 	// First off, let's update the player's position and orientation
-	mInputManager.UpdateCameraOrientation();
-	mInputManager.UpdateCameraPosition();
+	mInputManager.UpdateCamera();
+	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
-	var cameraPosition = mCamera.GetPosition();
+	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	switch(mLevelStatus)
 	{
@@ -475,7 +490,7 @@ function Level2::UpdateLogic(dt)
 		case STATUS_ELEVATOR_MOVING: 
 		{			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
-		    if(!mElevator.IsPointInElevator(cameraPosition))
+		    if(!VR_ON && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();

@@ -41,12 +41,16 @@ class KeyboardManager
 	// This variable contains the time when a key was hit; used to determine the pause duration between a keystroke and another
 	var mKeyPressedTime;
 		
-	// Public functions
-	UpdateCameraOrientation();
+	// Private functions
 	UpdateCameraPosition();
+	
+	// Public functions
+	UpdateCamera();
+	UpdateControllers();
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton();
 	IsPressingSecondaryButton();
+	GetController(controllerIndex);
 };
 
 
@@ -77,7 +81,7 @@ function KeyboardManager::KeyboardManager()
  * This function has to be called at each "updateLogic()" function call. It updates the rotation matrix of the camera, 
  * so it's rotated according to mouse movements
  */
-function KeyboardManager::UpdateCameraOrientation()
+function KeyboardManager::UpdateCamera()
 {	
 	var xoffset = 0;
 	var yoffset = 0;
@@ -134,7 +138,9 @@ function KeyboardManager::UpdateCameraOrientation()
     	mRotationY = -75;   
     	
     CameraSetRotation(mRotationY, 1,0,0);
-    CameraRotate(mRotationX, 0,1,0);  	
+    CameraRotate(mRotationX, 0,1,0);
+    
+    UpdateCameraPosition();  	
 }
 
 /*
@@ -244,6 +250,10 @@ function KeyboardManager::UpdateCameraPosition()
 	}
 }
 
+function KeyboardManager::UpdateControllers()
+{
+
+}
 
 function KeyboardManager::SetActiveCamera(camera)
 {
@@ -260,3 +270,7 @@ function KeyboardManager::IsPressingSecondaryButton()
 	return Mouse.ButtonR;
 }
 
+function KeyboardManager::GetController(controllerIndex)
+{
+	return Void;
+}

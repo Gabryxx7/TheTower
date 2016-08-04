@@ -1,25 +1,25 @@
 
-class KeyboardManager
+class ViveManager
 {
 	// Camera used for movements
 	var mCamera;
 
 	var mHMD;
 	
-	var mControllerObj0;
-	var mControllerObj1;
+	var mController1;
+	var mController2;
 	
 	// Boolean; is true when de debug mode is active
 	var mDebugMode;
 		
 	// Public functions
-	UpdateCameraOrientation();
-	UpdateCameraPosition();
+	UpdateCamera();
+	UpdateControllers(openglTranslationOffset);
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
 	VibrateController(controllerIndex);
-	GetControllerObj(controllerIndex);
+	GetController(controllerIndex);
 };
 
 
@@ -33,9 +33,8 @@ function ViveManager::ViveManager(HMD)
 	
 	mHMD = HMD;
 	
-//	var controllerMesh = CVmNewMesh("nomefile.AAM");
-//	mControllerObj0 = CVmObj(controllerMesh);
-//	mControllerObj1 = CVmObj(controllerMesh);
+	mController1 = ViveController();
+	mController2 = ViveController();
 }
 
 
@@ -43,17 +42,39 @@ function ViveManager::ViveManager(HMD)
  * This function has to be called at each "updateLogic()" function call. It updates the rotation matrix of the camera, 
  * so it's rotated according to mouse movements
  */
-function ViveManager::UpdateCameraOrientation()
+function ViveManager::UpdateCamera()
 {	
 	mCamera.SetMatrix(HMD.GetCameraMatrix());
 }
 
-/*
- * This function has to be called at each "updateLogic()" function call. It updates the camera's position according to keystrokes
- */
-function ViveManager::UpdateCameraPosition()
+
+function ViveManager::UpdateControllers(openglTranslationOffset)
 {
+	var controller1Matrix = HMD.GetControllerMatrix(1);
+	var controller2Matrix = HMD.GetControllerMatrix(2);
 	
+	var x = controller1Matrix[12] - openglTranslationOffset;
+	var y = controller1Matrix[13] - openglTranslationOffset;
+	var z = controller1Matrix[14] - openglTranslationOffset;
+	
+	mController1.SetPosition(x, y, z);
+	
+	x = controller2Matrix[12] - openglTranslationOffset;
+	y = controller2Matrix[13] - openglTranslationOffset;
+	z = controller2Matrix[14] - openglTranslationOffset;
+	
+	mController2.SetPosition(x, y, z);
+	
+	controller1Matrix[12] = 0;
+	controller1Matrix[13] = 0;
+	controller1Matrix[14] = 0;
+	
+	controller2Matrix[12] = 0;
+	controller2Matrix[13] = 0;
+	controller2Matrix[14] = 0;
+	
+	mController1.SetRotationMatrix(controller1Matrix);
+	mController2.SetRotationMatrix(controller2Matrix);
 }
 
 
@@ -74,13 +95,13 @@ function ViveManager::IsPressingSecondaryButton(controllerIndex)
 
 function ViveManager::VibrateController(controllerIndex)
 {
-	return mHMD.VibrateController(controllerIndex, 250);
+	return mHMD.VibrateController(controllerIndex, 500);
 }
 
-function ViveManager::GetControllerObj(controllerIndex)
+function ViveManager::GetController(controllerIndex)
 {
-	if(controllerIndex == 0)
-		return mControllerObj0;
-	else if(controllerIndex == 1)
-		return mControllerObj1;
+	if(controllerIndex == 1)
+		return mController1;
+	else if(controllerIndex == 2)
+		return mController2;
 }

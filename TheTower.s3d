@@ -7,7 +7,7 @@
 
 global var VR_ON = false;
 global var HMD = null;
-global var DEBUG_MODE = false;
+global var DEBUG_MODE = true;
 
 #include <Script3d.h>
 #include <Camera.s3d.h>
@@ -21,9 +21,9 @@ SET AUDIO_MODE = 2;
 
 var mGameManager;
 
-var oldTime = GetTime();
-var newTime;
-var dt;
+var oldTime = 0;
+var newTime = 0;
+var dt = 0;
 
 /* Download essential files for game menus */
 function OnDownload()
@@ -41,34 +41,38 @@ function OnDownload()
 	FileDownload("viveController.AAM");
 	FileDownload("untitled.AAM");
 	FileDownload("onepointfive_texture.png");
+	FileDownload("Sci-fi-thing.aam");
 }
 
 /* Init system - Start GameManager */
 function OnInit(params)
 {
 	SetLocalDir("");	
+	
 	if(VR_ON){
 		HMD = CVmExternDLL( "francodll.dll" );
 		
-		//HMD.__AddFunction( C_VOID, "Init");
+		HMD.__AddFunction( C_VOID, "IsVRactive");	
 		HMD.__AddFunction( C_VOID, "SceneBegin");
 		HMD.__AddFunction( C_VOID, "frame_left");
 		HMD.__AddFunction( C_VOID, "frame_right");
 		HMD.__AddFunction( C_VOID, "SceneEnd");
-		HMD.__AddFunction( C_PFLOAT_16, "GetControllerRotationMatrix",C_INT);
+		HMD.__AddFunction( C_PFLOAT_16, "GetControllerMatrix", C_INT);
 		HMD.__AddFunction( C_PFLOAT_16, "GetCameraMatrix");
-		HMD.__AddFunction( C_VOID, "SetCameraPosition", C_FLOAT, C_FLOAT, C_FLOAT);
-		HMD.__AddFunction( C_PFLOAT_2, "GetTouchpadCoord",C_INT);
-		HMD.__AddFunction( C_PFLOAT_2, "GetTriggerCoord",C_INT);
-		HMD.__AddFunction( C_INT, "IsMenuPressed",C_INT);
-		HMD.__AddFunction( C_INT, "IsTriggerPressed",C_INT);
-		HMD.__AddFunction( C_INT, "IsGripPressed",C_INT);
-		HMD.__AddFunction( C_INT, "IsTouchpadPressed",C_INT);
-		HMD.__AddFunction( C_VOID, "VibrateController",C_INT, C_INT);	
+//		HMD.__AddFunction( C_VOID, "SetCameraPosition", C_FLOAT, C_FLOAT, C_FLOAT);
+		HMD.__AddFunction( C_PFLOAT_2, "GetTouchpadCoord", C_INT);
+		HMD.__AddFunction( C_PFLOAT_2, "GetTriggerCoord", C_INT);
+		HMD.__AddFunction( C_INT, "IsMenuPressed", C_INT);
+		HMD.__AddFunction( C_INT, "IsTriggerPressed", C_INT);
+		HMD.__AddFunction( C_INT, "IsGripPressed", C_INT);
+		HMD.__AddFunction( C_INT, "IsTouchpadPressed", C_INT);
+		HMD.__AddFunction( C_VOID, "VibrateController", C_INT, C_INT);
 	}
 	
 	mGameManager = GameManager();
 	
+	oldTime = GetTime();
+		
 	SceneSetParam(VR_VERTICAL_SYNC, 1);
 	
 	// Non so perchè ma bisogna rimuovere il cursore sia da qua che nel KeyboardManager

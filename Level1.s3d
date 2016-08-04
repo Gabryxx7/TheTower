@@ -49,13 +49,17 @@ class Level1
 	
 	
 	var mDrawingShader;
-	var mIsDrawing;
 	var mPreviousPoint;
 	var mLineArray;	
 	
 	var mTime;
 	var mReversedTime;
 	var mVertexArray;
+	
+	var mController1;
+	var mController2;
+	
+	var mControllerBeingUsedIndex;
 	
 	// Private functions
 	DrawAllPortals();
@@ -85,7 +89,6 @@ function Level1::Level1(inputManager, soundManager)
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
-	mIsDrawing = false;
 	mLineArray = {};
 		
 	// Creating the object that will handle transitions and rotations of objects
@@ -112,12 +115,34 @@ function Level1::Level1(inputManager, soundManager)
 	var columnObj = CVmObj(column);
 	var neckObj = CVmObj(neck);
 	
-	global var obj = CVmObj();
-	obj.AddChild(baseObj, 0, 0, 0);
-	obj.AddChild(columnObj, 2.0 / 2.0, 0.2, -1.0);
-	obj.AddChild(neckObj, 2.0 / 2.0, 0.2 + 5, -1.0);
+	global var mesh = CVmNewMesh("Sci-fi-thing.aam");
+//	mesh.CenterBoundingBox();
+
+	var mat = CVmMaterial();
+	mat.diffuse = [1.0, 1.0, 0.0];
+	mat.ambient = [0.0, 0.0, 1.0];
+	mat.specular = [0.0, 1.0, 0.0];
 	
-	obj.SetPosition(0, 3, 5);
+//	mesh.SubsetForceMaterial(1, mat);
+	mat.diffuse = [0.0, 1.0, 0.0];
+//	mesh.SubsetForceMaterial(2, mat);
+//	mat.diffuse = [0.0, 0.0, 1.0];
+	mesh.SubsetSetMaterial(0, mat);
+	
+	global var obj = CVmObj(mesh);
+//	obj.AddChild(baseObj, 0, 0, 0);
+//	obj.AddChild(columnObj, 2.0 / 2.0, 0.2, -1.0);
+//	obj.AddChild(neckObj, 2.0 / 2.0, 0.2 + 5, -1.0);
+	
+	obj.SetPosition(0, 3, 5);	
+	
+	mControllerBeingUsedIndex = 0;
+	
+	if(VR_ON)
+	{
+		mController1 = mInputManager.GetController(1);
+		mController2 = mInputManager.GetController(2);
+	}
 }
 
 
@@ -157,7 +182,7 @@ function Level1::Level1(inputManager, soundManager)
 	mIsLevelCompleted = false;
 	
 	mElevatorTravelDistance = 100.0;
-	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 	
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
@@ -165,7 +190,6 @@ function Level1::Level1(inputManager, soundManager)
 	var lightPos = mLight1.GetPosition();
 	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
-//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
 	
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
@@ -200,8 +224,9 @@ function Level1::Render()
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
 		case STATUS_LEVEL_STARTED:
+		{
 			mMainRoom.Draw();
-			
+
 //			if(mTime % 1.0 <= 0.01 && mReversedTime <= 0)
 //				mReversedTime = 1;
 //			
@@ -247,14 +272,40 @@ function Level1::Render()
 //			mDrawingShader.Stop();
 			
 			obj.Draw();
+			
 
 			mTime += 0.01;
 			
 			break;
+			
+		}
 	}
+	
+			var rayO = mCamera.GetPosition() - mOpenglTranslationOffset;
+			var rayE = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 900;
+			
+			var contactPoint;
+			var contactNormal;
+			var triangleID;
+			
+			if(obj.IsColliding(rayO, rayE, &contactPoint, &contactNormal, &triangleId))
+			{
+				var string;
+				outputln(mesh.GetSubsetFromTriIndex (triangleID, &string));
+//				outputln(obj.Inspect(obj.LocalToWorld([0, 1, 0])));
+//				outputln(obj.Inspect(obj.LocalToWorld([-3.74, 7, 1.8])));
+				
+//				outputln(mCamera.GetPosition() - mOpenglTranslationOffset);
+			}
 	
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
+	
+	if(VR_ON)
+	{
+		mController1.Draw();
+		mController2.Draw();
+	}
 }
 
 
@@ -270,8 +321,8 @@ function Level1::Render()
 function Level1::UpdateLogic(dt)
 {
 	// First off, let's update the player's position and orientation
-	mInputManager.UpdateCameraOrientation();
-	mInputManager.UpdateCameraPosition();
+	mInputManager.UpdateCamera();
+	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
@@ -280,8 +331,9 @@ function Level1::UpdateLogic(dt)
 		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
+			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
-		    if(!mElevator.IsPointInElevator(cameraPosition))
+		    if(!VR_ON && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
@@ -337,23 +389,36 @@ function Level1::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+			if(!VR_ON && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
+		    	
+		    	
+	    	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
+			var usingController2 = mInputManager.IsPressingPrimaryButton(2);
+			
+			var firstTimeUsingController = (usingController1 || usingController2) && mControllerBeingUsedIndex == 0;
+			var wasUsingController1 = (usingController1 && mControllerBeingUsedIndex == 1);
+			var wasUsingController2 = (usingController2 && mControllerBeingUsedIndex == 2);
 				 
 			// I check if the user has clicked with the mouse or whatever; if that is the case I need to check "where" he clicked    	
-	    	if(mInputManager.IsPressingPrimaryButton())
-	    	{
-	    		
-	    		if(!mIsDrawing)
-	    		{
-	    			mIsDrawing = true;
+	    	if(firstTimeUsingController || wasUsingController1 || wasUsingController2)
+			{				
+				if(firstTimeUsingController)
+				{
+					mControllerBeingUsedIndex = usingController1 ? 1 : 2;
+					
 	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
 	    			mLineArray = {};
 	    			mVertexArray = {};
-	    		}
+				}
 	    		else
 	    		{
-	    			var currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
+	    			var currentPoint;
+	    			
+	    			if(VR_ON)
+    					currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
+    				else
+	    				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
 								
 					// Taking the direction that goes from the previous point to the current one. Note that the order of the difference is important:
 					// I need the direction that goes from the previous point to the current one
@@ -387,7 +452,7 @@ function Level1::UpdateLogic(dt)
 	    		}
     		}
     		else
-    			mIsDrawing = false;
+    			mControllerBeingUsedIndex = 0;
 	    		
 			break;
 		}

@@ -12,7 +12,6 @@
 #define STICK_SENSITIVITY_Y 3
 
 // Pause in milliseconds between a key pressed input and the next one, so not to "spam" keystrokes
-#define KEY_PRESSED_PAUSE 500
 #define XBOX_CONTROLLER 0
 
 class GamepadManager
@@ -44,12 +43,17 @@ class GamepadManager
 	var mKeyPressedTime;
 	
 	var joystick;
+	
+	// Private functions
+	UpdateCameraPosition();
 		
 	// Public functions
-	UpdateCameraOrientation();
-	UpdateCameraPosition();
+	UpdateCamera();
+	UpdateControllers();
 	SetActiveCamera(camera);
-	HasClicked();
+	IsPressingPrimaryButton();
+	IsPressingSecondaryButton();
+	GetController(controllerIndex);
 };
 
 
@@ -82,7 +86,7 @@ function GamepadManager::GamepadManager()
  * This function has to be called at each "updateLogic()" function call. It updates the rotation matrix of the camera, 
  * so it's rotated according to mouse movements
  */
-function GamepadManager::UpdateCameraOrientation()
+function GamepadManager::UpdateCamera()
 {	
 	var xoffset = 0;
 	var yoffset = 0;
@@ -159,6 +163,7 @@ function GamepadManager::UpdateCameraOrientation()
 	CameraSetRotation(mRotationY, 1,0,0);
     CameraRotate(mRotationX, 0,1,0);
   	
+  	UpdateCameraPosition();
 }
 
 /*
@@ -276,14 +281,27 @@ function GamepadManager::UpdateCameraPosition()
 	}	
 }
 
+function GamepadManager::UpdateControllers()
+{
+
+}
 
 function GamepadManager::SetActiveCamera(camera)
 {
 	mCamera = camera;
 }
 
-function GamepadManager::HasClicked()
+function GamepadManager::IsPressingPrimaryButton()
 {
 	return joystick.button6;
 }
 
+function GamepadManager::IsPressingSecondaryButton()
+{
+	return joystick.button7;
+}
+
+function GamepadManager::GetController(controllerIndex)
+{
+	return Void;
+}

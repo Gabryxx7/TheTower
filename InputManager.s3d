@@ -6,6 +6,7 @@
 
 #include <KeyboardManager.s3d>
 #include <GamepadManager.s3d>
+#include <ViveManager.s3d>
 
 /*
  * This class works as an interface between the game and whatever it's being used for inputs. It will instantiates the corresponding 
@@ -23,13 +24,14 @@ class InputManager
 	var mPreviousCameraPosition;
 	
 	// Public functions
-	UpdateCameraOrientation();
-	UpdateCameraPosition();
+	UpdateCamera();
+	UpdateControllers(openglTranslationOffset);
 	RestoreCameraPosition();
 	SetActiveCamera(camera);
 	GetActiveCamera();
-	IsPressingPrimaryButton();
-	IsPressingSecondaryButton();
+	IsPressingPrimaryButton(controllerIndex);
+	IsPressingSecondaryButton(controllerIndex);
+	GetController(controllerIndex);
 };
 
 
@@ -38,29 +40,31 @@ class InputManager
  */
 function InputManager::InputManager()
 {
-	if(USE_INPUT_MANAGER == 1)
-		mManager = KeyboardManager();
-	else if(USE_INPUT_MANAGER == 2)
-		mManager = GamepadManager();
+	if(VR_ON)
+		mManager = ViveManager();
+	else
+	{
+		if(USE_INPUT_MANAGER == 1)
+			mManager = KeyboardManager();
+		else if(USE_INPUT_MANAGER == 2)
+			mManager = GamepadManager();
+	}
 }
 
 /*
- * Method that updates the camera's orientation (i.e. the direction the use is looking at)
+ * Method that updates the camera's orientation (i.e. the direction the use is looking at) and position
  */
-function InputManager::UpdateCameraOrientation()
-{
-	mManager.UpdateCameraOrientation();
-}
-
-/*
- * Method that updates the camera's position. Used when the user moves around
- */
-function InputManager::UpdateCameraPosition()
+function InputManager::UpdateCamera()
 {
 	// Saving the current position, in case the new movement will not be valid to the game. It's the game's job to check that
 	mPreviousCameraPosition = mCamera.GetPosition();
 	
-	mManager.UpdateCameraPosition();
+	mManager.UpdateCamera();
+}
+
+function InputManager::UpdateControllers(openglTranslationOffset)
+{
+	mManager.UpdateControllers(openglTranslationOffset);
 }
 
 
@@ -91,13 +95,17 @@ function InputManager::GetActiveCamera()
 	return mCamera;
 }
 
-function InputManager::IsPressingPrimaryButton()
+function InputManager::IsPressingPrimaryButton(controllerIndex)
 {
-	return mManager.IsPressingPrimaryButton();
+	return mManager.IsPressingPrimaryButton(controllerIndex);
 }
 
-function InputManager::IsPressingSecondaryButton()
+function InputManager::IsPressingSecondaryButton(controllerIndex)
 {
-	return mManager.IsPressingSecondaryButton();
+	return mManager.IsPressingSecondaryButton(controllerIndex);
 }
 
+function InputManager::GetController(controllerIndex)
+{
+	return mManager.GetController(controllerIndex);
+}

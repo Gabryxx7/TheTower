@@ -3,6 +3,7 @@
 #define STATUS_INGAME   1
 
 #include "Utils.s3d"
+#include "ViveController.s3d"
 #include "Level0.s3d"
 #include "Level1.s3d"
 #include "Level2.s3d"
@@ -45,6 +46,8 @@ class GameManager
 	var mLights;
 	
 	var mLevel1;
+	var mLevel2;
+	var mLevel3;
 	
 	/* In order to use the teleporting feature along with the HTC Vive, when a user teleports to a destination we need to change the camera's position 
 	 * in opengl fashon, meaning NOT using the SetPosition() of XVR. This is because the HTC Vive is powered by OpenVR, which works in its own way, and 
@@ -83,6 +86,8 @@ class GameManager
 	
 	// This boolean indicates whether the user is currently pressing the secondary button for teleportation
 	var mIsPressingSecondaryButton;
+	
+	var mControllerBeingUsedIndex;
 	
 	
 	var frameNum;
@@ -148,7 +153,8 @@ function GameManager::GameManager()
 	aadd(mLights, light2);
 	
 	// 
-	mOpenglTranslationOffset = [0, -3, 0]; //x,y,z	
+	mOpenglTranslationOffset = [0, 0, 0]; //x,y,z	
+
 	if(DEBUG_MODE)
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
@@ -163,7 +169,7 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level1(mInputManager, mSoundManager);
+		mCurrentLevel = Level3(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -180,7 +186,7 @@ function GameManager::GameManager()
 		
 		mElevator = mCurrentLevel.GetElevator();
 		
-		//mLevel1 = Level0(mInputManager, mSoundManager);
+		mLevel1 = Level1(mInputManager, mSoundManager);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -207,6 +213,8 @@ function GameManager::GameManager()
 	
 	// Offset used for the teleportation feature rendering
 	mDashedLinesOffset = 0;
+	
+	mControllerBeingUsedIndex = 0;
 }
 
 /*
@@ -295,22 +303,19 @@ function GameManager::XVRRendering(){
 	mCurrentLevel.Render();
 
 	// Here we render the positional circle, if the user is pressing the button. Since it's common for every level, it's better to do it here
-	if(mIsPressingSecondaryButton)
+	if(mControllerBeingUsedIndex != 0)
 	{		
 		// I also render a line from the controller to the position circle.
 		// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
-		var controllerMatrix;
-		var cameraPosition;
+		var raycastOrigin;
 		
 		if(!VR_ON)
-			cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
-		else {	
-			controllerMatrix = HMD.GetControllerRotationMatrix(1);
-			cameraPosition = [controllerMatrix[12] - mOpenglTranslationOffset.x, controllerMatrix[13] - mOpenglTranslationOffset.y, controllerMatrix[14] - mOpenglTranslationOffset.z];		
-		}
+			raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
+		else 
+			raycastOrigin = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
 		
-		var raycastOrigin = cameraPosition;
-		var raycastEnd = mPositionCircleObj.LocalToWorld([0, mPositionCircleHeight, 0]); // The endpoint is at the top of the cylinder that is the position "circle"
+		// The endpoint is at the top of the cylinder that is the position "circle"
+		var raycastEnd = mPositionCircleObj.LocalToWorld([0, mPositionCircleHeight, 0]); 
 												
 		var color;
 		
@@ -386,55 +391,48 @@ function GameManager::XVRRendering(){
  */
 function GameManager::UpdateLogic(dt)
 {
-	/*
-	 * ******************************** HERE GOES THE HTC VIVE PART TO UPDATE THE CAMERA'S POSITION ***************************************
-	 * 
-	 * Before starting updating the logic, we need to update the camera's position with the matrix of the HMD given by OpenVR, so we have the correct
-	 * position in XVR.
-	 * Same thing goes for the controllers: here their position need to be updated
-	 */
-	if(VR_ON)
-	{
-		var cameraMatrix = HMD.GetCameraMatrix();	
-		CameraSetMatrix(cameraMatrix);
-	}
-	 
-	var viveTriggerPressed = false;	//can't define vars inside switch statement
-	var controllerMatrix;
-	 
  	switch (mGameStatus) {
 		
 		case STATUS_MENU:
 		
 			break;
 		case STATUS_INGAME:	
-
+		{
+			// The first thing we have to do is to update the logic of the current level
 			mCurrentLevel.UpdateLogic(dt);
-			if(VR_ON){
-				if(HMD.IsTriggerPressed(1) == 1){
-					controllerMatrix = HMD.GetControllerRotationMatrix(1);
-					viveTriggerPressed = true;
-				}					
-			}
+
+
+			var usingController1 = mInputManager.IsPressingSecondaryButton(1);
+			var usingController2 = mInputManager.IsPressingSecondaryButton(2);
+			
+			var firstTimeUsingController = (usingController1 || usingController2) && mControllerBeingUsedIndex == 0;
+			var wasUsingController1 = (usingController1 && mControllerBeingUsedIndex == 1);
+			var wasUsingController2 = (usingController2 && mControllerBeingUsedIndex == 2);
 			
 			// Checking the user is pressing the button to teleport
-			if(mInputManager.IsPressingSecondaryButton() || viveTriggerPressed)
+			if(firstTimeUsingController || wasUsingController1 || wasUsingController2)
 			{				
+				if(firstTimeUsingController)
+					mControllerBeingUsedIndex = usingController1 ? 1 : 2;
+				
 				// I get the camera's position- minus the offset so we get the actual position of the player in the world
 				// NOTE: if the Vive is active, this shouldn't be the camera's, but the controller's position. Need to modify the code
-				var cameraPosition;
-				if(!VR_ON)
-					cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
-				else
-					cameraPosition = [controllerMatrix[12] - mOpenglTranslationOffset.x, controllerMatrix[13] - mOpenglTranslationOffset.y, controllerMatrix[14] - mOpenglTranslationOffset.z];
+				var raycastOrigin;
+				var raycastEnd;
 				
 				// Computing the ray that goes to infinity: I'm going to check were it collides
-				var raycastOrigin = cameraPosition;
-				var raycastEnd;
-				if(!VR_ON)
-					raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+				if(VR_ON)
+				{
+					var controller = mInputManager.GetController(mControllerBeingUsedIndex);
+					raycastOrigin = controller.GetPosition();
+					raycastEnd = raycastOrigin + controller.GetDirection() * mCamera.GetZFar();
+				}
 				else
-					raycastEnd = raycastOrigin + [-controllerMatrix[8], -controllerMatrix[9], -controllerMatrix[10]] * mCamera.GetZFar();
+				{
+					raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset;
+					raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+				}
+					
 				
 				var contactPoint;
 				var normal;
@@ -472,15 +470,12 @@ function GameManager::UpdateLogic(dt)
 					// closer to the user (to avoid Z fighting with the intersected plane)
 					mPositionCircleObj.SetPosition(contactPoint - mCamera.GetDirection());
 				}
-									
-				// I state that the user is pressing the secondary button
-				mIsPressingSecondaryButton = true;
 			}
 			// If the user isn't pressing the button...
 			else
 			{
 				// If the user WAS pressing the button, now he's not anymore
-				if(mIsPressingSecondaryButton)
+				if(mControllerBeingUsedIndex != 0)
 				{
 					// If the last position of the circle was valid, I update the opengl offset
 					if(mIsPositionValid)
@@ -495,26 +490,42 @@ function GameManager::UpdateLogic(dt)
 						mCurrentLevel.SetOpenglTransformOffset(mOpenglTranslationOffset);
 					}
 					
-					mIsPressingSecondaryButton = false;
+					mControllerBeingUsedIndex = 0;
 				}
 			}
 			
 			if(mCurrentLevel.IsLevelCompleted())
-			{
-				mCurrentLevelNumber++;
-				
+			{				
 				switch(mCurrentLevelNumber)
 				{
-					case 1:
+					case 0:
 					{
 						mCurrentLevel = mLevel1;
 						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 						break;
 					}
+					
+					case 1:
+					{
+//						mCurrentLevel = mLevel2;
+//						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+						break;
+					}
+					
+					case 2:
+					{
+//						mCurrentLevel = mLevel3;
+//						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+						break;
+					}
 				}
+				
+				mCurrentLevelNumber++;
+				
 			}
 			
 			break;
+		}
 			
 		default:
 			break;

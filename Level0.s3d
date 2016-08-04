@@ -113,6 +113,9 @@ class Level0
 	
 	var viveControllerObj;
 	
+	var mController1;
+	var mController2;
+	
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
@@ -506,6 +509,12 @@ function Level0::Level0(inputManager, soundManager, lights)
 	viveControllerObj.Normalize(5);
 	viveControllerObj.SetPosition([-15, 5, -20]);
 	
+	
+	if(VR_ON)
+	{
+		mController1 = mInputManager.GetController(1);
+		mController2 = mInputManager.GetController(2);
+	}
 }
 
 /* ****************************************************** *
@@ -531,6 +540,12 @@ function Level0::Render()
 	flyingFuck.Draw();
 	endText.Draw();
 	viveControllerObj.Draw();
+	
+	if(VR_ON)
+	{
+		mController1.Draw();
+		mController2.Draw();
+	}
 }
 
 /*
@@ -765,23 +780,23 @@ function Level0::DrawPortal(portalFrame, portalRoom)
  */
 function Level0::UpdateLogic(dt)
 {
-	// First off, let's update the player's position and orientation
-	mInputManager.UpdateCameraOrientation();
-	mInputManager.UpdateCameraPosition();
+	// First off, let's update the player's position and orientation and the controllers (if they're not present nothing will be done)
+	mInputManager.UpdateCamera();
+	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 	// I restore the previous porisiotn
-	if(!mMainRoom.IsPointInRoom(cameraPosition))
+	if(!VR_ON && !mMainRoom.IsPointInRoom(cameraPosition))
 		mInputManager.RestoreCameraPosition();
-	else if((cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
+	else if(!VR_ON && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
        	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8) &&
        	    !mIsElevatorPresent)
    	    mInputManager.RestoreCameraPosition();
 
     // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-    if(mEnding && !mElevator.IsPointInElevator(cameraPosition))
+    if(!VR_ON && mEnding && !mElevator.IsPointInElevator(cameraPosition))
     	mInputManager.RestoreCameraPosition();
     	
    	    

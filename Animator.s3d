@@ -262,13 +262,13 @@ function Animator::UpdateTransitions(dt)
 			var xSpeed = mXSpeedArray[i];
 			var ySpeed = mYSpeedArray[i];
 			var zSpeed = mZSpeedArray[i];
-	
+			
 			// Computing the new position starting from the current one. I move along the given direction with the given speed, taking into account
 			// the dt passed from the last frame, in order to make smooth transitions
 			currentPosition.x += direction.x * dt * xSpeed * mScaleFactorArray[i];
 			currentPosition.y += direction.y * dt * ySpeed * mScaleFactorArray[i];
 			currentPosition.z += direction.z * dt * zSpeed * mScaleFactorArray[i];
-			
+
 			// Setting the new position
 			object.SetPosition(currentPosition);
 	
