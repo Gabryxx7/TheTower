@@ -503,12 +503,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	endText.Translate(0, 7, -0.3);
 	endText.Hide();
 	
-//	var viveMesh = CVMnewMesh("viveController.AAM");
-	var viveMesh = CVMnewMesh("untitled.AAM");
-	var viveTexture = CvmTexture("onepointfive_texture.png");
-	var viveMaterial = CVmMaterial();
-	viveMaterial.SetTexture(viveTexture);
-	viveMesh.ForceMaterial(viveMaterial);
+	var viveMesh = CVMnewMesh("viveControllerModel.AAM");
 	viveControllerObj = CVmObj(viveMesh);
 	viveControllerObj.Normalize(5);
 	viveControllerObj.SetPosition([-15, 5, -20]);

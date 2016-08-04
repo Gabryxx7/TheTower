@@ -28,7 +28,7 @@ class ViveController
 
 function ViveController::ViveController()
 {
-	var controllerMesh = CVmNewMesh("viveController.AAM");
+	var controllerMesh = CVmNewMesh("viveControllerModel.AAM");
 	controllerMesh.Scale(15, 15, 15);
 	controllerMesh.CenterBoundingBox();
 	
