@@ -61,8 +61,9 @@ class GameManager
 	// This object is the circle that appears when the user wants to teleport to a destination
 	var mPositionCircleObj;
 	
-	// Radius of the position circle
+	// Radius and height of the position circle
 	var mPositionCircleRadius;
+	var mPositionCircleHeight;
 		
 	// Shader used to render the position circle
 	var mPositionCircleShader;
@@ -162,7 +163,7 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level2(mInputManager, mSoundManager);
+		mCurrentLevel = Level1(mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -188,9 +189,10 @@ function GameManager::GameManager()
 	
 	// Creating the position circle object, used for the teleportation feature
 	mPositionCircleRadius = 1.0;
+	mPositionCircleHeight = 0.2;
 //	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
 //	var positionCircleMesh = CVmNewMesh("circleProva.AAM");  
-	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, 0.2, 1);  
+	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, mPositionCircleHeight, 1);  
 	positionCircleMesh.Normalize(4);
 	mPositionCircleObj = CVmObj(positionCircleMesh);
 	
@@ -224,8 +226,6 @@ function GameManager::Render()
 			XVRRendering();
 			
 			if(VR_ON){		
-				var cameraMatrix = HMD.GetCameraMatrix();	
-				CameraSetMatrix(cameraMatrix);	
 				glEnable(GL_LIGHT0);
 				glEnable(GL_LIGHT1);
 				glEnable(GL_LIGHT2);
@@ -296,11 +296,12 @@ function GameManager::XVRRendering(){
 
 	// Here we render the positional circle, if the user is pressing the button. Since it's common for every level, it's better to do it here
 	if(mIsPressingSecondaryButton)
-	{
+	{		
 		// I also render a line from the controller to the position circle.
 		// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
 		var raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
-		var raycastEnd = mPositionCircleObj.GetPosition();
+		var raycastEnd = mPositionCircleObj.LocalToWorld([0, mPositionCircleHeight, 0]); // The endpoint is at the top of the cylinder that is the position "circle"
+		
 												
 		var color;
 		
@@ -383,10 +384,16 @@ function GameManager::UpdateLogic(dt)
 	 * position in XVR.
 	 * Same thing goes for the controllers: here their position need to be updated
 	 */
+	if(VR_ON)
+	{
+		var cameraMatrix = HMD.GetCameraMatrix();	
+		CameraSetMatrix(cameraMatrix);
+	}
+	 
 	var viveTriggerPressed = false;	//can't define vars inside switch statement
 	var controllerMatrix;
 	 
-	switch (mGameStatus) {
+ 	switch (mGameStatus) {
 		
 		case STATUS_MENU:
 		
