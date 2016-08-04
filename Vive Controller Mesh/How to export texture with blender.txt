@@ -1,0 +1,7 @@
+1 - Be sure that the mtl file contains only one material
+2 - Open the mesh with meshlab
+3 - Export the mesh in .obj format (this will generate a file .mtl as well)
+4 - Put the .obj, .mtl and the texture image file in the same folder
+5 - Open the obj file with blender
+6 - Export the mesh with the .aam exporter
+7 - Be sure the lighting parameters are correct in the .aam file (Just open it with the notepad)
