@@ -299,7 +299,17 @@ function GameManager::XVRRendering(){
 	{
 		// I also render a line from the controller to the position circle.
 		// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
-		var raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
+		var controllerMatrix;
+		var cameraPosition;
+		
+		if(!VR_ON)
+			cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
+		else{	
+			controllerMatrix = HMD.GetControllerRotationMatrix(1);
+			cameraPosition = [controllerMatrix[12] - mOpenglTranslationOffset.x, controllerMatrix[13] - mOpenglTranslationOffset.y, controllerMatrix[14] - mOpenglTranslationOffset.z];		
+		}
+		
+		var raycastOrigin = cameraPosition;
 		var raycastEnd = mPositionCircleObj.GetPosition();
 												
 		var color;
