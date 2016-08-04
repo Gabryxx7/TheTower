@@ -26,6 +26,8 @@
 
 class Level0
 {
+	var mIsVRon;
+	
 	// Booleans that indicate if the level is starting or ending
 	var mStarting;
 	var mEnding;
@@ -134,8 +136,10 @@ class Level0
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level0::Level0(inputManager, soundManager, lights)
+function Level0::Level0(isVRon, inputManager, soundManager, lights)
 {
+	mIsVRon = isVRon;
+			
 	mOpenglTranslationOffset = [0, 0, 0];
 	
 	// Updating the booleans, the level is now starting
@@ -510,7 +514,7 @@ function Level0::Level0(inputManager, soundManager, lights)
 	viveControllerObj.SetPosition([-15, 5, -20]);
 	
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
@@ -541,7 +545,7 @@ function Level0::Render()
 	endText.Draw();
 	viveControllerObj.Draw();
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1.Draw();
 		mController2.Draw();
@@ -788,15 +792,15 @@ function Level0::UpdateLogic(dt)
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 	// I restore the previous porisiotn
-	if(!VR_ON && !mMainRoom.IsPointInRoom(cameraPosition))
+	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
 		mInputManager.RestoreCameraPosition();
-	else if(!VR_ON && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
+	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
        	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8) &&
        	    !mIsElevatorPresent)
    	    mInputManager.RestoreCameraPosition();
 
     // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-    if(!VR_ON && mEnding && !mElevator.IsPointInElevator(cameraPosition))
+    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
     	mInputManager.RestoreCameraPosition();
     	
    	    

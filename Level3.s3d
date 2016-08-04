@@ -10,6 +10,8 @@
 
 class Level3
 {
+	var mIsVRon;
+	
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
@@ -93,8 +95,10 @@ class Level3
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level3::Level3(inputManager, soundManager)
+function Level3::Level3(isVRon, inputManager, soundManager)
 {		
+	mIsVRon = isVRon;
+	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
@@ -230,7 +234,7 @@ function Level3::Level3(inputManager, soundManager)
 	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
 	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
@@ -322,7 +326,7 @@ function Level3::Render()
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1.Draw();
 		mController2.Draw();
@@ -353,7 +357,7 @@ function Level3::UpdateLogic(dt)
 		case STATUS_ELEVATOR_MOVING: 
 		{			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
-		    if(!VR_ON && !mElevator.IsPointInElevator(cameraPosition))
+		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
@@ -409,7 +413,7 @@ function Level3::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(!VR_ON && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 
 			

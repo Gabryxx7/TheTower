@@ -5,6 +5,8 @@
 
 class Level1
 {
+	var mIsVRon;
+	
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
@@ -84,8 +86,10 @@ class Level1
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level1::Level1(inputManager, soundManager)
+function Level1::Level1(isVRon, inputManager, soundManager)
 {		
+	mIsVRon = isVRon;
+	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
@@ -138,7 +142,7 @@ function Level1::Level1(inputManager, soundManager)
 	
 	mControllerBeingUsedIndex = 0;
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
@@ -301,7 +305,7 @@ function Level1::Render()
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1.Draw();
 		mController2.Draw();
@@ -333,7 +337,7 @@ function Level1::UpdateLogic(dt)
 		{			
 			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
-		    if(!VR_ON && !mElevator.IsPointInElevator(cameraPosition))
+		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
@@ -389,7 +393,7 @@ function Level1::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(!VR_ON && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 		    	
 		    	
@@ -415,7 +419,7 @@ function Level1::UpdateLogic(dt)
 	    		{
 	    			var currentPoint;
 	    			
-	    			if(VR_ON)
+	    			if(mIsVRon)
     					currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
     				else
 	    				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;

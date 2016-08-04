@@ -21,6 +21,9 @@
  */
 class GameManager
 {
+	var mHMD;
+	var mIsVRon;
+	
 	var mGameStatus;
 	var mGameStarted;
 	var mGameReady;
@@ -104,8 +107,14 @@ class GameManager
 };
 
 
-function GameManager::GameManager()
+function GameManager::GameManager(HMD)
 {
+	mHMD = HMD;
+	
+	mIsVRon = mHMD.IsVRactive() == 1;
+	
+	outputln(mIsVRon);
+	
 	frameNum = 0;
 	mGameStatus = STATUS_INGAME;
 		
@@ -114,7 +123,7 @@ function GameManager::GameManager()
 	
 	mCamera = CameraGetCurrent();
 	
-	mInputManager = InputManager();
+	mInputManager = InputManager(mIsVRon);
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
@@ -158,7 +167,7 @@ function GameManager::GameManager()
 	if(DEBUG_MODE)
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
-		mCurrentLevel = Level0(mInputManager, mSoundManager, mLights);
+		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights);
 		
 		mElevator = mCurrentLevel.GetElevator();
 		mElevator.Unhide();
@@ -169,7 +178,7 @@ function GameManager::GameManager()
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
-		mCurrentLevel = Level3(mInputManager, mSoundManager);
+		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -181,12 +190,12 @@ function GameManager::GameManager()
 	{
 	
 		// The current level takes as parameter the input manager, which is shared among every level
-		mCurrentLevel = Level0(mInputManager, mSoundManager, mLights);
+		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights);
 		mCurrentLevelNumber = 0;
 		
 		mElevator = mCurrentLevel.GetElevator();
 		
-		mLevel1 = Level1(mInputManager, mSoundManager);
+		mLevel1 = Level1(mIsVRon, mInputManager, mSoundManager);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -233,7 +242,8 @@ function GameManager::Render()
 			
 			XVRRendering();
 			
-			if(VR_ON){		
+			if(mIsVRon)
+			{		
 				glEnable(GL_LIGHT0);
 				glEnable(GL_LIGHT1);
 				glEnable(GL_LIGHT2);
@@ -241,12 +251,12 @@ function GameManager::Render()
 			 	glLight(GL_LIGHT1, GL_POSITION, [mLights[1].GetPosition().x, mLights[1].GetPosition().y, mLights[1].GetPosition().z, 1.0]); 
 			 	glLight(GL_LIGHT2, GL_POSITION, [mLights[2].GetPosition().x, mLights[2].GetPosition().y, mLights[2].GetPosition().z, 1.0]); 
 			 			
-				HMD.SceneBegin();
-					HMD.frame_left();
+				mHMD.SceneBegin();
+					mHMD.frame_left();
 						XVRRendering();
-					HMD.frame_right();
+					mHMD.frame_right();
 						XVRRendering();
-				HMD.SceneEnd();
+				mHMD.SceneEnd();
 			}	
 				
 				/*
@@ -309,10 +319,10 @@ function GameManager::XVRRendering(){
 		// Note: need to modify the code so that if the Vive is active the line starts from the controller, not the camera
 		var raycastOrigin;
 		
-		if(!VR_ON)
-			raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
-		else 
+		if(mIsVRon)
 			raycastOrigin = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
+		else 
+			raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
 		
 		// The endpoint is at the top of the cylinder that is the position "circle"
 		var raycastEnd = mPositionCircleObj.LocalToWorld([0, mPositionCircleHeight, 0]); 
@@ -421,7 +431,7 @@ function GameManager::UpdateLogic(dt)
 				var raycastEnd;
 				
 				// Computing the ray that goes to infinity: I'm going to check were it collides
-				if(VR_ON)
+				if(mIsVRon)
 				{
 					var controller = mInputManager.GetController(mControllerBeingUsedIndex);
 					raycastOrigin = controller.GetPosition();

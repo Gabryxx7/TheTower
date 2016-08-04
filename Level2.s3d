@@ -6,6 +6,8 @@
 
 class Level2
 {
+	var mIsVRon;
+	
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
@@ -87,8 +89,10 @@ class Level2
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level2::Level2(inputManager, soundManager)
+function Level2::Level2(isVRon, inputManager, soundManager)
 {
+	mIsVRon = isVRon;
+	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	mIsElevatorPresent = false;
@@ -112,7 +116,7 @@ function Level2::Level2(inputManager, soundManager)
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	mSpotShader = CVmShaderProgram("spotShader.glsl");	
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
@@ -243,7 +247,7 @@ function Level2::Render()
 	mSpotShader.Stop();	
 	
 	
-	if(VR_ON)
+	if(mIsVRon)
 	{
 		mController1.Draw();
 		mController2.Draw();
@@ -490,7 +494,7 @@ function Level2::UpdateLogic(dt)
 		case STATUS_ELEVATOR_MOVING: 
 		{			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
-		    if(!VR_ON && !mElevator.IsPointInElevator(cameraPosition))
+		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
