@@ -1,0 +1,176 @@
+// Scene parameters (Field of view, near clipping plane, far clipping plane)
+SET SCENE_FOV = 60;
+SET SCENE_NEAR = 0.1;
+SET SCENE_FAR = 1000;
+#include <Script3d.h>
+
+// Variables to manage camera
+var CamPos = [0.0,3.0,30.0];			//camera position
+// Variables to manage lights
+var Luce1;
+var PosL1 = [0.0,100.0,100.0];	//default first light position  
+// Variables for 3d geometry
+var m_mesh;	// Variables for meshes 
+var m_obj;	// Variables for objects
+var m_char;
+
+var AAMtype;
+var Path="";
+
+var n_frames = 0;
+var current_frame = 0;
+
+// function to declare 
+function CameraMoveMouse();
+function DrawGrid();
+extern function SetCurrentDir;
+
+
+function OnDownload()
+{
+
+}
+
+
+function OnInit(params)
+{
+	// Setup Camera
+	CameraSetPosition(campos);	
+
+	// Setup First Light
+	Luce1 = CVmLight();
+	Luce1.SetDiffuse(1,1,1);
+	Luce1.Enable();		
+	//Setup Initial Position
+	Luce1.SetPosition(PosL1);
+
+	// Load and setup the geometrical data (car mesh and floor mesh)
+	SetLocalDir();
+	trace(params);
+	AAMtype = GetAAMType(params);
+	trace(AAMtype);
+	if (AAMtype == AAM_CHARACTER)
+	{
+		m_char = CVmCharacter(params);
+		m_char.RotateABS(-90,1,0,0);
+		n_frames = m_char.GetFrames();
+		trace(N_FRAMES);
+		m_char.Normalize(10);
+		glEnable(GL_NORMALIZE);				
+	}
+	else if (AAMtype == AAM_AVATAR)
+	{
+		m_char = CVmAvatar(params);
+		m_char.RotateABS(-90,1,0,0);
+		n_frames = m_char.GetFrames();
+		m_char.Normalize(10);
+		glEnable(GL_NORMALIZE);				
+	}
+	else
+	{
+		m_mesh = CVmNewMesh(params);
+		m_mesh.Normalize(10);
+		m_mesh.CenterBoundingBox();
+		if (AAMtype == AAM_MESH_MULTIFRAME)
+			n_frames = m_mesh.GetFrames();
+		m_obj = CVmObj();
+		m_obj.LinkToMesh(m_mesh);	
+		m_obj.SetPosition(0,0,0);
+	}
+}
+
+function OnFrame()
+{
+	CameraMoveMouse(); 		// Manage the camera using mouse
+	Luce1.SetPosition(CameraGetPosition());
+	SceneBegin();
+	if (AAMtype == AAM_CHARACTER)
+		m_char.DrawAbs(current_frame);
+	else if (AAMtype == AAM_AVATAR)
+		m_char.Draw(current_frame,VR_NO_DISPLAYLISTS);
+	else if (AAMtype == AAM_MESH_MULTIFRAME)	
+		m_obj.Draw(VR_FRAMENUMBER,current_frame);					
+	else
+		m_obj.Draw();
+	SceneEnd();
+	current_frame+= 0.5;
+	if (current_frame >= n_frames)
+		current_frame = 0;
+	var text = "Frame: " +str(int(current_frame))+ "/"+str(n_frames);
+	if (n_frames > 1)	
+		consoletext(0.01,0.95,text);
+}
+
+function OnDownloadReady( RequestID )
+{
+	//TO DO
+}
+
+
+
+function OnTimer()
+{
+	//TO DO
+}
+
+
+
+function OnExit()
+{
+	//TO DO
+}
+
+
+
+// function to move the camera with mouse
+function CameraMoveMouse()
+{
+	static var hold = 0;
+	static var PrecX = 0.0, PrecY = 0.0;			
+	static var objxrot=0.0, objyrot=0.0, objzrot=0.0;
+	static var objxpos=0.0, objypos=0.0, objzpos=0.0;
+	var objxtr, objytr;
+	var cammat = array(16);
+	
+	var t_obj;
+	if (AAMtype == AAM_CHARACTER || AAMtype == AAM_AVATAR)
+		t_obj = m_char;
+	else
+		t_obj = m_obj;
+	
+	if ((Mouse.ButtonL || Mouse.ButtonR) &&(hold==0))
+	{
+		hold=1;
+		PrecX=Mouse.x;
+		PrecY=Mouse.y;
+	}
+	else if (hold==1) hold=0;
+	
+	if (Mouse.ButtonL)
+	{
+		if (Keypressed(VK_RSHIFT))
+			objzrot = Mouse.x - Precx;
+		else
+			objxrot = Mouse.x - Precx;
+		objyrot = Mouse.y - Precy;	
+		cammat = CameraGetMatrix();
+		t_obj.RotateABS(objyrot/2.0,cammat[0],cammat[4],cammat[8]);
+		t_obj.RotateABS(objxrot/2.0,cammat[1],cammat[5],cammat[9]);
+		t_obj.RotateABS(objzrot/2.0,cammat[2],cammat[6],cammat[10]);
+	}
+	
+	if (Mouse.ButtonR)
+	{
+		objytr = (Mouse.y - Precy)*0.1;	
+		objxtr = (Mouse.x - Precx)*0.1;	
+		cammat = CameraGetMatrix();
+				
+		objxpos -= cammat[2] *objytr + cammat[0]*objxtr;
+		objypos -= cammat[6] *objytr + cammat[4]*objxtr;
+		objzpos -= cammat[10]*objytr + cammat[8]*objxtr;
+//		objxpos*=0.01;objypos*=0.01;objzpos*=0.01;
+		output("\n",hold,">",objxpos," ",objypos," ",objzpos);
+	}
+	
+	t_obj.SetPosition(objxpos,objypos,objzpos);
+}
