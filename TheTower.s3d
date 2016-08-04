@@ -7,7 +7,7 @@
 
 //global var VR_ON = false;
 var HMD = null;
-global var DEBUG_MODE = false;
+global var DEBUG_MODE = true;
 
 #include <Script3d.h>
 #include <Camera.s3d.h>
@@ -37,7 +37,6 @@ function OnDownload()
 	FileDownload("drawingShader.glsl");
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
-	FileDownload("circleProva.AAM");
 	FileDownload("viveControllerModel.AAM");
 	FileDownload("Sci-fi-thing.aam");
 }
