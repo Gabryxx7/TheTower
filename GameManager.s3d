@@ -112,9 +112,7 @@ function GameManager::GameManager(HMD)
 	mHMD = HMD;
 	
 	mIsVRon = mHMD.IsVRactive() == 1;
-	
-	outputln(mIsVRon);
-	
+		
 	frameNum = 0;
 	mGameStatus = STATUS_INGAME;
 		
@@ -123,7 +121,7 @@ function GameManager::GameManager(HMD)
 	
 	mCamera = CameraGetCurrent();
 	
-	mInputManager = InputManager(mIsVRon);
+	mInputManager = InputManager(mIsVRon, mHMD);
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();

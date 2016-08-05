@@ -40,12 +40,12 @@ class InputManager
 /*
  * Constructor
  */
-function InputManager::InputManager(isVRon)
+function InputManager::InputManager(isVRon, HMD)
 {
 	mIsVRon = isVRon;
 	
 	if(mIsVRon)
-		mManager = ViveManager();
+		mManager = ViveManager(HMD);
 	else
 	{
 		if(USE_INPUT_MANAGER == 1)
