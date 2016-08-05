@@ -37,6 +37,8 @@ function ViveController::ViveController()
 	var boundingBox = controllerMesh.GetBoundingBox();
 	
 	mTipLocalCoordinates = [0, 0, -boundingBox[5] + boundingBox[5] / 5.0];
+	
+	outputln(boundingBox);
 
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	
@@ -58,7 +60,7 @@ function ViveController::Draw()
 	if(mIsActionAvailable)
 	{
 	    mSilhouetteShader.Start();
-	    	mSilhouetteShader.SetParameter("offset", 0.05);
+	    	mSilhouetteShader.SetParameter("offset", 0.05  * SCALE_FACTOR);
 	    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 1.0]);
 	    	
 			mViveController.Draw();

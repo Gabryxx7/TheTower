@@ -59,7 +59,7 @@ class KeyboardManager
  */
 function KeyboardManager::KeyboardManager()
 {
-	mMoveSpeed = MOVE_SPEED;
+	mMoveSpeed = MOVE_SPEED * SCALE_FACTOR;
 	mRotationX = 0;
 	mRotationY = 0;
 	mCameraUp = [0.0, 1.0,  0.0];
@@ -173,9 +173,9 @@ function KeyboardManager::UpdateCameraPosition()
 	
 	// If shift is pressed, sprint is activated
 	if(KeyPressed(VK_SHIFT))
-		mMoveSpeed = SPRINT_SPEED;
+		mMoveSpeed = SPRINT_SPEED * SCALE_FACTOR;
 	else
-		mMoveSpeed = MOVE_SPEED;
+		mMoveSpeed = MOVE_SPEED * SCALE_FACTOR;
 		
 	// If we press space in debug mode, the view goes up
 	if (KeyPressed(VK_SPACE) && mDebugMode)

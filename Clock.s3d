@@ -47,14 +47,14 @@ class Clock
 
 function Clock::Clock(lightsRangeMin, lightsRangeMax)
 {
-	mArrowsWidth = 0.02;
-	mArrowsDepth = 0.01;
-	mMinutesArrowHeight = 0.8;
-	mHoursArrowHeight = 0.4;
+	mArrowsWidth = 0.02 * SCALE_FACTOR;
+	mArrowsDepth = 0.01 * SCALE_FACTOR;
+	mMinutesArrowHeight = 0.8 * SCALE_FACTOR;
+	mHoursArrowHeight = 0.4 * SCALE_FACTOR;
 	
 	clockSphereSegments = 30;
-	clockSphereRadius = 1;
-	clockSphereThickness = 0.02;
+	clockSphereRadius = 1 * SCALE_FACTOR;
+	clockSphereThickness = 0.02 * SCALE_FACTOR;
 	
 	// Creating the mesh for the arrow and setting the pivot for the rotation in t
 	var minutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
@@ -107,8 +107,8 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	
 	mClockObj = CVmObj(clockMesh);
 	
-	mClockObj.AddChild(mMinutesArrowObj, 0.0, 0.10, -0.06);
-	mClockObj.AddChild(mHoursArrowObj, 0.0, 0.09, -0.05);
+	mClockObj.AddChild(mMinutesArrowObj, 0.0, 0.10 * SCALE_FACTOR, -0.06 * SCALE_FACTOR);
+	mClockObj.AddChild(mHoursArrowObj, 0.0, 0.09 * SCALE_FACTOR, -0.05 * SCALE_FACTOR);
 
 	mMinutesArrowAngle = 0;
 	mArrowDirection = 0;
@@ -143,9 +143,9 @@ function Clock::UpdateMinutesArrow(raycastStart, raycastEnd)
 	// By using points local to the clock and converting them to world coordinates, I'm assuring that the normal will be correct regardless of the position
 	// of the object in the world and regardless of its orientation
 	var p0 = mClockObj.LocalToWorld([0, 0, 0]);
-	var p1 = mClockObj.LocalToWorld([0, 1, 0]);
+	var p1 = mClockObj.LocalToWorld([0, 1 * SCALE_FACTOR, 0]);
 	var p2 = mClockObj.LocalToWorld([0, 0, 0]);
-	var p3 = mClockObj.LocalToWorld([1, 0, 0]);
+	var p3 = mClockObj.LocalToWorld([1 * SCALE_FACTOR, 0, 0]);
 	
 	// I get the 2 vectors by subtracting the 4 points witch each other
 	var vec1 = p1 - p0;

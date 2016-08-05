@@ -48,8 +48,8 @@ function Text::Text(string)
 	mString = string;
 	mStringList = {};
 	mStringObjList = {};
-	mStringWidthMultiplier = 0.085; // The multiplier was found by trial and error
-	mStringHeight = 0.5; // The height was found by trial and error
+	mStringWidthMultiplier = 0.085  * SCALE_FACTOR; // The multiplier was found by trial and error
+	mStringHeight = 0.5  * SCALE_FACTOR; // The height was found by trial and error
 	mTextContainerObj = CVmObj();
 	
 	// I obtain the substrings by using the Split function with "\n" as separator
@@ -61,7 +61,7 @@ function Text::Text(string)
 	{
 		var txt = CVmText();
 		txt.Load(substrings[i]);
-		txt.SetScale(0.5, 0.5);
+		txt.SetScale(0.5  * SCALE_FACTOR, 0.5  * SCALE_FACTOR);
 		txt.SetColor(0, 0, 0);
 						
 		var txtObj = CVmObj();
@@ -83,7 +83,7 @@ function Text::Text(string)
 	{
 		var txt = CVmText();
 		txt.Load("");
-		txt.SetScale(0.5, 0.5);
+		txt.SetScale(0.5  * SCALE_FACTOR, 0.5  * SCALE_FACTOR);
 		txt.SetColor(0, 0, 0);
 		var txtObj = CVmObj();
 		txtObj.LinkToText(txt);
@@ -133,7 +133,7 @@ function Text::LoadString(string)
 		{			
 			var txt = CVmText();
 			txt.Load(substrings[i]);
-			txt.SetScale(0.5, 0.5);
+			txt.SetScale(0.5  * SCALE_FACTOR, 0.5  * SCALE_FACTOR);
 			txt.SetColor(0, 0, 0);
 						
 			var txtObj = CVmObj();

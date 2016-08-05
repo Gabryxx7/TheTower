@@ -119,23 +119,23 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 		
 
 	mMainClock = Clock(1, 2);
-	mMainClock.Translate(0, 5, 14);
+	mMainClock.Translate(0, 5 * SCALE_FACTOR, 14 * SCALE_FACTOR);
 	
 	var num_seg = 30;
-	var radius = 2;
+	var radius = 2 * SCALE_FACTOR;
 	var hemisphere = 1;  // 0.5 = hemisphere, 1 = sphere
 	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
 	global var sphere = CVmObj(sphereMesh1);
-	sphere.SetPosition(0, 5, 20);
+	sphere.SetPosition(0, 5 * SCALE_FACTOR, 20 * SCALE_FACTOR);
 	
 	
 	
 		
 	var first = sphere.GetPosition();
-	var second = first + [0, 0, 6];
-	var third = second + [4.5, 0, 0];
-	var fourth  = third + [0, 0, -6];
-	var fifth  = fourth + [1, 0, 2];
+	var second = first + [0, 0, 6 * SCALE_FACTOR];
+	var third = second + [4.5 * SCALE_FACTOR, 0, 0];
+	var fourth  = third + [0, 0, -6 * SCALE_FACTOR];
+	var fifth  = fourth + [1 * SCALE_FACTOR, 0, 2 * SCALE_FACTOR];
 	
 	mAnimator.CreateTransition(sphere, first, {second, third, fourth, fifth}, 3.0, true);
 //	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 10.0, true);
@@ -144,7 +144,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 //	mAnimator.CreateTransition(sphere, first, second, 1.0, true);
 
 	global var flyingFuck2 = Text("Flying Fact");
-	flyingFuck2.SetPosition(sphere.GetPosition() + [-3, 0, 0]);
+	flyingFuck2.SetPosition(sphere.GetPosition() + [-3 * SCALE_FACTOR, 0, 0]);
 	flyingFuck2.Rotate(90, 0, 1, 0);
 
 	// Transition and rotation for the flying fuck
@@ -170,14 +170,14 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 //			var y = mMainRoom.GetRoomHeight() - 4.0 - heightStep*i;
 //			var z = mMainRoom.GetRoomDepth()/2.0 - 0.3;
 
-			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
-			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 - heightStep*i) ;
-			var z = mMainRoom.GetRoomDepth() - 0.3;
+			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			var z = mMainRoom.GetRoomDepth() - 0.3 * SCALE_FACTOR;
 			
 			var position = [x, y, z];
 		
-			position.x += Rand(1) == 0 ? Rand(8)/30.0 : -Rand(8)/30.0;
-			position.y += Rand(1) == 0 ? Rand(8)/10.0 : -Rand(8)/10.0;
+			position.x += Rand(1) == 0 ? Rand(8)/30.0 * SCALE_FACTOR : -Rand(8)/30.0 * SCALE_FACTOR;
+			position.y += Rand(1) == 0 ? Rand(8)/10.0 * SCALE_FACTOR : -Rand(8)/10.0 * SCALE_FACTOR;
 			
 			var newClock = mClocks[i*mNumberOfClocks + j];
 			
@@ -191,9 +191,9 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	}
 	
 	
-	var pyramidHeight = 3;
-	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2, pyramidHeight);
-	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2, pyramidHeight);
+	var pyramidHeight = 3 * SCALE_FACTOR;
+	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2 * SCALE_FACTOR, pyramidHeight);
+	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2 * SCALE_FACTOR, pyramidHeight);
 	
 	pyramidMesh1.ShaderAdd("toonShader.glsl", 0);
 	pyramidMesh1.ShaderActivate(true);
@@ -222,16 +222,16 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
 //	pyramidObj2.SetPivotPoint(0, pyramidHeight, 0);
 	pyramidObj2.Rotate(180, 0, 0, 1);
-	pyramidObj2.Translate(0, pyramidHeight/2.0 + 0.47, 0);
+	pyramidObj2.Translate(0, pyramidHeight/2.0 + 0.47 * SCALE_FACTOR, 0);
 	
 	
 	
-	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0, mMainRoom.GetRoomHeight() / 2.0 - 5.0, mMainRoom.GetRoomDepth() - 10.0);
+	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomHeight() / 2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
 	
 	var waypoint0 = pyramidObj.GetPosition();
-	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
-	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0];
-	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0, 0, 0];
+	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
+	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0 * SCALE_FACTOR];
+	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
 		
 	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
 	mAnimator.CreateRotatingTransition(pyramidObj, 0, 360, [1, 0, 0], 5.0, true, false);
@@ -255,9 +255,9 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0, 10.0, 10.0] + [0, -100, 0];
-	mLight1Position = [0, 10.0, 10.0];
-	mLight2Position = [0, 10.0, -20.0];
+	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
+	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -286,7 +286,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mEnding = false;
 	mIsLevelCompleted = false;
 	
-	mElevatorTravelDistance = 100.0;
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
 	

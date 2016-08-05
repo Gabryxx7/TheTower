@@ -197,14 +197,14 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	// Creating the container object. Each wall is translated to ro the right positions, sometimes using little offset so that they're 
 	// NOT completely attached; this way the black contour created using the silhouette shader can be seen. These offset values are a bit random
 	mRoom = CVmObj();
-	mRoom.AddChild(mBackWallObj, 0, 0, -0.09);
-	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0.05, mHalfSideWidth);
-	mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0.05, mHalfSideWidth);
+	mRoom.AddChild(mBackWallObj, 0, 0, -0.09 * SCALE_FACTOR);
+	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0.05 * SCALE_FACTOR, mHalfSideWidth);
+	mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0.05 * SCALE_FACTOR, mHalfSideWidth);
 	mRoom.AddChild(mLeftWallObj, -mHalfFarWidth, 0, mHalfSideWidth);
 	mRoom.AddChild(mRightWallObj, mHalfFarWidth, 0, mHalfSideWidth);
 	
 	if(mHasFront)
-		mRoom.AddChild(mFrontWallObj, 0, 0, mSideWallWidth + 0.05);
+		mRoom.AddChild(mFrontWallObj, 0, 0, mSideWallWidth + 0.05 * SCALE_FACTOR);
 		
 	// Moving the room in the origin if the user chose so
 	if(centerInOrigin)
@@ -256,7 +256,7 @@ function Room::Draw()
    // Starting the silhouette shader
     mSilhouetteShader.Start();
     	// Setting its parameter; the offset tells the shader how the size of the mesh has to increase
-    	mSilhouetteShader.SetParameter("offset", 0.05);
+    	mSilhouetteShader.SetParameter("offset", 0.05 * SCALE_FACTOR);
     	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
     	
     	// Drawing the silhouette of the room and of any objects in it
@@ -312,11 +312,11 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	// To find the interception of a plane I first need one of its point: I get the coordinates of the floor first. Since it's a child of the mRoom object
 	// I need to add its position (NOTE: this will work only if the room is NOT a child of something else); I then add 1 to make sure that
 	// the plane is considered inside the room
-	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1, 0];
+	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1 * SCALE_FACTOR, 0];
 	
 	// I compute the normal of the plane
 	normalTmp = ComputeNormalOfPlanarObject(mFloorObj);
-	
+		
 	// I check for interceptions
 	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
@@ -324,7 +324,7 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	// I return the 0 to indicate that
 	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 	{
-		contactPointTmp -= [0, 1, 0];
+		contactPointTmp -= [0, 1 * SCALE_FACTOR, 0];
 		intersectedObject = 0;
 		
 		contactPoint = contactPointTmp;
@@ -333,7 +333,7 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 		
 		
 	/* Back wall */
-	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1];
+	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1 * SCALE_FACTOR];
 	normalTmp = ComputeNormalOfPlanarObject(mBackWallObj);
 	
 	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
@@ -341,7 +341,7 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 	{
 		// Firt I remove the point I added in order to make sure that the plane point was in the room
-		contactPointTmp -= [0, 0, 1];
+		contactPointTmp -= [0, 0, 1 * SCALE_FACTOR];
 		
 		// If there was an intersection before and I found one in the rest of the elevator, I need to check which one "wins", i.e. which one
 		// is closest to the player (in this case the origin of the ray)
@@ -368,14 +368,14 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	}
 		
 	/* Roof */
-	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1, 0];
+	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1 * SCALE_FACTOR, 0];
 	normalTmp = ComputeNormalOfPlanarObject(mRoofObj);
 	
 	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
 	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 	{
-		contactPointTmp -= [0, -1, 0];
+		contactPointTmp -= [0, -1 * SCALE_FACTOR, 0];
 		
 		if(intersectedObject != -1)
 		{
@@ -398,14 +398,14 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	}
 		
 	/* Left wall */
-	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1, 0, 0];
+	planePoint = mLeftWallObj.GetPosition() + GetPosition() + [1 * SCALE_FACTOR, 0, 0];
 	normalTmp = ComputeNormalOfPlanarObject(mLeftWallObj);
 	
 	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
 	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 	{
-		contactPointTmp -= [1, 0, 0];
+		contactPointTmp -= [1 * SCALE_FACTOR, 0, 0];
 		
 		if(intersectedObject != -1)
 		{
@@ -428,14 +428,14 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	}
 		
 	/* Right wall */
-	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1, 0, 0];
+	planePoint = mRightWallObj.GetPosition() + GetPosition() + [-1 * SCALE_FACTOR, 0, 0];
 	normalTmp = ComputeNormalOfPlanarObject(mRightWallObj);
 	
 	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 	
 	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 	{
-		contactPointTmp -= [-1, 0, 0];
+		contactPointTmp -= [-1 * SCALE_FACTOR, 0, 0];
 		
 		if(intersectedObject != -1)
 		{
@@ -460,14 +460,14 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	/* Front wall */
 	if(mHasFront)
 	{
-		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1];
+		planePoint = mFrontWallObj.GetPosition() + GetPosition() + [0, 0, -1 * SCALE_FACTOR];
 		normalTmp = ComputeNormalOfPlanarObject(mFrontWallObj);
 		
 		contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
 		
 		if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 		{
-			contactPointTmp -= [0, 0, -1];
+			contactPointTmp -= [0, 0, -1 * SCALE_FACTOR];
 			
 			if(intersectedObject != -1)
 			{
@@ -505,9 +505,9 @@ function Room::IsPointInRoom(point)
 	
 	// I check if the point is in the bounding box, using the world coordinates. I'm also using little offset to account for the fact that 
 	// the walls are not completely attached, so the bounding box is a little bit bigger
-	return (point.x >= mLowerCornerWorld.x + 0.5 && point.x <= mUpperCornerWorld.x - 0.5) &&
-    	   (point.y >= mLowerCornerWorld.y + 0.5 && point.y <= mUpperCornerWorld.y - 0.5) &&
-       	   (point.z <= mLowerCornerWorld.z - 0.5 && point.z >= mUpperCornerWorld.z + 0.5);
+	return (point.x >= mLowerCornerWorld.x + 0.5 * SCALE_FACTOR && point.x <= mUpperCornerWorld.x - 0.5 * SCALE_FACTOR) &&
+    	   (point.y >= mLowerCornerWorld.y + 0.5 * SCALE_FACTOR && point.y <= mUpperCornerWorld.y - 0.5 * SCALE_FACTOR) &&
+       	   (point.z <= mLowerCornerWorld.z - 0.5 * SCALE_FACTOR && point.z >= mUpperCornerWorld.z + 0.5 * SCALE_FACTOR);
 
 
 //	return (point.x >= mLowerCornerWorld.x - 0.5 && point.x <= mUpperCornerWorld.x + 0.5) &&

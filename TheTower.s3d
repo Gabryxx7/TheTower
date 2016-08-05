@@ -13,8 +13,8 @@ var HMD = null;
 #include "GameManager.s3d"
 
 /* Set global parameters */
-SET SCENE_FOV  = 60;
-SET SCENE_NEAR = 0.5;
+SET SCENE_FOV  = 90;
+SET SCENE_NEAR = 0.1;
 SET SCENE_FAR  = 1000;
 SET AUDIO_MODE = 2;
 

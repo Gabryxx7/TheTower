@@ -1,18 +1,18 @@
 
 // Sizes for the main room
-#define ROOM_FAR_WALL_WIDTH     100
-#define ROOM_SIDE_WALL_WIDTH    100
-#define ROOM_HEIGHT             25
+#define ROOM_FAR_WALL_WIDTH     100.0 * SCALE_FACTOR
+#define ROOM_SIDE_WALL_WIDTH    100.0 * SCALE_FACTOR
+#define ROOM_HEIGHT             25.0 * SCALE_FACTOR
 
 // Number of portals and sizes for the portals' rooms
 #define PORTALS_NUMBER  4
-#define PORTAL_ROOM_FAR_WALL_WIDTH     10
-#define PORTAL_ROOM_SIDE_WALL_WIDTH    10
-#define PORTAL_ROOM_HEIGHT             10
+#define PORTAL_ROOM_FAR_WALL_WIDTH     10 * SCALE_FACTOR
+#define PORTAL_ROOM_SIDE_WALL_WIDTH    10 * SCALE_FACTOR
+#define PORTAL_ROOM_HEIGHT             10 * SCALE_FACTOR
 
 // Depth of the event triggers, and timeout (in milliseconds) when the player is outside of the event triggers for some time
-#define EVENT_TRIGGER_DEPTH 15
-#define EVENT_TRIGGER_TIMEOUT 1500  
+#define EVENT_TRIGGER_DEPTH 15 * SCALE_FACTOR
+#define EVENT_TRIGGER_TIMEOUT 1500   
 
 #include <Room.s3d>
 #include <EventTrigger.s3d>
@@ -157,10 +157,11 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
-	mCamera.SetPosition([0, 6, 35]);
+	mCamera.SetPosition([0, 6.0 * SCALE_FACTOR, 35.0 * SCALE_FACTOR]);
 	
-	mLight0Position = [-10.0, 10.0, 10.0];
-	mLight1Position = [-10.0, 10.0, 10.0];
+	
+	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight1Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	
 	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
@@ -205,7 +206,6 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 1);
-	
 
 	// 	Creating the portal rooms
 	var portalRoom1 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, false, true, 0, 0);
@@ -226,10 +226,10 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	var portalText4 = Text(mPortalTextStringsDefault[3]);
 	
 	// Adding each text to its portal room
-	portalRoom1.AddObject(portalText1.GetObj(), 0, 1, 1);
-	portalRoom2.AddObject(portalText2.GetObj(), 0, 1, 1);
-	portalRoom3.AddObject(portalText3.GetObj(), 0, 1, 1);
-	portalRoom4.AddObject(portalText4.GetObj(), 0, 1, 1);
+	portalRoom1.AddObject(portalText1.GetObj(), 0, 1  * SCALE_FACTOR, 1  * SCALE_FACTOR);
+	portalRoom2.AddObject(portalText2.GetObj(), 0, 1  * SCALE_FACTOR, 1  * SCALE_FACTOR);
+	portalRoom3.AddObject(portalText3.GetObj(), 0, 1  * SCALE_FACTOR, 1  * SCALE_FACTOR);
+	portalRoom4.AddObject(portalText4.GetObj(), 0, 1  * SCALE_FACTOR, 1  * SCALE_FACTOR);
 	
 	// Adding the Text object to the array, to keep a reference so I can modify the text later on
 	mPortalTexts = {};
@@ -244,8 +244,8 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	portalRoom4.Rotate(-90, 0, 1, 0);
 	
 	// Sizes of the portal frames, i.e. the rectangles from where the portal rooms can be seen
-	var halfWidth = PORTAL_ROOM_FAR_WALL_WIDTH/2;
-	var halfHeight = PORTAL_ROOM_HEIGHT/2;
+	var halfWidth = PORTAL_ROOM_FAR_WALL_WIDTH/2.0;
+	var halfHeight = PORTAL_ROOM_HEIGHT/2.0;
 	
 	// Creating the mesh for the frames; it's the same for every portal room, since they all have the same size
 	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfHeight, 0], 2, 2);
@@ -258,10 +258,10 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Moving the frames so that they form a sort of cube; i take into account the fact that they have silhouettes, so in order to show that 
 	// I don't attach them together, but leave some pixels in between (chosen semi-randomly)
-	portalFrameObj1.Translate(0, halfHeight + 0.3, -0.05);
-	portalFrameObj2.Translate(halfWidth - 0.05, halfHeight + 0.3, -halfWidth);
-	portalFrameObj3.Translate(0.05, halfHeight + 0.3, -halfWidth*2);
-	portalFrameObj4.Translate(-halfWidth, halfHeight + 0.3, -halfWidth + 0.05);
+	portalFrameObj1.Translate(0, halfHeight + 0.3 * SCALE_FACTOR, -0.05 * SCALE_FACTOR);
+	portalFrameObj2.Translate(halfWidth - 0.05 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth);
+	portalFrameObj3.Translate(0.05 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth*2);
+	portalFrameObj4.Translate(-halfWidth, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth + 0.05 * SCALE_FACTOR);
 	
 	// Rotating the frames, so that each one reflects its portal's room orientation
 	portalFrameObj2.Rotate(90, 0, 1, 0);
@@ -325,19 +325,19 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	
 	// Now I create the elevator, as a "Elevator" object; the width is a little less than the size of the frames, otherwise we get z-buffer problems
-	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.3;
+	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.3 * SCALE_FACTOR;
 
 	mElevator = Elevator(elevatorWidth, PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 1, 1);
 		
 	// Positioning the room so that is right behind the first portal frame
-	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH - 0.285]);
+	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH - 0.285 * SCALE_FACTOR]);
 	
 	// At start I hide the elevator; it will appear later
 	mElevator.Hide();
 	
 	
 	// The elevator has its own light, which is used for rendering when the player steps in the elevator
-	mLight2Position = mElevator.GetPosition() + [0, 0, 3];
+	mLight2Position = mElevator.GetPosition() + [0, 0, 3 * SCALE_FACTOR];
 		
 	// This light is for the elevator
 	mLight2 = lights[2];
@@ -347,13 +347,13 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Text for the elevator
 	var elevatorText = Text("The Tower");
-	mElevator.AddObject(elevatorText.GetObj(), -0.2, 0, 0.0);
+	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.0);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	
 	// Values used to move the portals' rooms light around, for a dynamic effect
-	mIncrement = 0.03;
+	mIncrement = 0.03 * SCALE_FACTOR;
 	mOffset = 0;
 	
 	
@@ -361,8 +361,6 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	mAnimator = Animator();
 	
 
-//	mSoundManager.SetMusic("Nexus - Tranquility.mp3", 0.5, true);
-//	mSoundManager.PlayMusic();
 	
 	mSoundManager.AddSound("sounds/Mi1.wav", 0);
 	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
@@ -378,7 +376,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	global sphereMeshArray = {};
 	
 	var num_seg = 30;
-	var radius = 2;
+	var radius = 2 * SCALE_FACTOR;
 	var hemisphere = 1;  // 0.5 = hemisphere, 1 = sphere
 	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
 	var sphereMesh2 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere); 
@@ -469,32 +467,32 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	var sphereObj4 = CVmObj(sphereMesh4);
 	
 	// Adding each sphere as child of the given portal; they all have the same position, except for the first one which moves around as a test
-	portalRoom1.AddObject(sphereObj1, -2, -3, 2);
-	portalRoom2.AddObject(sphereObj2, 0, -3, 5);
-	portalRoom3.AddObject(sphereObj3, 0, -3, 5);
-	portalRoom4.AddObject(sphereObj4, 0, -3, 5);
+	portalRoom1.AddObject(sphereObj1, -2 * SCALE_FACTOR, -3 * SCALE_FACTOR, 2 * SCALE_FACTOR);
+	portalRoom2.AddObject(sphereObj2, 0, -3 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	portalRoom3.AddObject(sphereObj3, 0, -3 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	portalRoom4.AddObject(sphereObj4, 0, -3 * SCALE_FACTOR, 5 * SCALE_FACTOR);
 
 	// These are the waypoints for the movements of the first sphere. Note that since the sphere is child of another object, its position is set
 	// in terms of the local system it is in. So, these waypoints are set as local coordinates. The trick to finding the right coordinates to use
 	// is to start with the original positions, and then for each waypoint add the previous position to a translation vector (that contains the values
 	// it has to increase to along a given axis)
 	var first = sphereObj1.GetPosition();
-	var second = first + [0, 0, 6];
-	var third = second + [4.5, 0, 0];
-	var fourth  = third + [0, 0, -6];
+	var second = first + [0, 0, 6 * SCALE_FACTOR];
+	var third = second + [4.5 * SCALE_FACTOR, 0, 0];
+	var fourth  = third + [0, 0, -6 * SCALE_FACTOR];
 	
 	// Adding the waypoint transition to the first object; the time to reach each waypoint is 1, and it set to loop
 	mAnimator.CreateTransition(sphereObj1, first, {second, third, fourth}, 2.0, true);
 	
 	// Flying fuck. Very important.
 	global var flyingFuck = Text("Flying Fact");
-	flyingFuck.SetPosition([-15, 5, -20]);
+	flyingFuck.SetPosition([-15 * SCALE_FACTOR, 5 * SCALE_FACTOR, -20 * SCALE_FACTOR]);
 	flyingFuck.Rotate(90, 0, 1, 0);
 	
 	// Waypoints for the flyring fuck
-	var a = flyingFuck.GetPosition() + [0, 0, 30];
-	var b = a + [30, 0, 0];
-	var c = b + [0, 0, -30];
+	var a = flyingFuck.GetPosition() + [0, 0, 30 * SCALE_FACTOR];
+	var b = a + [30 * SCALE_FACTOR, 0, 0];
+	var c = b + [0, 0, -30 * SCALE_FACTOR];
 	var waypoints = {a, b, c};
 
 	// Transition and rotation for the flying fuck
@@ -504,14 +502,12 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 		
 	global var endText = Text("The End\n\nPS: that would be 59,99$, thanks");
 	endText.Rotate(180, 0, 1, 0);
-	endText.Translate(0, 7, -0.3);
+	endText.Translate(0, 7, -0.3 * SCALE_FACTOR);
 	endText.Hide();
 	
-	var viveMesh = CVMnewMesh("viveControllerModel.AAM");
-	viveControllerObj = CVmObj(viveMesh);
-	viveControllerObj.Normalize(5);
-	viveControllerObj.SetPosition([-15, 5, -20]);
+	global var controller = ViveController();
 	
+	controller.SetPosition(7 * SCALE_FACTOR, 7 * SCALE_FACTOR, 7 * SCALE_FACTOR);
 	
 	if(mIsVRon)
 	{
@@ -546,7 +542,11 @@ function Level0::Render()
 	
 	flyingFuck.Draw();
 	endText.Draw();
-	viveControllerObj.Draw();
+	
+	
+	controller.Draw();
+	
+	
 	
 	if(mIsVRon)
 	{
@@ -628,7 +628,7 @@ function Level0::DrawAllPortals()
 	{
 		// I use the silhouette shader so that the outline of the frames will be there
 		mSilhouetteShader.Start();
-			mSilhouetteShader.SetParameter("offset", 0.08);
+			mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
     		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
     		
     		mPortalFrames[i].Draw();
@@ -714,7 +714,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	newLightPos.x += mOffset;
 	newLightPos.y += sin(mOffset*1);
 	
-	if(mOffset > 7 || mOffset < -7)
+	if(mOffset > 7 * SCALE_FACTOR || mOffset < -7 * SCALE_FACTOR) 
 		mIncrement = -mIncrement;
 
 	var oldLightPos = mLight0.GetPosition();	
@@ -772,16 +772,16 @@ function Level0::UpdateLogic(dt)
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 	// I restore the previous porisiotn
-	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
-		mInputManager.RestoreCameraPosition();
-	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
-       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8) &&
-       	    !mIsElevatorPresent)
-   	    mInputManager.RestoreCameraPosition();
-
-    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
-    	mInputManager.RestoreCameraPosition();
+//	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
+//		mInputManager.RestoreCameraPosition();
+//	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
+//       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8) &&
+//       	    !mIsElevatorPresent)
+//   	    mInputManager.RestoreCameraPosition();
+//
+//    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
+//    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
+//    	mInputManager.RestoreCameraPosition();
     	
    	    
     // Now I look if the player is on an event trigger

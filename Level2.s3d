@@ -1,8 +1,8 @@
 //#include <Utils.s3d>
 #include <MarcelloUtils.s3d>
 
-#define PIT_WIDTH 25
-#define PIT_HEIGHT 1000
+#define PIT_WIDTH 25.0 * SCALE_FACTOR
+#define PIT_HEIGHT 1000.0 * SCALE_FACTOR
 
 class Level2
 {
@@ -134,8 +134,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0, -50, 10.0];
-	mLight1Position =[-10.0, -500, 10.0];
+	mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight1Position =[-10.0 * SCALE_FACTOR, -500 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	
 	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
@@ -157,7 +157,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mCamera = mInputManager.GetActiveCamera();
 	
 	// Values used to move the portals' rooms light around, for a dynamic effect
-	mIncrement = 0.03;
+	mIncrement = 0.03 * SCALE_FACTOR;
 	mOffset = 0;
 	
 	// Creating the object that will handle transitions and rotations of objects
@@ -167,7 +167,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mEnding = false;
 	mIsLevelCompleted = false;
 	
-	mElevatorTravelDistance = 100.0;
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
 	
@@ -202,10 +202,10 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	provaMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(45,1,1,0);
-	mPortalRoom.AddObject(provaMeshObj, -18, -18, PIT_HEIGHT-50);	
+	mPortalRoom.AddObject(provaMeshObj, -18 * SCALE_FACTOR, -18 * SCALE_FACTOR, PIT_HEIGHT-50 * SCALE_FACTOR);	
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(75,1,0,1);
-	mPortalRoom.AddObject(provaMeshObj, -25, -8, PIT_HEIGHT-18);	
+	mPortalRoom.AddObject(provaMeshObj, -25 * SCALE_FACTOR, -8 * SCALE_FACTOR, PIT_HEIGHT-18 * SCALE_FACTOR);	
 	
 	floorObj = generateFloorTiles();
 }
@@ -294,7 +294,7 @@ function Level2::DrawAllPortals()
 	// Now I draw each portal, even the ones that weren't actually visible, because they still need to "occupy space";
 	// I use the silhouette shader so that the outline of the frames will be there
 	mSilhouetteShader.Start();
-		mSilhouetteShader.SetParameter("offset", 0.08);
+		mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
 		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
 		mPortalFrame.Draw();
 	mSilhouetteShader.Stop();
@@ -369,7 +369,7 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 	newLightPos.x += mOffset;
 	newLightPos.y += sin(mOffset*1);
 	
-	if(mOffset > 7 || mOffset < -7)
+	if(mOffset > 7 * SCALE_FACTOR || mOffset < -7 * SCALE_FACTOR)
 		mIncrement = -mIncrement;
 		
 	var oldLightPos = mLight0.GetPosition();
@@ -565,8 +565,8 @@ function Level2::generateFloorTiles()
 {
 	var returnObj = CVmObj();
 	var tilesNum = 33;
-	var tilesSize = (ROOM_FAR_WALL_WIDTH/2)/tilesNum;
-	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.4);
+	var tilesSize = (ROOM_FAR_WALL_WIDTH/2.0)/tilesNum;
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.4 * SCALE_FACTOR);
 	var xOffset = 0;
 	var yOffset = 0;
 	for(var i = 0; i < tilesNum; i++){
@@ -589,12 +589,12 @@ function Level2::generateFloorTiles()
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	var tileObj = CVmObj(tileMesh);
-			returnObj.AddChild(tileObj, 3*i, 3*j, 0);
+			returnObj.AddChild(tileObj, 3 * SCALE_FACTOR*i, 3 * SCALE_FACTOR*j, 0);
 		}		
 	}
 	
 	returnObj.rotate(90, 1, 0, 0);
-	returnObj.SetPosition(-tilesNum-15,0.3,-tilesNum-15);
+	returnObj.SetPosition(-tilesNum-15 * SCALE_FACTOR,0.3 * SCALE_FACTOR,-tilesNum-15 * SCALE_FACTOR);
 	
 	return returnObj;
 }

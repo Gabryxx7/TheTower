@@ -1,5 +1,7 @@
 global var DEBUG_MODE = true;
 
+global var SCALE_FACTOR = 0.1;
+
 #define STATUS_MENU     0
 #define STATUS_INGAME   1
 
@@ -23,7 +25,10 @@ global var DEBUG_MODE = true;
  */
 class GameManager
 {
+	// This variable has access to the DLL functions to control the Vive
 	var mHMD;
+	
+	// Boolean, set to true if the Vive was detected at start; false otherwise
 	var mIsVRon;
 	
 	var mGameStatus;
@@ -130,7 +135,7 @@ function GameManager::GameManager(HMD)
 	
 	
 	var light0 = CVmLight();
-	light0.SetPosition([-10.0, 10.0, 10.0]);
+	light0.SetPosition([-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR]);
 	light0.SetDiffuse(1, 1, 1);
 	light0.SetParameter(GL_CONSTANT_ATTENUATION, 1.0);
 	light0.SetParameter(GL_LINEAR_ATTENUATION, 0.0000);
@@ -138,7 +143,7 @@ function GameManager::GameManager(HMD)
 	light0.Disable();	
 	
 	var light1 = CVmLight();
-	light1.SetPosition([-10.0, 10.0, 10.0]);
+	light1.SetPosition([-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR]);
 	light1.SetDiffuse(1, 1, 1);
 	light1.SetParameter(GL_CONSTANT_ATTENUATION, 1.0);
 	light1.SetParameter(GL_LINEAR_ATTENUATION, 0.0000);
@@ -146,10 +151,10 @@ function GameManager::GameManager(HMD)
 	light1.Disable();	
 	
 	var light2 = CVmLight();
-	light2.SetPosition([-10.0, 10.0, 10.0]);
+	light2.SetPosition([-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR]);
 	light2.SetDiffuse(1, 1, 1);
 	light2.SetParameter(GL_CONSTANT_ATTENUATION, 1.0);
-	light2.SetParameter(GL_LINEAR_ATTENUATION, 0.9000);
+	light2.SetParameter(GL_LINEAR_ATTENUATION, 0.0000);
 	light2.SetParameter(GL_QUADRATIC_ATTENUATION, 0.0000);
 	light2.Disable();
 	
@@ -157,8 +162,7 @@ function GameManager::GameManager(HMD)
 	aadd(mLights, light1);
 	aadd(mLights, light2);
 	
-	// 
-	mOpenglTranslationOffset = [0, 0, 0]; //x,y,z	
+	mOpenglTranslationOffset = [0, 0, 0]; 
 
 	if(DEBUG_MODE)
 	{
@@ -169,7 +173,7 @@ function GameManager::GameManager(HMD)
 		mElevator.Unhide();
 		
 		// Sposto la camera in modo che sia dentro l'ascensore
-		mCamera.SetPosition(0, 6, -4);
+		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
 		
 //		mCurrentLevel = Level1(mInputManager, mSoundManager);
 //		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
@@ -199,10 +203,10 @@ function GameManager::GameManager(HMD)
 	}
 	
 	// Creating the position circle object, used for the teleportation feature
-	mPositionCircleRadius = 1.0;
-	mPositionCircleHeight = 0.2;
+	mPositionCircleRadius = 1.0 * SCALE_FACTOR;
+	mPositionCircleHeight = 0.2 * SCALE_FACTOR;
 	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, mPositionCircleHeight, 1);  
-	positionCircleMesh.Normalize(4);
+	positionCircleMesh.Normalize(4 * SCALE_FACTOR);
 	mPositionCircleObj = CVmObj(positionCircleMesh);
 	
 	// Booleans used for the teleportation feature
@@ -320,7 +324,7 @@ function GameManager::XVRRendering(){
 		if(mIsVRon)
 			raycastOrigin = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
 		else 
-			raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1, 0.1, 0.0];
+			raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset - [-0.1 * SCALE_FACTOR, 0.1 * SCALE_FACTOR, 0.0 * SCALE_FACTOR];
 		
 		// The endpoint is at the top of the cylinder that is the position "circle"
 		var raycastEnd = mPositionCircleObj.LocalToWorld([0, mPositionCircleHeight, 0]); 
@@ -339,7 +343,7 @@ function GameManager::XVRRendering(){
 			mDashedLineShader.SetParameter("sourcePosition", raycastOrigin);
 			mDashedLineShader.SetParameter("lineLength", Modulus(raycastEnd - raycastOrigin));
 			mDashedLineShader.SetParameter("color", color);
-			mDashedLineShader.SetParameter("ticksLength", 0.17);
+			mDashedLineShader.SetParameter("ticksLength", 0.17 * SCALE_FACTOR);
 			mDashedLineShader.SetParameter("offset", mDashedLinesOffset);
 			
 			glLineWidth(2.5); 
@@ -358,8 +362,8 @@ function GameManager::XVRRendering(){
 				// Parameters for the circle's shader
 				mPositionCircleShader.SetParameter("color", color);
 				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius * 2.0);
-				mPositionCircleShader.SetParameter("innerCircleTickness", 0.06);
-				mPositionCircleShader.SetParameter("outerCircleTickness", 0.16);
+				mPositionCircleShader.SetParameter("innerCircleTickness", 0.06 * SCALE_FACTOR);
+				mPositionCircleShader.SetParameter("outerCircleTickness", 0.16 * SCALE_FACTOR);
 				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
 				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
 

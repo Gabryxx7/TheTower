@@ -128,9 +128,9 @@ function FindIntersectionInPlane(raycastOrigin, raycastEnd, planePoint, planeNor
 function ComputeNormalOfPlanarObject(object)
 {
 	var p0 = object.LocalToWorld([0, 0, 0]);
-	var p1 = object.LocalToWorld([0, 1, 0]);
+	var p1 = object.LocalToWorld([0, 1 * SCALE_FACTOR, 0]);
 	var p2 = object.LocalToWorld([0, 0, 0]);
-	var p3 = object.LocalToWorld([1, 0, 0]);
+	var p3 = object.LocalToWorld([1 * SCALE_FACTOR, 0, 0]);
 	
 	var vec1 = p1 - p0;
 	var vec2 = p3 - p2;

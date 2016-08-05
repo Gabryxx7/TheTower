@@ -72,10 +72,10 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 {
 	mElevatorRoom = Room(elevatorWidth, sideWallWidth, height, false, true, lightsRangeMin, lightsRangeMax);	
 	
-	var halfHeight = height/2;
+	var halfHeight = height/2.0;
 	
-	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1, -halfHeight - 0.1, 0], [elevatorWidth/4 + 0.1, halfHeight + 0.1, 0], 2, 2);
-	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1, -halfHeight - 0.1, 0], [elevatorWidth/4 + 0.1, halfHeight + 0.1, 0], 2, 2);
+	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
+	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
 	
 	// Adding the cel shader to the doors; the material is the same as for every wall
 	if(USE_TOON_SHADER == 2){		
@@ -117,11 +117,11 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	mElevatorDoorLeftObj = CVmObj(mElevatorDoorLeftMesh);
 	mElevatorDoorRightObj = CVmObj(mElevatorDoorRightMesh);
 	
-	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0.1, 0, sideWallWidth];
-	mRightDoorClosedPosition = [elevatorWidth/4 - 0.1, 0, sideWallWidth];
+	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, 0, sideWallWidth];
+	mRightDoorClosedPosition = [elevatorWidth/4 - 0.1 * SCALE_FACTOR, 0, sideWallWidth];
 	
-	mLeftDoorOpenPosition = mLeftDoorClosedPosition - [GetRoomWidth()/3 + 0.1, 0, 0];
-	mRightDoorOpenPosition = mRightDoorClosedPosition + [GetRoomWidth()/3 + 0.1, 0, 0];
+	mLeftDoorOpenPosition = mLeftDoorClosedPosition - [GetRoomWidth()/3.0 + 0.1 * SCALE_FACTOR, 0, 0];
+	mRightDoorOpenPosition = mRightDoorClosedPosition + [GetRoomWidth()/3.0 + 0.1 * SCALE_FACTOR,  0, 0];
 	
 	// Adding the doors to the room
 	mElevatorRoom.AddObject(mElevatorDoorLeftObj, mLeftDoorClosedPosition.x, mLeftDoorClosedPosition.y, mLeftDoorClosedPosition.z);
@@ -129,8 +129,8 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	
 	mDistanceBetweenClosedDoors = Modulus(mElevatorDoorLeftObj.GetPosition() - mElevatorDoorRightObj.GetPosition());
 	
-	mLowerCornerPosition = [-elevatorWidth/2, -height/2, sideWallWidth];
-	mUpperCornerPosition = [elevatorWidth/2, height/2, 0];
+	mLowerCornerPosition = [-elevatorWidth/2.0, -height/2.0, sideWallWidth];
+	mUpperCornerPosition = [elevatorWidth/2.0, height/2.0, 0];
 	
 	// Computing the world coordinates of the bounding box
 	mLowerCornerWorld = mElevatorRoom.LocalToWorld(mLowerCornerPosition);
@@ -227,14 +227,14 @@ function Elevator::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	if(!IsElevatorOpen())
 	{
 		// I only consider the left door, since they're both in the same plane; I subtract -1 to make sure that the plane is inside the elevator
-		var planePoint = mElevatorDoorLeftObj.GetPosition() + GetPosition() + [0, 0, -1];
+		var planePoint = mElevatorDoorLeftObj.GetPosition() + GetPosition() + [0, 0, -1 * SCALE_FACTOR];
 		normal = ComputeNormalOfPlanarObject(mElevatorDoorLeftObj);
 		
 		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normal);
 		
 		if(contactPoint != Void && mElevatorRoom.IsPointInRoom(contactPoint))
 		{
-			contactPoint -= [0, 0, -1];
+			contactPoint -= [0, 0, -1 * SCALE_FACTOR];
 			intersectedWall = 5;
 		}
 	}

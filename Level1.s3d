@@ -126,6 +126,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	global var mesh = CVmNewMesh("Sci-fi-thing.aam");
 //	mesh.CenterBoundingBox();
+	mesh.Normalize(1 * SCALE_FACTOR);
 
 	var mat = CVmMaterial();
 	mat.diffuse = [1.0, 1.0, 0.0];
@@ -143,7 +144,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 //	obj.AddChild(columnObj, 2.0 / 2.0, 0.2, -1.0);
 //	obj.AddChild(neckObj, 2.0 / 2.0, 0.2 + 5, -1.0);
 	
-	obj.SetPosition(0, 3, 5);	
+	obj.SetPosition(0, 3 * SCALE_FACTOR, 5 * SCALE_FACTOR);	
 	
 	mControllerBeingUsedIndex = 0;
 	
@@ -163,9 +164,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0, 10.0, 10.0] + [0, -100, 0];
-	mLight1Position = [0, 10.0, 10.0];
-	mLight2Position = [0, 10.0, -20.0];
+	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
+	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -194,7 +195,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mEnding = false;
 	mIsLevelCompleted = false;
 	
-	mElevatorTravelDistance = 100.0;
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 	
 	
@@ -356,7 +357,7 @@ function Level1::UpdateLogic(dt)
 	
 			// I check if the elevator is halfway through the transtition; if this is the case, I change its lights range for the rendering (but only
 			// if I didn't do so already)
-			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2 && mElevator.GetLightsRange().y < 1)
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0 && mElevator.GetLightsRange().y < 1)
 				 mElevator.SetLightsRange(1,2);
 			
 			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
@@ -434,7 +435,7 @@ function Level1::UpdateLogic(dt)
 	    			if(mIsVRon)
     					currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
     				else
-	    				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
+	    				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
 								
 					// Taking the direction that goes from the previous point to the current one. Note that the order of the difference is important:
 					// I need the direction that goes from the previous point to the current one
@@ -450,7 +451,7 @@ function Level1::UpdateLogic(dt)
 					var angle = acos((Norm(vec) * [0, 1, 0])) * RAD_TO_GRAD - 180; 
 				
 					// Creating the new mesh, a very thin box, as tall as the distance between the 2 points
-					var stickMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.003, Modulus(currentPoint - mPreviousPoint), 0.001]); 
+					var stickMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.003 * SCALE_FACTOR, Modulus(currentPoint - mPreviousPoint), 0.001 * SCALE_FACTOR]); 
 					var line = CVmObj(stickMesh);
 					
 					// Since the center of the box is at its feet, moving it at the coordinates of the previous point and then applying the rotation works perfectly
