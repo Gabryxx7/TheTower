@@ -44,26 +44,24 @@ function ViveManager::ViveManager(HMD)
  */
 function ViveManager::UpdateCamera()
 {	
-	mCamera.SetMatrix(HMD.GetCameraMatrix());
+	mCamera.SetMatrix(mHMD.GetCameraMatrix());
 }
 
 
 function ViveManager::UpdateControllers(openglTranslationOffset)
 {
-	var controller1Matrix = HMD.GetControllerMatrix(1);
-	var controller2Matrix = HMD.GetControllerMatrix(2);
+	var controller1Matrix = mHMD.GetControllerMatrix(1);
+	var controller2Matrix = mHMD.GetControllerMatrix(2);
 	
-	var x = controller1Matrix[12] - openglTranslationOffset.x;
-	var y = controller1Matrix[13] - openglTranslationOffset.y;
-	var z = controller1Matrix[14] - openglTranslationOffset.z;
-	
-	mController1.SetPosition(x, y, z);
-	
-	x = controller2Matrix[12] - openglTranslationOffset.x;
-	y = controller2Matrix[13] - openglTranslationOffset.y;
-	z = controller2Matrix[14] - openglTranslationOffset.z;
-	
-	mController2.SetPosition(x, y, z);
+	var x1 = controller1Matrix[12] - openglTranslationOffset.x;
+	var y1 = controller1Matrix[13] - openglTranslationOffset.y;
+	var z1 = controller1Matrix[14] - openglTranslationOffset.z;	
+	mController1.SetPosition([x1, y1, z1]);
+
+	var x2 = controller2Matrix[12] - openglTranslationOffset.x;
+	var y2 = controller2Matrix[13] - openglTranslationOffset.y;
+	var z2 = controller2Matrix[14] - openglTranslationOffset.z;
+	mController2.SetPosition([x2, y2, z2]);
 	
 	controller1Matrix[12] = 0;
 	controller1Matrix[13] = 0;
@@ -85,16 +83,12 @@ function ViveManager::SetActiveCamera(camera)
 
 function ViveManager::IsPressingPrimaryButton(controllerIndex)
 {
-	return mHMD.IsTriggerPressed(controllerIndex);
+	return mHMD.IsTriggerPressed(controllerIndex) == 1;
 }
 
 function ViveManager::IsPressingSecondaryButton(controllerIndex)
 {
-	var ret = mHMD.IsTouchpadPressed(controllerIndex);
-	if(ret == -1)
-		return false;
-		
-	return true; 
+	return mHMD.IsTouchpadPressed(controllerIndex) == 1;
 }
 
 function ViveManager::VibrateController(controllerIndex)

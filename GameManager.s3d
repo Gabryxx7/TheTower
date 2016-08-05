@@ -234,22 +234,29 @@ function GameManager::Render()
 		case STATUS_MENU:
 	//		mMenu.Render();
 			break;
-		case STATUS_INGAME:
+		case STATUS_INGAME:{
 				
 			SceneBegin(mCamera);
 			
 			XVRRendering();
-			
+
 			if(mIsVRon)
 			{		
+			 			
+				mHMD.SceneBegin();
+				
 				glEnable(GL_LIGHT0);
 				glEnable(GL_LIGHT1);
 				glEnable(GL_LIGHT2);
 				glLight(GL_LIGHT0, GL_POSITION, [mLights[0].GetPosition().x, mLights[0].GetPosition().y, mLights[0].GetPosition().z, 1.0]); 
 			 	glLight(GL_LIGHT1, GL_POSITION, [mLights[1].GetPosition().x, mLights[1].GetPosition().y, mLights[1].GetPosition().z, 1.0]); 
 			 	glLight(GL_LIGHT2, GL_POSITION, [mLights[2].GetPosition().x, mLights[2].GetPosition().y, mLights[2].GetPosition().z, 1.0]); 
-			 			
-				mHMD.SceneBegin();
+			 	
+				glLight(GL_LIGHT0, GL_DIFFUSE, [1,0,0]); 
+				glLight(GL_LIGHT1, GL_DIFFUSE, [0, 0, 1]); 
+				glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+				
+				glEnable(GL_BLEND);
 					mHMD.frame_left();
 						XVRRendering();
 					mHMD.frame_right();
@@ -292,6 +299,8 @@ function GameManager::Render()
 			
 			SceneEnd();
 			break;
+			
+			}
 		default:
 			break;
 	}
@@ -411,7 +420,7 @@ function GameManager::UpdateLogic(dt)
 			
 			var usingController1 = mInputManager.IsPressingSecondaryButton(1);
 			var usingController2 = mInputManager.IsPressingSecondaryButton(2);
-
+			
 			
 			var firstTimeUsingController = (usingController1 || usingController2) && mControllerBeingUsedIndex == 0;
 			var wasUsingController1 = (usingController1 && mControllerBeingUsedIndex == 1);

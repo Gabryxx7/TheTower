@@ -527,7 +527,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 function Level0::Render()
 {				
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-	DrawAllPortals();
+//	DrawAllPortals();
 	
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
@@ -941,17 +941,17 @@ function Level0::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 	var intersectedPlane = -1;
 
 	// I scan each of the currently visible portal's frames, to find any interception
-	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
-	{
-		// Check collision
-		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
-		
-		if(flag)
-		{
-			isWall = false;
-			return false;
-		}
-	}
+//	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
+//	{
+//		// Check collision
+//		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
+//		
+//		if(flag)
+//		{
+//			isWall = false;
+//			return false;
+//		}
+//	}
 		
 	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
 	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
