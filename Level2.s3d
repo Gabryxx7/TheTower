@@ -219,7 +219,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 function Level2::Render()
 {				
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-//	DrawAllPortals();
+	DrawAllPortals();
 	
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
@@ -394,6 +394,8 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 	// First I need to place the camera at the end of the portal's room
 	var localPoint = [0, 0, PIT_HEIGHT];
 	var virtualCameraPos = portalRoom.LocalToWorld(localPoint);
+	virtualCameraPos.z = -50;
+	outputln(virtualCameraPos);
 	
 	// Now I need to compute the translation I need to apply to the camera. For example, imagine being really close to the portal's frame: the portal room
 	// will need to be rendered as if you're really close to the room; this means moving the camera in the portal's room so that it's closer.
@@ -418,25 +420,26 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 	// One other thing: if I would be using another camera to render the portals' rooms, I would need to get the rotation matrix from the player's cameras and
 	// set it to the second camera first. I'm still doing that so that I don't forget this, but you can see that it doesn't anything in this case (I'm just
 	// re-setting the same rotation matrix to the same camera)
-	mCamera.SetPosition(translation);
-	mCamera.SetRotationMatrix(mCamera.GetRotationMatrix());
+//	mCamera.SetPosition(translation);
+//	mCamera.SetRotationMatrix(mCamera.GetRotationMatrix());
 		
 	// Now I want to move the first opengl light so that it's in front of the portal and it moves around. The change of position must be done outside theds
 	// SceneBegin/SceneEnd block, just like for the camera, otherwise (in XVR) it doesn't have any effect.
-	mOffset += mIncrement;
-	
-	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
-	virtualCameraPos.x += mOffset;
-	virtualCameraPos.y += sin(mOffset*1);
-	
-	if(mOffset > 7 || mOffset < -7)
-		mIncrement = -mIncrement;
-
+//	mOffset += mIncrement;
+//	
+//	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
+//	virtualCameraPos.x += mOffset;
+//	virtualCameraPos.y += sin(mOffset*1);
+//	
+//	if(mOffset > 7 || mOffset < -7)
+//		mIncrement = -mIncrement;
 	var oldLightPos = mLight0.GetPosition();
 	mLight0.SetPosition(virtualCameraPos);	
 	
 	// Now that the changes to the camera and light are done, I can start the scene again in order to render the portal's room
 	SceneBegin(mCamera);
+
+	glTranslate(-virtualCameraPos + [framePos.x, framePos.y, framePos.z] +mOpenglTranslationOffset);
 	
 //	glTranslate(-virtualCameraPos + [framePos.x, camPos.y - 0.7, framePos.z]);
 	

@@ -7,7 +7,6 @@
 
 //global var VR_ON = false;
 var HMD = null;
-global var DEBUG_MODE = false;
 
 #include <Script3d.h>
 #include <Camera.s3d.h>

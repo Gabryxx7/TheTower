@@ -527,7 +527,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 function Level0::Render()
 {				
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-//	DrawAllPortals();
+	DrawAllPortals();
 	
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
@@ -552,7 +552,7 @@ function Level0::Render()
  * otherwise it won't give out any results
  */
 function Level0::DrawAllPortals()
-{
+{	
 	// We need to find out which portals are visible from the player's perspective, so we need its position.
 	// Note: to get the ACTUAL position I need to subtract the opengl offset, in case the user has teleported previously
 	var currentCameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
@@ -684,8 +684,6 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// In order to draw the portal room, I need translate BACK the world by the opengl offset, and translate it back FORWARD when I'm done with the portal,
 	// otherwise the camera's position will be wrong, and so will the rendering of the portal's room
 	glTranslate(-mOpenglTranslationOffset);
-	
-	
 	// Getting the positions of the frame, the room and the camera
 	var framePos = portalFrame.GetPosition();
 	var roomPos = portalRoom.GetPosition();
@@ -738,7 +736,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// Now that the changes to the camera and light are done, I can start the scene again in order to render the portal's room
 //	SceneBegin(mCamera);
 //		glTranslate(-translation + [0, 3, 7]);
-		glTranslate(-virtualCameraPos + [framePos.x, framePos.y, framePos.z]);
+		glTranslate(-virtualCameraPos + [framePos.x, framePos.y, framePos.z] +mOpenglTranslationOffset);
 		
 	Print({"framePos", "virtual"}, {framePos, virtualCameraPos});	
 	
