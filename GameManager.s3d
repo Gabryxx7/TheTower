@@ -410,10 +410,10 @@ function GameManager::UpdateLogic(dt)
 		{
 			// The first thing we have to do is to update the logic of the current level
 			mCurrentLevel.UpdateLogic(dt);
-
-
+			
 			var usingController1 = mInputManager.IsPressingSecondaryButton(1);
 			var usingController2 = mInputManager.IsPressingSecondaryButton(2);
+
 			
 			var firstTimeUsingController = (usingController1 || usingController2) && mControllerBeingUsedIndex == 0;
 			var wasUsingController1 = (usingController1 && mControllerBeingUsedIndex == 1);

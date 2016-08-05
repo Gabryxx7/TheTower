@@ -53,15 +53,15 @@ function ViveManager::UpdateControllers(openglTranslationOffset)
 	var controller1Matrix = HMD.GetControllerMatrix(1);
 	var controller2Matrix = HMD.GetControllerMatrix(2);
 	
-	var x = controller1Matrix[12] - openglTranslationOffset;
-	var y = controller1Matrix[13] - openglTranslationOffset;
-	var z = controller1Matrix[14] - openglTranslationOffset;
+	var x = controller1Matrix[12] - openglTranslationOffset.x;
+	var y = controller1Matrix[13] - openglTranslationOffset.y;
+	var z = controller1Matrix[14] - openglTranslationOffset.z;
 	
 	mController1.SetPosition(x, y, z);
 	
-	x = controller2Matrix[12] - openglTranslationOffset;
-	y = controller2Matrix[13] - openglTranslationOffset;
-	z = controller2Matrix[14] - openglTranslationOffset;
+	x = controller2Matrix[12] - openglTranslationOffset.x;
+	y = controller2Matrix[13] - openglTranslationOffset.y;
+	z = controller2Matrix[14] - openglTranslationOffset.z;
 	
 	mController2.SetPosition(x, y, z);
 	
@@ -90,7 +90,11 @@ function ViveManager::IsPressingPrimaryButton(controllerIndex)
 
 function ViveManager::IsPressingSecondaryButton(controllerIndex)
 {
-	return mHMD.IsTouchpadPressed(controllerIndex);
+	var ret = mHMD.IsTouchpadPressed(controllerIndex);
+	if(ret == -1)
+		return false;
+		
+	return true; 
 }
 
 function ViveManager::VibrateController(controllerIndex)
