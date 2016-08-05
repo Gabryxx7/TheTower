@@ -51,10 +51,12 @@ class Level0
 	
 	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
 	var mLight0;
-	var mLight1;
-	var mLight1Position;
-	
+	var mLight1;	
 	var mLight2;
+	
+	var mLight0Position;
+	var mLight1Position;
+	var mLight2Position;
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
@@ -130,6 +132,7 @@ class Level0
 	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
+	SetupOpenglLights();
 };
 
 
@@ -156,13 +159,14 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	mCamera = mInputManager.GetActiveCamera();
 	mCamera.SetPosition([0, 6, 35]);
 	
+	mLight0Position = [-10.0, 10.0, 10.0];
+	mLight1Position = [-10.0, 10.0, 10.0];
+	
 	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
-	mLight0.SetPosition([-10.0, 10.0, 10.0]);
+	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(1, 1, 1);
 	mLight0.Enable();	
-	
-	mLight1Position = [-10.0, 10.0, 10.0];
 	
 	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
 	mLight1 = lights[1];
@@ -333,11 +337,11 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	
 	// The elevator has its own light, which is used for rendering when the player steps in the elevator
-	var lightPos = mElevator.GetPosition();
+	mLight2Position = mElevator.GetPosition() + [0, 0, 3];
 		
-	// I'm enabling the light's elevator now; since the cel shader only uses 1 light, and initially this is not it, it's not harmful
+	// This light is for the elevator
 	mLight2 = lights[2];
-	mLight2.SetPosition(lightPos.x, lightPos.y, lightPos.z + 3);
+	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(1, 1, 1);
 	mLight2.Enable();
 	
@@ -525,7 +529,11 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
  * Render method
  */
 function Level0::Render()
-{				
+{					
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+	
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
 	DrawAllPortals();
 	
@@ -671,75 +679,54 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	
 	// I draw the portal frame; now the stencil buffer will contain 1s where the frame was rendered and 0s outside
 	portalFrame.Draw();
+
 	
-	
-	
-	// Chiudo il blocco correntemente attivo. Adesso dovrò infatti modificare la prospettiva della camera in modo che sia posizionata nella camera del portale,
-	// e per farlo in XVR bisogna prima chiudere il blocco SceneBegin/SceneEnd, altrimenti la modifica non ha effetto
-	
-	// Now I need to close the Scene block currently open. This is because I need to modify the camera's position so that it will be positioned where the portal's
-	// room is located, and to do that in XVR we need to close the SceneBegin/SceneEnd block first, otherwise the update won't have effect until the next frame
-//	SceneEnd();
-	
-	// In order to draw the portal room, I need translate BACK the world by the opengl offset, and translate it back FORWARD when I'm done with the portal,
-	// otherwise the camera's position will be wrong, and so will the rendering of the portal's room
+	// Now it's time to draw the portal room. To do that, I need translate BACK the world by the opengl offset, and translate it back FORWARD 
+	// when I'm done with the portal, otherwise the camera's position will be wrong, and so will the rendering of the portal's room
 	glTranslate(-mOpenglTranslationOffset);
-	// Getting the positions of the frame, the room and the camera
-	var framePos = portalFrame.GetPosition();
-	var roomPos = portalRoom.GetPosition();
-	var camPos = mCamera.GetPosition();
 	
-	// First I need to place the camera at the end of the portal's room
-	var localPoint = [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH];
-	var virtualCameraPos = portalRoom.LocalToWorld(localPoint);
+	// Getting the positions of the frame
+	var framePos = portalFrame.GetPosition();
+	
+	// First I need to place the camera at the end of the portal's room, so I'm going to compute that position
+	var localPoint = [0, 0, portalRoom.GetRoomDepth()];
+	var newCameraPosition = portalRoom.LocalToWorld(localPoint);
 	
 	// Now I need to compute the translation I need to apply to the camera. For example, imagine being really close to the portal's frame: the portal room
 	// will need to be rendered as if you're really close to the room; this means moving the camera in the portal's room so that it's closer.
-	// To get the right translation, we first need to compute how far is the player to the frame position, i.e. we take the difference between the player's
-	// position and the frame's position. Then, we add it to the default's camera's position in the room, and that's done.
+	// To the the right translation, we start with the new camera position that we'd like to have, and subtract the position of the portal frame, so that
+	// we get the right view (without it, the portal room will probably be visible, but shifted in an unexpected way). To this, we subtract the opengl offset,
+	// in case the world was already shifted. 
 	// NOTE: this will only work if the orientation of the frame is the same as the orientation of the portal's room. If for example the room is rotated by 90°
 	// and the frame isn't, we can't simply add the distance vector, because we'll be updating the wrong components; in this example, if the frame has
 	// rotation 0 and the portal's room rotation 90, if we move away from the frame we move across the Z axis, while in the portal's room the camera
-	// shouldn't increase the Z axis but the X axis. Drawying the example in a piace of paper helps understand the concept.
+	// shouldn't increase the Z axis but the X axis. Drawing the example in a piace of paper helps understand the concept.
 	// So, in this case I'm assuming that they both have the same orientation, to make things easier
-	var translation = camPos - framePos;
-//	translation = translation + virtualCameraPos - mOpenglTranslationOffset; // Note that I subtract the opengl offset
-	
-	// Setto quindi la nuova posizione, e cambio anche la matrice di rotazione.
-	// Nota: in realtà la matrice di rotazione non cambia in quanto sto usando sempre la stessa camera e assumo che i frame dei portali e le rispettive stanze
-	// abbiano la stessa orientazione. Se questo non fosse vero, e ad esempio la stanza del portale è ruotata di -90 gradi, dopo aver settato la matrice
-	// di rotazione avrei dovuto ruotare la camera di 90 gradi con "camera.RotateGlobal(-90, 0, 1 ,0)"
-	
-	// Now that I have the new position, I set it. I also need to set the rotation of the camera, so it faces the room. In this case I don't need to do anything,
-	// since I'm assuming that both the frame and the portal's room have the same orientation. For example, if the frame has rotation 0 and the portal's room
-	// rotation 90, I would also need to rotate the camera by 90 degrees before rendering, otherwise it would face the wrong direction.
-	// One other thing: if I would be using another camera to render the portals' rooms, I would need to get the rotation matrix from the player's cameras and
-	// set it to the second camera first. I'm still doing that so that I don't forget this, but you can see that it doesn't anything in this case (I'm just
-	// re-setting the same rotation matrix to the same camera)
-//	mCamera.SetPosition(translation);
-//	mCamera.SetRotationMatrix(mCamera.GetRotationMatrix());
+	var translation = newCameraPosition - framePos - mOpenglTranslationOffset;
 		
 	// Now I want to move the first opengl light so that it's in front of the portal and it moves around. The change of position must be done outside the
 	// SceneBegin/SceneEnd block, just like for the camera, otherwise (in XVR) it doesn't have any effect.
 	mOffset += mIncrement;
 	
-	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
-//	virtualCameraPos.x += mOffset;
-//	virtualCameraPos.y += sin(mOffset*1);
-//	
-//	if(mOffset > 7 || mOffset < -7)
-//		mIncrement = -mIncrement;
-//
-	var oldLightPos = mLight0.GetPosition();
-	mLight0.SetPosition(virtualCameraPos);	
-		
-	// Now that the changes to the camera and light are done, I can start the scene again in order to render the portal's room
-//	SceneBegin(mCamera);
-//		glTranslate(-translation + [0, 3, 7]);
-		glTranslate(-virtualCameraPos + [framePos.x, framePos.y, framePos.z] +mOpenglTranslationOffset);
-		
-	Print({"framePos", "virtual"}, {framePos, virtualCameraPos});	
+	var newLightPos = newCameraPosition;
 	
+	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
+	newLightPos.x += mOffset;
+	newLightPos.y += sin(mOffset*1);
+	
+	if(mOffset > 7 || mOffset < -7)
+		mIncrement = -mIncrement;
+
+	var oldLightPos = mLight0.GetPosition();	
+		
+	// Now I move the world where the camera should be rendering the portal room (it's "minus" translation, because the glTranslate pushes the world away)
+	glTranslate(-translation);
+	
+	// I also move the light to the new position; I move it using opengl and not XVR objects so that with the Vive there is no problem.
+	// Note: the order of operation is important: if I moved the light before the translation above the light would be wrong. Basically
+	// I'm moving the light according the position of the world set by the glTranslate above
+	glLight(GL_LIGHT0, GL_POSITION, [newLightPos.x, newLightPos.y, newLightPos.z, 1.0]); 
+					
 	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
@@ -754,19 +741,12 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// Drawing the actual portal's room where the stencil is 1
 	portalRoom.Draw();
 	
-//	glTranslate(translation);
-glTranslate(virtualCameraPos);
-	// I translate back the world where it was before drawing the portal
-	glTranslate(mOpenglTranslationOffset);
-
-	// I reset the light's position. Note that this won't actually have a graphic effect until the next frame (I think)
-	mLight0.SetPosition(oldLightPos);
-
-	// I'm done with this portal, so I pop the matrix from the stack
+	// I move the light back where it was; still using opengl to avoid problems with the Vive
+	glLight(GL_LIGHT0, GL_POSITION, [oldLightPos.x, oldLightPos.y, oldLightPos.z, 1.0]); 
+	
+	// I'm done with this portal, so I pop the matrix from the stack. This way the glTranslsate() that I did above will be undone, bringing the world
+	// back the way it was before rendering the portal room, which is what I want
 	glPopMatrix();
-	
-//		glTranslate(-virtualCameraPos + [0, camPos.y, 0]);
-	
 }
 
 
@@ -946,17 +926,17 @@ function Level0::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 	var intersectedPlane = -1;
 
 	// I scan each of the currently visible portal's frames, to find any interception
-//	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
-//	{
-//		// Check collision
-//		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
-//		
-//		if(flag)
-//		{
-//			isWall = false;
-//			return false;
-//		}
-//	}
+	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
+	{
+		// Check collision
+		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+		if(flag)
+		{
+			isWall = false;
+			return false;
+		}
+	}
 		
 	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
 	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
@@ -990,7 +970,7 @@ function Level0::IsLevelCompleted()
 
 function Level0::SetOpenglTransformOffset(openglTransformOffset)
 {
-	mOpenglTranslationOffset = openglTransformOffset;
+	mOpenglTranslationOffset = openglTransformOffset; 
 }
 
 /*
@@ -1001,3 +981,19 @@ function Level0::GetElevator()
 	return mElevator;
 }
 
+
+function Level0::SetupOpenglLights()
+{
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	
+	// Note: might need to SUBTRACT mOpenglTranslationOffset to each axis position
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+}

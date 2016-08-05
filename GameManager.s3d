@@ -93,9 +93,6 @@ class GameManager
 	var mIsPressingSecondaryButton;
 	
 	var mControllerBeingUsedIndex;
-	
-	
-	var frameNum;
 
 
 	// Private methods
@@ -115,7 +112,6 @@ function GameManager::GameManager(HMD)
 	
 	mIsVRon = mHMD.IsVRactive() == 1;
 		
-	frameNum = 0;
 	mGameStatus = STATUS_INGAME;
 		
 	mGameStarted = false;
@@ -205,8 +201,6 @@ function GameManager::GameManager(HMD)
 	// Creating the position circle object, used for the teleportation feature
 	mPositionCircleRadius = 1.0;
 	mPositionCircleHeight = 0.2;
-//	var positionCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, mPositionCircleRadius, 1);  
-//	var positionCircleMesh = CVmNewMesh("circleProva.AAM");  
 	var positionCircleMesh = CVmNewMesh(VRP_CYLINDER, 30, mPositionCircleRadius, mPositionCircleHeight, 1);  
 	positionCircleMesh.Normalize(4);
 	mPositionCircleObj = CVmObj(positionCircleMesh);
@@ -240,31 +234,24 @@ function GameManager::Render()
 				
 			SceneBegin(mCamera);
 			
+			glEnable (GL_BLEND);
+			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			
 			XVRRendering();
 
 			if(mIsVRon)
 			{		
-			 			
 				mHMD.SceneBegin();
 				
-				glEnable(GL_LIGHT0);
-				glEnable(GL_LIGHT1);
-				glEnable(GL_LIGHT2);
-				glLight(GL_LIGHT0, GL_POSITION, [mLights[0].GetPosition().x - mOpenglTranslationOffset.x, mLights[0].GetPosition().y  - mOpenglTranslationOffset.y, mLights[0].GetPosition().z  - mOpenglTranslationOffset.z, 1.0]); 
-			 	glLight(GL_LIGHT1, GL_POSITION, [mLights[1].GetPosition().x - mOpenglTranslationOffset.x, mLights[1].GetPosition().y  - mOpenglTranslationOffset.y, mLights[1].GetPosition().z  - mOpenglTranslationOffset.z, 1.0]); 
-			 	glLight(GL_LIGHT2, GL_POSITION, [mLights[2].GetPosition().x - mOpenglTranslationOffset.x, mLights[2].GetPosition().y  - mOpenglTranslationOffset.y, mLights[2].GetPosition().z  - mOpenglTranslationOffset.z, 1.0]); 
-			 	
-				glLight(GL_LIGHT0, GL_DIFFUSE, [1,0,0]); 
-				glLight(GL_LIGHT1, GL_DIFFUSE, [0, 0, 1]); 
-				glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
-				
-				glEnable (GL_BLEND);
-				glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				
-				mHMD.frame_left();
-					XVRRendering();
-				mHMD.frame_right();
-					XVRRendering();
+					mCurrentLevel.SetupOpenglLights();
+					
+					glEnable (GL_BLEND);
+					glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					
+					mHMD.frame_left();
+						XVRRendering();
+					mHMD.frame_right();
+						XVRRendering();
 				mHMD.SceneEnd();
 			}	
 				
@@ -376,11 +363,7 @@ function GameManager::XVRRendering(){
 				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
 				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
 
-//				if(frameNum == 51)
-//					frameNum = 0;
-					
 				mPositionCircleObj.Draw();
-//				mPositionCircleObj.Draw(VR_FRAMENUMBER,frameNum++,0);
 			mPositionCircleShader.Stop();
 		}
 		
@@ -393,7 +376,8 @@ function GameManager::XVRRendering(){
 	
 	
 	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff
-//	DrawCrosshair();
+	if(!mIsVRon)
+		DrawCrosshair();
 	
 	if(mFadingIn)
 	{

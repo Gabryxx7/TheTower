@@ -36,6 +36,10 @@ class Level3
 	var mLight1;
 	var mLight2;
 	
+	var mLight0Position;
+	var mLight1Position;
+	var mLight2Position;
+	
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
@@ -89,6 +93,7 @@ class Level3
 	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
+	SetupOpenglLights();
 };
 
 
@@ -249,19 +254,23 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	foreach(var light in lights)
 		light.Disable();
+		
+	mLight0Position = [-10.0, 10.0, 10.0] + [0, -100, 0];
+	mLight1Position = [0, 10.0, 10.0];
+	mLight2Position = [0, 10.0, -20.0];
 	
 	mLight0 = lights[0];
-	mLight0.SetPosition([-10.0, 10.0, 10.0] + [0, -100, 0] + mOpenglTranslationOffset);
+	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(1, 1, 1);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
-	mLight1.SetPosition([0, 10.0, 10.0] + mOpenglTranslationOffset);
+	mLight1.SetPosition(mLight1Position);
 	mLight1.SetDiffuse(1, 1, 1);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
-	mLight2.SetPosition([0, 10.0, -20.0] + mOpenglTranslationOffset);
+	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(1, 1, 1);
 	mLight2.Enable();
 	
@@ -305,10 +314,10 @@ function Level3::Level3(isVRon, inputManager, soundManager)
  */
 function Level3::Render()
 {	
-	// If the user teleported modifying the mOpenglTranslationOffset, the lights will be in the wrong places. So at each frame I reset their 
-	// position according to the offset
-	mLight1.SetPosition([0, 10.0, 35.0] + mOpenglTranslationOffset);
-	mLight2.SetPosition([0, 10.0, -20.0] + mOpenglTranslationOffset);
+	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
 	
 	switch(mLevelStatus)
 	{
@@ -515,5 +524,21 @@ function Level3::IsLevelCompleted()
 function Level3::SetOpenglTransformOffset(openglTransformOffset)
 {
 	mOpenglTranslationOffset = openglTransformOffset;
+}
+
+function Level3::SetupOpenglLights()
+{
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	
+	// Note: might need to SUBTRACT mOpenglTranslationOffset to each axis position
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
 
