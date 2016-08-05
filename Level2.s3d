@@ -438,6 +438,7 @@ function Level2::DrawPortal(portalFrame, portalRoom)
 	// Now that the changes to the camera and light are done, I can start the scene again in order to render the portal's room
 	SceneBegin(mCamera);
 	
+//	glTranslate(-virtualCameraPos + [framePos.x, camPos.y - 0.7, framePos.z]);
 	
 	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
