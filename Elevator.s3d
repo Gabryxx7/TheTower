@@ -95,6 +95,7 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	mElevatorDoorLeftMesh.ShaderSetParameter(0, "shininess", 0, 20);
 	mElevatorDoorLeftMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mElevatorDoorLeftMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mElevatorDoorLeftMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	if(USE_TOON_SHADER == 2){		
 		mElevatorDoorRightMesh.ShaderAdd("antishader.glsl", 0);
@@ -113,6 +114,7 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	mElevatorDoorRightMesh.ShaderSetParameter(0, "shininess", 0, 20);
 	mElevatorDoorRightMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mElevatorDoorRightMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mElevatorDoorRightMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	mElevatorDoorLeftObj = CVmObj(mElevatorDoorLeftMesh);
 	mElevatorDoorRightObj = CVmObj(mElevatorDoorRightMesh);

@@ -401,6 +401,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh1.ShaderSetParameter(0, "shininess", 0, 50);
 	sphereMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+	sphereMesh1.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	if(USE_TOON_SHADER == 2){		
 		sphereMesh2.ShaderAdd("antishader.glsl", 0);
@@ -419,6 +420,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh2.ShaderSetParameter(0, "shininess", 0, 50);
 	sphereMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+	sphereMesh2.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	if(USE_TOON_SHADER == 2){		
 		sphereMesh3.ShaderAdd("antishader.glsl", 0);
@@ -437,6 +439,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh3.ShaderSetParameter(0, "shininess", 0, 50);
 	sphereMesh3.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh3.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+	sphereMesh3.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	if(USE_TOON_SHADER == 2){		
 		sphereMesh4.ShaderAdd("antishader.glsl", 0);
@@ -455,6 +458,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh4.ShaderSetParameter(0, "shininess", 0, 50);
 	sphereMesh4.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh4.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+	sphereMesh4.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	aadd(sphereMeshArray, sphereMesh1);
 	aadd(sphereMeshArray, sphereMesh2);
@@ -529,6 +533,7 @@ function Level0::Render()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+ 	 	
 	
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
 	DrawAllPortals();

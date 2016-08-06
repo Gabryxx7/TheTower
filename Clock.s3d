@@ -67,6 +67,7 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	minutesArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
 	minutesArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	minutesArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	minutesArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	mMinutesArrowObj = CVmObj(minutesArrowMesh);
 	
@@ -80,6 +81,7 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	hoursArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
 	hoursArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	hoursArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	hoursArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	mHoursArrowObj = CVmObj(hoursArrowMesh);
 	
@@ -99,6 +101,7 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 //	clockMesh.ShaderSetParameter(0, "shininess", 0, 0);
 //	clockMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 //	clockMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+//	clockMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 
 	var mat = CVmMaterial();
 	mat.SetTexture(CVmTexture ("clock_face.png"));

@@ -200,12 +200,16 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	provaMesh.ShaderSetParameter(0, "shininess", 0, 50);
 	provaMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	provaMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+	provaMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	
+	provaMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+	
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(45,1,1,0);
-	mPortalRoom.AddObject(provaMeshObj, -18 * SCALE_FACTOR, -18 * SCALE_FACTOR, PIT_HEIGHT-50 * SCALE_FACTOR);	
+	mPortalRoom.AddObject(provaMeshObj, -18.0 * SCALE_FACTOR, -18.0 * SCALE_FACTOR, PIT_HEIGHT-50.0 * SCALE_FACTOR);	
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(75,1,0,1);
-	mPortalRoom.AddObject(provaMeshObj, -25 * SCALE_FACTOR, -8 * SCALE_FACTOR, PIT_HEIGHT-18 * SCALE_FACTOR);	
+	mPortalRoom.AddObject(provaMeshObj, -25.0 * SCALE_FACTOR, -8.0 * SCALE_FACTOR, PIT_HEIGHT-18.0 * SCALE_FACTOR);	
 	
 	floorObj = generateFloorTiles();
 }
@@ -531,18 +535,6 @@ function Level2::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 	// I'm stating that there is no intersection
 	var intersectedPlane = -1;
 
-	// I scan each of the currently visible portal's frames, to find any interception
-//	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
-//	{
-//		// Check collision
-//		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
-//		
-//		if(flag)
-//		{
-//			isWall = false;
-//			return false;
-//		}
-//	}
 		
 	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
 	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
@@ -588,6 +580,7 @@ function Level2::generateFloorTiles()
 //			tileMesh.ShaderSetParameter(0, "shininess", 0, 50);
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
+//			tileMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	var tileObj = CVmObj(tileMesh);
 			returnObj.AddChild(tileObj, 3 * SCALE_FACTOR*i, 3 * SCALE_FACTOR*j, 0);
 		}		

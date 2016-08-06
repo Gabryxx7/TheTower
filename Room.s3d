@@ -135,6 +135,7 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mFarWallMesh.ShaderSetParameter(0, "shininess", 0, 20);
 	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mFarWallMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	if(USE_TOON_SHADER == 2){		
 		mSideWallMesh.ShaderAdd("antishader.glsl", 0);
@@ -154,6 +155,7 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mSideWallMesh.ShaderSetParameter(0, "shininess", 0, 20);
 	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mSideWallMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	if(USE_TOON_SHADER == 2){		
 		mRoofMesh.ShaderAdd("antishader.glsl", 0);
@@ -173,6 +175,7 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mRoofMesh.ShaderSetParameter(0, "shininess", 0, 5);
 	mRoofMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mRoofMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	
 	// Created the meshes, time to create the CVmObjects

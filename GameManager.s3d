@@ -1,4 +1,4 @@
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 
 global var SCALE_FACTOR = 0.1;
 
@@ -174,9 +174,6 @@ function GameManager::GameManager(HMD)
 		
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
-		
-//		mCurrentLevel = Level1(mInputManager, mSoundManager);
-//		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				
 		mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
@@ -477,7 +474,7 @@ function GameManager::UpdateLogic(dt)
 					
 					// Finally I set the position of the circle, subtracting the direction vector so that the circle is not really on the plane but a bit
 					// closer to the user (to avoid Z fighting with the intersected plane)
-					mPositionCircleObj.SetPosition(contactPoint - mCamera.GetDirection());
+					mPositionCircleObj.SetPosition(contactPoint - mCamera.GetDirection() * SCALE_FACTOR);
 				}
 			}
 			// If the user isn't pressing the button...

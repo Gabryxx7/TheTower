@@ -49,6 +49,8 @@ varying vec4 position;
 uniform int lightsRangeMin;
 uniform int lightsRangeMax;
 
+uniform float SCALE_FACTOR;
+
 
 float stepmix(float edge0, float edge1, float epsilon, float x)
 {
@@ -188,15 +190,17 @@ void main()
 		
 		// Calcolo l'attenuazione; sotto ci sono alcune formule che ho trovato in giro. Quella che mi è parsa migliore è quella non commentata, trovata
 		// su questa pagina: http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
-		attenuation = 1.0 / (1.0 + 0.01 * lightDistance + 0.01 * lightDistance);
+//		attenuation = 1.0 / (1.0 + 0.01 * lightDistance + 0.01 * lightDistance);
 //	  	attenuation = 1.0 / (gl_LightSource[0].constantAttenuation + d * (gl_LightSource[0].linearAttenuation + d * gl_LightSource[0].quadraticAttenuation));
 //	 	attenuation = 1.0 / (1.0 + 0.2 * pow(d, 2));
 
+		float constantAttenuation = 1.0;
+		float linearAttenuation = (0.02 / SCALE_FACTOR) * lightDistance;
+		float quadraticAttenuation = (0.0 / SCALE_FACTOR) * lightDistance * lightDistance;
+
 		// This is how the attenuation should work; in xvr it doesn't
-/*		attenuation = 1.0 / (gl_LightSource[i].constantAttenuation
-			       + gl_LightSource[i].linearAttenuation * lightDistance
-			       + gl_LightSource[i].quadraticAttenuation * lightDistance * lightDistance);
-*/
+		attenuation = 1.0 / (constantAttenuation + linearAttenuation + quadraticAttenuation);
+
 		color = color * attenuation;
 
 		iterations++;

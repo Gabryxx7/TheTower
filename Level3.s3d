@@ -153,7 +153,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mTimeDirection = 1;
 	
 	mNumberOfClocks = 6;
-	mNumberOfClockRows = 4;
+	mNumberOfClockRows = 6;
 	mClocks = {};
 	
 	var step = mMainRoom.GetRoomWidth()/mNumberOfClocks;
@@ -191,9 +191,13 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	}
 	
 	
-	var pyramidHeight = 3 * SCALE_FACTOR;
-	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2 * SCALE_FACTOR, pyramidHeight);
-	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2 * SCALE_FACTOR, pyramidHeight);
+	var pyramidHeight = 3.0 * SCALE_FACTOR;
+	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
+	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0  * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
+	
+	// Need also to scale the mesh itself; if the sizez are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
+	pyramidMesh1.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+	pyramidMesh2.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	
 	pyramidMesh1.ShaderAdd("toonShader.glsl", 0);
 	pyramidMesh1.ShaderActivate(true);
@@ -203,6 +207,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	pyramidMesh1.ShaderSetParameter(0, "shininess", 0, 50);
 	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
 	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	pyramidMesh1.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	pyramidMesh2.ShaderAdd("toonShader.glsl", 0);
 	pyramidMesh2.ShaderActivate(true);
@@ -212,6 +217,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	pyramidMesh2.ShaderSetParameter(0, "shininess", 0, 50);
 	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
 	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	pyramidMesh2.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
 	var pyramidObj1 = CVmObj(pyramidMesh1); 
 	var pyramidObj2 = CVmObj(pyramidMesh2);  
@@ -287,7 +293,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mIsLevelCompleted = false;
 	
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
-	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 	
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
