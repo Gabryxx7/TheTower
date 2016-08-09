@@ -74,7 +74,7 @@ class Level2
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
-	generateFloorTiles();
+	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
 			
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -211,7 +211,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	provaMeshObj.rotate(75,1,0,1);
 	mPortalRoom.AddObject(provaMeshObj, -25.0 * SCALE_FACTOR, -8.0 * SCALE_FACTOR, PIT_HEIGHT-18.0 * SCALE_FACTOR);	
 	
-	floorObj = generateFloorTiles();
+	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 }
 
 
@@ -555,32 +555,35 @@ function Level2::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 	return intersectedPlane == 0;
 }
 
-function Level2::generateFloorTiles()
+function Level2::GenerateFloorTiles(tilesSize, spaceSize, tilesThickness)
 {
 	var returnObj = CVmObj();
-	var tilesSize = 2*SCALE_FACTOR;
-	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.4 * SCALE_FACTOR);
-	var spaceSize = 3 * SCALE_FACTOR;
-	var totalLength = 0;
-	var totalHeight = 0;
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
+	var lastLength = 0;
+	var totalLength = tilesSize + spaceSize;
+	var totalHeight = tilesSize + spaceSize;
 	
-	while(totalHeight < ROOM_FAR_WALL_WIDTH){
+	returnObj.AddChild(CVmObj(tileMesh), totalLength, totalHeight, 0);	
+	
+	while(true){
 		totalLength += (tilesSize + spaceSize);
 		
 		if(totalLength >= ROOM_FAR_WALL_WIDTH){
-			totalHeight += tilesSize + spaceSize;
-			if(totalHeight < ROOM_FAR_WALL_WIDTH)
-				totalLength = 0;		
-		}else{		
-			if(totalHeight < ROOM_FAR_WALL_WIDTH){
-				var tileObj = CVmObj(tileMesh);
-				returnObj.AddChild(tileObj, totalLength, totalHeight, 0);						
-			}	
+			totalHeight += tilesSize + spaceSize;	
+			lastLength = totalLength;
+			totalLength = tilesSize + spaceSize;
+		}	
+		
+		if(totalHeight >= ROOM_FAR_WALL_WIDTH){
+			break;			
+		}
+		else{		
+			returnObj.AddChild(CVmObj(tileMesh), totalLength, totalHeight, 0);	
 		}
 	}
 	
 	returnObj.rotate(90, 1, 0, 0);
-	returnObj.SetPosition(-totalLength/2,0.3 * SCALE_FACTOR,-totalHeight/2);
+	returnObj.SetPosition(-lastLength/2,0.3 * SCALE_FACTOR,-totalHeight/2);
 	
 	return returnObj;
 }
