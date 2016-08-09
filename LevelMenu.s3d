@@ -3,6 +3,9 @@
 
 class LevelMenu
 {
+	var menuRoom_WidthFar;
+	var menuRoom_WidthSide;
+	var menuRoom_Height;
 	var mIsVRon;
 	
 	// Booleans that indicate if the level is starting or ending
@@ -35,7 +38,8 @@ class LevelMenu
 	
 	
 	// "Room" object that contains the whole room
-	var mMainRoom;
+	var mMenuRoom;
+	var text1;
 	
 	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
 	// draw the silhouettes for the portals' frames
@@ -75,10 +79,24 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+	menuRoom_WidthFar = 45 * SCALE_FACTOR;
+	menuRoom_WidthSide = 45 * SCALE_FACTOR;
+	menuRoom_Height = 19 * SCALE_FACTOR;
+	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, true, 1, 2);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	
+	var txt = CVmText();
+	txt.Load("THE TOWER");
+	txt.SetScale(8  * SCALE_FACTOR, 8  * SCALE_FACTOR);
+	txt.SetColor(1, 1, 1);
+					
+	text1 = CVmObj();
+	text1.LinkToText(txt);
+	text1.rotate(-90,0,1,0);
+	// Adding each text to its portal room
+	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3);
 	
 	if(mIsVRon)
 	{
@@ -99,20 +117,20 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
 	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
-	
+	var diffuseFactor = 0.05;
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
-	mLight0.SetDiffuse(0.5, 0.5, 0.5);
+	mLight0.SetDiffuse(diffuseFactor, diffuseFactor, diffuseFactor);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
-	mLight1.SetDiffuse(0.5, 0.5, 0.5);
+	mLight1.SetDiffuse(diffuseFactor, diffuseFactor, diffuseFactor);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
 	mLight2.SetPosition(mLight2Position);
-	mLight2.SetDiffuse(0.5, 0.5, 0.5);
+	mLight2.SetDiffuse(diffuseFactor, diffuseFactor, diffuseFactor);
 	mLight2.Enable();
 	
 	
@@ -145,10 +163,12 @@ function LevelMenu::Render()
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
-			mMainRoom.Draw();
-       		DrawGrid([1,1,1], ROOM_FAR_WALL_WIDTH);
+			mMenuRoom.Draw();
+       		DrawGrid([1,1,1], menuRoom_WidthFar);
+       		text1.Draw();
 			break;
 	}
+	
 	if(mIsVRon)
 	{
 		mController1.Draw();
@@ -180,8 +200,7 @@ function LevelMenu::UpdateLogic(dt)
 		
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{
-			
+		{			
 			break;
 		}
 	}
@@ -206,7 +225,7 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 	var intersectedPlane = -1;
 
 	if(intersectedPlane == -1)
-		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 		
 	isWall = true;
 	
@@ -243,6 +262,7 @@ function LevelMenu::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
 
+
 function LevelMenu::DrawGrid(color, size)
 {
    /* let's not mess up current OpenGL status */
@@ -254,13 +274,13 @@ function LevelMenu::DrawGrid(color, size)
    var max = size / 2.0;
    var min = -max;    
    var step = size / 13.0;
-  
+   var offset = (0.01*SCALE_FACTOR);
    glBegin(GL_LINES);
    for(var i = 0; i < 3; i++){
 		switch(i){
 			//Roof an floor
 			case 0: {
-				for(var j = 0; j <= ROOM_HEIGHT; j+=ROOM_HEIGHT){
+				for(var j = 0; j <= menuRoom_Height; j+=menuRoom_Height){
 					for (var i = min; i <= max; i += step)
 	         		{
 		                glVertex(i, j, max);
@@ -277,25 +297,25 @@ function LevelMenu::DrawGrid(color, size)
 				for(var j = -1; j < 2; j+=2){
 					for (var i = min; i <= max; i += step)
 	         		{
-		                glVertex(i, max, j*ROOM_FAR_WALL_WIDTH/2);
-		                glVertex(i, min, j*ROOM_FAR_WALL_WIDTH/2);
+		                glVertex(i, max, j*menuRoom_WidthFar/2-(j*offset));
+		                glVertex(i, min, j*menuRoom_WidthFar/2-(j*offset));
 		               
-		                glVertex(max, i, j*ROOM_FAR_WALL_WIDTH/2);
-		                glVertex(min, i, j*ROOM_FAR_WALL_WIDTH/2);
+		                glVertex(max, i, j*menuRoom_WidthFar/2-(j*offset));
+		                glVertex(min, i, j*menuRoom_WidthFar/2-(j*offset));
 	                }
                 }
 			 	break;
 			 }
 			//side walls
 			case 2:{
-				for(var j = -1; j < 2; j+=2){
+				for(var j = -1; j < 0; j+=2){
 					for (var i = min; i <= max; i += step)
 	         		{
-		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, max, i);
-		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, min, i);
+		                glVertex(j*menuRoom_WidthSide/2-(j*offset), max, i);
+		                glVertex(j*menuRoom_WidthSide/2-(j*offset), min, i);
 		               
-		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, max);
-		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, min);
+		                glVertex(j*menuRoom_WidthSide/2-(j*offset), i, max);
+		                glVertex(j*menuRoom_WidthSide/2-(j*offset), i, min);
 	                }
                 }
 			 	break;
