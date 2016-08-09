@@ -48,6 +48,7 @@ class LevelMenu
 	
 	// Private functions
 	FadeToBlackScreen(fadeIn);
+	DrawGrid(col, size);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -101,17 +102,17 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
-	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.SetDiffuse(0.5, 0.5, 0.5);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
-	mLight1.SetDiffuse(1, 1, 1);
+	mLight1.SetDiffuse(0.5, 0.5, 0.5);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
 	mLight2.SetPosition(mLight2Position);
-	mLight2.SetDiffuse(1, 1, 1);
+	mLight2.SetDiffuse(0.5, 0.5, 0.5);
 	mLight2.Enable();
 	
 	
@@ -120,7 +121,6 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	
 	mEnding = false;
 	mIsLevelCompleted = false;
-	
 	
 	var lightPos = mLight1.GetPosition();
 		
@@ -146,6 +146,7 @@ function LevelMenu::Render()
 	{
 		case STATUS_LEVEL_STARTED:
 			mMainRoom.Draw();
+       		DrawGrid([15,15,15], ROOM_FAR_WALL_WIDTH);
 			break;
 	}
 	if(mIsVRon)
@@ -242,3 +243,75 @@ function LevelMenu::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
 
+function LevelMenu::DrawGrid(col, size)
+{
+	
+		
+       /* let's not mess up current OpenGL status */
+       glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
+      
+       glLineWidth(4);
+       glDisable(GL_LIGHTING);
+       glColor(col);
+       var max = size / 2.0;
+       var min = -max;    
+       var step = size / 10.0;
+      
+       glBegin(GL_LINES);
+       var x = 0;
+       var y = 0;
+       var z = 0;
+//	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+       for(var i = 0; i < 3; i++){
+			switch(i){
+				case 0: {
+					for(var j = 0; j < 2; j++){
+						if(j == 0)
+							y = 0;
+						else
+							y = ROOM_HEIGHT;
+							
+						for (var i = min; i <= max; i += step)
+		         		{
+			                glVertex(i, y, max);
+			                glVertex(i, y, min);
+			               
+			                glVertex(max, y, i);
+			                glVertex(min, y, i);
+		                }	                
+	                }
+				 	break;
+				 }
+				case 1:{
+					for(var j = -1; j < 2; j+=2){
+						for (var i = min; i <= max; i += step)
+		         		{
+			                glVertex(i, max, j*ROOM_FAR_WALL_WIDTH/2);
+			                glVertex(i, min, j*ROOM_FAR_WALL_WIDTH/2);
+			               
+			                glVertex(max, i, j*ROOM_FAR_WALL_WIDTH/2);
+			                glVertex(min, i, j*ROOM_FAR_WALL_WIDTH/2);
+		                }
+	                }
+				 	break;
+				 }
+				case 2:{
+					for(var j = -1; j < 2; j+=2){
+						for (var i = min; i <= max; i += step)
+		         		{
+			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, max, i);
+			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, min, i);
+			               
+			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, max);
+			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, min);
+		                }
+	                }
+				 	break;
+				 }
+			}
+ 		}    
+       glEnd();
+      
+       /* polite restoration of previous OpenGL status */
+       glPopAttrib();   
+}
