@@ -48,7 +48,7 @@ class LevelMenu
 	
 	// Private functions
 	FadeToBlackScreen(fadeIn);
-	DrawGrid(col, size);
+	DrawGrid(color, size);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -146,7 +146,7 @@ function LevelMenu::Render()
 	{
 		case STATUS_LEVEL_STARTED:
 			mMainRoom.Draw();
-       		DrawGrid([15,15,15], ROOM_FAR_WALL_WIDTH);
+       		DrawGrid([1,1,1], ROOM_FAR_WALL_WIDTH);
 			break;
 	}
 	if(mIsVRon)
@@ -243,75 +243,67 @@ function LevelMenu::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
 
-function LevelMenu::DrawGrid(col, size)
+function LevelMenu::DrawGrid(color, size)
 {
-	
-		
-       /* let's not mess up current OpenGL status */
-       glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
-      
-       glLineWidth(4);
-       glDisable(GL_LIGHTING);
-       glColor(col);
-       var max = size / 2.0;
-       var min = -max;    
-       var step = size / 10.0;
-      
-       glBegin(GL_LINES);
-       var x = 0;
-       var y = 0;
-       var z = 0;
-//	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
-       for(var i = 0; i < 3; i++){
-			switch(i){
-				case 0: {
-					for(var j = 0; j < 2; j++){
-						if(j == 0)
-							y = 0;
-						else
-							y = ROOM_HEIGHT;
-							
-						for (var i = min; i <= max; i += step)
-		         		{
-			                glVertex(i, y, max);
-			                glVertex(i, y, min);
-			               
-			                glVertex(max, y, i);
-			                glVertex(min, y, i);
-		                }	                
+   /* let's not mess up current OpenGL status */
+   glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
+  
+   glLineWidth(4);
+   glDisable(GL_LIGHTING);
+   glColor(color);
+   var max = size / 2.0;
+   var min = -max;    
+   var step = size / 13.0;
+  
+   glBegin(GL_LINES);
+   for(var i = 0; i < 3; i++){
+		switch(i){
+			//Roof an floor
+			case 0: {
+				for(var j = 0; j <= ROOM_HEIGHT; j+=ROOM_HEIGHT){
+					for (var i = min; i <= max; i += step)
+	         		{
+		                glVertex(i, j, max);
+		                glVertex(i, j, min);
+		               
+		                glVertex(max, j, i);
+		                glVertex(min, j, i);
+	                }	                
+                }
+			 	break;
+			 }
+			//side walls
+			case 1:{
+				for(var j = -1; j < 2; j+=2){
+					for (var i = min; i <= max; i += step)
+	         		{
+		                glVertex(i, max, j*ROOM_FAR_WALL_WIDTH/2);
+		                glVertex(i, min, j*ROOM_FAR_WALL_WIDTH/2);
+		               
+		                glVertex(max, i, j*ROOM_FAR_WALL_WIDTH/2);
+		                glVertex(min, i, j*ROOM_FAR_WALL_WIDTH/2);
 	                }
-				 	break;
-				 }
-				case 1:{
-					for(var j = -1; j < 2; j+=2){
-						for (var i = min; i <= max; i += step)
-		         		{
-			                glVertex(i, max, j*ROOM_FAR_WALL_WIDTH/2);
-			                glVertex(i, min, j*ROOM_FAR_WALL_WIDTH/2);
-			               
-			                glVertex(max, i, j*ROOM_FAR_WALL_WIDTH/2);
-			                glVertex(min, i, j*ROOM_FAR_WALL_WIDTH/2);
-		                }
+                }
+			 	break;
+			 }
+			//side walls
+			case 2:{
+				for(var j = -1; j < 2; j+=2){
+					for (var i = min; i <= max; i += step)
+	         		{
+		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, max, i);
+		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, min, i);
+		               
+		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, max);
+		                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, min);
 	                }
-				 	break;
-				 }
-				case 2:{
-					for(var j = -1; j < 2; j+=2){
-						for (var i = min; i <= max; i += step)
-		         		{
-			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, max, i);
-			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, min, i);
-			               
-			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, max);
-			                glVertex(j*ROOM_SIDE_WALL_WIDTH/2, i, min);
-		                }
-	                }
-				 	break;
-				 }
-			}
- 		}    
-       glEnd();
-      
-       /* polite restoration of previous OpenGL status */
-       glPopAttrib();   
+                }
+			 	break;
+			 }
+		}
+	}    
+   glEnd();
+  
+   /* polite restoration of previous OpenGL status */
+   glPopAttrib();   
 }
