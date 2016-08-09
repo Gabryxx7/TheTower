@@ -558,38 +558,29 @@ function Level2::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 function Level2::generateFloorTiles()
 {
 	var returnObj = CVmObj();
-	var tilesNum = 33;
-	var tilesSize = (ROOM_FAR_WALL_WIDTH/2.0)/tilesNum;
+	var tilesSize = 2*SCALE_FACTOR;
 	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize, -tilesSize, 0], [tilesSize, tilesSize, 0], 0.4 * SCALE_FACTOR);
-	var xOffset = 0;
-	var yOffset = 0;
-	for(var i = 0; i < tilesNum; i++){
-		for(var j = 0; j < tilesNum; j++){
-//			if(USE_TOON_SHADER == 2){		
-//				tileMesh.ShaderAdd("antishader.glsl", 0);
-//				tileMesh.ShaderActivate(true);
-//			}
-//			else if(USE_TOON_SHADER == 1){
-//				tileMesh.ShaderAdd("toonShader.glsl", 0);
-//				tileMesh.ShaderActivate(true);		
-//			}
-//			else if(USE_TOON_SHADER == 0){
-//				tileMesh.ShaderActivate(false);				
-//			}
-//			tileMesh.ShaderSetParameter(0, "ambient", 0, [1, 1.0, 1.0]);
-//			tileMesh.ShaderSetParameter(0, "diffuse", 0, [1.0, 1.0, 1.0]);
-//			tileMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-//			tileMesh.ShaderSetParameter(0, "shininess", 0, 50);
-//			tileMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-//			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-//			tileMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	var tileObj = CVmObj(tileMesh);
-			returnObj.AddChild(tileObj, (5*SCALE_FACTOR) * i,  (5*SCALE_FACTOR) *j, 0);
-		}		
+	var spaceSize = 3 * SCALE_FACTOR;
+	var totalLength = 0;
+	var totalHeight = 0;
+	
+	while(totalHeight < ROOM_FAR_WALL_WIDTH){
+		totalLength += (tilesSize + spaceSize);
+		
+		if(totalLength >= ROOM_FAR_WALL_WIDTH){
+			totalHeight += tilesSize + spaceSize;
+			if(totalHeight < ROOM_FAR_WALL_WIDTH)
+				totalLength = 0;		
+		}else{		
+			if(totalHeight < ROOM_FAR_WALL_WIDTH){
+				var tileObj = CVmObj(tileMesh);
+				returnObj.AddChild(tileObj, totalLength, totalHeight, 0);						
+			}	
+		}
 	}
 	
 	returnObj.rotate(90, 1, 0, 0);
-	returnObj.SetPosition((-tilesNum-15) * SCALE_FACTOR,0.3 * SCALE_FACTOR,(-tilesNum-15) * SCALE_FACTOR);
+	returnObj.SetPosition(-totalLength/2,0.3 * SCALE_FACTOR,-totalHeight/2);
 	
 	return returnObj;
 }
