@@ -243,14 +243,16 @@ function Level2::Render()
 			mSpotShader.Start();
 				mSpotShader.SetParameter("outline", false);
 				mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
+				mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
 				floorObj.Draw();
 			mSpotShader.Stop();
 			
 			
 			mSpotShader.Start();
 				mSpotShader.SetParameter("outline", true);
-				mSpotShader.SetParameter("offset", 0.01);
+				mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
 				mSpotShader.SetParameter("outlineColor", [1.0, 0.0, 0.0]);
+				mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
 				floorObj.Draw();
 			mSpotShader.Stop();	
 			
@@ -582,12 +584,12 @@ function Level2::generateFloorTiles()
 //			tileMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 //			tileMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	var tileObj = CVmObj(tileMesh);
-			returnObj.AddChild(tileObj, 3 * SCALE_FACTOR*i, 3 * SCALE_FACTOR*j, 0);
+			returnObj.AddChild(tileObj, (5*SCALE_FACTOR) * i,  (5*SCALE_FACTOR) *j, 0);
 		}		
 	}
 	
 	returnObj.rotate(90, 1, 0, 0);
-	returnObj.SetPosition(-tilesNum-15 * SCALE_FACTOR,0.3 * SCALE_FACTOR,-tilesNum-15 * SCALE_FACTOR);
+	returnObj.SetPosition((-tilesNum-15) * SCALE_FACTOR,0.3 * SCALE_FACTOR,(-tilesNum-15) * SCALE_FACTOR);
 	
 	return returnObj;
 }

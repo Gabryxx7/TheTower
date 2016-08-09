@@ -24,17 +24,18 @@ void main()
 [FRAGMENT SHADER]
 
 varying float distToCamera;
+uniform float SCALE_FACTOR;
 uniform vec3 color;
 uniform vec3 outlineColor;
 uniform bool outline;
 
 void main()
 {
-	float distance = 8;
-    float alphaValue = 0.9 - smoothstep(distance-6, distance+6, distToCamera);
+	float viewDistance = 8 * SCALE_FACTOR;
+    float alphaValue = 0.9 - smoothstep(viewDistance-(6*SCALE_FACTOR), viewDistance+(6*SCALE_FACTOR), distToCamera);
     vec4 outColor = vec4(color,alphaValue);
     if(outline){
-    	alphaValue = 1.0 - smoothstep(distance-3, distance+3, distToCamera);
+    	alphaValue = 1.0 - smoothstep(viewDistance-(3*SCALE_FACTOR), viewDistance+(3*SCALE_FACTOR), distToCamera);
     	outColor = vec4(outlineColor,alphaValue);
 	}
     
