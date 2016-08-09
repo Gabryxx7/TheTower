@@ -96,7 +96,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	text1.LinkToText(txt);
 	text1.rotate(-90,0,1,0);
 	// Adding each text to its portal room
-	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3);
+	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));
 	
 	if(mIsVRon)
 	{
@@ -135,7 +135,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	
 	
 	// Retrieving the input manager and setting the initial camera's position
-	mCamera = mInputManager.GetActiveCamera();
+	mCamera = mInputManager.GetActiveCamera();	
+	mCamera.SetPosition(-menuRoom_WidthSide/2 +(2*SCALE_FACTOR), 6.0 * SCALE_FACTOR, 0 * SCALE_FACTOR);
+	mCamera.SetDirection(1,0,0);
 	
 	mEnding = false;
 	mIsLevelCompleted = false;

@@ -174,8 +174,7 @@ function GameManager::GameManager(HMD)
 		mElevator.Unhide();
 		
 		// Sposto la camera in modo che sia dentro l'ascensore
-//		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
-		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, 0 * SCALE_FACTOR);
+		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
 				
 		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
