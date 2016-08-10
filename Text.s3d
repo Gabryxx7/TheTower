@@ -25,11 +25,15 @@ class Text
 
 	// Container object; it contains all the other CVmObjects containg the substrings
 	var mTextContainerObj;
+	
+	// Scale of the font. It works on top of the SCALE_FACTOR constant
+	var mFontScale;
 
 	// Public functions
 	LoadString(string);
 	SetPosition(position);
 	GetPosition();
+	SetScale(scale);
 	GetObj();
 	Rotate(angle, x, y, z);
 	RotateABS(angle, x, y, z);
@@ -43,13 +47,14 @@ class Text
 /*
  * Constructor
  */
-function Text::Text(string)
+function Text::Text(string, scale)
 {
 	mString = string;
+	mFontScale = scale != Void ? scale : 1.0;
 	mStringList = {};
 	mStringObjList = {};
-	mStringWidthMultiplier = 0.085  * SCALE_FACTOR; // The multiplier was found by trial and error
-	mStringHeight = 0.5  * SCALE_FACTOR; // The height was found by trial and error
+	mStringWidthMultiplier = 0.085  * SCALE_FACTOR * mFontScale; // The multiplier was found by trial and error
+	mStringHeight = 0.5  * SCALE_FACTOR * mFontScale; // The height was found by trial and error
 	mTextContainerObj = CVmObj();
 	
 	// I obtain the substrings by using the Split function with "\n" as separator
@@ -61,7 +66,7 @@ function Text::Text(string)
 	{
 		var txt = CVmText();
 		txt.Load(substrings[i]);
-		txt.SetScale(0.5  * SCALE_FACTOR, 0.5  * SCALE_FACTOR);
+		txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
 		txt.SetColor(0, 0, 0);
 						
 		var txtObj = CVmObj();
@@ -83,7 +88,7 @@ function Text::Text(string)
 	{
 		var txt = CVmText();
 		txt.Load("");
-		txt.SetScale(0.5  * SCALE_FACTOR, 0.5  * SCALE_FACTOR);
+		txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
 		txt.SetColor(0, 0, 0);
 		var txtObj = CVmObj();
 		txtObj.LinkToText(txt);
@@ -133,7 +138,7 @@ function Text::LoadString(string)
 		{			
 			var txt = CVmText();
 			txt.Load(substrings[i]);
-			txt.SetScale(0.5  * SCALE_FACTOR, 0.5  * SCALE_FACTOR);
+			txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
 			txt.SetColor(0, 0, 0);
 						
 			var txtObj = CVmObj();
@@ -156,6 +161,15 @@ function Text::LoadString(string)
 			mStringObjList[i].Hide();
 	}
 }
+
+//function Text::SetScale(scale)
+//{
+//	mFontScale = scale;
+//	
+//	// I reload the string so that the scale takes effect
+//	LoadString(mString);
+//}
+
 /*
  * In order to use this class with some pre-built XVR methods, I need to pass the container CVmObj of the text from time to time, 
  * so I need a method that gets it

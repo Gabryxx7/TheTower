@@ -1,0 +1,354 @@
+
+/*
+ * Class that represents a DrawingsConnector, which is basically a lamp light that does something when the user starts drawing inside the light
+ */
+class DrawingsConnector
+{
+	// Mesh of the connector object, and CVmObject containing also the light cone
+	var mConnectorMesh;
+	var mConnector;
+	
+	// Meshes for the light cone; I keep track of them in order to change the parameters of their shaders
+	var mLightConeMesh;
+	var mLightTopCircleMesh;
+	var mLightBottomCircleMesh;
+	
+	// Light cone frustum object
+	var mLightConeObj;
+	
+	// Color of the light and the position offset of the light cone frustum with respect to the connector object
+	var mLightConeDefaultColor;
+	var mLightConeActiveColor;
+	var mLightConeOffset;
+		
+	// Shader for the black borders
+	var mSilhouetteShader;
+	var mBorderShader;
+	
+	// This is the DrawingsConnector object linked to this connector (i.e. it's the connector that the player must draw to)
+	var mLinkedConnector;
+	
+	var mTime;
+	
+	var mIsConnected;
+		
+	// Public functions
+	Draw();
+	DrawLightCone();
+	GetObj();
+	GetDefaultLightColor();
+	SetLightColorActive();
+	ResetLightColor();
+	SetLightsRange(min, max);
+	GetLightsRange();
+	LocalToWorld(point);
+	SetPosition(position);
+	GetPosition();
+	Rotate(angle, x, y, z);
+	SetRotation(angle, x, y, z);
+	Translate(x, y, z);
+	UpdateTimeVariable();
+	ResetTimeVariable();
+	IsObjectInCone(object);
+	IsPointInCone(point);
+	SetLinkedConnector(linkedConnector);
+	GetLinkedConnector();
+	SetIsConnected(isConnected);
+	IsConnected();
+};
+
+
+function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lightsRangeMax)
+{
+	mLightConeDefaultColor = lightColor;
+	mLightConeActiveColor = [0, 1, 0];
+	
+	mIsConnected = false;
+	
+	// I get the mesh and scale it
+	mConnectorMesh = CVmNewMesh("Sci-fi-thing.aam");
+	mConnectorMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+	
+	// Shader for the first (the "arm" of the object) and second subset (the column)
+	if(USE_TOON_SHADER == 2)
+	{		
+		mConnectorMesh.ShaderAdd("antishader.glsl", 0);
+		mConnectorMesh.ShaderAdd("antishader.glsl", 1);
+		mConnectorMesh.ShaderActivate(true);
+	}
+	else if(USE_TOON_SHADER == 1)
+	{
+		mConnectorMesh.ShaderAdd("toonShader.glsl", 0);
+		mConnectorMesh.ShaderAdd("toonShader.glsl", 1);
+		mConnectorMesh.ShaderActivate(true);		
+	}
+	else if(USE_TOON_SHADER == 0)
+		mConnectorMesh.ShaderActivate(false);				
+
+	// Parameters for subset 0 (the "arm" of the object)
+	mConnectorMesh.ShaderSetParameter(0, "ambient", 0, [0.7, 0.7, 0.7]);
+	mConnectorMesh.ShaderSetParameter(0, "diffuse", 0, [0.5, 0.5, 0.5]);
+	mConnectorMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
+	mConnectorMesh.ShaderSetParameter(0, "shininess", 0, 0);
+	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mConnectorMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	
+	// Parameters for subset 1 (the column of the object)
+	mConnectorMesh.ShaderSetParameter(1, "ambient", 0, [0.2, 0.2, 0.2]);
+	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, [0.3, 0.3, 0.3]);
+	mConnectorMesh.ShaderSetParameter(1, "specular", 0, [0.0, 0.0, 0.0]);
+	mConnectorMesh.ShaderSetParameter(1, "shininess", 0, 0);
+	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMin", 0, lightsRangeMin);
+	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMax", 0, lightsRangeMax);
+	mConnectorMesh.ShaderSetParameter(1, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	
+	mConnector = CVmObj(mConnectorMesh);
+	
+	// I get the bounding box in order to obtain the total height of the object (the y values of the bounding box are in positions 1 and 4)
+	var boundingBox = mConnectorMesh.GetBoundingBox();
+	var connectorHeight = boundingBox[1] + boundingBox[4];
+	
+	// The object is positioned in a weird way, and so it's the bounding box. In order to rotate the object easily I compute a new pivot point
+	// for rotations, which is set pretty much where the light of the object starts
+	var pivotPoint = [boundingBox[3], boundingBox[4], boundingBox[5] - boundingBox[5] / 4.0];
+	mConnector.SetPivotPoint(pivotPoint);
+	
+	// The light cone is actually a cone frustum, with 2 circle of these radius and this height
+	var topCircleRadius = 0.69 * SCALE_FACTOR;
+	var bottomCircleRadius = 2.2 * SCALE_FACTOR;
+	var lightConeHeight = connectorHeight - 0.14 * SCALE_FACTOR;
+	
+	// I create the cone frustum without the top and bottom circles, and I create these circles separately. I do this because otherwise if you went
+	// inside the light cone you wouldn't see the circles from the inside; so to fix this I simply put circle meshes in place of the cone's ones
+	mLightConeMesh = CVmNewMesh(VRP_CONEFRUSTUM, 30, topCircleRadius, lightConeHeight, bottomCircleRadius, 0);  
+	mLightTopCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, topCircleRadius, 1);  
+	mLightBottomCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, bottomCircleRadius, 1);  
+
+	// Each mesh has the same shader, with the same color
+	mLightConeMesh.ShaderAdd("colorModulatorShader.glsl", 0);
+	mLightConeMesh.ShaderActivate(true);
+	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);		
+	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+	mLightConeMesh.ShaderSetParameter(0, "time", 0, 0);
+	
+	
+	mLightTopCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
+	mLightTopCircleMesh.ShaderActivate(true);		
+	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "time", 0, 0);
+	
+	mLightBottomCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
+	mLightBottomCircleMesh.ShaderActivate(true);		
+	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "time", 0, 0);
+	
+	// Creating the CVmObjects with the respective meshes
+	mLightConeObj = CVmObj(mLightConeMesh);
+	var topCircleObj = CVmObj(mLightTopCircleMesh);
+	var bottomCircleObj = CVmObj(mLightBottomCircleMesh);
+	
+	// This is the offset position that the light cone has to have with respect to the connector object's position. I found this
+	// by trying values pretty much at random
+	mLightConeOffset = [-1.18 * SCALE_FACTOR, 0 * SCALE_FACTOR, -2.21 * SCALE_FACTOR];
+	
+	// Now I add every object as child of the connector object. I don't add the 2 circles as children of the light cone because it would give some problems
+	// with the transparency (because of the order they would be rendered). I also put as children the circles first because this way they are rendered first
+	// (again, to avoid problems with transparency).
+	// I position every object taking into account that the origin of the cone frustum is at the center of the base
+	mConnector.AddChild(topCircleObj, mLightConeOffset.x, mLightConeOffset.y + lightConeHeight, mLightConeOffset.z);
+	mConnector.AddChild(bottomCircleObj, mLightConeOffset.x, mLightConeOffset.y, mLightConeOffset.z);
+	mConnector.AddChild(mLightConeObj, mLightConeOffset.x, mLightConeOffset.y, mLightConeOffset.z);
+
+	// Creating the shader for the silhouette; the silhouetteShader is actually unused for now. Since the object is kind of weird looking, it works
+	// really bad unless the offset for the silhouette is very very low. I found that by creating a shader that simply draws black (the mBorderShader)
+	// and by enlarging the mesh a little bit, use the shader and then reset the scale and draw it normally gives better results for this particular object
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }", true);
+	
+	mTime = 0;
+}
+
+/*
+ * This draws ONLY the connector object, WITHOUT the light cone
+ */
+function DrawingsConnector::Draw()
+{
+	// I'm going to draw the silhouette first, so I'm drawing only the back faces now
+	glCullFace(GL_FRONT);
+	
+	// Deactivate the current shader, otherwise the border shader won't work
+	mConnectorMesh.ShaderActivate(false);
+	
+	// I increase a little bit the size of the object, so that it will be a little bigger. I don't need to scale the factors, 
+	// since I already scaled the mesh according to the SCALE_FACTOR before
+	mConnector.SetScale(1.004 , 1.004, 1.004);
+	
+	// I draw the connector with NO children, for 2 reasons:
+	// 1) only the object needs to have the silhouette, not the light cone
+	// 2) I need to draw it alone first because the light cone has transparency, and apparently there is no way to tell XVR to draw the parent before
+	//    the children; this caused the light cone to be drawn before the object, and that meant that the transparency didn't take the object into account,
+	//    and so if you would have placed yourself in front of the light cone the object would have been totally invisible.
+	//    The only quick solution that I've found for this is to draw the object first with no children, and then again but with the children.
+	//    Not putting the light cone as child of the object in order to draw them separately wasn't an option, since when the objects rotates it's hard
+	//    to place the light cone accordingly, while it's automatic if the light cone is a child of the object
+	mBorderShader.Start();
+		mConnector.Draw(VR_NO_CHILDREN);
+	mBorderShader.Stop();
+	
+	// Now I draw the front faces
+	glCullFace (GL_BACK);
+	
+	// Reactivate the shader and reset the scale
+	mConnectorMesh.ShaderActivate(true);
+	mConnector.SetScale(1, 1, 1);
+	
+	// Draw the connector, again with no cilhdren
+	mConnector.Draw(VR_NO_CHILDREN);
+}
+
+function DrawingsConnector::DrawLightCone()
+{
+	glCullFace(GL_BACK);
+
+	// Now that the connector object is in the depth buffer, I draw it again with the light cone; I only draw the front faces
+	mConnector.Draw();
+	
+	// Now I draw also the back faces; I do this because otherwise if you went inside the light cone you would "attraverse it", disrupting the illusion
+	// that it's a light. If I also draw the back faces, whenever you get inside the cone you'll keep seeing the light's color
+	glCullFace(GL_FRONT);
+	mConnector.Draw();	
+	
+	// I reset the culling to back faces, for future drawings
+	glCullFace(GL_BACK);	
+}
+
+function DrawingsConnector::SetLightColorActive()
+{	
+	var time = mTime > 1.0 ? 1.0 : mTime;
+		
+	var r = mLightConeActiveColor.r * (1 - time) + mLightConeDefaultColor.r * time;
+	var g = mLightConeActiveColor.g * (1 - time) + mLightConeDefaultColor.g * time;
+	var b = mLightConeActiveColor.b * (1 - time) + mLightConeDefaultColor.b * time;
+	
+	if(mTime > 1.0)
+		mTime = 0;
+	
+	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+			
+	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeActiveColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeActiveColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeActiveColor);
+}
+
+function DrawingsConnector::ResetLightColor()
+{
+	var time = mTime > 1.0 ? 1.0 : mTime;
+	
+	var r = mLightConeDefaultColor.r * (1 - time) + mLightConeActiveColor.r * time;
+	var g = mLightConeDefaultColor.g * (1 - time) + mLightConeActiveColor.g * time;
+	var b = mLightConeDefaultColor.b * (1 - time) + mLightConeActiveColor.b * time;
+	
+	if(mTime > 1.0)
+		mTime = 0;
+		
+	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+		
+	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+}
+
+function DrawingsConnector::GetDefaultLightColor()
+{
+	return mLightConeDefaultColor;
+}
+
+function DrawingsConnector::UpdateTimeVariable()
+{		
+	mTime += 0.03;
+	
+	mLightConeMesh.ShaderSetParameter(0, "time", 0, mTime);
+	mLightTopCircleMesh.ShaderSetParameter(0, "time", 0, mTime);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "time", 0, mTime);
+}
+
+function DrawingsConnector::ResetTimeVariable()
+{
+//	if(mTime > 1.0)
+//		mTime = 0;
+}
+
+function DrawingsConnector::SetPosition(position)
+{
+	mConnector.SetPosition(position);
+}
+
+function DrawingsConnector::Translate(x, y, z)
+{
+	mConnector.Translate(x, y, z);
+}
+
+function DrawingsConnector::Rotate(angle, x, y, z)
+{
+	mConnector.Rotate(angle, x, y, z);
+}
+
+function DrawingsConnector::SetRotation(angle, x, y, z)
+{
+	mConnector.SetRotation(angle, x, y, z);
+}
+
+
+function DrawingsConnector::GetPosition()
+{
+	return mConnector.GetPosition();
+}
+
+
+function DrawingsConnector::LocalToWorld(point)
+{
+	return mConnector.LocalToWorld(point);
+}
+
+function DrawingsConnector::GetObj()
+{
+	return mConnector;
+}
+
+function DrawingsConnector::IsObjectInCone(object)
+{
+	return mLightConeObj.IsCollidingBBox(object);
+}
+
+function DrawingsConnector::IsPointInCone(point)
+{
+	// Doesn't work; it always returns false, independently from the point
+	return mLightConeObj.Inspect(point) != -1;
+}
+
+function DrawingsConnector::SetLinkedConnector(linkedConnector)
+{
+	mLinkedConnector = linkedConnector;
+}
+
+function DrawingsConnector::GetLinkedConnector()
+{
+	return mLinkedConnector;
+}
+
+function DrawingsConnector::SetIsConnected(isConnected)
+{
+	mIsConnected = isConnected;
+}
+
+function DrawingsConnector::IsConnected()
+{
+	return mIsConnected;
+}

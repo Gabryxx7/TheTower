@@ -1,12 +1,16 @@
 global var DEBUG_MODE = true;
 
-global var SCALE_FACTOR = 0.1;
+global var SCALE_FACTOR = 0.2;
 
 #define STATUS_MENU     0
 #define STATUS_INGAME   1
 
+#define USE_TOON_SHADER 1
+
+
 #include "Utils.s3d"
 #include "ViveController.s3d"
+#include "DrawingsConnector.s3d"
 #include "Level0.s3d"
 #include "LevelMenu.s3d"
 #include "Level1.s3d"
@@ -234,6 +238,9 @@ function GameManager::Render()
 			break;
 		case STATUS_INGAME:{
 				
+//			mCurrentLevel.SetupOpenglLights();
+				
+				
 			SceneBegin(mCamera);
 			
 			glEnable (GL_BLEND);
@@ -257,39 +264,6 @@ function GameManager::Render()
 				mHMD.SceneEnd();
 			}	
 				
-				/*
-				 * ******************************** HERE GOES THE HTC VIVE RENDERING PART ***************************************
-				 * 
-				 * Something like:
-				 * 
-				 * HMD.SceneBegin();
-				 * 
-				 * *** here goes the positioning of lights. The ideal thing would be to create a method for each level that returns info
-				 *     about the positions and properties of the lights (diffuse and ambient colors, and anything that might be useful),
-				 * 	   so that the properties can be set using opengl commands.
-				 *     the code might be something like:
-				 * 	   
-				 *     var lights = mCurrentLevel.GetLights();
-				 * 
-				 * 	   // Need to pass as position a vector of 4 components, with the last one 1.0 to indicate that it's a positional light
-
-				 * 
-				 * 	   // Mini-problem: how to make this iterative? We have to use a constant like GL_LIGHT0, so making iterative might not be possible.
-				 * 	   // Also, might need to add mOpenglTranslationOffset to the positions, in order to take into account transformations; need to check.
-				 * *** 
-				 * 
-				 * HMD.RenderLeftFrame();
-				 * 
-				 * *** here goes the same exact rendering code as for XVR (the one above) ***
-				 * 
-				 * HMD.RenderRightFrame();
-				 * 
-				 * *** here goes the same exact rendering code as for XVR (the one above) ***
-				 * 
-				 * HMD.SceneEnd();
-				 */
-				 
-			
 			SceneEnd();
 			break;
 			

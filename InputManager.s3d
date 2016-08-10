@@ -34,6 +34,7 @@ class InputManager
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
 	GetController(controllerIndex);
+	VibrateController(controllerIndex);
 };
 
 
@@ -112,4 +113,13 @@ function InputManager::IsPressingSecondaryButton(controllerIndex)
 function InputManager::GetController(controllerIndex)
 {
 	return mManager.GetController(controllerIndex);
+}
+
+/*
+ * This method is meaningful only if the Vive is connected; otherwise it does nothing
+ */
+function InputManager::VibrateController(controllerIndex)
+{
+	if(mIsVRon)
+		mManager.VibrateController(controllerIndex);
 }

@@ -182,7 +182,7 @@ function KeyboardManager::UpdateCameraPosition()
 	{
 		var cameraPos = mCamera.GetPosition();
 						
-		cameraPos.y += 0.5 * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		cameraPos.y += 0.5 * (mMoveSpeed + (mDebugMode ? 0.25 * SCALE_FACTOR : 0));
 		mCamera.SetPosition(cameraPos); 
 	}
 	
@@ -191,7 +191,7 @@ function KeyboardManager::UpdateCameraPosition()
 	{
 		var cameraPos = CameraGetCurrent().GetPosition();
 						
-		cameraPos.y -= 0.5 * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		cameraPos.y -= 0.5 * (mMoveSpeed + (mDebugMode ? 0.25 * SCALE_FACTOR : 0));
 		CameraGetCurrent().SetPosition(cameraPos); 
 	}
 	
@@ -203,7 +203,7 @@ function KeyboardManager::UpdateCameraPosition()
 		var cameraDir = mCamera.GetDirection();
 				
 		if(mDebugMode)		
-			cameraPos += cameraDir * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+			cameraPos += cameraDir * (mMoveSpeed + (mDebugMode ? 0.25 * SCALE_FACTOR : 0));
 		else
 		{
 			// I update the camera's position across the current direction it's facing, with the given speed. The y axis does not change, since we can't fly
@@ -220,7 +220,7 @@ function KeyboardManager::UpdateCameraPosition()
 		var cameraDir = mCamera.GetDirection();
 		
 		if(mDebugMode)	
-			cameraPos -= cameraDir * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+			cameraPos -= cameraDir * (mMoveSpeed + (mDebugMode ? 0.25 * SCALE_FACTOR : 0));
 		else
 		{
 			cameraPos.x -= cameraDir.x * mMoveSpeed;
@@ -237,7 +237,7 @@ function KeyboardManager::UpdateCameraPosition()
 		
 		// To obtain the new position, we need to compute the cross product (i.e. the product between vectors, which results in a vector)
 		// between the current direction and the "up" vector
-		cameraPos -= Norm((cameraDir ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		cameraPos -= Norm((cameraDir ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25 * SCALE_FACTOR : 0));
 		mCamera.SetPosition(cameraPos); 
 	}
 	
@@ -245,7 +245,7 @@ function KeyboardManager::UpdateCameraPosition()
 	{
 		var cameraPos = mCamera.GetPosition();
 				
-		cameraPos += Norm((mCamera.GetDirection() ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25 : 0));
+		cameraPos += Norm((mCamera.GetDirection() ^ mCameraUp)) * (mMoveSpeed + (mDebugMode ? 0.25  * SCALE_FACTOR: 0));
 		mCamera.SetPosition(cameraPos); 
 	}
 }

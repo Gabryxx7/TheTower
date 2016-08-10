@@ -3,9 +3,7 @@
 /*
  * Class that represents a room, with an optional front wall (so that it can be used for portals' rooms, that don't have the front wall so the camera
  * dosn't get obstructed when the room is rendered). It gives more flexibility than simply creating a box, and it's easier to maintain
- */
- #define USE_TOON_SHADER 1
- 
+ */ 
 class Room
 {
 	// Sizes
@@ -132,7 +130,7 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mFarWallMesh.ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
 	mFarWallMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
 	mFarWallMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-	mFarWallMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mFarWallMesh.ShaderSetParameter(0, "shininess", 0, 0);
 	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mFarWallMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
@@ -152,7 +150,7 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mSideWallMesh.ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
 	mSideWallMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
 	mSideWallMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-	mSideWallMesh.ShaderSetParameter(0, "shininess", 0, 20);
+	mSideWallMesh.ShaderSetParameter(0, "shininess", 0, 0);
 	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mSideWallMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
@@ -171,8 +169,8 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	
 	mRoofMesh.ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
 	mRoofMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
-	mRoofMesh.ShaderSetParameter(0, "specular", 0, [0.1, 0.1, 0.1]);
-	mRoofMesh.ShaderSetParameter(0, "shininess", 0, 5);
+	mRoofMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
+	mRoofMesh.ShaderSetParameter(0, "shininess", 0, 0);
 	mRoofMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mRoofMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);

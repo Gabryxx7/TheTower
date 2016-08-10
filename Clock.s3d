@@ -9,9 +9,9 @@ class Clock
 	var mMinutesArrowHeight;
 	var mHoursArrowHeight;
 	
-	var clockSphereSegments;
-	var clockSphereRadius;
-	var clockSphereThickness;
+	var mClockSphereSegments;
+	var mClockSphereRadius;
+	var mClockSphereThickness;
 	
 	var mMinutesArrowObj;
 	var mHoursArrowObj;
@@ -52,9 +52,9 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	mMinutesArrowHeight = 0.8 * SCALE_FACTOR;
 	mHoursArrowHeight = 0.4 * SCALE_FACTOR;
 	
-	clockSphereSegments = 30;
-	clockSphereRadius = 1 * SCALE_FACTOR;
-	clockSphereThickness = 0.02 * SCALE_FACTOR;
+	mClockSphereSegments = 30;
+	mClockSphereRadius = 1 * SCALE_FACTOR;
+	mClockSphereThickness = 0.02 * SCALE_FACTOR;
 	
 	// Creating the mesh for the arrow and setting the pivot for the rotation in t
 	var minutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
@@ -86,9 +86,9 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	mHoursArrowObj = CVmObj(hoursArrowMesh);
 	
 	
-//	var clockMesh = CVmNewMesh(VRP_SPHERE, clockSphereSegments, clockSphereRadius, 1);  	
-//	clockMesh.Scale(1, 1, clockSphereThickness);
-	var clockMesh = CVmNewMesh(VRP_CIRCLE, clockSphereSegments, clockSphereRadius, 1);  
+//	var clockMesh = CVmNewMesh(VRP_SPHERE, mClockSphereSegments, mClockSphereRadius, 1);  	
+//	clockMesh.Scale(1, 1, mClockSphereThickness);
+	var clockMesh = CVmNewMesh(VRP_CIRCLE, mClockSphereSegments, mClockSphereRadius, 1);  
 	clockMesh.Rotate(-90, 1, 0, 0);	
 	clockMesh.Rotate(180, 0, 0, 1);	
 //	clockMesh.Rotate(90, 1, 0, 0);	

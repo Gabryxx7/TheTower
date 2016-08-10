@@ -53,6 +53,7 @@ class Level1
 	
 	var mOpenglTranslationOffset;
 	
+	var mIsDrawing;
 	
 	var mDrawingShader;
 	var mPreviousPoint;
@@ -60,21 +61,34 @@ class Level1
 	
 	var mTime;
 	var mReversedTime;
-	var mVertexArray;
+		
+	var mDrawingsArray;
+	var mDrawingsAlphaArray;
+	var mIsDrawingConnectedArray;
+	
+	var mDrawingsAlpha;
 	
 	var mController1;
 	var mController2;
 	
 	var mControllerBeingUsedIndex;
 	
+	var mIsControllerInLight;
+	
+	var mConnectors;
+	
+	var mStartingConnectorsArray;
+	
+	var mStartingActiveConnector;
+	var mCurrentActiveConnector;
+	var mGoodStartingPoint;
+	
+	
+	var mEverythingIsConnectedText;
+	
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
-	FadeToBlackScreen(fadeIn);
-	
-	intersect3D_SegmentPlane( p0, p1, v0, normal);
-	
-	Selection(object);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -99,12 +113,15 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mSoundManager = soundManager;
 	
 	mLineArray = {};
+	
+	mIsDrawing = false;
+	mGoodStartingPoint = false;
 		
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, true, 1, 2);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -115,44 +132,82 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mTime = 0;
 	mReversedTime = 0;
 	
+	var offsetFromFarWall = mMainRoom.GetRoomDepth()/2 - 15.0 * SCALE_FACTOR;
+	var offset = 10 * SCALE_FACTOR;
 	
-	var base = CVmNewMesh(VRP_BOX, 3, [0, 0, 0], [2.0, 0.2, 0], 2.0);  
-	var column = CVmNewMesh(VRP_CYLINDER, 30, 0.8, 5, 1);  
-	var neck = CVmNewMesh(VRP_CONEFRUSTUM, 30, 0.3, 0.8, 0.8, 1);  
+	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
+	connector1.SetPosition([-offset, 0, offsetFromFarWall]);
+	connector1.Rotate(85, 0, 1, 0);
 	
-	var baseObj = CVmObj(base);
-	var columnObj = CVmObj(column);
-	var neckObj = CVmObj(neck);
+	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
+	connector2.SetPosition([offset, 0, offsetFromFarWall]);
+	connector2.Rotate(135, 0, 1, 0);
 	
-	global var mesh = CVmNewMesh("Sci-fi-thing.aam");
-//	mesh.CenterBoundingBox();
-	mesh.Normalize(1 * SCALE_FACTOR);
-
-	var mat = CVmMaterial();
-	mat.diffuse = [1.0, 1.0, 0.0];
-	mat.ambient = [0.0, 0.0, 1.0];
-	mat.specular = [0.0, 1.0, 0.0];
+	connector1.SetLinkedConnector(connector2);
+	connector2.SetLinkedConnector(connector1);
 	
-//	mesh.SubsetForceMaterial(1, mat);
-	mat.diffuse = [0.0, 1.0, 0.0];
-//	mesh.SubsetForceMaterial(2, mat);
-//	mat.diffuse = [0.0, 0.0, 1.0];
-	mesh.SubsetSetMaterial(0, mat);
 	
-	global var obj = CVmObj(mesh);
-//	obj.AddChild(baseObj, 0, 0, 0);
-//	obj.AddChild(columnObj, 2.0 / 2.0, 0.2, -1.0);
-//	obj.AddChild(neckObj, 2.0 / 2.0, 0.2 + 5, -1.0);
+	var offsetFromSideWall = mMainRoom.GetRoomWidth()/2.0 - 10 * SCALE_FACTOR;
+	offset -= 3 * SCALE_FACTOR;
 	
-	obj.SetPosition(0, 3 * SCALE_FACTOR, 5 * SCALE_FACTOR);	
+	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
+	connector3.SetPosition([offsetFromSideWall, 0, offset]);
+	connector3.Rotate(85 * 2, 0, 1, 0);
+	
+	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
+	connector4.SetPosition([offsetFromSideWall, 0, -offset]);
+	connector4.Rotate(115 * 2, 0, 1, 0);
+	
+	connector3.SetLinkedConnector(connector4);
+	connector4.SetLinkedConnector(connector3);
+	
+	
+	var connector5 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
+	connector5.SetPosition([-offsetFromSideWall, 0, offset]);
+	connector5.Rotate(85 * 2 - 90, 0, 1, 0);
+	
+	var connector6 = DrawingsConnector([0, 1.0, 0.6], 1, 2);
+	connector6.SetPosition([-offsetFromSideWall, 0, -offset]);
+	connector6.Rotate(115 * 2 - 90, 0, 1, 0);
+	
+	connector5.SetLinkedConnector(connector6);
+	connector6.SetLinkedConnector(connector5);
+	
+	mConnectors = {};
+	
+	aadd(mConnectors, connector1);
+	aadd(mConnectors, connector2);
+	aadd(mConnectors, connector3);
+	aadd(mConnectors, connector4);
+	aadd(mConnectors, connector5);
+	aadd(mConnectors, connector6);
+	
 	
 	mControllerBeingUsedIndex = 0;
 	
+	global var control = ViveController();
+	global var controllerHidden = true;
+	control.SetRotation(90, 0, 1, 0);
+	control.Hide();
+	
+	mIsControllerInLight = false;
+		
 	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
 	}
+	
+	mDrawingsAlpha = 0;
+	
+	mDrawingsArray = {};
+	mDrawingsAlphaArray = {};
+	mIsDrawingConnectedArray = {};
+	mStartingConnectorsArray = {};
+	
+	mEverythingIsConnectedText = Text("In life, everything is connected", 2);
+	mEverythingIsConnectedText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR]);
+	mEverythingIsConnectedText.Rotate(180, 0, 1, 0);
 }
 
 
@@ -208,8 +263,6 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
-	
-	mVertexArray = {};
 }
 
 
@@ -230,10 +283,29 @@ function Level1::Render()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
-
-	// This array will contain at position 2 the width of the viewport, and at 3 its height
-	var viewport = array(4);
-	viewport = glget(GL_VIEWPORT);
+	
+	// I put the controller in front of the camera, for the debugging purposes
+	control.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+	
+	if(KeyPressed("M"))
+	{
+		if(controllerHidden)
+			control.Unhide();
+		else
+			control.Hide();
+			
+		controllerHidden = !controllerHidden;
+	}
+	
+		
+	// The elevator is always present, so it's always drawn
+	mElevator.Draw();
+		
+	if(mIsVRon)
+	{
+		mController1.Draw();
+		mController2.Draw();
+	}
 	
 	switch(mLevelStatus)
 	{
@@ -244,84 +316,77 @@ function Level1::Render()
 		{
 			mMainRoom.Draw();
 
-//			if(mTime % 1.0 <= 0.01 && mReversedTime <= 0)
-//				mReversedTime = 1;
-//			
-//			if(mReversedTime > 0)
-//			{
-//				glLineWidth(10 * (mReversedTime));
-//				outputln("yo");
-//				mReversedTime -= 0.005;
-//			}
-//			else
-//				glLineWidth(10 * (mTime % 1.0));
-			
 			glLineWidth(5);
 			
-			mDrawingShader.Start();
-//				mDrawingShader.SetParameter("screenWidth", viewport[2]);
-//				mDrawingShader.SetParameter("screenHeight", viewport[3]);		
+			mDrawingShader.Start();	
 				mDrawingShader.SetParameter("time", mTime);
 
-				for(var i = 0; i < len(mVertexArray); i += 2)
+				// I iterate over all drawings
+				for(var i = 0; i < len(mDrawingsArray); i++)
 				{
-					var point0 = mVertexArray[i];
-					var point1 = mVertexArray[i+1];
+					// I get the vertices and alpha value for the current drawing
+					var vertexArray = mDrawingsArray[i];
+
+					// Depending on the kind of line we have to pass different things to the shader. This is the case that the line is "connected" to the connectors.
+					if(mIsDrawingConnectedArray[i])
+					{
+						var startingConnector = mStartingConnectorsArray[i];
+						var linkedConnector = startingConnector.GetLinkedConnector();
+						
+						mDrawingShader.SetParameter("lineIsConnected", true);
+						mDrawingShader.SetParameter("startColor", startingConnector.GetDefaultLightColor());
+						mDrawingShader.SetParameter("finalColor", linkedConnector.GetDefaultLightColor());
+						mDrawingShader.SetParameter("startPoint", startingConnector.GetPosition());
+						mDrawingShader.SetParameter("endPoint", linkedConnector.GetPosition());
+					}
+					else
+					{
+						var alpha = mDrawingsAlphaArray[i];
+						mDrawingShader.SetParameter("alpha", alpha);
+						mDrawingShader.SetParameter("lineIsConnected", false);
+					}
 					
-					glBegin(GL_LINES);
-						glVertex(point0);
-						glVertex(point1);		
-					glEnd();
+					// I iterate over all vertices, two by two: the first one is the starting point of a single line, the second one is the end point
+					for(var i = 0; i < len(vertexArray); i += 2)
+					{
+						var point0 = vertexArray[i];
+						var point1 = vertexArray[i+1];
+						
+						glBegin(GL_LINES);
+							glVertex(point0);
+							glVertex(point1);		
+						glEnd();
+					}
 				}
 			
 			mDrawingShader.Stop();
-
-//			mDrawingShader.Start();
-//				mDrawingShader.SetParameter("screenWidth", viewport[2]);
-//				mDrawingShader.SetParameter("screenHeight", viewport[3]);
-//				
-//				foreach(var line in mLineArray)
-//				{
-//					mDrawingShader.SetParameter("time", mTime);
-//					line.Draw();
-//					
-//				}
-//			mDrawingShader.Stop();
 			
-			obj.Draw();
+			mEverythingIsConnectedText.Draw();
 			
-
+			control.Draw();
+		
 			mTime += 0.01;
 			
-			break;
-			
-		}
-	}
-	
-			var rayO = mCamera.GetPosition() - mOpenglTranslationOffset;
-			var rayE = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 900;
-			
-			var contactPoint;
-			var contactNormal;
-			var triangleID;
-			
-			if(obj.IsColliding(rayO, rayE, &contactPoint, &contactNormal, &triangleId))
+			// I update the time variable (used for the shader) of the connectors and draw them; note: I only draw the connector object now, without the
+			// light cones. This is because the light cones are transparent and need to be drawn last in the scene, otherwise the transparency would be wrong
+			foreach(var connector in mConnectors)
 			{
-				var string;
-				outputln(mesh.GetSubsetFromTriIndex (triangleID, &string));
-//				outputln(obj.Inspect(obj.LocalToWorld([0, 1, 0])));
-//				outputln(obj.Inspect(obj.LocalToWorld([-3.74, 7, 1.8])));
-				
-//				outputln(mCamera.GetPosition() - mOpenglTranslationOffset);
+				connector.UpdateTimeVariable();
+				connector.Draw();
 			}
-	
-	// The elevator is always present, so it's always drawn
-	mElevator.Draw();
-	
-	if(mIsVRon)
-	{
-		mController1.Draw();
-		mController2.Draw();
+			
+			// To draw the light cones I disable writing into the Z-buffer: they only need to read from it
+			glDepthMask(GL_FALSE); 
+			
+			// Now I draw the light cones
+			foreach(var connector in mConnectors)
+				connector.DrawLightCone(false);
+			
+			// Restore the depth buffer as it was
+			glDepthMask(GL_TRUE); 
+
+			break;
+		}
 	}
 }
 
@@ -409,6 +474,42 @@ function Level1::UpdateLogic(dt)
 			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 		    	
+			// Now I check whether there is a controller inside the light cone of a connector, in order to change its light. There are a lot of cases to consider,
+			// because controllers can get in and out of light cones, and depending on whether the player is drawing while doing it changes everything	
+			foreach(var connector in mConnectors)
+	    	{
+	    		// This is the case where a controller goes inside the light the first time; I need to change the light only if:
+	    		// 1) this connector is not connected to another one already (in this case I have to leave the "active" color);
+	    		// 2) if the player is drawing, this connector IS NOT the starting connector (i.e. the connector where he started to draw);
+	    		// 3) there is actually a controller in the light cone;
+	    		// 4) the controller wasn't here before 
+				if(!connector.IsConnected() && connector != mStartingActiveConnector && connector.IsObjectInCone(control.GetObj()) && !mIsControllerInLight)
+				{
+					connector.SetLightColorActive();
+					mIsControllerInLight = true;
+					mCurrentActiveConnector = connector;
+				}
+				// If it's not the case above, maybe the controller has just left the light cone and its color need to change back to what it was.
+				// I need to to this if:
+				// 1) this connector is not connected to another one already;
+				// 2) this connector was the one currently active;
+				// 3) there actually was a controller inside;
+				// 4) now the controller isn't inside anymore
+				else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(control.GetObj()))
+				{
+					// If the current connector wasn't the starting connector while drawing, I reset the light color, otherwise I simply change variables
+					// to state the fact that there is no controller inside any connector now.
+					// Basically, this is the case when the player has started drawing inside a connector, moved to another one and went in and out of this connector,
+					// but didn't stop drawing. In this case we have to behave like he wasn't drawing, i.e. reseting the color. Otherwise, if the player
+					// while drawing goes in and out of the starting connector, the light always need to be in the "active" state
+					if(mCurrentActiveConnector != mStartingActiveConnector)
+						connector.ResetLightColor();
+					
+					mIsControllerInLight = false;
+					mCurrentActiveConnector = Void;
+				}
+	    	}
+
 		    	
 	    	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
 			var usingController2 = mInputManager.IsPressingPrimaryButton(2);
@@ -420,13 +521,44 @@ function Level1::UpdateLogic(dt)
 			// I check if the user has clicked with the mouse or whatever; if that is the case I need to check "where" he clicked    	
 	    	if(firstTimeUsingController || wasUsingController1 || wasUsingController2)
 			{				
+				// If it's the first time, I need to do some things
 				if(firstTimeUsingController)
 				{
+					// I save the index of the controller used and save the fact that the player is drawing
 					mControllerBeingUsedIndex = usingController1 ? 1 : 2;
+					mIsDrawing = true;
 					
-	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3;
-	    			mLineArray = {};
-	    			mVertexArray = {};
+					// I get the first point in the drawing
+	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
+	    			
+	    			var vertexArray = {};
+	    			
+	    			// I add an empty array to the drawings array; it will be filled with every point as soon as they are found
+	    			aadd(mDrawingsArray, vertexArray);
+	    			
+	    			// I also set the alpha value of the drawing to 1
+	    			aadd(mDrawingsAlphaArray, 1.0);
+	    			
+	    			
+	    			// If the player's controller was inside a connector, then mCurrentActiveConnector is not void. In that case, 
+	    			// this drawing is a potential "connected" drawing
+	    			if(mCurrentActiveConnector != Void)
+	    			{
+	    				// I state that this line is connected; I don't know for sure, but it's starting in the right place, so I give it the 
+	    				// benefit of the doubt. If later I find out that it's not connected, I'll change this boolean to false
+	    				aadd(mIsDrawingConnectedArray, true);
+	    				
+	    				mGoodStartingPoint = true;
+	    				mStartingActiveConnector = mCurrentActiveConnector;
+	    				aadd(mStartingConnectorsArray, mCurrentActiveConnector);
+    				}
+    				else
+    				{
+    					// If it's a random drawing, I state that it's not "connected", and put Void as starting connector to indicate that there is none 
+    					// (I need it as a placeholder, so that every array always has the same size; it keeps things easier)
+    					aadd(mIsDrawingConnectedArray, false);
+    					aadd(mStartingConnectorsArray, Void);
+					}
 				}
 	    		else
 	    		{
@@ -436,7 +568,20 @@ function Level1::UpdateLogic(dt)
     					currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
     				else
 	    				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
-								
+							
+					// I obtain from the array of drawings the last one, which is the drawing the player is creating now
+					var vertexArray = mDrawingsArray[len(mDrawingsArray) - 1];
+					
+					// I add the points to the array
+					aadd(vertexArray, mPreviousPoint);
+					aadd(vertexArray, currentPoint);
+					
+					mPreviousPoint = currentPoint;
+				/*	
+				    THE CODE BELOW IS NOT USED ANYMORE.
+				    Since it took me hours to figure out how to align an object in the direction of a vector, I keep this code for future reference;
+				    it might come in handy.
+
 					// Taking the direction that goes from the previous point to the current one. Note that the order of the difference is important:
 					// I need the direction that goes from the previous point to the current one
 					var vec = Norm(mPreviousPoint - currentPoint);
@@ -458,18 +603,89 @@ function Level1::UpdateLogic(dt)
 					line.SetPosition(mPreviousPoint);
 					line.SetRotation(angle, axis.x, axis.y, axis.z);
 					
-					// Adding the 2 points to the array for drawing lines with simple opengl
-					aadd(mVertexArray, mPreviousPoint);
-					aadd(mVertexArray, currentPoint);
-					
-					// Adding the new mesh to the aray, to draw it in the render function
+					// Adding the new mesh to the array, to draw it in the render function
 					aadd(mLineArray, line);
-					
-					mPreviousPoint = currentPoint;
+				*/
 	    		}
     		}
+    		
     		else
-    			mControllerBeingUsedIndex = 0;
+    		{
+    			// If the user was drawing until now, I need to check where he stopped
+    			if(mControllerBeingUsedIndex != 0)
+    			{
+    				// The first thing I do is reset the index of the controller being used: no controller is being used now
+    				mControllerBeingUsedIndex = 0;
+    				
+    				// The player is not drawing anymore
+    				mIsDrawing = false;
+    				
+    				// If the player ended the drawing inside a light cone, if it's not connected already and he started in the right spot (i.e. inside
+    				// another connector), we might have a good line (i.e. a line that we don't have to erase)
+    				if(mCurrentActiveConnector != Void && !mCurrentActiveConnector.IsConnected() && mGoodStartingPoint)
+    				{
+    					// If the connector linked to the starting connector (i.e. the connector where the player started drawing) is indeed this one,
+    					// we have a good line
+    					if(mStartingActiveConnector.GetLinkedConnector() == mCurrentActiveConnector)
+    					{
+    						// I state that these connectors are now actually "connected"
+    						mStartingActiveConnector.SetIsConnected(true);
+    						mCurrentActiveConnector.SetIsConnected(true);
+    						
+    						// I reset the variables and set that the controller isn't in the light (even though it is, otherwise it will never be considered out)
+    						mStartingActiveConnector = Void;
+    						mCurrentActiveConnector = Void;
+    						mIsControllerInLight = false;
+    					}
+    					// Otherwise, I state that this line is no good and needs to be erased soon; also, I reset the color of the starting connector
+    					// (because if I reached this code I'm sure that there was a starting connector)
+    					else
+    					{
+							mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
+    						mStartingActiveConnector.ResetLightColor();
+						}
+    				}	
+    				// If the drawing was totally random and didn't start in any connector or didn't finish in one, the line is no good
+    				else
+    				{    					
+    					// If the user started inside the connector, I set that the line isn't actually connected, I reset the light of that one, and reset the variable
+    					if(mStartingActiveConnector != Void)
+						{
+							mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
+							mStartingActiveConnector.ResetLightColor();
+							mStartingActiveConnector = Void;
+						}
+					}
+    					
+					// In any case, I reset the boolean
+					mGoodStartingPoint = false;
+    			}
+    			
+    		}
+    		
+			// For any lines drawn in the past I decrease its alpha values. Since I'm going to remove objects from the arrays while iterating (when the alpha
+			// value reaches 0) I'm starting from the last element, going backwards. Also, if the user is currently drawing I skip the last one, which
+			// is the drawing that the user is currently creating, so I don't have to check it
+    		var startingPoint = mIsDrawing ? len(mDrawingsAlphaArray) - 2 : len(mDrawingsAlphaArray) - 1;
+    			
+			for(var i = startingPoint; i >= 0; i--)
+			{
+				// I only procede if this current drawing isn't "connected", i.e. a line that is connected between 2 connectors; 
+				// in that case the line needs to stay visible always
+				if(!mIsDrawingConnectedArray[i])
+				{
+					// If the alpha value of the current drawing is greater than 0, I decrease it; if it reaches 0, I remove the drawing and its alpha from the arrays
+					if(mDrawingsAlphaArray[i] > 0)
+						mDrawingsAlphaArray[i] -= 0.01;
+					else
+					{
+						adel(mDrawingsArray, i);
+						adel(mDrawingsAlphaArray, i);
+						adel(mIsDrawingConnectedArray, i);
+						adel(mStartingConnectorsArray, i);
+					}
+				}
+			}
 	    		
 			break;
 		}

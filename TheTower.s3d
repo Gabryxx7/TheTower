@@ -34,6 +34,7 @@ function OnDownload()
 	FileDownload("dashedLineShader.glsl");
 	FileDownload("positionCircleShader.glsl");
 	FileDownload("drawingShader.glsl");
+	FileDownload("colorModulatorShader.glsl");
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
 	FileDownload("viveControllerModel.AAM");

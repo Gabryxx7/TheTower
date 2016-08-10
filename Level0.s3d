@@ -777,16 +777,16 @@ function Level0::UpdateLogic(dt)
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 	// I restore the previous porisiotn
-//	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
-//		mInputManager.RestoreCameraPosition();
-//	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8) &&
-//       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8) &&
-//       	    !mIsElevatorPresent)
-//   	    mInputManager.RestoreCameraPosition();
-//
-//    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-//    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
-//    	mInputManager.RestoreCameraPosition();
+	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
+		mInputManager.RestoreCameraPosition();
+	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
+       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
+       	    !mIsElevatorPresent)
+   	    mInputManager.RestoreCameraPosition();
+
+    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
+    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
+    	mInputManager.RestoreCameraPosition();
     	
    	    
     // Now I look if the player is on an event trigger

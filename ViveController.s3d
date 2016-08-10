@@ -20,6 +20,7 @@ class ViveController
 	SetPosition(position);
 	GetPosition();
 	SetRotationMatrix(matrix);
+	SetRotation(angle, x, y, z);
 	LocalToWorld(point);
 	Hide();
 	Unhide();
@@ -38,8 +39,6 @@ function ViveController::ViveController()
 	
 	mTipLocalCoordinates = [0, 0, -boundingBox[5] + boundingBox[5] / 5.0];
 	
-	outputln(boundingBox);
-
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	
 	mIsActionAvailable = false;
@@ -113,6 +112,10 @@ function ViveController::SetRotationMatrix(matrix)
 	mViveController.SetRotationMatrix(matrix);
 }
 
+function ViveController::SetRotation(angle, x, y, z)
+{
+	mViveController.SetRotation(angle, x, y, z);
+}
 
 function ViveController::LocalToWorld(point)
 {

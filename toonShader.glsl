@@ -4,7 +4,7 @@
 
 varying vec3 vertexNormal;
 varying vec3 lightDirection[8];
-varying vec4 position;
+varying vec3 position;
 
 uniform int lightsRangeMin;
 uniform int lightsRangeMax;
@@ -13,6 +13,7 @@ void main()
 {
 	// Passo al fragment shader la normale al vertice nell'eye space
 	vertexNormal = gl_NormalMatrix * gl_Normal;
+	position = (gl_ModelViewMatrix * gl_Vertex).xyz;
 	
     	
     for(int i = lightsRangeMin; i <= lightsRangeMax; i++)
@@ -22,14 +23,13 @@ void main()
 		// quindi un punto, avrà come 4° coordinata 1.0; in tal caso, la direzione della luce verso l'oggetto (o meglio, verso il vertice) è data dalla posizione
 		// della luce nell'eye space meno la posizione del vertice nell'eye space.
 		if(gl_LightSource[i].position.w == 1.0) 
-			lightDirection[i] = vec3(gl_LightSource[i].position - gl_ModelViewMatrix * gl_Vertex);
+			lightDirection[i] = vec3(gl_LightSource[i].position.xyz - position);
 		// Se il membro "position" non ha come quarta coordinata 1.0, vuol dire che rappresenta una direzione; di conseguenza, la luce è una directional light, 
 		// e quindi il membro "position" rappresenta già la direzione della luce nell'eye space
 		else	
 	    	lightDirection[i] = vec3(gl_LightSource[i].position);
     }
 
-	position = gl_Vertex;
 
 	gl_Position = ftransform();
 }
@@ -43,7 +43,7 @@ uniform float shininess;
 
 varying vec3 vertexNormal;
 varying vec3 lightDirection[8];
-varying vec4 position;
+varying vec3 position;
 
 
 uniform int lightsRangeMin;
@@ -66,15 +66,6 @@ float stepmix(float edge0, float edge1, float epsilon, float x)
 // Materiale utile per il cel shading: http://prideout.net/blog/?p=22
 void main()
 {
-	// Questi valori sotto sono del materiale dell'oggetto; dovrebbero essere passati allo shader come uniform, così che diventi molto più customizzabile.
-	// UPDATE: forse si può usare direttamente roba come gl_FrontMaterial.ambient per accedere ai valori del materiale salvati nella mesh e noti da opengl
-	// UPDATE 2: ho provato, ma non sembra funzionare se cambio il file della mesh a mano con un materiale diverso; i valori sembrano sempre quelli di default
-	//           anche se gli esempi sugli shader (specular.sh) di XVR non fanno niente di particolare per usarli
-//	vec3 ambient = vec3(0.04, 0.04, 0.04);
-//	vec3 specular = vec3(0.5, 0.5, 0.5);
-//	float shininess = 50.0;
-	
-	
 	// Intervalli per le variazioni di colore in base all'intensità; più un intervallo si avvicina a 1, più il colore del frammento sarà 
 	// tendente al bianco se l'intensità calcolata per il dato frammento ricade in quell'intervallo
     const float A = 0.1;
@@ -110,8 +101,8 @@ void main()
 		// In sostanza l'half-vector è tipo il punto in cui la luce è massima (?)
 		// NOTA: l'eye vector l'ho visto calcolato in alcuni siti così (cioè costante), mentre in altre è dato da "vec3 eye = normalize(-pos);" dove "pos"
 		//       è la posizione della camera in eye space (tipo qua: http://www.lighthouse3d.com/tutorials/glsl-tutorial/directional-lights-per-pixel/)
-	//	vec3 eyeVector = normalize(vec3(-position * gl_ModelViewMatrix)) ;
-		eyeVector = vec3(0.0, 0.0, 1.0);
+	 	eyeVector = normalize(-position) ;
+	//	eyeVector = vec3(0.0, 0.0, -1.0);
 		half_vector = normalize(lightDirNorm + eyeVector);
 		
 		// Prodotto scalare tra la normale del frammento e la direzione della luce; di fatto è il valore di intensità che determina il colore del frammento. In base
@@ -173,12 +164,9 @@ void main()
      	
      	// Aggiungo poi la componente diffusiva, moltiplicata per l'intensità calcolata sopra
 	    color += diffuseFactor * diffuse * gl_LightSource[i].diffuse;
-//	    color += diffuseFactor * gl_FrontMaterial.diffuse.xyz;
 	
 		// Infine aggiungo la componente speculare dell'oggetto, moltiplicata per il fattore calcolato sopra e per il valore speculare della luce
 	   	color += specularFactor * specular * gl_LightSource[i].specular;
-//	    color += specularFactor * gl_FrontMaterial.specular.xyz * gl_LightSource[0].specular;
-//	 	color += specularFactor * specular;
 
 
 		// Ora come ora, la luce è emanata in ogni direzione (se è una point light) a pari intensità, indipendentemente da dove è posizionata.
@@ -200,6 +188,62 @@ void main()
 
 		// This is how the attenuation should work; in xvr it doesn't
 		attenuation = 1.0 / (constantAttenuation + linearAttenuation + quadraticAttenuation);
+		
+		if(gl_LightSource[i].spotCutoff <= 90.0) // spotlight
+		{
+
+/*	    	float spotEffect = dot(normalize(gl_LightSource[i].spotDirection), normalize(-lightDirection[i]));
+	    	
+	        if (spotEffect > gl_LightSource[i].spotCosCutoff) {
+	            spotEffect = pow(spotEffect, gl_LightSource[i].spotExponent);
+	            attenuation = spotEffect / (constantAttenuation + linearAttenuation + quadraticAttenuation);
+	                 
+	        }
+	        else
+	        	attenuation = 0.0;
+	        	*/
+	        	
+        	float spotEffect = dot(normalize(gl_LightSource[i].spotDirection), -normalize(lightDirection[i]));
+
+        	if (spotEffect > gl_LightSource[i].spotCosCutoff) 
+        	{
+        		float dotProduct = dot(normalDirection, normalize(lightDirection[i]));
+        		float lambertTerm = max(dotProduct, 0.0);
+        		
+				if(lambertTerm > 0.0)
+				{
+					spotEffect = pow(lambertTerm, gl_LightSource[i].spotExponent);
+	           //	 	attenuation = spotEffect / (constantAttenuation + linearAttenuation + quadraticAttenuation);	
+	           
+	           		color = ambient * gl_LightSource[i].ambient;
+	           		color += gl_LightSource[i].diffuse.xyz * diffuse * lambertTerm;	
+				
+					vec3 E = normalize(eyeVector);
+					vec3 R = reflect(-normalize(lightDirection[i]), normalDirection);
+					
+					float specular = pow( max(dot(R, E), 0.0), shininess );
+					
+					color += gl_LightSource[i].specular.xyz * specular * specular;
+					
+					attenuation = 1.0;
+				}
+			//	else
+			//		attenuation = 0.0;
+        	}
+        	//else
+        	//	attenuation = 0.0;
+        		
+        		/*
+    		if(gl_LightSource[i].spotCosCutoff > 0.93 && gl_LightSource[i].spotCosCutoff < 0.939999999)
+    			color = vec3(1.0, 0.0, 0.0);
+    			
+			if(gl_LightSource[i].spotExponent == 2.0)
+				color = vec3(0.0, 0.0, 1.0);
+				*/
+				
+			
+    			
+		}
 
 		color = color * attenuation;
 
