@@ -31,7 +31,7 @@ function ViveController::ViveController()
 {
 	var controllerMesh = CVmNewMesh("viveControllerModel.AAM");
 //	controllerMesh.Normalize(0.5);
-	controllerMesh.CenterBoundingBox();
+//	controllerMesh.CenterBoundingBox(); //fixed mesh shifted
 	
 	mViveController = CVmObj(controllerMesh);
 

@@ -36,6 +36,10 @@ class LevelMenu
 	var mLight1Position;
 	var mLight2Position;
 	
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
+	
 	
 	// "Room" object that contains the whole room
 	var mMenuRoom;
@@ -117,20 +121,25 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
 	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
+	
 	var diffuseFactor = 0.05;
+	mLight0Diffuse = [diffuseFactor,diffuseFactor,diffuseFactor];
+	mLight1Diffuse = [diffuseFactor,diffuseFactor,diffuseFactor];
+	mLight2Diffuse = [diffuseFactor,diffuseFactor,diffuseFactor];
+	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
-	mLight0.SetDiffuse(diffuseFactor, diffuseFactor, diffuseFactor);
+	mLight0.SetDiffuse(mLight0Diffuse[0], mLight0Diffuse[1], mLight0Diffuse[2]);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
-	mLight1.SetDiffuse(diffuseFactor, diffuseFactor, diffuseFactor);
+	mLight1.SetDiffuse(mLight1Diffuse[0], mLight1Diffuse[1], mLight1Diffuse[2]);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
 	mLight2.SetPosition(mLight2Position);
-	mLight2.SetDiffuse(diffuseFactor, diffuseFactor, diffuseFactor);
+	mLight2.SetDiffuse(mLight2Diffuse[0], mLight2Diffuse[1], mLight2Diffuse[2]);
 	mLight2.Enable();
 	
 	
@@ -259,9 +268,9 @@ function LevelMenu::SetupOpenglLights()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
  	
-	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
 }
 
 

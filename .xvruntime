@@ -2,6 +2,7 @@
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
 <comment>XVR runtime properties</comment>
+<entry key="__GLUT__720p">-w 1280 -h 720</entry>
 <entry key="__GLUT__1440x900">-w 1440 -h 900</entry>
 <entry key="__GLUT__FHD">-w 1920 -h 1080</entry>
 <entry key="__GLUT__FHD + MSAA">-w 1920 -h 1080 -ms</entry>

@@ -30,9 +30,15 @@ class Level2
 	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
 	var mLight0;
 	var mLight1;
+	var mLight2;
 	
-	var mLight0Position;	
+	var mLight0Position;
 	var mLight1Position;
+	var mLight2Position;
+	
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
 	
 	// These variables are temporary (or not?) floats used to move the light in a semi-random way, to create a nice dynamic effect
 	var mIncrement;
@@ -100,7 +106,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 2, 2);
 	mPortalRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, false, true, 0, 0);	
 	mPortalRoom.Translate(0, 0, -10);	
 	mPortalRoom.Rotate(-90, 1, 0, 0);	
@@ -136,22 +142,31 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		
 	mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	mLight1Position =[-10.0 * SCALE_FACTOR, -500 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight0Diffuse = [0,0,1];
+	mLight1Diffuse = [1,0,0];
+	mLight2Diffuse = [1,1,1];
 	
 	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
-	mLight0.SetDiffuse(0, 0, 1);
+	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
 	mLight0.Enable();	
 	
 	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
-	mLight1.SetDiffuse(1, 0, 0);
+	mLight1.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
 	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetPosition(mLight2Position);
+	mLight2.SetDiffuse(mLight2Diffuse.x, mLight2Diffuse.y, mLight2Diffuse.z);
+	mLight2.Enable();
 	
 		
 	mElevator = elevator;
-	mElevator.SetLightsRange(0,0);
+	mElevator.SetLightsRange(2,2);
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
@@ -586,6 +601,23 @@ function Level2::GenerateFloorTiles(tilesSize, spaceSize, tilesThickness)
 	returnObj.SetPosition(-lastLength/2,0.3 * SCALE_FACTOR,-totalHeight/2);
 	
 	return returnObj;
+}
+
+
+function Level2::SetupOpenglLights()
+{
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	
+	// Note: might need to SUBTRACT mOpenglTranslationOffset to each axis position
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
 }
 
 

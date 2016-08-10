@@ -529,8 +529,12 @@ function Level1::UpdateLogic(dt)
 					mIsDrawing = true;
 					
 					// I get the first point in the drawing
-	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
-	    			
+//	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
+	    			if(mIsVRon)
+    					mPreviousPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
+    				else
+	    				mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
+	    				
 	    			var vertexArray = {};
 	    			
 	    			// I add an empty array to the drawings array; it will be filled with every point as soon as they are found
@@ -565,7 +569,7 @@ function Level1::UpdateLogic(dt)
 	    			var currentPoint;
 	    			
 	    			if(mIsVRon)
-    					currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
+    					currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
     				else
 	    				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
 							
