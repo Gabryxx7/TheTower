@@ -16,10 +16,10 @@ class DrawingsConnector
 	// Light cone frustum object
 	var mLightConeObj;
 	
-	// Color of the light and the position offset of the light cone frustum with respect to the connector object
-	var mLightConeDefaultColor;
-	var mLightConeActiveColor;
-	var mLightConeOffset;
+	// Colors of the light and the position offset of the light cone frustum with respect to the connector object
+	var mLightConeDefaultColor;   // Default color
+	var mLightConeActiveColor;    // Currently active color (it's based on mLightConeConnectedColor's values)
+	var mLightConeConnectedColor; // Color for the "finished" state of the light
 		
 	// Shader for the black borders
 	var mSilhouetteShader;
@@ -28,9 +28,21 @@ class DrawingsConnector
 	// This is the DrawingsConnector object linked to this connector (i.e. it's the connector that the player must draw to)
 	var mLinkedConnector;
 	
+	// Time variable, used for creating dynamic effects with the shader; needs to be updated in the Level class at each frame
 	var mTime;
 	
+	// Booelan that is true if this connector has finished its purpose (i.e. all of his connections have been found)
 	var mIsConnected;
+	
+	// Total number of connections, number of connections that this connector created, number of times it was linked to another connector, 
+	// and the counter of the connections that have been found until now
+	var mNumberOfConnections;
+	var mConnectionsCreated;
+	var mTimesLinked;
+	var mConnectionsCounter;
+	
+	// Private functions
+	IncrementConnectionsCounter();
 		
 	// Public functions
 	Draw();
@@ -48,22 +60,34 @@ class DrawingsConnector
 	SetRotation(angle, x, y, z);
 	Translate(x, y, z);
 	UpdateTimeVariable();
-	ResetTimeVariable();
 	IsObjectInCone(object);
-	IsPointInCone(point);
 	SetLinkedConnector(linkedConnector);
 	GetLinkedConnector();
-	SetIsConnected(isConnected);
 	IsConnected();
+	ConnectionFound(isConnectionCreator);
+	HasConnectionsAvailable();
+	HasLinksAvailable();
+	
+	// Private functions
+	SetLightColorConnected();
 };
 
 
+/*
+ * Constructors; the parameters are the color of the light and the range of lights used for rendering with the Toon Shader
+ */
 function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lightsRangeMax)
 {
 	mLightConeDefaultColor = lightColor;
-	mLightConeActiveColor = [0, 1, 0];
+	mLightConeActiveColor = lightColor;
+	mLightConeConnectedColor = [0, 1, 0];
 	
 	mIsConnected = false;
+	mNumberOfConnections = 0;
+	mConnectionsCounter = 0;
+	mConnectionsCreated = 0;
+	mTimesLinked = 0;
+	mTime = 0;
 	
 	// I get the mesh and scale it
 	mConnectorMesh = CVmNewMesh("Sci-fi-thing.aam");
@@ -87,16 +111,22 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 
 	// Parameters for subset 0 (the "arm" of the object)
 	mConnectorMesh.ShaderSetParameter(0, "ambient", 0, [0.7, 0.7, 0.7]);
-	mConnectorMesh.ShaderSetParameter(0, "diffuse", 0, [0.5, 0.5, 0.5]);
+	mConnectorMesh.ShaderSetParameter(0, "diffuse", 0, lightColor);
 	mConnectorMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
 	mConnectorMesh.ShaderSetParameter(0, "shininess", 0, 0);
 	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mConnectorMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	
+	var color = lightColor - [0.9, 0.9, 0.9];
+	color.r = color.r < 0 ? 0 : color.r;
+	color.g = color.g < 0 ? 0 : color.g;
+	color.b = color.b < 0 ? 0 : color.b;
+	
 	// Parameters for subset 1 (the column of the object)
 	mConnectorMesh.ShaderSetParameter(1, "ambient", 0, [0.2, 0.2, 0.2]);
 	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, [0.3, 0.3, 0.3]);
+//	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, color);
 	mConnectorMesh.ShaderSetParameter(1, "specular", 0, [0.0, 0.0, 0.0]);
 	mConnectorMesh.ShaderSetParameter(1, "shininess", 0, 0);
 	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMin", 0, lightsRangeMin);
@@ -131,19 +161,21 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);		
 	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightConeMesh.ShaderSetParameter(0, "time", 0, 0);
-	
+	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, 0.15);
 	
 	mLightTopCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
 	mLightTopCircleMesh.ShaderActivate(true);		
 	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "time", 0, 0);
+	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, 0.15);
 	
 	mLightBottomCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
 	mLightBottomCircleMesh.ShaderActivate(true);		
 	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
 	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightBottomCircleMesh.ShaderSetParameter(0, "time", 0, 0);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, 0.15);
 	
 	// Creating the CVmObjects with the respective meshes
 	mLightConeObj = CVmObj(mLightConeMesh);
@@ -152,23 +184,21 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	
 	// This is the offset position that the light cone has to have with respect to the connector object's position. I found this
 	// by trying values pretty much at random
-	mLightConeOffset = [-1.18 * SCALE_FACTOR, 0 * SCALE_FACTOR, -2.21 * SCALE_FACTOR];
+	var lightConeOffset = [-1.18 * SCALE_FACTOR, 0 * SCALE_FACTOR, -2.21 * SCALE_FACTOR];
 	
 	// Now I add every object as child of the connector object. I don't add the 2 circles as children of the light cone because it would give some problems
 	// with the transparency (because of the order they would be rendered). I also put as children the circles first because this way they are rendered first
 	// (again, to avoid problems with transparency).
 	// I position every object taking into account that the origin of the cone frustum is at the center of the base
-	mConnector.AddChild(topCircleObj, mLightConeOffset.x, mLightConeOffset.y + lightConeHeight, mLightConeOffset.z);
-	mConnector.AddChild(bottomCircleObj, mLightConeOffset.x, mLightConeOffset.y, mLightConeOffset.z);
-	mConnector.AddChild(mLightConeObj, mLightConeOffset.x, mLightConeOffset.y, mLightConeOffset.z);
+	mConnector.AddChild(topCircleObj, lightConeOffset.x, lightConeOffset.y + lightConeHeight, lightConeOffset.z);
+	mConnector.AddChild(bottomCircleObj, lightConeOffset.x, lightConeOffset.y, lightConeOffset.z);
+	mConnector.AddChild(mLightConeObj, lightConeOffset.x, lightConeOffset.y, lightConeOffset.z);
 
 	// Creating the shader for the silhouette; the silhouetteShader is actually unused for now. Since the object is kind of weird looking, it works
 	// really bad unless the offset for the silhouette is very very low. I found that by creating a shader that simply draws black (the mBorderShader)
 	// and by enlarging the mesh a little bit, use the shader and then reset the scale and draw it normally gives better results for this particular object
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }", true);
-	
-	mTime = 0;
 }
 
 /*
@@ -225,44 +255,119 @@ function DrawingsConnector::DrawLightCone()
 	glCullFace(GL_BACK);	
 }
 
+/*
+ * This method changes the current color to the one in the next "stage"
+ */
 function DrawingsConnector::SetLightColorActive()
-{	
-	var time = mTime > 1.0 ? 1.0 : mTime;
-		
-	var r = mLightConeActiveColor.r * (1 - time) + mLightConeDefaultColor.r * time;
-	var g = mLightConeActiveColor.g * (1 - time) + mLightConeDefaultColor.g * time;
-	var b = mLightConeActiveColor.b * (1 - time) + mLightConeDefaultColor.b * time;
+{		
+	// I get the previous color
+	var previousColor = mLightConeActiveColor;
 	
-	if(mTime > 1.0)
-		mTime = 0;
+	// I check that status of the connections. For example, if there are 2 connections (one created and 1 linked) and they're still not found, then I set 
+	// the color to half of the mLightConeConnectedColor; if there are for example 3 connections and I found one, I set the color to a third of that instead
+	mLightConeActiveColor = (mLightConeConnectedColor / mNumberOfConnections) * (mConnectionsCounter + 1);
 	
-	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
-	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
-	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+	// I also change the alpha of the light cone if I'm in an advanced stage (i.e. getting closer to the end) so that the light cone is more dense
+	var alpha = 0.15 + 0.03 * mConnectionsCounter;
+	
+	var startingColor;
+	
+	// If the time variable is below 1, it means that there was already a color animation going on; so to make the change to this new color fluid, I
+	// start from the current color, which I compute recreating the "mix()" function of the opengl shader here
+	if(mTime <= 1.0)
+		startingColor = mLightConeActiveColor * (1 - mTime) + previousColor * mTime;
+	// If the time is over 1, there is no need of finding a color
+	else
+		startingColor = previousColor;
+	
+	// I reset the time for the animation
+	mTime = 0;
+	
+	// I pass all the colors to the shaders
+	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
 			
 	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeActiveColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeActiveColor);
 	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeActiveColor);
+	
+	// I pass the alpha value
+	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, alpha);
 }
 
+
+/*
+ * This function brings the light color to the default color of the current "stage"
+ */
 function DrawingsConnector::ResetLightColor()
 {
-	var time = mTime > 1.0 ? 1.0 : mTime;
+	var resetColor;
 	
-	var r = mLightConeDefaultColor.r * (1 - time) + mLightConeActiveColor.r * time;
-	var g = mLightConeDefaultColor.g * (1 - time) + mLightConeActiveColor.g * time;
-	var b = mLightConeDefaultColor.b * (1 - time) + mLightConeActiveColor.b * time;
+	// If no connections have been found, I need to reset the color to the default one; otherwise, I compute the current color I need to reset to,
+	// which depend on the current stage I'm in (i.e. how many conections have been found)
+	if(mConnectionsCounter == 0) 
+		resetColor = mLightConeDefaultColor;
+	else
+		resetColor = (mLightConeConnectedColor / mNumberOfConnections) * mConnectionsCounter;
+
+	var startingColor;
 	
-	if(mTime > 1.0)
-		mTime = 0;
+	// Similar to the SetLightColorActive() function, if the time is <= 0 there is an animation active, so I need to find the current color
+	if(mTime <= 1.0)
+		startingColor = resetColor * (1 - mTime) + mLightConeActiveColor * mTime;
+	else
+		startingColor = mLightConeActiveColor;
+	
+	
+	var alpha = 0.15 + 0.03 * (mConnectionsCounter);
+	
+	mTime = 0;
 		
-	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
-	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
-	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, [r, g, b]);
+	mLightConeActiveColor = resetColor;
 		
-	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
-	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
-	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
+	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+		
+	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, resetColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, resetColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, resetColor);
+	
+	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+}
+
+/*
+ * This method sets the light to the final color; the method works the same as the previous ones basically
+ */
+function DrawingsConnector::SetLightColorConnected()
+{	
+	var startingColor;
+	
+	if(mTime <= 1.0)
+		startingColor = mLightConeActiveColor * (1 - mTime) + mLightConeConnectedColor * mTime;
+	else
+		startingColor = mLightConeActiveColor;
+	
+	var alpha = 0.15 + 0.03 * mConnectionsCounter;
+	
+	mTime = 0;
+		
+	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, startingColor);
+		
+	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeConnectedColor);
+	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeConnectedColor);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeConnectedColor);
+	
+	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, alpha);
 }
 
 function DrawingsConnector::GetDefaultLightColor()
@@ -270,6 +375,9 @@ function DrawingsConnector::GetDefaultLightColor()
 	return mLightConeDefaultColor;
 }
 
+/*
+ * This function updates the time parameter for the shaders; it needs to be constantly called each frame by the current Level class
+ */
 function DrawingsConnector::UpdateTimeVariable()
 {		
 	mTime += 0.03;
@@ -279,11 +387,6 @@ function DrawingsConnector::UpdateTimeVariable()
 	mLightBottomCircleMesh.ShaderSetParameter(0, "time", 0, mTime);
 }
 
-function DrawingsConnector::ResetTimeVariable()
-{
-//	if(mTime > 1.0)
-//		mTime = 0;
-}
 
 function DrawingsConnector::SetPosition(position)
 {
@@ -327,15 +430,19 @@ function DrawingsConnector::IsObjectInCone(object)
 	return mLightConeObj.IsCollidingBBox(object);
 }
 
-function DrawingsConnector::IsPointInCone(point)
-{
-	// Doesn't work; it always returns false, independently from the point
-	return mLightConeObj.Inspect(point) != -1;
-}
 
+/*
+ * This method creates a connection from the current connector the one passed as parameter (another DrawingsConnector object)
+ */
 function DrawingsConnector::SetLinkedConnector(linkedConnector)
 {
+	// Since the parameter has been linked, I update its counter
+	linkedConnector.IncrementConnectionsCounter();
+	
+	// I save the linked connector and update my own counters
 	mLinkedConnector = linkedConnector;
+	mNumberOfConnections++;
+	mConnectionsCreated++;
 }
 
 function DrawingsConnector::GetLinkedConnector()
@@ -343,12 +450,42 @@ function DrawingsConnector::GetLinkedConnector()
 	return mLinkedConnector;
 }
 
-function DrawingsConnector::SetIsConnected(isConnected)
-{
-	mIsConnected = isConnected;
-}
 
 function DrawingsConnector::IsConnected()
 {
 	return mIsConnected;
+}
+
+
+function DrawingsConnector::IncrementConnectionsCounter()
+{
+	mTimesLinked++;
+	mNumberOfConnections++;
+}
+
+function DrawingsConnector::ConnectionFound(isConnectionCreator)
+{
+	if(isConnectionCreator)
+		mConnectionsCreated--;
+	else
+		mTimesLinked--;
+		
+	mConnectionsCounter++;
+		
+	// If there are no connections left (both created or linked) then this connector has reached its purpose, so I set the color to the final one
+	if(mConnectionsCreated == 0 && mTimesLinked == 0)
+	{
+		mIsConnected = true;
+		SetLightColorConnected();
+	}	
+}
+
+function DrawingsConnector::HasConnectionsAvailable()
+{
+	return mConnectionsCreated > 0;
+}
+
+function DrawingsConnector::HasLinksAvailable()
+{
+	return mTimesLinked > 0;
 }

@@ -2,6 +2,7 @@
 #define STATUS_ELEVATOR_MOVING 0
 #define STATUS_ELEVATOR_ARRIVED 1
 #define STATUS_LEVEL_STARTED 2
+#define STATUS_LEVEL_ENDING 3
 
 class Level1
 {
@@ -11,7 +12,9 @@ class Level1
 	var mEnding;
 	var mIsLevelCompleted;
 	var mEndTimer;
+	var mTimeToEnd; // Time in millisecond that it takes to end the level when the mEndTimer is activated
 	
+	// Current status of the level; depending on the status the logic and the rendering are different
 	var mLevelStatus;
 	
 	// Manager for user inputs
@@ -26,76 +29,94 @@ class Level1
 	// Active camera
 	var mCamera;
 	
-	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
+	// Lights used to render the scene, and their positions
 	var mLight0;
 	var mLight1;
 	var mLight2;
-	
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
 	
-	
 	// "Room" object that contains the whole room
 	var mMainRoom;
 	
-	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
-	// draw the silhouettes for the portals' frames
-	var mSilhouetteShader;
-	
-	// "Room" object that represent the elevator
+	// "Room" object that represents the elevator
 	var mElevator;
 	
+	// Pointer to the Vive controllers (ViveController objects), if VR is on
+	var mController1;
+	var mController2;
+	
+	// Variables used at the beginning of the level to make the elevetor go up
 	var mElevatorFinalPosition;
 	var mElevatorTravelDistance;
 	var mElevatorTravelTime;
 	var mCameraYoffset;
 	
+	// Offset used for translating objects; a better description can be found in the GameManager class
 	var mOpenglTranslationOffset;
 	
+	// Boolean that is true when the player is drawing
 	var mIsDrawing;
 	
+	// Shader used for the lines drawn by the user
 	var mDrawingShader;
-	var mPreviousPoint;
-	var mLineArray;	
-	
-	var mTime;
-	var mReversedTime;
 		
+	// This is a counter passed as parameter to the line's shader in order to create a dynamic effect
+	var mLinesTimeVariable;
+	
+	// When the player is drawing, this vector contains the position of the previous point in the line in a certain moment
+	var mPreviousPoint;
+
+	// These arrays contain, respectively: the list of drawings currently present in the scene; for each of these drawing, its alpha value and at last 
+	// whether or not the line is a "connected" line (i.e. a special drawing that needs to persist in the scene)
 	var mDrawingsArray;
 	var mDrawingsAlphaArray;
 	var mIsDrawingConnectedArray;
 	
-	var mDrawingsAlpha;
-	
-	var mController1;
-	var mController2;
-	
+	// This variable holds the index of the controller currently being used for drawing (it's 0 if the player isn't drawing)
 	var mControllerBeingUsedIndex;
 	
+	// Boolean that is true when there is a controller inside a light cone
 	var mIsControllerInLight;
 	
+	// Array containing all the DrawingConnectors object
 	var mConnectors;
 	
+	// Array containing arrays of DrawingConnectors in groups (because I'm lazy I created another one containing groups)
+	var mConnectorsGroups;
+	
+	// For every line that was "connected" to a connectors, this array contains the starting DrawingConnector of that line. I need it in order
+	// to pass to the line's shader the correct values in terms of colors
 	var mStartingConnectorsArray;
 	
+	// If the player started a drawing inside a light cone, this variable contains that DrawingConnector
 	var mStartingActiveConnector;
-	var mCurrentActiveConnector;
+	
+	// This boolean is true when the player starts a drawing inside a connector that has a connection available
 	var mGoodStartingPoint;
 	
+	// This variable contains the currently active connector, i.e. a connector in which there is a controller inside
+	var mCurrentActiveConnector;
 	
+	// Text objects used in the level
 	var mEverythingIsConnectedText;
+	var mConnectionsHaveDirectionsText1; 
+	var mConnectionsHaveDirectionsText2;
+	var mConnectionsIsNotClearText;  
 	
-	// Private functions
-	DrawAllPortals();
-	DrawPortal(portalFrame, portalRoom);
+	// Counter of the connectors actually "connected"; it increments when, in a group of connectors, everyone of them is connected
+	var mConnectorsGroupLinkedCounter;
+	
+	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
+	var mDebugController;
+	
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
-	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
@@ -103,7 +124,7 @@ class Level1
 
 
 /*
- * Constructor. Takes as parameter the input manager of the application
+ * Constructor. Takes as parameter a boolean that states whether VR is on or not, the input manager of the application and the sound manager
  */
 function Level1::Level1(isVRon, inputManager, soundManager)
 {		
@@ -112,8 +133,12 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
-	mLineArray = {};
-	
+	// Initially the level is not ending (you don't say?)
+	mEnding = false;
+	mIsLevelCompleted = false;
+	mTimeToEnd = 2500;
+		
+	// User is not drawing
 	mIsDrawing = false;
 	mGoodStartingPoint = false;
 		
@@ -123,15 +148,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, true, 1, 2);
 	
-	// Instantiating the silhouette shader, to draw outlines
-	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
-		
-
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
+	mLinesTimeVariable = 0;
 
-	mTime = 0;
-	mReversedTime = 0;
-	
+
+	// Now I create all the connectors; their positions and rotations were found by trial and error
 	var offsetFromFarWall = mMainRoom.GetRoomDepth()/2 - 15.0 * SCALE_FACTOR;
 	var offset = 10 * SCALE_FACTOR;
 	
@@ -143,36 +164,67 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	connector2.SetPosition([offset, 0, offsetFromFarWall]);
 	connector2.Rotate(135, 0, 1, 0);
 	
+	// This is group 1: the connectors in front of the elevator
 	connector1.SetLinkedConnector(connector2);
 	connector2.SetLinkedConnector(connector1);
 	
 	
 	var offsetFromSideWall = mMainRoom.GetRoomWidth()/2.0 - 10 * SCALE_FACTOR;
-	offset -= 3 * SCALE_FACTOR;
+	offset = 7.0 * SCALE_FACTOR;
 	
 	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
-	connector3.SetPosition([offsetFromSideWall, 0, offset]);
+	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0, offset - 5 * SCALE_FACTOR]);
 	connector3.Rotate(85 * 2, 0, 1, 0);
 	
 	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offsetFromSideWall, 0, -offset]);
+	connector4.SetPosition([offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
 	connector4.Rotate(115 * 2, 0, 1, 0);
 	
-	connector3.SetLinkedConnector(connector4);
+	// This is group 2: the connectors on the left of the elevator
 	connector4.SetLinkedConnector(connector3);
 	
 	
 	var connector5 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector5.SetPosition([-offsetFromSideWall, 0, offset]);
-	connector5.Rotate(85 * 2 - 90, 0, 1, 0);
+	connector5.SetPosition([-offsetFromSideWall, 0, offset - 5 * SCALE_FACTOR]);
+	connector5.Rotate(42, 0, 1, 0);
 	
 	var connector6 = DrawingsConnector([0, 1.0, 0.6], 1, 2);
-	connector6.SetPosition([-offsetFromSideWall, 0, -offset]);
-	connector6.Rotate(115 * 2 - 90, 0, 1, 0);
+	connector6.SetPosition([-offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
+	connector6.Rotate(-12, 0, 1, 0);
 	
+	// This is group 3: the connectors on the right of the elevator
 	connector5.SetLinkedConnector(connector6);
-	connector6.SetLinkedConnector(connector5);
 	
+	
+	offsetFromFarWall = -mMainRoom.GetRoomDepth()/2 + 15.0 * SCALE_FACTOR;
+	
+	var connector7 = DrawingsConnector([1.0, 0.0, 0.0], 1, 2);
+	connector7.SetPosition([-8 * SCALE_FACTOR, 0, offsetFromFarWall - 0 * SCALE_FACTOR]);
+	connector7.Rotate(24, 0, 1, 0);
+	
+	var connector8 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
+	connector8.SetPosition([-7 * SCALE_FACTOR, 0, offsetFromFarWall - 4 * SCALE_FACTOR]);
+	connector8.Rotate(-42, 0, 1, 0);
+	
+	var connector9 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
+	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0, offsetFromFarWall - 7 * SCALE_FACTOR]);
+	connector9.Rotate(-69, 0, 1, 0);
+	
+	var connector10 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
+	connector10.SetPosition([2 * SCALE_FACTOR, 0, offsetFromFarWall - 5 * SCALE_FACTOR]);
+	connector10.Rotate(-89, 0, 1, 0);
+	
+	var connector11 = DrawingsConnector([0.0, 0.0, 1.0], 1, 2);
+	connector11.SetPosition([4 * SCALE_FACTOR, 0, offsetFromFarWall - 2 * SCALE_FACTOR]);
+	connector11.Rotate(-162, 0, 1, 0);
+	
+	// This is group 4: the connectors behind the elevator
+	connector7.SetLinkedConnector(connector9);
+	connector8.SetLinkedConnector(connector7);
+	connector9.SetLinkedConnector(connector11);
+	connector10.SetLinkedConnector(connector8);
+	connector11.SetLinkedConnector(connector10);
+		
 	mConnectors = {};
 	
 	aadd(mConnectors, connector1);
@@ -181,24 +233,39 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	aadd(mConnectors, connector4);
 	aadd(mConnectors, connector5);
 	aadd(mConnectors, connector6);
+	aadd(mConnectors, connector7);
+	aadd(mConnectors, connector8);
+	aadd(mConnectors, connector9);
+	aadd(mConnectors, connector10);
+	aadd(mConnectors, connector11);
 	
+	mConnectorsGroups = {};
 	
+	// I add the groups to this other array, because I'm lazy
+	aadd(mConnectorsGroups, {connector1, connector2});
+	aadd(mConnectorsGroups, {connector3, connector4});
+	aadd(mConnectorsGroups, {connector5, connector6});
+	aadd(mConnectorsGroups, {connector7, connector8, connector9, connector10, connector11});
+	
+	mConnectorsGroupLinkedCounter = 0;
+	mIsControllerInLight = false;
+	
+	// Initially no controller is being used
 	mControllerBeingUsedIndex = 0;
 	
-	global var control = ViveController();
-	global var controllerHidden = true;
-	control.SetRotation(90, 0, 1, 0);
-	control.Hide();
-	
-	mIsControllerInLight = false;
 		
 	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
 	}
+	{
+		mDebugController = ViveController();
+		global var controllerHidden = false;
+		global var keyhit = false;
+		mDebugController.SetRotation(90, 0, 1, 0);
+	}
 	
-	mDrawingsAlpha = 0;
 	
 	mDrawingsArray = {};
 	mDrawingsAlphaArray = {};
@@ -208,6 +275,16 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mEverythingIsConnectedText = Text("In life, everything is connected", 2);
 	mEverythingIsConnectedText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR]);
 	mEverythingIsConnectedText.Rotate(180, 0, 1, 0);
+	
+	mConnectionsHaveDirectionsText1 = Text("Sometimes the connection is in one direction only", 2);
+	mConnectionsHaveDirectionsText2 = Text("Sometimes the connection is in one direction only", 2); 
+	mConnectionsHaveDirectionsText1.SetPosition([mMainRoom.GetRoomWidth()/2 - 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -5 * SCALE_FACTOR]);
+	mConnectionsHaveDirectionsText2.SetPosition([-mMainRoom.GetRoomWidth()/2 + 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -7 * SCALE_FACTOR]);
+	mConnectionsHaveDirectionsText1.Rotate(-90, 0, 1, 0);
+	mConnectionsHaveDirectionsText2.Rotate(90, 0, 1, 0);
+	
+	mConnectionsIsNotClearText = Text(" At times how objects are connected is not clear,\nbut the connection is there nonetheless", 1);
+	mConnectionsIsNotClearText.Rotate(180, 0, 1, 0);
 }
 
 
@@ -244,25 +321,25 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
-
-
 	
-	mEnding = false;
-	mIsLevelCompleted = false;
-	
+	// Computing the distance that the elevator has to cross at the beginning of the level and the time to do it
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 	
-	
+	// The final position of the elevator (after the animation is complete) is the current one
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
-	var lightPos = mLight1.GetPosition();
-	
+	// Creating the animation for the elevator	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 	
+	// Computing the offset of the camera, so that it stays always at the same level as the elevator while it goes up
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
+	// Starting status for the level
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
+	// I set now the position of a text that needed to know where the elevator was
+	mConnectionsIsNotClearText.SetPosition(mElevatorFinalPosition - [0, 0, 0.1 * SCALE_FACTOR]);
 }
 
 
@@ -284,20 +361,31 @@ function Level1::Render()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
 	
-	// I put the controller in front of the camera, for the debugging purposes
-	control.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
-	
-	if(KeyPressed("M"))
+	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
+	if(!mIsVRon)
 	{
-		if(controllerHidden)
-			control.Unhide();
+		mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+		
+		// I also check if Y is pressed: this hides/unhides the debug controller
+		if(KeyPressed("Y"))
+		{
+			if(!keyhit)
+			{
+				if(controllerHidden)
+					mDebugController.Unhide();
+				else
+					mDebugController.Hide();
+					
+				controllerHidden = !controllerHidden;
+				keyhit = true;
+			}
+		}
 		else
-			control.Hide();
+			keyhit = false;
 			
-		controllerHidden = !controllerHidden;
+		mDebugController.Draw();
 	}
 	
-		
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
 		
@@ -312,14 +400,16 @@ function Level1::Render()
 		case STATUS_ELEVATOR_MOVING:
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
 		{
 			mMainRoom.Draw();
 
 			glLineWidth(5);
 			
+			// Time to render the drawings
 			mDrawingShader.Start();	
-				mDrawingShader.SetParameter("time", mTime);
+				mDrawingShader.SetParameter("time", mLinesTimeVariable);
 
 				// I iterate over all drawings
 				for(var i = 0; i < len(mDrawingsArray); i++)
@@ -330,6 +420,7 @@ function Level1::Render()
 					// Depending on the kind of line we have to pass different things to the shader. This is the case that the line is "connected" to the connectors.
 					if(mIsDrawingConnectedArray[i])
 					{
+						// I get the starting connector for this drawing and the one it's linked to, so that I can get information
 						var startingConnector = mStartingConnectorsArray[i];
 						var linkedConnector = startingConnector.GetLinkedConnector();
 						
@@ -341,6 +432,7 @@ function Level1::Render()
 					}
 					else
 					{
+						// If the line is not "connected", i pass an alpha value so that the line can disappear over time
 						var alpha = mDrawingsAlphaArray[i];
 						mDrawingShader.SetParameter("alpha", alpha);
 						mDrawingShader.SetParameter("lineIsConnected", false);
@@ -358,15 +450,18 @@ function Level1::Render()
 						glEnd();
 					}
 				}
-			
 			mDrawingShader.Stop();
 			
+			// Incrementing the time variable for the lines, so that the dynamic effect can be achieved
+			mLinesTimeVariable += 0.01;
+			
+			
+			// Drawing the texts
 			mEverythingIsConnectedText.Draw();
-			
-			control.Draw();
-		
-			mTime += 0.01;
-			
+			mConnectionsHaveDirectionsText1.Draw();
+			mConnectionsHaveDirectionsText2.Draw();
+			mConnectionsIsNotClearText.Draw();
+						
 			// I update the time variable (used for the shader) of the connectors and draw them; note: I only draw the connector object now, without the
 			// light cones. This is because the light cones are transparent and need to be drawn last in the scene, otherwise the transparency would be wrong
 			foreach(var connector in mConnectors)
@@ -413,7 +508,6 @@ function Level1::UpdateLogic(dt)
 		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
-			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
@@ -482,8 +576,11 @@ function Level1::UpdateLogic(dt)
 	    		// 1) this connector is not connected to another one already (in this case I have to leave the "active" color);
 	    		// 2) if the player is drawing, this connector IS NOT the starting connector (i.e. the connector where he started to draw);
 	    		// 3) there is actually a controller in the light cone;
-	    		// 4) the controller wasn't here before 
-				if(!connector.IsConnected() && connector != mStartingActiveConnector && connector.IsObjectInCone(control.GetObj()) && !mIsControllerInLight)
+	    		// 4) the controller wasn't there before 
+	    		// Also, another case is when the above is true but the controller doesn't have connections available, but it's still linked to a connector
+				var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(mDebugController.GetObj()) && !mIsControllerInLight;
+
+				if(connector.HasConnectionsAvailable() && isControllerInside || mIsDrawing && isControllerInside && connector.HasLinksAvailable())
 				{
 					connector.SetLightColorActive();
 					mIsControllerInLight = true;
@@ -495,9 +592,9 @@ function Level1::UpdateLogic(dt)
 				// 2) this connector was the one currently active;
 				// 3) there actually was a controller inside;
 				// 4) now the controller isn't inside anymore
-				else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(control.GetObj()))
+				else if((connector.HasConnectionsAvailable() || connector.HasLinksAvailable()) && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(mDebugController.GetObj()))
 				{
-					// If the current connector wasn't the starting connector while drawing, I reset the light color, otherwise I simply change variables
+					// If the current connector wasn't the starting connector while drawing, I reset the light color, and then I simply change variables
 					// to state the fact that there is no controller inside any connector now.
 					// Basically, this is the case when the player has started drawing inside a connector, moved to another one and went in and out of this connector,
 					// but didn't stop drawing. In this case we have to behave like he wasn't drawing, i.e. reseting the color. Otherwise, if the player
@@ -510,7 +607,7 @@ function Level1::UpdateLogic(dt)
 				}
 	    	}
 
-		    	
+    		// Now I check if the player is drawing; I first check if he pressed a button
 	    	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
 			var usingController2 = mInputManager.IsPressingPrimaryButton(2);
 			
@@ -529,7 +626,6 @@ function Level1::UpdateLogic(dt)
 					mIsDrawing = true;
 					
 					// I get the first point in the drawing
-//	    			mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
 	    			if(mIsVRon)
     					mPreviousPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
     				else
@@ -542,7 +638,6 @@ function Level1::UpdateLogic(dt)
 	    			
 	    			// I also set the alpha value of the drawing to 1
 	    			aadd(mDrawingsAlphaArray, 1.0);
-	    			
 	    			
 	    			// If the player's controller was inside a connector, then mCurrentActiveConnector is not void. In that case, 
 	    			// this drawing is a potential "connected" drawing
@@ -582,9 +677,11 @@ function Level1::UpdateLogic(dt)
 					
 					mPreviousPoint = currentPoint;
 				/*	
+					******************************************************************************************************
 				    THE CODE BELOW IS NOT USED ANYMORE.
 				    Since it took me hours to figure out how to align an object in the direction of a vector, I keep this code for future reference;
 				    it might come in handy.
+					******************************************************************************************************
 
 					// Taking the direction that goes from the previous point to the current one. Note that the order of the difference is important:
 					// I need the direction that goes from the previous point to the current one
@@ -624,18 +721,29 @@ function Level1::UpdateLogic(dt)
     				// The player is not drawing anymore
     				mIsDrawing = false;
     				
+    				
     				// If the player ended the drawing inside a light cone, if it's not connected already and he started in the right spot (i.e. inside
     				// another connector), we might have a good line (i.e. a line that we don't have to erase)
     				if(mCurrentActiveConnector != Void && !mCurrentActiveConnector.IsConnected() && mGoodStartingPoint)
     				{
     					// If the connector linked to the starting connector (i.e. the connector where the player started drawing) is indeed this one,
-    					// we have a good line
+    					// we have a good lined
     					if(mStartingActiveConnector.GetLinkedConnector() == mCurrentActiveConnector)
     					{
-    						// I state that these connectors are now actually "connected"
-    						mStartingActiveConnector.SetIsConnected(true);
-    						mCurrentActiveConnector.SetIsConnected(true);
-    						
+    						// I state that I've found a connection (true means that the connector was the one that started the connection, false that it's not)
+							mStartingActiveConnector.ConnectionFound(true);
+							mCurrentActiveConnector.ConnectionFound(false);
+							
+							var linkedConnector = mCurrentActiveConnector.GetLinkedConnector();
+							
+							// If these 2 connectors are linked to each other, I also set that I've found the opposite connection; so basically, I state
+							// that these 2 connectors are done (all of their connections have been found)
+							if(linkedConnector != Void && linkedConnector == mStartingActiveConnector)
+							{
+								mStartingActiveConnector.ConnectionFound(false);
+								mCurrentActiveConnector.ConnectionFound(true);
+							}
+							
     						// I reset the variables and set that the controller isn't in the light (even though it is, otherwise it will never be considered out)
     						mStartingActiveConnector = Void;
     						mCurrentActiveConnector = Void;
@@ -647,6 +755,7 @@ function Level1::UpdateLogic(dt)
     					{
 							mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
     						mStartingActiveConnector.ResetLightColor();
+    						mStartingActiveConnector = Void;
 						}
     				}	
     				// If the drawing was totally random and didn't start in any connector or didn't finish in one, the line is no good
@@ -679,7 +788,7 @@ function Level1::UpdateLogic(dt)
 				if(!mIsDrawingConnectedArray[i])
 				{
 					// If the alpha value of the current drawing is greater than 0, I decrease it; if it reaches 0, I remove the drawing and its alpha from the arrays
-					if(mDrawingsAlphaArray[i] > 0)
+					if(mDrawingsAlphaArray[i] > -1.0)
 						mDrawingsAlphaArray[i] -= 0.01;
 					else
 					{
@@ -690,7 +799,62 @@ function Level1::UpdateLogic(dt)
 					}
 				}
 			}
+			
+			// Now I check the connectors group, to see if I find one in which every connector is connected; I start from the end since I'm going to remove elements
+			for(var i = len(mConnectorsGroups) - 1; i >= 0; i--)
+			{
+				var group = mConnectorsGroups[i];
+				var allConnected = true;
+				
+				// I iterate over all the group until either I finish the elements or I find one that isn't connected
+				for(var j = 0; j < len(group) && allConnected; j++)
+					allConnected = group[j].IsConnected();
+				
+				// If every connector in the group is connected, I remove the group from the array, play a sound (from Level0) and increment the counter
+				if(allConnected)
+				{
+					adel(mConnectorsGroups, i);
+					mSoundManager.PlaySound(mConnectorsGroupLinkedCounter, true, 1);
+					mConnectorsGroupLinkedCounter++;
+				}
+			}
+			
+			// If there are no group left in the array, it means that every group was connected and so the level is done. Time to open the elevator's door
+			if(len(mConnectorsGroups) == 0)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+				
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+				
+				// I switch status
+				mLevelStatus = STATUS_LEVEL_ENDING;
+			}
 	    		
+			break;
+		}
+		// Case where the level is ending: the only thing missing is the player inside the elevator
+		case STATUS_LEVEL_ENDING:
+		{
+			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
+			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				// If the player is in, I start the timer to end the level
+				mEnding = true;
+				mEndTimer = GetTime();
+			}
+			
+			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
+			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+				mIsLevelCompleted = true;
+			
 			break;
 		}
 	}

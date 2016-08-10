@@ -13,10 +13,16 @@ void main(void)
 uniform vec3 startingColor;
 uniform vec3 finalColor;
 uniform float time;
+uniform float alpha;
 
 void main (void) 
 {	
-	vec3 color = mix(startingColor, finalColor, time);
+	vec3 color;
 	
-	gl_FragColor = vec4(color , 0.15);
+	if(time <= 1.0)
+		color = mix(startingColor, finalColor, time);
+	else
+		color = finalColor;
+	
+	gl_FragColor = vec4(color, alpha);
 }

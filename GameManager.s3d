@@ -1,5 +1,5 @@
 global var DEBUG_MODE = true;
-
+global var MUSIC_ON = false;
 global var SCALE_FACTOR = 0.2;
 
 #define STATUS_MENU     0
@@ -135,7 +135,9 @@ function GameManager::GameManager(HMD)
 	
 	mSoundManager = SoundManager();
 	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.5, true);
-	mSoundManager.PlayMusic();
+	
+	if(MUSIC_ON)
+		mSoundManager.PlayMusic();
 	
 	mLights = {};
 	
@@ -186,6 +188,8 @@ function GameManager::GameManager(HMD)
 		
 		mCurrentLevelNumber = 1;
 		
+		mLevel2 = Level2(mIsVRon, mInputManager, mSoundManager);
+		
 		mFadingIn = false;
 		mFadingOut = false;
 	}
@@ -199,6 +203,7 @@ function GameManager::GameManager(HMD)
 		mElevator = mCurrentLevel.GetElevator();
 		
 		mLevel1 = Level1(mIsVRon, mInputManager, mSoundManager);
+		
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -239,7 +244,7 @@ function GameManager::Render()
 			break;
 		case STATUS_INGAME:{
 				
-//			mCurrentLevel.SetupOpenglLights();
+			mCurrentLevel.SetupOpenglLights();
 				
 				
 			SceneBegin(mCamera);
@@ -489,8 +494,8 @@ function GameManager::UpdateLogic(dt)
 					
 					case 1:
 					{
-//						mCurrentLevel = mLevel2;
-//						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+						mCurrentLevel = mLevel2;
+						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 						break;
 					}
 					

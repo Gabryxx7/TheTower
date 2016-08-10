@@ -65,8 +65,13 @@ void main()
 		// increasing again, causing the color interpolation to be wrong (it would think that I'm getting closer to the other connector). To avoid this
 		// I check the length of the vector that connects the point to the endPoint: if its greater than the length of the line, it means we're behind the
 		// starting connector, so I simply use the startColor. Otherwise, I interpolate the color based on the current distance
-		if(length(endPoint - point) > totalDistance)
-			color = startColor;
+		if(length(endPoint - point) > totalDistance || currentDistance > totalDistance)
+		{
+			if(currentDistance < length(endPoint - point))
+				color = startColor;
+			else
+				color = finalColor;
+		}
 		else
 			color = mix(startColor, finalColor, normalizedDistance);
 			
