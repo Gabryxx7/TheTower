@@ -203,7 +203,7 @@ function GameManager::GameManager(HMD)
 		mElevator = mCurrentLevel.GetElevator();
 		
 		mLevel1 = Level1(mIsVRon, mInputManager, mSoundManager);
-		
+		mLevel2 = Level2(mIsVRon, mInputManager, mSoundManager);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;

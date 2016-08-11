@@ -40,6 +40,8 @@ class KeyboardManager
 	
 	// This variable contains the time when a key was hit; used to determine the pause duration between a keystroke and another
 	var mKeyPressedTime;
+	
+	var mIsPressingMenuButton;
 		
 	// Private functions
 	UpdateCameraPosition();
@@ -50,6 +52,7 @@ class KeyboardManager
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton();
 	IsPressingSecondaryButton();
+	HasPressedMenuButton();
 	GetController(controllerIndex);
 };
 
@@ -71,6 +74,8 @@ function KeyboardManager::KeyboardManager()
 	mDebugMode = false;
 	
 	mKeyPressedTime = 0;
+	
+	mIsPressingMenuButton = false;
 	
 	// I don't know why, but I have to remove the cursor both here and in the main file of the project, otherwise it doesn't disappear
 	ShowCursor(false);
@@ -268,6 +273,22 @@ function KeyboardManager::IsPressingPrimaryButton()
 function KeyboardManager::IsPressingSecondaryButton()
 {
 	return Mouse.ButtonR;
+}
+
+function KeyboardManager::HasPressedMenuButton()
+{
+	if(KeyPressed("Q"))
+	{
+		if(!mIsPressingMenuButton)
+		{
+			mIsPressingMenuButton = true;
+			return true;
+		}
+	}
+	else
+		mIsPressingMenuButton = false;
+		
+	return false;
 }
 
 function KeyboardManager::GetController(controllerIndex)

@@ -2,6 +2,8 @@
 class ViveController
 {
 	var mViveController;
+	
+	var mControllerIndex;
 
 	// Shader to draw the silhouettes of the objects contained in the ViveController
 	var mSilhouetteShader;
@@ -14,6 +16,7 @@ class ViveController
 	// Public functions
 	Draw();
 	GetObj();
+	GetIndex();
 	SetActionAvailable(isActionAvailable);
 	GetControllerTipCoordinates();
 	GetDirection();
@@ -27,12 +30,12 @@ class ViveController
 };
 
 
-function ViveController::ViveController()
+function ViveController::ViveController(controllerIndex)
 {
-	var controllerMesh = CVmNewMesh("viveControllerModel.AAM");
-//	controllerMesh.Normalize(0.5);
-//	controllerMesh.CenterBoundingBox(); //fixed mesh shifted
+	mControllerIndex = controllerIndex;
 	
+	var controllerMesh = CVmNewMesh("viveControllerModel.AAM");
+
 	mViveController = CVmObj(controllerMesh);
 
 	var boundingBox = controllerMesh.GetBoundingBox();
@@ -77,6 +80,11 @@ function ViveController::Draw()
 function ViveController::GetObj()
 {
 	return mViveController;
+}
+
+function ViveController::GetIndex()
+{
+	return mControllerIndex;
 }
 
 function ViveController::SetActionAvailable(isActionAvailable)

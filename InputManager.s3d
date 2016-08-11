@@ -34,6 +34,7 @@ class InputManager
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
 	GetController(controllerIndex);
+	HasPressedMenuButton(controllerIndex);
 	VibrateController(controllerIndex);
 };
 
@@ -108,6 +109,11 @@ function InputManager::IsPressingPrimaryButton(controllerIndex)
 function InputManager::IsPressingSecondaryButton(controllerIndex)
 {
 	return mManager.IsPressingSecondaryButton(controllerIndex);
+}
+
+function InputManager::HasPressedMenuButton(controllerIndex)
+{
+	return mManager.HasPressedMenuButton(controllerIndex);
 }
 
 function InputManager::GetController(controllerIndex)

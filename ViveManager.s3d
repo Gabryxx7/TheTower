@@ -9,6 +9,8 @@ class ViveManager
 	var mController1;
 	var mController2;
 	
+	var mIsPressingMenuButton;
+	
 	// Boolean; is true when de debug mode is active
 	var mDebugMode;
 		
@@ -18,6 +20,7 @@ class ViveManager
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
+	HasPressedMenuButton(controllerIndex);
 	VibrateController(controllerIndex);
 	GetController(controllerIndex);
 };
@@ -33,8 +36,10 @@ function ViveManager::ViveManager(HMD)
 	
 	mHMD = HMD;
 	
-	mController1 = ViveController();
-	mController2 = ViveController();
+	mController1 = ViveController(1);
+	mController2 = ViveController(2);
+	
+	mIsPressingMenuButton = false;
 }
 
 
@@ -89,6 +94,23 @@ function ViveManager::IsPressingPrimaryButton(controllerIndex)
 function ViveManager::IsPressingSecondaryButton(controllerIndex)
 {
 	return mHMD.IsTouchpadPressed(controllerIndex) == 1;
+}
+
+
+function ViveManager::HasPressedMenuButton(controllerIndex)
+{	
+	if(mHMD.IsMenuPressed(controllerIndex) == 1)
+	{
+		if(!mIsPressingMenuButton)
+		{
+			mIsPressingMenuButton = true;
+			return true;
+		}
+	}
+	else
+		mIsPressingMenuButton = false;
+		
+	return false;
 }
 
 function ViveManager::VibrateController(controllerIndex)

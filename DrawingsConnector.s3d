@@ -49,7 +49,7 @@ class DrawingsConnector
 	DrawLightCone();
 	GetObj();
 	GetDefaultLightColor();
-	SetLightColorActive();
+	UpdateColor();
 	ResetLightColor();
 	SetLightsRange(min, max);
 	GetLightsRange();
@@ -258,7 +258,7 @@ function DrawingsConnector::DrawLightCone()
 /*
  * This method changes the current color to the one in the next "stage"
  */
-function DrawingsConnector::SetLightColorActive()
+function DrawingsConnector::UpdateColor()
 {		
 	// I get the previous color
 	var previousColor = mLightConeActiveColor;
@@ -315,7 +315,7 @@ function DrawingsConnector::ResetLightColor()
 
 	var startingColor;
 	
-	// Similar to the SetLightColorActive() function, if the time is <= 0 there is an animation active, so I need to find the current color
+	// Similar to the UpdateColor() function, if the time is <= 0 there is an animation active, so I need to find the current color
 	if(mTime <= 1.0)
 		startingColor = resetColor * (1 - mTime) + mLightConeActiveColor * mTime;
 	else
