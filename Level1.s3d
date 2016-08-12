@@ -591,6 +591,7 @@ function Level1::UpdateLogic(dt)
 	
 			// I check user inputs for drawing and update the state of the current drawings in the scene
     		HandleDrawings();
+    		
 			
 			// Now I check the connectors group, to see if I find one in which every connector is connected; I start from the end since I'm going to remove elements
 			for(var i = len(mConnectorsGroups) - 1; i >= 0; i--)

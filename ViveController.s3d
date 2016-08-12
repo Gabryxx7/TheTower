@@ -23,6 +23,7 @@ class ViveController
 	SetPosition(position);
 	GetPosition();
 	SetRotationMatrix(matrix);
+	GetRotationMatrix();
 	SetRotation(angle, x, y, z);
 	LocalToWorld(point);
 	Hide();
@@ -118,6 +119,11 @@ function ViveController::GetPosition()
 function ViveController::SetRotationMatrix(matrix)
 {
 	mViveController.SetRotationMatrix(matrix);
+}
+
+function ViveController::GetRotationMatrix()
+{
+	return mViveController.GetRotationMatrix();
 }
 
 function ViveController::SetRotation(angle, x, y, z)

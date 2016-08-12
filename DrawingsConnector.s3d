@@ -20,6 +20,7 @@ class DrawingsConnector
 	var mLightConeDefaultColor;   // Default color
 	var mLightConeActiveColor;    // Currently active color (it's based on mLightConeConnectedColor's values)
 	var mLightConeConnectedColor; // Color for the "finished" state of the light
+	var mLightConeDefaultAlpha;   // Default alpha value for the shader
 		
 	// Shader for the black borders
 	var mSilhouetteShader;
@@ -40,6 +41,10 @@ class DrawingsConnector
 	var mConnectionsCreated;
 	var mTimesLinked;
 	var mConnectionsCounter;
+	
+	var mConnectorAlpha;
+	
+	var mIsHidden;
 	
 	// Private functions
 	IncrementConnectionsCounter();
@@ -67,6 +72,10 @@ class DrawingsConnector
 	ConnectionFound(isConnectionCreator);
 	HasConnectionsAvailable();
 	HasLinksAvailable();
+	SetAlpha(alpha);
+	Hide();
+	Unhide();
+	IsHidden();
 	
 	// Private functions
 	SetLightColorConnected();
@@ -81,29 +90,35 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mLightConeDefaultColor = lightColor;
 	mLightConeActiveColor = lightColor;
 	mLightConeConnectedColor = [0, 1, 0];
-	
+	mLightConeDefaultAlpha = 0.15;
+
 	mIsConnected = false;
 	mNumberOfConnections = 0;
 	mConnectionsCounter = 0;
 	mConnectionsCreated = 0;
 	mTimesLinked = 0;
 	mTime = 0;
+	mIsHidden = false;
+	
+	mConnectorAlpha = 1.0;
 	
 	// I get the mesh and scale it
 	mConnectorMesh = CVmNewMesh("Sci-fi-thing.aam");
 	mConnectorMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	
-	// Shader for the first (the "arm" of the object) and second subset (the column)
+	// Shader for the first (the "arm" of the object), second subset (the column) and the third one (that is basically the lights on the circle above)
 	if(USE_TOON_SHADER == 2)
 	{		
 		mConnectorMesh.ShaderAdd("antishader.glsl", 0);
 		mConnectorMesh.ShaderAdd("antishader.glsl", 1);
+		mConnectorMesh.ShaderAdd("antishader.glsl", 2);
 		mConnectorMesh.ShaderActivate(true);
 	}
 	else if(USE_TOON_SHADER == 1)
 	{
 		mConnectorMesh.ShaderAdd("toonShader.glsl", 0);
 		mConnectorMesh.ShaderAdd("toonShader.glsl", 1);
+		mConnectorMesh.ShaderAdd("toonShader.glsl", 2);
 		mConnectorMesh.ShaderActivate(true);		
 	}
 	else if(USE_TOON_SHADER == 0)
@@ -117,7 +132,7 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mConnectorMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mConnectorMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	mConnectorMesh.ShaderSetParameter(0, "alpha", 0, mConnectorAlpha);
 	
 	var color = lightColor - [0.9, 0.9, 0.9];
 	color.r = color.r < 0 ? 0 : color.r;
@@ -133,7 +148,17 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMin", 0, lightsRangeMin);
 	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMax", 0, lightsRangeMax);
 	mConnectorMesh.ShaderSetParameter(1, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mConnectorMesh.ShaderSetParameter(1, "alpha", 0, 1.0);
+	mConnectorMesh.ShaderSetParameter(1, "alpha", 0, mConnectorAlpha);
+	
+	// Parameter for the subset that would be the lights in the circle above
+	mConnectorMesh.ShaderSetParameter(2, "ambient", 0, [0.7, 0.7, 0.7]);
+	mConnectorMesh.ShaderSetParameter(2, "diffuse", 0, lightColor);
+	mConnectorMesh.ShaderSetParameter(2, "specular", 0, [0.0, 0.0, 0.0]);
+	mConnectorMesh.ShaderSetParameter(2, "shininess", 0, 0);
+	mConnectorMesh.ShaderSetParameter(2, "lightsRangeMin", 0, lightsRangeMin);
+	mConnectorMesh.ShaderSetParameter(2, "lightsRangeMax", 0, lightsRangeMax);
+	mConnectorMesh.ShaderSetParameter(2, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	mConnectorMesh.ShaderSetParameter(2, "alpha", 0, mConnectorAlpha);
 	
 	mConnector = CVmObj(mConnectorMesh);
 	
@@ -163,21 +188,21 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);		
 	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightConeMesh.ShaderSetParameter(0, "time", 0, 0);
-	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, 0.15);
+	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, mLightConeDefaultAlpha);
 	
 	mLightTopCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
 	mLightTopCircleMesh.ShaderActivate(true);		
 	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "time", 0, 0);
-	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, 0.15);
+	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, mLightConeDefaultAlpha);
 	
 	mLightBottomCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
 	mLightBottomCircleMesh.ShaderActivate(true);		
 	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
 	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightBottomCircleMesh.ShaderSetParameter(0, "time", 0, 0);
-	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, 0.15);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, mLightConeDefaultAlpha);
 	
 	// Creating the CVmObjects with the respective meshes
 	mLightConeObj = CVmObj(mLightConeMesh);
@@ -200,7 +225,7 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	// really bad unless the offset for the silhouette is very very low. I found that by creating a shader that simply draws black (the mBorderShader)
 	// and by enlarging the mesh a little bit, use the shader and then reset the scale and draw it normally gives better results for this particular object
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
-	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }", true);
+	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform float alpha; void main (void) { gl_FragColor = vec4(0.0, 0.0, 0.0, alpha); }", true);
 }
 
 /*
@@ -227,6 +252,8 @@ function DrawingsConnector::Draw()
 	//    Not putting the light cone as child of the object in order to draw them separately wasn't an option, since when the objects rotates it's hard
 	//    to place the light cone accordingly, while it's automatic if the light cone is a child of the object
 	mBorderShader.Start();
+		mBorderShader.SetParameter("alpha", mConnectorAlpha);
+	
 		mConnector.Draw(VR_NO_CHILDREN);
 	mBorderShader.Stop();
 	
@@ -270,7 +297,7 @@ function DrawingsConnector::UpdateColor()
 	mLightConeActiveColor = (mLightConeConnectedColor / mNumberOfConnections) * (mConnectionsCounter + 1);
 	
 	// I also change the alpha of the light cone if I'm in an advanced stage (i.e. getting closer to the end) so that the light cone is more dense
-	var alpha = 0.15 + 0.03 * mConnectionsCounter;
+	var alpha = mLightConeDefaultAlpha + 0.03 * mConnectionsCounter;
 	
 	var startingColor;
 	
@@ -324,7 +351,7 @@ function DrawingsConnector::ResetLightColor()
 		startingColor = mLightConeActiveColor;
 	
 	
-	var alpha = 0.15 + 0.03 * (mConnectionsCounter);
+	var alpha = mLightConeDefaultAlpha + 0.03 * (mConnectionsCounter);
 	
 	mTime = 0;
 		
@@ -355,7 +382,7 @@ function DrawingsConnector::SetLightColorConnected()
 	else
 		startingColor = mLightConeActiveColor;
 	
-	var alpha = 0.15 + 0.03 * mConnectionsCounter;
+	var alpha = mLightConeDefaultAlpha + 0.03 * mConnectionsCounter;
 	
 	mTime = 0;
 		
@@ -490,4 +517,36 @@ function DrawingsConnector::HasConnectionsAvailable()
 function DrawingsConnector::HasLinksAvailable()
 {
 	return mTimesLinked > 0;
+}
+
+function DrawingsConnector::SetAlpha(alpha)
+{
+	mConnectorAlpha = alpha;
+	
+	mConnectorMesh.ShaderSetParameter(0, "alpha", 0, alpha);
+	mConnectorMesh.ShaderSetParameter(1, "alpha", 0, alpha);
+	mConnectorMesh.ShaderSetParameter(2, "alpha", 0, alpha);
+	
+	var lightConeAlpha = (mLightConeDefaultAlpha + 0.03 * mConnectionsCounter) -  (1.0 - alpha) * (mLightConeDefaultAlpha + 0.03 * mConnectionsCounter);
+	
+	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, lightConeAlpha);
+	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, lightConeAlpha);
+	mLightBottomCircleMesh.ShaderSetParameter(0, "alpha", 0, lightConeAlpha);
+}
+
+function DrawingsConnector::Hide()
+{
+	mConnector.Hide();
+	mIsHidden = true;
+}
+
+function DrawingsConnector::Unhide()
+{
+	mConnector.Unhide();
+	mIsHidden = false;
+}
+
+function DrawingsConnector::IsHidden()
+{
+	return mIsHidden;
 }
