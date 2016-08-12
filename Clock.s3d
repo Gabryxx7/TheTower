@@ -68,6 +68,7 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	minutesArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	minutesArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	minutesArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	minutesArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	mMinutesArrowObj = CVmObj(minutesArrowMesh);
 	
@@ -82,6 +83,7 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	hoursArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	hoursArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	hoursArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	hoursArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	mHoursArrowObj = CVmObj(hoursArrowMesh);
 	

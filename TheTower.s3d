@@ -67,12 +67,10 @@ function OnInit(params)
 	
 	oldTime = GetTime();
 		
-	SceneSetParam(VR_VERTICAL_SYNC, 1);
+//	SceneSetParam(VR_VERTICAL_SYNC, 1);
 	
-	// Non so perchè ma bisogna rimuovere il cursore sia da qua che nel KeyboardManager
+	// I don't know why, but we have to disable the cursor both here and in the InputManager class
 	ShowCursor(false);
-
-//	SetCursorShape(VR_CUR_CROSS); 
 }
 
 /* Render recursively */

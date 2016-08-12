@@ -41,6 +41,8 @@ uniform vec3 diffuse;
 uniform vec3 specular;
 uniform float shininess;
 
+uniform float alpha;
+
 varying vec3 vertexNormal;
 varying vec3 lightDirection[8];
 varying vec3 position;
@@ -203,7 +205,7 @@ void main()
 	        	attenuation = 0.0;
 	        	*/
 	        	
-        	float spotEffect = dot(normalize(gl_LightSource[i].spotDirection), -normalize(lightDirection[i]));
+        	float spotEffect = dot(normalize(gl_LightSource[i].spotDirection.xyz), -normalize(lightDirection[i]));
 
         	if (spotEffect > gl_LightSource[i].spotCosCutoff) 
         	{
@@ -250,7 +252,6 @@ void main()
 		iterations++;
     }
     
-    
 	// Moltiplico il colore per il fattore di attenuazione
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, alpha);
 }

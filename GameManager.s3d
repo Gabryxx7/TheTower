@@ -16,6 +16,7 @@ global var SCALE_FACTOR = 0.2;
 #include "Level1.s3d"
 #include "Level2.s3d"
 #include "Level3.s3d"
+#include "Level4.s3d"
 #include "InputManager.s3d"
 
 
@@ -183,7 +184,7 @@ function GameManager::GameManager(HMD)
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
 				
-		mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;

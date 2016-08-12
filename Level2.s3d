@@ -216,6 +216,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	provaMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	provaMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	provaMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	provaMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	provaMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	

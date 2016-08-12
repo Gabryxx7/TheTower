@@ -4,7 +4,7 @@
 #define STATUS_LEVEL_STARTED 2
 #define STATUS_LEVEL_ENDING 3
 
-class Level1
+class Level4
 {
 	var mIsVRon;
 	
@@ -105,11 +105,11 @@ class Level1
 	// This variable contains the currently active connector, i.e. a connector in which there is a controller inside
 	var mCurrentActiveConnector;
 	
-	// Text objects used in the level
-	var mEverythingIsConnectedText;
-	var mConnectionsHaveDirectionsText1; 
-	var mConnectionsHaveDirectionsText2;
-	var mConnectionsIsNotClearText;  
+//	// Text objects used in the level
+//	var mEverythingIsConnectedText;
+//	var mConnectionsHaveDirectionsText1; 
+//	var mConnectionsHaveDirectionsText2;
+//	var mConnectionsIsNotClearText;  
 	
 	// Counter of the connectors actually "connected"; it increments when, in a group of connectors, everyone of them is connected
 	var mConnectorsGroupLinkedCounter;
@@ -137,7 +137,7 @@ class Level1
 /*
  * Constructor. Takes as parameter a boolean that states whether VR is on or not, the input manager of the application and the sound manager
  */
-function Level1::Level1(isVRon, inputManager, soundManager)
+function Level4::Level4(isVRon, inputManager, soundManager)
 {		
 	mIsVRon = isVRon;
 	
@@ -157,7 +157,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, true, 1, 2);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_HEIGHT, true, true, 1, 2);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mLinesTimeVariable = 0;
@@ -176,87 +176,80 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	connector2.Rotate(135, 0, 1, 0);
 	
 	// This is group 1: the connectors in front of the elevator
-	connector1.SetLinkedConnector(connector2);
-	connector2.SetLinkedConnector(connector1);
-	
-	
-	var offsetFromSideWall = mMainRoom.GetRoomWidth()/2.0 - 10 * SCALE_FACTOR;
-	offset = 7.0 * SCALE_FACTOR;
-	
-	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
-	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0, offset - 5 * SCALE_FACTOR]);
-	connector3.Rotate(85 * 2, 0, 1, 0);
-	
-	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
-	connector4.Rotate(115 * 2, 0, 1, 0);
-	
-	// This is group 2: the connectors on the left of the elevator
-	connector4.SetLinkedConnector(connector3);
-	
-	
-	var connector5 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector5.SetPosition([-offsetFromSideWall, 0, offset - 5 * SCALE_FACTOR]);
-	connector5.Rotate(42, 0, 1, 0);
-	
-	var connector6 = DrawingsConnector([0, 1.0, 0.6], 1, 2);
-	connector6.SetPosition([-offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
-	connector6.Rotate(-12, 0, 1, 0);
-	
-	// This is group 3: the connectors on the right of the elevator
-	connector5.SetLinkedConnector(connector6);
-	
-	
-	offsetFromFarWall = -mMainRoom.GetRoomDepth()/2 + 15.0 * SCALE_FACTOR;
-	
-	var connector7 = DrawingsConnector([1.0, 0.0, 0.0], 1, 2);
-	connector7.SetPosition([-8 * SCALE_FACTOR, 0, offsetFromFarWall - 0 * SCALE_FACTOR]);
-	connector7.Rotate(24, 0, 1, 0);
-	
-	var connector8 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector8.SetPosition([-7 * SCALE_FACTOR, 0, offsetFromFarWall - 4 * SCALE_FACTOR]);
-	connector8.Rotate(-42, 0, 1, 0);
-	
-	var connector9 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0, offsetFromFarWall - 7 * SCALE_FACTOR]);
-	connector9.Rotate(-69, 0, 1, 0);
-	
-	var connector10 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector10.SetPosition([2 * SCALE_FACTOR, 0, offsetFromFarWall - 5 * SCALE_FACTOR]);
-	connector10.Rotate(-89, 0, 1, 0);
-	
-	var connector11 = DrawingsConnector([0.0, 0.0, 1.0], 1, 2);
-	connector11.SetPosition([4 * SCALE_FACTOR, 0, offsetFromFarWall - 2 * SCALE_FACTOR]);
-	connector11.Rotate(-162, 0, 1, 0);
+//	connector1.SetLinkedConnector(connector2);
+//	connector2.SetLinkedConnector(connector1);
+//	
+//	
+//	var offsetFromSideWall = mMainRoom.GetRoomWidth()/2.0 - 10 * SCALE_FACTOR;
+//	offset = 7.0 * SCALE_FACTOR;
+//	
+//	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
+//	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0, offset - 5 * SCALE_FACTOR]);
+//	connector3.Rotate(85 * 2, 0, 1, 0);
+//	
+//	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
+//	connector4.SetPosition([offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
+//	connector4.Rotate(115 * 2, 0, 1, 0);
+//	
+//	// This is group 2: the connectors on the left of the elevator
+//	connector4.SetLinkedConnector(connector3);
+//	
+//	
+//	var connector5 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
+//	connector5.SetPosition([-offsetFromSideWall, 0, offset - 5 * SCALE_FACTOR]);
+//	connector5.Rotate(42, 0, 1, 0);
+//	
+//	var connector6 = DrawingsConnector([0, 1.0, 0.6], 1, 2);
+//	connector6.SetPosition([-offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
+//	connector6.Rotate(-12, 0, 1, 0);
+//	
+//	// This is group 3: the connectors on the right of the elevator
+//	connector5.SetLinkedConnector(connector6);
+//	
+//	
+//	offsetFromFarWall = -mMainRoom.GetRoomDepth()/2 + 15.0 * SCALE_FACTOR;
+//	
+//	var connector7 = DrawingsConnector([1.0, 0.0, 0.0], 1, 2);
+//	connector7.SetPosition([-8 * SCALE_FACTOR, 0, offsetFromFarWall - 0 * SCALE_FACTOR]);
+//	connector7.Rotate(24, 0, 1, 0);
+//	
+//	var connector8 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
+//	connector8.SetPosition([-7 * SCALE_FACTOR, 0, offsetFromFarWall - 4 * SCALE_FACTOR]);
+//	connector8.Rotate(-42, 0, 1, 0);
+//	
+//	var connector9 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
+//	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0, offsetFromFarWall - 7 * SCALE_FACTOR]);
+//	connector9.Rotate(-69, 0, 1, 0);
+//	
+//	var connector10 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
+//	connector10.SetPosition([2 * SCALE_FACTOR, 0, offsetFromFarWall - 5 * SCALE_FACTOR]);
+//	connector10.Rotate(-89, 0, 1, 0);
+//	
+//	var connector11 = DrawingsConnector([0.0, 0.0, 1.0], 1, 2);
+//	connector11.SetPosition([4 * SCALE_FACTOR, 0, offsetFromFarWall - 2 * SCALE_FACTOR]);
+//	connector11.Rotate(-162, 0, 1, 0);
 	
 	// This is group 4: the connectors behind the elevator
-	connector7.SetLinkedConnector(connector9);
-	connector8.SetLinkedConnector(connector7);
-	connector9.SetLinkedConnector(connector11);
-	connector10.SetLinkedConnector(connector8);
-	connector11.SetLinkedConnector(connector10);
+//	connector7.SetLinkedConnector(connector9);
+//	connector8.SetLinkedConnector(connector7);
+//	connector9.SetLinkedConnector(connector11);
+//	connector10.SetLinkedConnector(connector8);
+//	connector11.SetLinkedConnector(connector10);
 		
 	mConnectors = {};
 	
 	aadd(mConnectors, connector1);
 	aadd(mConnectors, connector2);
-	aadd(mConnectors, connector3);
-	aadd(mConnectors, connector4);
-	aadd(mConnectors, connector5);
-	aadd(mConnectors, connector6);
-	aadd(mConnectors, connector7);
-	aadd(mConnectors, connector8);
-	aadd(mConnectors, connector9);
-	aadd(mConnectors, connector10);
-	aadd(mConnectors, connector11);
+//	aadd(mConnectors, connector3);
+//	aadd(mConnectors, connector4);
 	
 	mConnectorsGroups = {};
 	
 	// I add the groups to this other array, because I'm lazy
 	aadd(mConnectorsGroups, {connector1, connector2});
-	aadd(mConnectorsGroups, {connector3, connector4});
-	aadd(mConnectorsGroups, {connector5, connector6});
-	aadd(mConnectorsGroups, {connector7, connector8, connector9, connector10, connector11});
+//	aadd(mConnectorsGroups, {connector3, connector4});
+//	aadd(mConnectorsGroups, {connector5, connector6});
+//	aadd(mConnectorsGroups, {connector7, connector8, connector9, connector10, connector11});
 	
 	mConnectorsGroupLinkedCounter = 0;
 	
@@ -278,8 +271,8 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	{
 		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
 		mDebugController = ViveController(1);
-		mDebugControllerHidden = false;
-		mDebugKeyHit = false;
+		global var controllerHidden = false;
+		global var keyhit = false;
 		mDebugController.SetRotation(90, 0, 1, 0);
 		aadd(mControllersArray, mDebugController);
 	}
@@ -294,24 +287,24 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mKeepEveryLine = false;
 	
 	// Creating texts object for the scene
-	mEverythingIsConnectedText = Text("In life, everything is connected", 2);
-	mEverythingIsConnectedText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR]);
-	mEverythingIsConnectedText.Rotate(180, 0, 1, 0);
-	
-	mConnectionsHaveDirectionsText1 = Text("Sometimes the connection is in one direction only", 2);
-	mConnectionsHaveDirectionsText2 = Text("Sometimes the connection is in one direction only", 2); 
-	mConnectionsHaveDirectionsText1.SetPosition([mMainRoom.GetRoomWidth()/2 - 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -5 * SCALE_FACTOR]);
-	mConnectionsHaveDirectionsText2.SetPosition([-mMainRoom.GetRoomWidth()/2 + 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -7 * SCALE_FACTOR]);
-	mConnectionsHaveDirectionsText1.Rotate(-90, 0, 1, 0);
-	mConnectionsHaveDirectionsText2.Rotate(90, 0, 1, 0);
-	
-	mConnectionsIsNotClearText = Text(" At times how objects are connected is not clear,\nbut the connection is there nonetheless", 1);
-	mConnectionsIsNotClearText.Rotate(180, 0, 1, 0);
+//	mEverythingIsConnectedText = Text("In life, everything is connected", 2);
+//	mEverythingIsConnectedText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR]);
+//	mEverythingIsConnectedText.Rotate(180, 0, 1, 0);
+//	
+//	mConnectionsHaveDirectionsText1 = Text("Sometimes the connection is in one direction only", 2);
+//	mConnectionsHaveDirectionsText2 = Text("Sometimes the connection is in one direction only", 2); 
+//	mConnectionsHaveDirectionsText1.SetPosition([mMainRoom.GetRoomWidth()/2 - 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -5 * SCALE_FACTOR]);
+//	mConnectionsHaveDirectionsText2.SetPosition([-mMainRoom.GetRoomWidth()/2 + 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -7 * SCALE_FACTOR]);
+//	mConnectionsHaveDirectionsText1.Rotate(-90, 0, 1, 0);
+//	mConnectionsHaveDirectionsText2.Rotate(90, 0, 1, 0);
+//	
+//	mConnectionsIsNotClearText = Text(" At times how objects are connected is not clear,\nbut the connection is there nonetheless", 1);
+//	mConnectionsIsNotClearText.Rotate(180, 0, 1, 0);
 }
 
 
  
- function Level1::Init(lights, elevator, openglTransformOffset)
+ function Level4::Init(lights, elevator, openglTransformOffset)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
@@ -361,7 +354,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
 	// I set now the position of a text that needed to know where the elevator was
-	mConnectionsIsNotClearText.SetPosition(mElevatorFinalPosition - [0, 0, 0.1 * SCALE_FACTOR]);
+//	mConnectionsIsNotClearText.SetPosition(mElevatorFinalPosition - [0, 0, 0.1 * SCALE_FACTOR]);
 }
 
 
@@ -373,7 +366,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 /*
  * Render method
  */
-function Level1::Render()
+function Level4::Render()
 {	
 	// If the user teleported modifying the mOpenglTranslationOffset, the lights will be in the wrong places. So at each frame I reset their 
 	// position, but note that I'm not setting the position acoordint to the offset: since in the GameManager the offset was used for the glTranslate(), at
@@ -475,10 +468,10 @@ function Level1::Render()
 			
 			
 			// Drawing the texts
-			mEverythingIsConnectedText.Draw();
-			mConnectionsHaveDirectionsText1.Draw();
-			mConnectionsHaveDirectionsText2.Draw();
-			mConnectionsIsNotClearText.Draw();
+//			mEverythingIsConnectedText.Draw();
+//			mConnectionsHaveDirectionsText1.Draw();
+//			mConnectionsHaveDirectionsText2.Draw();
+//			mConnectionsIsNotClearText.Draw();
 						
 			// I update the time variable (used for the shader) of the connectors and draw them; note: I only draw the connector object now, without the
 			// light cones. This is because the light cones are transparent and need to be drawn last in the scene, otherwise the transparency would be wrong
@@ -513,7 +506,7 @@ function Level1::Render()
  * 
  * dt: (float) delta time, i.e. the time between the last update and this one
  */
-function Level1::UpdateLogic(dt)
+function Level4::UpdateLogic(dt)
 {
 	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCamera();
@@ -656,7 +649,7 @@ function Level1::UpdateLogic(dt)
 	mSoundManager.UpdateMusic(dt);
 }
 
-function Level1::CheckActiveConnector()
+function Level4::CheckActiveConnector()
 {
 	// Now I check whether there is a controller inside the light cone of a connector, in order to change its light. There are a lot of cases to consider,
 	// because controllers can get in and out of light cones, and depending on whether the player is drawing while doing it changes everything	
@@ -724,7 +717,7 @@ function Level1::CheckActiveConnector()
 	}
 }
 
-function Level1::HandleDrawings()
+function Level4::HandleDrawings()
 {
 	// Now I check if the player is drawing; I first check if he pressed a button
 	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
@@ -951,7 +944,7 @@ function Level1::HandleDrawings()
  * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
  * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
  */
-function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+function Level4::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
 {
 	var intersectedPlane = -1;
 
@@ -969,17 +962,17 @@ function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 /*
  * Method called by the GameManager to check if the level is completed
  */
-function Level1::IsLevelCompleted()
+function Level4::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
 }
 
-function Level1::SetOpenglTransformOffset(openglTransformOffset)
+function Level4::SetOpenglTransformOffset(openglTransformOffset)
 {
 	mOpenglTranslationOffset = openglTransformOffset;
 }
 
-function Level1::SetupOpenglLights()
+function Level4::SetupOpenglLights()
 {
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHT1);

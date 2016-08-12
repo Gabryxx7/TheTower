@@ -402,6 +402,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	sphereMesh1.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	sphereMesh1.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	if(USE_TOON_SHADER == 2){		
 		sphereMesh2.ShaderAdd("antishader.glsl", 0);
@@ -421,6 +422,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	sphereMesh2.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	sphereMesh2.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	if(USE_TOON_SHADER == 2){		
 		sphereMesh3.ShaderAdd("antishader.glsl", 0);
@@ -440,6 +442,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh3.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh3.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	sphereMesh3.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	sphereMesh3.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	if(USE_TOON_SHADER == 2){		
 		sphereMesh4.ShaderAdd("antishader.glsl", 0);
@@ -459,6 +462,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	sphereMesh4.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	sphereMesh4.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	sphereMesh4.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	sphereMesh4.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	aadd(sphereMeshArray, sphereMesh1);
 	aadd(sphereMeshArray, sphereMesh2);

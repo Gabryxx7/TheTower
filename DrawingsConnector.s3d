@@ -117,6 +117,7 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
 	mConnectorMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mConnectorMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	mConnectorMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	var color = lightColor - [0.9, 0.9, 0.9];
 	color.r = color.r < 0 ? 0 : color.r;
@@ -132,6 +133,7 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMin", 0, lightsRangeMin);
 	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMax", 0, lightsRangeMax);
 	mConnectorMesh.ShaderSetParameter(1, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	mConnectorMesh.ShaderSetParameter(1, "alpha", 0, 1.0);
 	
 	mConnector = CVmObj(mConnectorMesh);
 	
