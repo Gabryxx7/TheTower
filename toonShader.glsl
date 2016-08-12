@@ -160,13 +160,13 @@ void main()
 	        
         // Adesso ho tutte le componenti che servono per calcoalre il colore del frammento; inizio dandogli il valore "ambient" del materiale dell'oggetto,
    	    // moltiplicato per il valore ambient della luce usata
-     	color += ambient * gl_LightSource[i].ambient;
+     	color += ambient * gl_LightSource[i].ambient.xyz;
      	
      	// Aggiungo poi la componente diffusiva, moltiplicata per l'intensità calcolata sopra
-	    color += diffuseFactor * diffuse * gl_LightSource[i].diffuse;
+	    color += diffuseFactor * diffuse * gl_LightSource[i].diffuse.xyz;
 	
 		// Infine aggiungo la componente speculare dell'oggetto, moltiplicata per il fattore calcolato sopra e per il valore speculare della luce
-	   	color += specularFactor * specular * gl_LightSource[i].specular;
+	   	color += specularFactor * specular * gl_LightSource[i].specular.xyz;
 
 
 		// Ora come ora, la luce è emanata in ogni direzione (se è una point light) a pari intensità, indipendentemente da dove è posizionata.
@@ -215,7 +215,7 @@ void main()
 					spotEffect = pow(lambertTerm, gl_LightSource[i].spotExponent);
 	           //	 	attenuation = spotEffect / (constantAttenuation + linearAttenuation + quadraticAttenuation);	
 	           
-	           		color = ambient * gl_LightSource[i].ambient;
+	           		color = ambient * gl_LightSource[i].ambient.xyz;
 	           		color += gl_LightSource[i].diffuse.xyz * diffuse * lambertTerm;	
 				
 					vec3 E = normalize(eyeVector);
