@@ -63,8 +63,11 @@ class Level2
 	var mPortalFrameNormal;
 	
 	var redPathObjs;
+	var redPathSteppedObjs;
 	var greenPathObjs;
+	var greenPathSteppedObjs;
 	var bluePathObjs;
+	var bluePathSteppedObjs;
 	
 	var mCurrentlyVisiblePortalFrames;
 	
@@ -85,9 +88,7 @@ class Level2
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
-	GenerateRedPath(tilesSize, spaceSize, tilesThickness);
-	GenerateGreenPath(tilesSize, spaceSize, tilesThickness);
-	GenerateBluePath(tilesSize, spaceSize, tilesThickness);
+	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness);
 	newTile(mesh, prevTilePos, offsets);
 			
 	// Public functions
@@ -235,8 +236,15 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	provaMeshObj.rotate(75,1,0,1);
 	mPortalRoom.AddObject(provaMeshObj, -25.0 * SCALE_FACTOR, -8.0 * SCALE_FACTOR, PIT_HEIGHT-18.0 * SCALE_FACTOR);	
 	
-	
-	GenerateRedPath(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
+	redPathObjs = {};
+	redPathSteppedObjs = {};
+	greenPathObjs = {};
+	greenPathSteppedObjs = {};
+	bluePathObjs = {};
+	bluePathSteppedObjs = {};
+	GeneratePath(redPathObjs, [0,0,0,1,0,0,2,0,0,1,0,0,0,1], 2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
+	GeneratePath(greenPathObjs, [1,0,0,0,1,0,0,2,0,0,1,0,0,0,1], 2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
+	GeneratePath(bluePathObjs, [2,0,0,0,1,0,0,2,0,0,1,0,0,0,1], 2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 //	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 }
 
@@ -266,27 +274,60 @@ function Level2::Render()
 			
 			mMainRoom.Draw();
 			
-			for(var i = 0; i < len(redPathObjs); i++){
-				mSpotShader.Start();
-					mSpotShader.SetParameter("outline", false);
-					mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
-					mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-					redPathObjs[i].Draw();
-	//				floorObj.Draw();
-				mSpotShader.Stop();
-				
-				
-				mSpotShader.Start();
-					mSpotShader.SetParameter("outline", true);
-					mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
-					mSpotShader.SetParameter("outlineColor", [1.0, 0.0, 0.0]);
-					mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-					redPathObjs[i].Draw();
-	//				floorObj.Draw();
-				mSpotShader.Stop();	
+			var pathObjsArray;
+			var pathSteppedObjsArray;
+			var arrayLength;
+			var color;
+			for(var j = 0; j < 3; j++){
+				switch(j){
+					case 0:
+						pathObjsArray = redPathObjs;
+						pathSteppedObjsArray = redPathSteppedObjs;
+						arrayLength = len(pathObjsArray);
+						color = [1.0,0.0,0.0];
+						break;
+					case 1:
+						pathObjsArray = greenPathObjs;
+						pathSteppedObjsArray = greenPathSteppedObjs;
+						arrayLength = len(pathObjsArray);
+						color = [0.0,1.0,0.0];
+						break;
+					case 2:
+						pathObjsArray = bluePathObjs;
+						pathSteppedObjsArray = bluePathSteppedObjs;
+						arrayLength = len(pathObjsArray);
+						color = [0.0,0.0,1.0];
+						break;
+				}
 			
+				for(var i = 0; i < len(pathObjsArray); i++){
+					mSpotShader.Start();
+						mSpotShader.SetParameter("outline", false);
+						mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
+						mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+						pathObjsArray[i].Draw();
+					mSpotShader.Stop();
+					
+					
+					mSpotShader.Start();
+						mSpotShader.SetParameter("outline", true);
+						mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
+						mSpotShader.SetParameter("outlineColor", color);
+						mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+						pathObjsArray[i].Draw();
+					mSpotShader.Stop();				
+				}
+				
+				for(var i = 0; i < len(pathSteppedObjsArray); i++){
+					pathSteppedObjsArray[i].Draw();
+					mSilhouetteShader.Start();
+						mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
+			    		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);		    		
+						pathSteppedObjsArray[i].Draw();
+					mSilhouetteShader.Stop();
+					
+				}			
 			}
-			
 		}
 	}
 
@@ -526,6 +567,48 @@ function Level2::UpdateLogic(dt)
 			// I make sure that the player stay's inside the room and outside of the elevator
 			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
+			
+			var cameraPos = mCamera.GetPosition();
+			var tilePos;
+			var stepDistance = 2*SCALE_FACTOR;
+			var pathObjsArray;
+			var pathSteppedObjsArray;
+			var arrayLength;
+			var color;
+			var steppedTileMesh;
+			for(var j = 0; j < 3; j++){
+				switch(j){
+					case 0:
+						pathObjsArray = redPathObjs;
+						pathSteppedObjsArray = redPathSteppedObjs;
+						arrayLength = len(pathObjsArray);
+						color = [1.0,0.0,0.0];
+						break;
+					case 1:
+						pathObjsArray = greenPathObjs;
+						pathSteppedObjsArray = greenPathSteppedObjs;
+						arrayLength = len(pathObjsArray);
+						color = [0.0,0.0,0.0];
+						break;
+					case 2:
+						pathObjsArray = bluePathObjs;
+						pathSteppedObjsArray = bluePathSteppedObjs;
+						arrayLength = len(pathObjsArray);
+						color = [0.0,0.0,1.0];
+						break;
+				}
+				
+				for(var i = 0; i < arrayLength; i++){			
+					tilePos = pathObjsArray[i].GetPosition();
+					if(cameraPos.x < tilePos.x + stepDistance && cameraPos.x > tilePos.x - stepDistance
+						&& cameraPos.z < tilePos.z + stepDistance && cameraPos.z  > tilePos.z - stepDistance){;
+						aadd(pathSteppedObjsArray, pathObjsArray[i]);
+						adel(pathObjsArray, i);
+						i = 0;
+						arrayLength--;
+					}
+				}			
+			}
 			break;
 		}
 	}
@@ -622,6 +705,7 @@ function Level2::GenerateFloorTiles(tilesSize, spaceSize, tilesThickness)
 	return returnObj;
 }
 
+
 function Level2::newTile(mesh, prevTilePos, offsets){
 	var newObj = CVmObj(mesh);
 	newObj.rotate(90, 1, 0, 0);
@@ -629,10 +713,10 @@ function Level2::newTile(mesh, prevTilePos, offsets){
 	return newObj;
 }
 
-function Level2::GenerateRedPath(tilesSize, spaceSize, tilesThickness){
+
+function Level2::GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness){
 	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
 	
-	redPathObjs = {};
 	var yOffset = 0.3*SCALE_FACTOR;
 	var xOffset = spaceSize + tilesSize;
 	var zOffset = spaceSize + tilesSize;
@@ -641,10 +725,10 @@ function Level2::GenerateRedPath(tilesSize, spaceSize, tilesThickness){
 	
 	//add the first tile
 	tileObj = newTile(tileMesh, [0,0,0], [(0*SCALE_FACTOR), yOffset, 1.7*SCALE_FACTOR]);
-	aadd(redPathObjs, tileObj);
+//	aadd(pathTilesObjs, tileObj);
 	
 	var direction = [0,0,1,0]; //Defines in which direction the path is going	
-	var pathVector = [0,0,0,1,0,0,2,0,0,1,0,0,0]; //0 = straight, 1 = turn left, 2 = turn right
+//	var pathVector = [0,0,0,1,0,0,2,0,0,1,0,0,0]; //0 = straight, 1 = turn left, 2 = turn right
 	for(var i = 0; i < len(pathVector); i++){	
 		if(pathVector[i] == 1 && direction.z == 1){
 			direction = [1,0,0,1];
@@ -666,18 +750,10 @@ function Level2::GenerateRedPath(tilesSize, spaceSize, tilesThickness){
 		
 		if(direction[3] == 0){
 			tileObj = newTile(tileMesh, tileObj.GetPosition(), [xOffset*direction.x, yOffset*direction.y, zOffset*direction.z]);
-			aadd(redPathObjs, tileObj);					
+			aadd(pathTilesObjs, tileObj);					
 		}	
 		else direction[3] = 0;
 	}
-}
-
-function Level2::GenerateGreenPath(tilesSize, spaceSize, tilesThickness){
-	
-}
-
-function Level2::GenerateBluePath(tilesSize, spaceSize, tilesThickness){
-	
 }
 
 function Level2::SetupOpenglLights()
