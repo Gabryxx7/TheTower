@@ -278,54 +278,58 @@ function Level2::Render()
 			var pathSteppedObjsArray;
 			var arrayLength;
 			var color;
+			var steppedColor;
 			for(var j = 0; j < 3; j++){
 				switch(j){
 					case 0:
 						pathObjsArray = redPathObjs;
 						pathSteppedObjsArray = redPathSteppedObjs;
 						arrayLength = len(pathObjsArray);
-						color = [1.0,0.0,0.0];
+						color = [0.65,0.0,0.0];
+						steppedColor = [1.0,0.0,0.0];
 						break;
 					case 1:
 						pathObjsArray = greenPathObjs;
 						pathSteppedObjsArray = greenPathSteppedObjs;
 						arrayLength = len(pathObjsArray);
-						color = [0.0,1.0,0.0];
+						color = [0.0,0.65,0.0];
+						steppedColor = [0.0,1.0,0.0];
 						break;
 					case 2:
 						pathObjsArray = bluePathObjs;
 						pathSteppedObjsArray = bluePathSteppedObjs;
 						arrayLength = len(pathObjsArray);
-						color = [0.0,0.0,1.0];
+						color = [0.0,0.0,0.65];
+						steppedColor = [0.0,0.0,1.0];
 						break;
 				}
 			
 				for(var i = 0; i < len(pathObjsArray); i++){
 					mSpotShader.Start();
-						mSpotShader.SetParameter("outline", false);
-						mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
-						mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-						pathObjsArray[i].Draw();
-					mSpotShader.Stop();
-					
-					
-					mSpotShader.Start();
-						mSpotShader.SetParameter("outline", true);
 						mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
 						mSpotShader.SetParameter("outlineColor", color);
 						mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+						mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
+						mSpotShader.SetParameter("stepped", false);
+						mSpotShader.SetParameter("outline", false);
 						pathObjsArray[i].Draw();
-					mSpotShader.Stop();				
+						mSpotShader.SetParameter("outline", true);
+						pathObjsArray[i].Draw();
+					mSpotShader.Stop();	
 				}
 				
 				for(var i = 0; i < len(pathSteppedObjsArray); i++){
-					pathSteppedObjsArray[i].Draw();
-					mSilhouetteShader.Start();
-						mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
-			    		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);		    		
+					mSpotShader.Start();
+						mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
+						mSpotShader.SetParameter("outlineColor", steppedColor);
+						mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+						mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
+						mSpotShader.SetParameter("stepped", true);
+						mSpotShader.SetParameter("outline", false);
 						pathSteppedObjsArray[i].Draw();
-					mSilhouetteShader.Stop();
-					
+						mSpotShader.SetParameter("outline", true);
+						pathSteppedObjsArray[i].Draw();
+					mSpotShader.Stop();					
 				}			
 			}
 		}
