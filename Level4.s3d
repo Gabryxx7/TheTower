@@ -99,6 +99,8 @@ class Level4
 	var mCurrentMirrorSide;
 	var mCurrentSide;
 	
+	var mMirrorSideIsLeft;
+	
 	var mControllersCurrentSideArray;
 	
 	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
@@ -156,6 +158,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mCurrentMirrorSide = 0;
 	mCurrentSide = 0;
 	
+	mMirrorSideIsLeft = true;
+	
 	mControllersCurrentSideArray = {0, 0};
 	mCurrentlyVisibleControllersArray = {};
 	
@@ -176,11 +180,11 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	connector2.SetLinkedConnector(connector1);
 	
 	
-	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
+	var connector3 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
 	connector3.SetPosition([-offset, 0, offsetFromFarWall]);
 	connector3.Rotate(15, 0, 1, 0);
 	
-	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
+	var connector4 = DrawingsConnector([0.0, 1.0, 1.0], 1, 2);
 	connector4.SetPosition([offset, 0, offsetFromFarWall]);
 	connector4.Rotate(203, 0, 1, 0);
 	
@@ -188,6 +192,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	connector4.SetLinkedConnector(connector3);
     connector3.SetLinkedConnector(connector4);
     
+    // Initially these connectors are hidden
     connector3.Hide();
     connector4.Hide();
 
@@ -604,14 +609,16 @@ function Level4::UpdateLogic(dt)
 //				mControllersDuplicateArray[i].Rotate(angle, 0, 1, 0);
 
     			var controllerPos = controller.GetPosition();
+    			
+    			var isNotInMirrorSide = mMirrorSideIsLeft ? controllerPos.z >= 0 : controllerPos.z <= 0;
 				    			    	
-		    	if(controllerPos.z >= 0 && controller.IsVisible())
+		    	if(isNotInMirrorSide && controller.IsVisible())
     			{
     				controller.Hide();
     				controllerDuplicate.Unhide();
     				mCurrentlyVisibleControllersArray[i] = controllerDuplicate;
     			}
-    			else if(controllerPos.z < 0 && !controller.IsVisible())
+    			else if(!isNotInMirrorSide && !controller.IsVisible())
     			{
     				controller.Unhide();
     				controllerDuplicate.Hide();
@@ -632,7 +639,7 @@ function Level4::UpdateLogic(dt)
     		HandleDrawings();
 
     		
-    		var distanceFromZaxis = cameraPosition.z;
+    		var distanceFromZaxis = mMirrorSideIsLeft ? cameraPosition.z : -cameraPosition.z;
     			
     		var alphaValue = distanceFromZaxis / mDistanceToZaxisThreshold;
     		
@@ -641,14 +648,13 @@ function Level4::UpdateLogic(dt)
 			else if(alphaValue <= 0)
 				alphaValue = 0.0;
 				    		
-//    		foreach(var connector in mConnectors)
 			foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
     		{
-    			if(alphaValue <= 0 && mPreviousAlpha > 0)
+				if(alphaValue <= 0 && mPreviousAlpha > 0)
 					connector.Hide();
 				else if(alphaValue > 0 && mPreviousAlpha <= 0)
 					connector.Unhide();
-				
+
 				if(!connector.IsHidden())
     				connector.SetAlpha(alphaValue);
     		}
@@ -691,6 +697,8 @@ function Level4::UpdateLogic(dt)
 				mPreviousAlpha = 0;
 				
 				mBackText.LoadString("When connections are created,\nthe world around you might change");
+				
+				mMirrorSideIsLeft = false;
 			}
 			
 			// If there are no group left in the array, it means that every group was connected and so the level is done. Time to open the elevator's door
