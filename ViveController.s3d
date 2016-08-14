@@ -12,6 +12,13 @@ class ViveController
 	
 	var mTipLocalCoordinates;
 	
+	var mBoundingBox;
+	
+	var mWidth;
+	var mHeight;
+	var mDepth;
+	
+	var mIsVisible;
 	
 	// Public functions
 	Draw();
@@ -24,10 +31,17 @@ class ViveController
 	GetPosition();
 	SetRotationMatrix(matrix);
 	GetRotationMatrix();
+	Rotate(angle, x, y, z);
 	SetRotation(angle, x, y, z);
 	LocalToWorld(point);
 	Hide();
 	Unhide();
+	SetScale(x, y, z);
+	IsVisible();
+	GetBoundingBox();
+	GetWidth();
+	GetHeight();
+	GetDepth();
 };
 
 
@@ -39,13 +53,21 @@ function ViveController::ViveController(controllerIndex)
 
 	mViveController = CVmObj(controllerMesh);
 
-	var boundingBox = controllerMesh.GetBoundingBox();
+	mBoundingBox = controllerMesh.GetBoundingBox();
+	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
+	var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
 	
-	mTipLocalCoordinates = [0, 0, -boundingBox[5] + boundingBox[5] / 5.0];
+	mWidth = abs(point2.x - point1.x);
+	mHeight = abs(point2.y - point1.y);
+	mDepth = abs(point2.z - point1.z);
+	
+	mTipLocalCoordinates = [0, 0, -mBoundingBox[5] + mBoundingBox[5] / 5.0];
 	
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	
 	mIsActionAvailable = false;
+	
+	mIsVisible = true;
 }
 
 /*
@@ -126,6 +148,12 @@ function ViveController::GetRotationMatrix()
 	return mViveController.GetRotationMatrix();
 }
 
+
+function ViveController::Rotate(angle, x, y, z)
+{
+	mViveController.RotateAbs(angle, x, y, z);
+}
+
 function ViveController::SetRotation(angle, x, y, z)
 {
 	mViveController.SetRotation(angle, x, y, z);
@@ -138,10 +166,43 @@ function ViveController::LocalToWorld(point)
 
 function ViveController::Hide()
 {
-	return mViveController.Hide();
+	mViveController.Hide();
+	mIsVisible = false;
 }
 
 function ViveController::Unhide()
 {
-	return mViveController.Unhide();
+	mViveController.Unhide();
+	mIsVisible = true;
 }
+
+function ViveController::SetScale(x, y, z)
+{
+	return mViveController.SetScale(x, y, z);
+}
+
+function ViveController::IsVisible()
+{
+	return mIsVisible;
+}
+
+function ViveController::GetBoundingBox()
+{
+	return mBoundingBox;
+}
+
+function ViveController::GetWidth()
+{
+	return mWidth;
+}
+
+function ViveController::GetHeight()
+{
+	return mHeight;
+}
+
+function ViveController::GetDepth()
+{
+	return mDepth;
+}
+
