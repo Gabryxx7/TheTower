@@ -36,6 +36,7 @@ class Room
 	
 	// Boolean that states if the front wall is present
 	var mHasFront;
+	var mHasFloor;
 	
 	// Corners of the room (these are local coordinates)
 	var mLowerCornerPosition;
@@ -83,7 +84,7 @@ class Room
  * centerInOrigin: (boolean) if true, the room is moved to the center of the coordinate system
  * lightNumber: (integer) the number of the opengl light that has to be used in the cel shader to render the room
  */
-function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigin, lightsRangeMin, lightsRangeMax)
+function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsRangeMin, lightsRangeMax, hasFront, hasFloor)
 {
 	mFarWallWidth = farWallWidth;
 	mSideWallWidth = sideWallWidth;
@@ -93,7 +94,15 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mHalfSideWidth = mSideWallWidth/2;
 	mHalfHeight = mRoomHeight/2;
 	
-	mHasFront = hasFront;
+	if(hasFront == NULL)
+		mHasFront = true;
+	else{
+		mHasFront = hasFront;
+	}
+	
+	if(hasFloor == NULL)
+		mHasFloor = true;
+	else mHasFloor = false;
 	
 	mLightsRangeMin = lightsRangeMin;
 	mLightsRangeMax = lightsRangeMax;
@@ -182,18 +191,21 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	// Created the meshes, time to create the CVmObjects
 	mBackWallObj = CVmObj(mFarWallMesh);
 	mRoofObj = CVmObj(mRoofMesh);
-	mFloorObj = CVmObj(mRoofMesh);
 	mLeftWallObj = CVmObj(mSideWallMesh);
 	mRightWallObj = CVmObj(mSideWallMesh);
 	
 	// If the room has a front wall I create that too
 	if(mHasFront)
 		mFrontWallObj = CVmObj(mFarWallMesh);
+		
+	if(mHasFloor){
+		mFloorObj = CVmObj(mRoofMesh);
+		mFloorObj.Rotate(90, 1, 0, 0);
+	}
 	
 	// Rotating the roof and floor so they get perpendicular to the y axis
 	mRoofObj.Rotate(90, 1, 0, 0);
-	mFloorObj.Rotate(90, 1, 0, 0);
-
+	
 	// Rotating the side walls so they get perpendicular to the x axis
 	mLeftWallObj.SetRotation(-90, 0, 1, 0);
 	mRightWallObj.SetRotation(90, 0, 1, 0);
@@ -203,7 +215,10 @@ function Room::Room(farWallWidth, sideWallWidth, height, hasFront, centerInOrigi
 	mRoom = CVmObj();
 	mRoom.AddChild(mBackWallObj, 0, 0, -0.09 * SCALE_FACTOR);
 	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0.05 * SCALE_FACTOR, mHalfSideWidth);
-	mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0.05 * SCALE_FACTOR, mHalfSideWidth);
+	
+	if(mHasFloor)
+		mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0.05 * SCALE_FACTOR, mHalfSideWidth);
+		
 	mRoom.AddChild(mLeftWallObj, -mHalfFarWidth, 0, mHalfSideWidth);
 	mRoom.AddChild(mRightWallObj, mHalfFarWidth, 0, mHalfSideWidth);
 	
@@ -312,27 +327,32 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 	var intersectedObject = -1;
 	var contactPointTmp;
 	var normalTmp;
+	var planePoint;
 	
-	// To find the interception of a plane I first need one of its point: I get the coordinates of the floor first. Since it's a child of the mRoom object
-	// I need to add its position (NOTE: this will work only if the room is NOT a child of something else); I then add 1 to make sure that
-	// the plane is considered inside the room
-	var planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1 * SCALE_FACTOR, 0];
 	
-	// I compute the normal of the plane
-	normalTmp = ComputeNormalOfPlanarObject(mFloorObj);
-		
-	// I check for interceptions
-	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
-	
-	// If one was found and it's inside the room (remember, planes are infinite, so maybe there was an interception but outside the room, so it's no good)
-	// I return the 0 to indicate that
-	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	if(mHasFloor)
 	{
-		contactPointTmp -= [0, 1 * SCALE_FACTOR, 0];
-		intersectedObject = 0;
+		// To find the interception of a plane I first need one of its point: I get the coordinates of the floor first. Since it's a child of the mRoom object
+		// I need to add its position (NOTE: this will work only if the room is NOT a child of something else); I then add 1 to make sure that
+		// the plane is considered inside the room
+		planePoint = mFloorObj.GetPosition() + GetPosition() + [0, 1 * SCALE_FACTOR, 0];
 		
-		contactPoint = contactPointTmp;
-		normal = normalTmp;
+		// I compute the normal of the plane
+		normalTmp = ComputeNormalOfPlanarObject(mFloorObj);
+			
+		// I check for interceptions
+		contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+		
+		// If one was found and it's inside the room (remember, planes are infinite, so maybe there was an interception but outside the room, so it's no good)
+		// I return the 0 to indicate that
+		if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+		{
+			contactPointTmp -= [0, 1 * SCALE_FACTOR, 0];
+			intersectedObject = 0;
+			
+			contactPoint = contactPointTmp;
+			normal = normalTmp;
+		}	
 	}
 		
 		

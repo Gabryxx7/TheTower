@@ -205,13 +205,13 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 1);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 1);
 
 	// 	Creating the portal rooms
-	var portalRoom1 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, false, true, 0, 0);
-	var portalRoom2 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, false, true, 0, 0);
-	var portalRoom3 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, false, true, 0, 0);
-	var portalRoom4 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, false, true, 0, 0);
+	var portalRoom1 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
+	var portalRoom2 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
+	var portalRoom3 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
+	var portalRoom4 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
 	
 	// Moving the portal rooms away. This is not actually needed, but I do it to enhance the fact that they're NOT in the main room
 	portalRoom1.Translate(-100, 0, 0);

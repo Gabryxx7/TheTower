@@ -70,7 +70,7 @@ class Elevator
  */
 function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin, lightsRangeMax)
 {
-	mElevatorRoom = Room(elevatorWidth, sideWallWidth, height, false, true, lightsRangeMin, lightsRangeMax);	
+	mElevatorRoom = Room(elevatorWidth, sideWallWidth, height, true, lightsRangeMin, lightsRangeMax, false);	
 	
 	var halfHeight = height/2.0;
 	

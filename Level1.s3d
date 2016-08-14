@@ -157,7 +157,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, true, 1, 2);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mLinesTimeVariable = 0;

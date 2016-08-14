@@ -112,7 +112,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 1, 2);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");

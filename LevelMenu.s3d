@@ -86,7 +86,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	menuRoom_WidthFar = 45 * SCALE_FACTOR;
 	menuRoom_WidthSide = 45 * SCALE_FACTOR;
 	menuRoom_Height = 19 * SCALE_FACTOR;
-	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, true, 1, 2);
+	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 1, 2);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");

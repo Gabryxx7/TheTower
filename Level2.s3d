@@ -115,9 +115,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, true, 2, 2);
-	mPortalRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, false, true, 0, 0);	
-	mPortalRoom.Translate(0, 0, -10);	
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 2, 2, true, false);
+	mPortalRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, true, 0, 0, false);	
 	mPortalRoom.Rotate(-90, 1, 0, 0);	
 	
 	var halfWidth = ROOM_FAR_WALL_WIDTH/2;
@@ -128,6 +127,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 //	mPortalFrame.Translate(0, 0.4, 15);
 	mPortalFrame.Rotate(90, 1, 0, 0);
 	mPortalFrameNormal = [0, 0, 1];
+	mPortalRoom.GetObj().SetPosition(0, -PIT_HEIGHT, 0);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -231,10 +231,11 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(45,1,1,0);
-	mPortalRoom.AddObject(provaMeshObj, -18.0 * SCALE_FACTOR, -18.0 * SCALE_FACTOR, PIT_HEIGHT-50.0 * SCALE_FACTOR);	
+	provaMeshObj.SetPosition(mPortalRoom.LocalToWorld([-18.0 * SCALE_FACTOR, -18.0 * SCALE_FACTOR, 50.0 * SCALE_FACTOR]));
+//	mPortalRoom.AddObject(provaMeshObj, -18.0 * SCALE_FACTOR, -18.0 * SCALE_FACTOR, 50.0 * SCALE_FACTOR);	
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(75,1,0,1);
-	mPortalRoom.AddObject(provaMeshObj, -25.0 * SCALE_FACTOR, -8.0 * SCALE_FACTOR, PIT_HEIGHT-18.0 * SCALE_FACTOR);	
+//	mPortalRoom.AddObject(provaMeshObj, -25.0 * SCALE_FACTOR, -8.0 * SCALE_FACTOR, 18.0 * SCALE_FACTOR);	
 	
 	redPathObjs = {};
 	redPathSteppedObjs = {};
@@ -242,9 +243,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	greenPathSteppedObjs = {};
 	bluePathObjs = {};
 	bluePathSteppedObjs = {};
-	GeneratePath(redPathObjs, [0,0,0,1,0,0,2,0,0,1,0,0,0,1], 2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
-	GeneratePath(greenPathObjs, [1,0,0,0,1,0,0,2,0,0,1,0,0,0,1], 2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
-	GeneratePath(bluePathObjs, [2,0,0,0,1,0,0,2,0,0,1,0,0,0,1], 2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
+	GeneratePath(redPathObjs, [0,0,0,1,0,0,2,0,0,1,0,0,0,1,0,0,0,2,0,0,0,1,0], 2.5*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.2 * SCALE_FACTOR);
+	GeneratePath(greenPathObjs, [1,0,0,0,1,0,0,2,0,0,0,0,0,0,1,0,0,0,1,0,0,0], 2.5*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.2 * SCALE_FACTOR);
+	GeneratePath(bluePathObjs, [2,0,0,0,1,0,0,2,0,0,1,0,2,0,0,0,1,0,0,0,1,0,0,0,2,0,0], 2.5*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.2 * SCALE_FACTOR);
 //	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 }
 
@@ -270,7 +271,8 @@ function Level2::Render()
 		case STATUS_LEVEL_STARTED:
 		{
 			// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-			DrawAllPortals();
+//			DrawAllPortals();
+			mPortalRoom.Draw();
 			
 			mMainRoom.Draw();
 			
@@ -337,6 +339,7 @@ function Level2::Render()
 
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
+	provaMeshObj.Draw();
 
 	if(mIsVRon)
 	{
@@ -579,7 +582,6 @@ function Level2::UpdateLogic(dt)
 			var pathSteppedObjsArray;
 			var arrayLength;
 			var color;
-			var steppedTileMesh;
 			for(var j = 0; j < 3; j++){
 				switch(j){
 					case 0:
@@ -605,7 +607,7 @@ function Level2::UpdateLogic(dt)
 				for(var i = 0; i < arrayLength; i++){			
 					tilePos = pathObjsArray[i].GetPosition();
 					if(cameraPos.x < tilePos.x + stepDistance && cameraPos.x > tilePos.x - stepDistance
-						&& cameraPos.z < tilePos.z + stepDistance && cameraPos.z  > tilePos.z - stepDistance){;
+						&& cameraPos.z < tilePos.z + stepDistance && cameraPos.z  > tilePos.z - stepDistance){
 						aadd(pathSteppedObjsArray, pathObjsArray[i]);
 						adel(pathObjsArray, i);
 						i = 0;
