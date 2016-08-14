@@ -103,7 +103,7 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	if(hasFloor == NULL)
 		mHasFloor = true;
 	else{
-		mHasFloor = hasFront;
+		mHasFloor = hasFloor;
 	}
 	
 	mLightsRangeMin = lightsRangeMin;
