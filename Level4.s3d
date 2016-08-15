@@ -4,15 +4,17 @@
 #define STATUS_LEVEL_STARTED 2
 #define STATUS_LEVEL_ENDING 3
 
+/*
+ * This level is strictly related to Level1; most of the things were copied and pasted. Comments will be on the parts that are different
+ */
 class Level4
 {
 	var mIsVRon;
 	
-	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
 	var mEndTimer;
-	var mTimeToEnd; // Time in millisecond that it takes to end the level when the mEndTimer is activated
+	var mTimeToEnd;
 	
 	var mLevelStatus;
 	
@@ -39,7 +41,8 @@ class Level4
 	
 	var mOpenglTranslationOffset;
 	
-	// Array containing the Vive controllers (ViveController objects), if VR is on
+	// Array containing the Vive controllers (ViveController objects), if VR is on; also, array containing duplicates and the currently 
+	// visible controllers (among real ones and duplicates)
 	var mControllersArray;
 	var mControllersDuplicateArray;
 	var mCurrentlyVisibleControllersArray;
@@ -58,51 +61,34 @@ class Level4
 	var mControllersInLightArray;
 	var mIsControllerInLight;
 	
-	// Array containing all the DrawingConnectors object
 	var mConnectors;
-	
-	// Array containing arrays of DrawingConnectors in groups (because I'm lazy I created another one containing groups)
 	var mConnectorsGroups;
 	
+	// This variable contains the index of the currently active group among the ones in the mConnectorsGroups array 
 	var mCurrentActiveGroup;
 	
-	// For every line that was "connected" to a connectors, this array contains the starting DrawingConnector of that line. I need it in order
-	// to pass to the line's shader the correct values in terms of colors
 	var mStartingConnectorsArray;
-	
-	// If the player started a drawing inside a light cone, this variable contains that DrawingConnector
 	var mStartingActiveConnector;
-	
-	// This boolean is true when the player starts a drawing inside a connector that has a connection available
 	var mGoodStartingPoint;
-	
-	// This variable contains the currently active connector, i.e. a connector in which there is a controller inside
 	var mCurrentActiveConnector;
+	
+	var mConnectorsGroupLinkedCounter;
 	
 	// Text objects used in the level
 	var mFrontText;
 	var mBackText; 
 	var mLeftText; 
 	
-	// Counter of the connectors actually "connected"; it increments when, in a group of connectors, everyone of them is connected
-	var mConnectorsGroupLinkedCounter;
 	
 	// This float holds the value that is the threshold used to fade things out from one side or the other of the level
 	var mDistanceToZaxisThreshold;
 	
+	// Previous alpha value for the connectors; used to make them disappear/appear when you walk to/away from them
 	var mPreviousAlpha;
-	
-	var mInvisibilityShader;
-	
-	var mDrawDuplicateControllers;
-	
-	var mCurrentMirrorSide;
-	var mCurrentSide;
-	
+			
+	// This boolean is true if the left side of the room is being mirrored, or false if it's the opposite side being mirrored
 	var mMirrorSideIsLeft;
-	
-	var mControllersCurrentSideArray;
-	
+		
 	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
 	var mDebugController;
 	var mDebugControllerHidden;
@@ -122,10 +108,6 @@ class Level4
 	SetupOpenglLights();
 };
 
-
-/*
- * Constructor. Takes as parameter a boolean that states whether VR is on or not, the input manager of the application and the sound manager
- */
 function Level4::Level4(isVRon, inputManager, soundManager)
 {		
 	mIsVRon = isVRon;
@@ -133,40 +115,25 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
-	// Initially the level is not ending (you don't say?)
 	mEnding = false;
 	mIsLevelCompleted = false;
 	mTimeToEnd = 2500;
 		
-	// User is not drawing
 	mIsDrawing = false;
 	mGoodStartingPoint = false;
 		
-	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
 	
-	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
 	
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mLinesTimeVariable = 0;
 	
-	mInvisibilityShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); }", true);
-	mDrawDuplicateControllers = false;
-
-	mCurrentMirrorSide = 0;
-	mCurrentSide = 0;
-	
-	mMirrorSideIsLeft = true;
-	
-	mControllersCurrentSideArray = {0, 0};
-	mCurrentlyVisibleControllersArray = {};
-	
-	// Now I create all the connectors; their positions and rotations were found by trial and error
 	var offsetFromFarWall = mMainRoom.GetRoomDepth()/2 - 20.0 * SCALE_FACTOR;
 	var offset = 20 * SCALE_FACTOR;
 	
+	// The first 2 connectors that appear
 	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
 	connector1.SetPosition([-offset, 0, -offsetFromFarWall]);
 	connector1.Rotate(15, 0, 1, 0);
@@ -179,7 +146,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	connector1.SetLinkedConnector(connector2);
 	connector2.SetLinkedConnector(connector1);
 	
-	
+	// The second group of connectors
 	var connector3 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
 	connector3.SetPosition([-offset, 0, offsetFromFarWall]);
 	connector3.Rotate(15, 0, 1, 0);
@@ -188,7 +155,6 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	connector4.SetPosition([offset, 0, offsetFromFarWall]);
 	connector4.Rotate(203, 0, 1, 0);
 	
-	// This is group 2: the connectors on the left of the elevator
 	connector4.SetLinkedConnector(connector3);
     connector3.SetLinkedConnector(connector4);
     
@@ -205,22 +171,23 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	mConnectorsGroups = {};
 	
-	// I add the groups to this other array, because I'm lazy
 	aadd(mConnectorsGroups, {connector1, connector2});
 	aadd(mConnectorsGroups, {connector3, connector4});
 	
 	mConnectorsGroupLinkedCounter = 0;
 	mCurrentActiveGroup = 0;
 	
-	// Initially no controller is inside a light
+	// Initially the mirror side is the left one
+	mMirrorSideIsLeft = true;
+	
 	mIsControllerInLight = false;
 	mControllersInLightArray = {false, false};
 	
-	// Initially no controller is being used
 	mControllerBeingUsedIndex = 0;
 	
 	mControllersArray = {};
 	mControllersDuplicateArray = {};
+	mCurrentlyVisibleControllersArray = {};
 		
 	if(mIsVRon)
 	{
@@ -233,9 +200,11 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		aadd(mCurrentlyVisibleControllersArray, controller1);
 		aadd(mCurrentlyVisibleControllersArray, controller2);
 		
+		// I create the duplicates of the controllers so that I can move them around in the mirrored side
 		var controllerDuplicate1 = ViveController(1);
 		var controllersDuplicate2 = ViveController(2);
 		
+		// Initially these controllers are the visible ones
 		aadd(mControllersDuplicateArray, controllerDuplicate1);
 		aadd(mControllersDuplicateArray, controllersDuplicate2);
 	}
@@ -246,13 +215,17 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		global var controllerHidden = false;
 		global var keyhit = false;
 		mDebugController.SetRotation(90, 0, 1, 0);
-//		mDebugController.SetScale(0, -1, 1);
+
 		aadd(mControllersArray, mDebugController);
-		
 		aadd(mCurrentlyVisibleControllersArray, mDebugController);
+		
+		// I need to create the second controller too so that I don't have differentiate the rest of the code when VR is on or off, but I hide it
+		var controllerDuplicate2 = ViveController(2);
+		controllerDuplicate2.Hide();
 		
 		var controllerDuplicate1 = ViveController(1);
 		aadd(mControllersDuplicateArray, controllerDuplicate1);
+		aadd(mControllersDuplicateArray, controllerDuplicate2);
 	}
 	
 	
@@ -275,9 +248,6 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	mLeftText = Text("Not all connections need to be made physically", 2.0);
 	mLeftText.Rotate(270, 0, 1, 0);
-	
-	var stickMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [0.003 * SCALE_FACTOR, 0.5 * SCALE_FACTOR, 0.001 * SCALE_FACTOR]); 
-	global var box = CVmObj(stickMesh);
 }
 
 
@@ -312,25 +282,20 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mElevator = elevator;
 	mElevator.SetLightsRange(0,0);
 	
-	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
 	
-	// Computing the distance that the elevator has to cross at the beginning of the level and the time to do it
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 	
-	// The final position of the elevator (after the animation is complete) is the current one
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
-	// Creating the animation for the elevator	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 	
-	// Computing the offset of the camera, so that it stays always at the same level as the elevator while it goes up
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
-	// Starting status for the level
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
+	// I move the room a bit so that the elevator is completely in the center of the room
 	mMainRoom.Translate(-mElevator.GetRoomDepth() / 2.0 + 3.0 * SCALE_FACTOR, 0, -mElevator.GetRoomWidth() / 2.0);
 	
 	// I set now the position of a text that needed to know where the elevator was
@@ -350,22 +315,18 @@ function Level4::Level4(isVRon, inputManager, soundManager)
  */
 function Level4::Render()
 {	
-	// If the user teleported modifying the mOpenglTranslationOffset, the lights will be in the wrong places. So at each frame I reset their 
-	// position, but note that I'm not setting the position acoordint to the offset: since in the GameManager the offset was used for the glTranslate(), at
-	// this point the world is already moved, and since I'm moving the light directly with opengl (so that the effect can be seen also with the Vive),
-	// I don't need to add the offset to the position, it's already taken care of
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
 	
-	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
 
-	foreach(var controller in mControllersArray)
-		controller.Draw();
-
-	foreach(var controllerDuplicate in mControllersDuplicateArray)
-		controllerDuplicate.Draw();
+	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
+	for(var i = 0; i < len(mControllersArray); i++)
+	{
+		mControllersArray[i].Draw();
+		mControllersDuplicateArray[i].Draw();
+	}
 	
 	switch(mLevelStatus)
 	{
@@ -379,20 +340,15 @@ function Level4::Render()
 
 			glLineWidth(5);
 			
-			// Time to render the drawings
 			mDrawingShader.Start();	
 				mDrawingShader.SetParameter("time", mLinesTimeVariable);
 
-				// I iterate over all drawings
 				for(var i = 0; i < len(mDrawingsArray); i++)
 				{
-					// I get the vertices and alpha value for the current drawing
 					var vertexArray = mDrawingsArray[i];
 
-					// Depending on the kind of line we have to pass different things to the shader. This is the case that the line is "connected" to the connectors.
 					if(mIsDrawingConnectedArray[i])
 					{
-						// I get the starting connector for this drawing and the one it's linked to, so that I can get information
 						var startingConnector = mStartingConnectorsArray[i];
 						var linkedConnector = startingConnector.GetLinkedConnector();
 						
@@ -404,13 +360,11 @@ function Level4::Render()
 					}
 					else
 					{
-						// If the line is not "connected", i pass an alpha value so that the line can disappear over time
 						var alpha = mDrawingsAlphaArray[i];
 						mDrawingShader.SetParameter("alpha", alpha);
 						mDrawingShader.SetParameter("lineIsConnected", false);
 					}
 					
-					// I iterate over all vertices, two by two: the first one is the starting point of a single line, the second one is the end point
 					for(var i = 0; i < len(vertexArray); i += 2)
 					{
 						var point0 = vertexArray[i];
@@ -424,7 +378,6 @@ function Level4::Render()
 				}
 			mDrawingShader.Stop();
 			
-			// Incrementing the time variable for the lines, so that the dynamic effect can be achieved
 			mLinesTimeVariable += 0.01;
 			
 			
@@ -433,24 +386,17 @@ function Level4::Render()
 			mBackText.Draw();
 			mLeftText.Draw();
 			
-			box.Draw();
-						
-			// I update the time variable (used for the shader) of the connectors and draw them; note: I only draw the connector object now, without the
-			// light cones. This is because the light cones are transparent and need to be drawn last in the scene, otherwise the transparency would be wrong
 			foreach(var connector in mConnectors)
 			{
 				connector.UpdateTimeVariable();
 				connector.Draw();
 			}
 			
-			// To draw the light cones I disable writing into the Z-buffer: they only need to read from it
 			glDepthMask(GL_FALSE); 
 			
-			// Now I draw the light cones
 			foreach(var connector in mConnectors)
 				connector.DrawLightCone(false);
 			
-			// Restore the depth buffer as it was
 			glDepthMask(GL_TRUE); 
 
 			break;
@@ -470,7 +416,6 @@ function Level4::Render()
  */
 function Level4::UpdateLogic(dt)
 {
-	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
@@ -481,7 +426,6 @@ function Level4::UpdateLogic(dt)
 	{
 		mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
 		
-		// I also check if Y is pressed: this hides/unhides the debug controller
 		if(KeyPressed("Y"))
 		{
 			if(!mDebugKeyHit)
@@ -528,31 +472,23 @@ function Level4::UpdateLogic(dt)
 	
 	switch(mLevelStatus)
 	{
-		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
-		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
-	
-			// I check if the elevator is halfway through the transtition; if this is the case, I change its lights range for the rendering (but only
-			// if I didn't do so already)
+
 			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0 && mElevator.GetLightsRange().y < 1)
 				 mElevator.SetLightsRange(1,2);
 			
-			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
 			cameraPosition.y = mCameraYoffset + elevatorPos.y;
 	   	    
-			// To make the shaking camera effect, I randomly move the x and y axis with random values
 		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
 		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
 			
-			// I set the new (shaken and at level with the elevator) position
 			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
 			
-			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
@@ -566,11 +502,8 @@ function Level4::UpdateLogic(dt)
 	
 			break;
 		}		
-		// This is the case where the elevator arrived, BUT the player is still inside
 		case STATUS_ELEVATOR_ARRIVED:
 		{
-			// I check if the player goes out from the elevator. Note: I'm not checking that he exits from the doors; he can pass through walls right now.
-			// If the player comes out, I close the doors and change status
 			if(!mElevator.IsPointInElevator(cameraPosition))
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
@@ -590,34 +523,46 @@ function Level4::UpdateLogic(dt)
 			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 		    	
+	    	// Now I have to change the position of the duplicates controller so that they mirror the real ones
 	    	for(var i = 0; i < len(mControllersArray); i++)
     		{
     			var controller = mControllersArray[i];
     			var controllerDuplicate = mControllersDuplicateArray[i];
 	
-//				var matrix3 = [ rotationMatrix[0], rotationMatrix[1], rotationMatrix[2],
-//							    rotationMatrix[4], rotationMatrix[5], rotationMatrix[6], 
-//							    rotationMatrix[8], rotationMatrix[9], rotationMatrix[10] ];
-//							    
-//			    var quaternion = Matrix3ToQuaternion(matrix3);
-//				var euler = QuaternionToEuler(quaternion);
-//				    			
-//    			mControllersDuplicateArray[i].SetRotationMatrix(rotationMatrix);
-//
-//				var angle = 180 - euler[1] * 2.0;
-//				
-//				mControllersDuplicateArray[i].Rotate(angle, 0, 1, 0);
+				/*
+				  This code below is to rotate the duplicate so that it mirrors exactly the real controllers; it's not being used anymore but
+				  I leave it here because it took me a while to figure it out and it might be useful in the future
+				
+				var matrix3 = [ rotationMatrix[0], rotationMatrix[1], rotationMatrix[2],
+							    rotationMatrix[4], rotationMatrix[5], rotationMatrix[6], 
+							    rotationMatrix[8], rotationMatrix[9], rotationMatrix[10] ];
+							    
+			    var quaternion = Matrix3ToQuaternion(matrix3);
+				var euler = QuaternionToEuler(quaternion);
+				    			
+    			mControllersDuplicateArray[i].SetRotationMatrix(rotationMatrix);
+
+				var angle = 180 - euler[1] * 2.0;
+				
+				mControllersDuplicateArray[i].Rotate(angle, 0, 1, 0);
+				*/
 
     			var controllerPos = controller.GetPosition();
     			
+    			// The z coordinate where the side ends is 0. Depending on what is the mirror side, in order to check if the controller has changed side
+    			// I need to check if its z coordinate is positive or negative
     			var isNotInMirrorSide = mMirrorSideIsLeft ? controllerPos.z >= 0 : controllerPos.z <= 0;
-				    			    	
+				    			
+    			// If the real controller is NOT in the mirror side and it was visible, I need to hide it and show the duplicate    	
 		    	if(isNotInMirrorSide && controller.IsVisible())
     			{
     				controller.Hide();
     				controllerDuplicate.Unhide();
+    				
+    				// I set that the duplicate is visible now
     				mCurrentlyVisibleControllersArray[i] = controllerDuplicate;
     			}
+    			// If the real controller is in the mirror side and wasn't visible before, I unhide it
     			else if(!isNotInMirrorSide && !controller.IsVisible())
     			{
     				controller.Unhide();
@@ -625,83 +570,80 @@ function Level4::UpdateLogic(dt)
     				mCurrentlyVisibleControllersArray[i] = controller;
     			}
     			
+    			// If the duplicate controller is visible, I change its position to mirror the real one
     			if(controllerDuplicate.IsVisible())
     			{
+    				// I set the rotation matrix
 	    			var rotationMatrix = controller.GetRotationMatrix();
 	    			controllerDuplicate.SetRotationMatrix(rotationMatrix);
 	    			
+	    			// I only need to change the z coordinates of the real controller's position so that it has the opposite sign
 					controllerPos.z = -controllerPos.z;
 	    			controllerDuplicate.SetPosition(controllerPos);
     			}
     		}
-		    	
-			CheckActiveConnector();
-    		HandleDrawings();
-
-    		
+		    
+		    // Now I have to check if the player is near the threshold around the z = 0 axis, and in that case change the alpha of the connectors accordingly.
+		    // Depending on which is the side that works as a mirror, I take the z position of the camera
     		var distanceFromZaxis = mMirrorSideIsLeft ? cameraPosition.z : -cameraPosition.z;
     			
+			// I compute the alpha value. Basically to compute it I normalize the current distance with the threshold distance
     		var alphaValue = distanceFromZaxis / mDistanceToZaxisThreshold;
     		
+    		// I make sure that the range is always between 0 and 1
     		if(alphaValue >= 1.0)
     			alphaValue = 1.0;
 			else if(alphaValue <= 0)
 				alphaValue = 0.0;
 				    		
+    		// Now depending on the alpha value I need to hide/unhide or modify the alpha of the connectors in the currently active group
 			foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
     		{
+    			// If the player crossed the axis and before the alpha wasn't zero then it's the first time he's crossing, so I hide the connector
 				if(alphaValue <= 0 && mPreviousAlpha > 0)
 					connector.Hide();
+				// Same thing but going to the other side
 				else if(alphaValue > 0 && mPreviousAlpha <= 0)
 					connector.Unhide();
 
+				// If the connector is visible, I change its alpha value
 				if(!connector.IsHidden())
     				connector.SetAlpha(alphaValue);
     		}
     		
+    		// Now I can update the previous alpha value
 			mPreviousAlpha = alphaValue;
     		
+	    	// Now I can handle the connectors and the drawings
+			CheckActiveConnector();
+    		HandleDrawings();
 			
-			// Now I check the connectors group, to see if I find one in which every connector is connected; I start from the end since I'm going to remove elements
-//			for(var i = len(mConnectorsGroups) - 1; i >= 0; i--)
-//			{
-//				var group = mConnectorsGroups[i];
-//				var allConnected = true;
-//				
-//				// I iterate over all the group until either I finish the elements or I find one that isn't connected
-//				for(var j = 0; j < len(group) && allConnected; j++)
-//					allConnected = group[j].IsConnected();
-//				
-//				// If every connector in the group is connected, I remove the group from the array, play a sound (from Level0) and increment the counter
-//				if(allConnected)
-//				{
-//					adel(mConnectorsGroups, i);
-//					mSoundManager.PlaySound(mConnectorsGroupLinkedCounter, true, 1);
-//					mConnectorsGroupLinkedCounter++;
-//				}
-//			}
-
+			// Now I have to check if the current active group has been connected. The check is a little bit different than the one in Level1, since I need
+			// to check only 1 group at the time; a difference is that I don't remove groups from the array, even if they're all connected
 			var currentConnectors = mConnectorsGroups[mCurrentActiveGroup];
 			var allConnected = true;
 			
 			for(var i = 0; i < len(currentConnectors) && allConnected; i++)
 				allConnected = currentConnectors[i].IsConnected();
 							
-			// If every connector in the group is connected, I remove the group from the array, play a sound (from Level0) and increment the counter
+			// If every connector in the group is connected, I switch to the next one which is currently the last group
 			if(allConnected)
 			{
 				mSoundManager.PlaySound(mConnectorsGroupLinkedCounter, true, 1);
 				mConnectorsGroupLinkedCounter++;
 				
+				// I update the counter and reset the alpha value, used to hide/unhide the connectors
 				mCurrentActiveGroup++;
 				mPreviousAlpha = 0;
 				
+				// I change the text behind the elevator
 				mBackText.LoadString("When connections are created,\nthe world around you might change");
 				
-				mMirrorSideIsLeft = false;
+				// I set that the side that is mirrored is the opposite one now
+				mMirrorSideIsLeft = !mMirrorSideIsLeft;
 			}
 			
-			// If there are no group left in the array, it means that every group was connected and so the level is done. Time to open the elevator's door
+			// I check if every connector has been connected
 			if(len(mConnectorsGroups) == mConnectorsGroupLinkedCounter)
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
@@ -710,8 +652,14 @@ function Level4::UpdateLogic(dt)
 				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
-				// I switch status
 				mLevelStatus = STATUS_LEVEL_ENDING;
+				
+				// Now I have to unhide the controllers and hide the duplicate ones
+				for(var i = 0; i < len(mControllersArray); i++)
+				{
+					mControllersArray[i].Unhide();
+					mControllersDuplicateArray[i].Hide();
+				}
 			}
 			
 			break;
@@ -746,9 +694,12 @@ function Level4::UpdateLogic(dt)
 	mSoundManager.UpdateMusic(dt);
 }
 
+/*
+ * This method works the same as the one in Level1, except for the array of connectors used for the check
+ */
 function Level4::CheckActiveConnector()
 {
-//	foreach(var connector in mConnectors)
+	// I check only the connectors in the currently active group
 	foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
 	{
 		// I have to check if any of the available controllers (the visible ones) is going inside or outside of a connector
@@ -789,6 +740,9 @@ function Level4::CheckActiveConnector()
 	}
 }
 
+/*
+ * This method works the same as the one in Level1, except for the array of controllers used to check the points
+ */
 function Level4::HandleDrawings()
 {
 	// Now I check if the player is drawing; I first check if he pressed a button
