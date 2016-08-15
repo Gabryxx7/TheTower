@@ -95,6 +95,9 @@ class Level2
 	
 	var mController1;
 	var mController2;
+	
+	
+	var redNumberObjs;
 		
 	// Private functions
 	DrawAllPortals();
@@ -136,7 +139,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var halfWidth = ROOM_FAR_WALL_WIDTH/2;
 	var halfHeight = ROOM_SIDE_WALL_WIDTH/2;
 	
-	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfWidth, 0], 2, 2);
+	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 0, [-halfWidth, -halfHeight, 0], [halfWidth, halfWidth, 0], 2, 2);
 	mPortalFrame = CVmObj(portalFrameMesh);
 //	mPortalFrame.Translate(0, 0.4, 15);
 	mPortalFrame.Rotate(90, 1, 0, 0);
@@ -262,7 +265,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	pinkPathWalked = false;
 	numberOfPaths = 3;
 	//-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-	GeneratePath(redPathObjs, [3,-1,2,-2,2,-1,3,-1,3,-2,3,-1,2], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
+	GeneratePath(redPathObjs, [3,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
 	GeneratePath(greenPathObjs, [-1,5,-1,2,-2,6,-1,4,-1,3], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
 	GeneratePath(bluePathObjs, [-2,3,-1,2,-2,3,-1,1,-2,3,-1,3,-1,3,-2,2], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
 //	GeneratePath(pinkPathObjs, [-2,1,-1,6], 2.5*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.2 * SCALE_FACTOR)
@@ -272,10 +275,34 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	numpadTextsObj = {};
 	var tilesSize = 0.75 * SCALE_FACTOR;
 	var tilesSpaces = 0.04 * SCALE_FACTOR;
-	var tilesThickness = 0.08 * SCALE_FACTOR;
+	var tilesThickness = 0.1 * SCALE_FACTOR;
 	CreateNumPad(numpadButtonsObj, numpadTextsObj, tilesSize, tilesSpaces, tilesThickness);	
-	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-tilesSize*5/2, 0, 0], [tilesSize*5/2, tilesSize*12, 0], tilesThickness*1.5));
+	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-tilesSize*5/2, 0, 0], [tilesSize*5/2, mElevator.GetRoomHeight(), 0], tilesThickness*1.5));
 	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(tilesSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + tilesThickness);
+
+	
+	redNumberObjs = {};
+	var triangleMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description
+	var offset = [20,0,20];
+	aadd(redNumberObjs, CvmObj(triangleMesh));
+	redNumberObjs[0].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+	redNumberObjs[0].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
+	aadd(redNumberObjs, CvmObj(triangleMesh));
+	redNumberObjs[1].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+	redNumberObjs[1].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
+	aadd(redNumberObjs, CvmObj(triangleMesh));
+	redNumberObjs[2].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+	redNumberObjs[2].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
+	aadd(redNumberObjs, CvmObj(triangleMesh));
+	redNumberObjs[3].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+	redNumberObjs[3].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
+	aadd(redNumberObjs, CvmObj(triangleMesh));
+	redNumberObjs[4].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+	redNumberObjs[4].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
+	aadd(redNumberObjs, CvmObj(triangleMesh));
+	redNumberObjs[5].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+	redNumberObjs[5].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
+	
 }
 
 
@@ -307,6 +334,7 @@ function Level2::Render()
 			
 			var pathObjsArray;
 			var pathSteppedObjsArray;
+			var numberObjsArray;
 			var arrayLength;
 			var color;
 			var steppedColor;
@@ -315,60 +343,73 @@ function Level2::Render()
 					case 0:
 						pathObjsArray = redPathObjs;
 						pathSteppedObjsArray = redPathSteppedObjs;
+						numberObjsArray = redNumberObjs;
 						color = [0.65,0.0,0.0];
 						steppedColor = [1.0,0.0,0.0];
 						break;
 					case 1:
 						pathObjsArray = greenPathObjs;
 						pathSteppedObjsArray = greenPathSteppedObjs;
+						numberObjsArray = {};
 						color = [0.0,0.65,0.0];
 						steppedColor = [0.0,1.0,0.0];
 						break;
 					case 2:		
 						pathObjsArray = bluePathObjs;
 						pathSteppedObjsArray = bluePathSteppedObjs;
+						numberObjsArray = {};
 						color = [0.0,0.0,0.65];
 						steppedColor = [0.0,0.0,1.0];										
 						break;
 					case 3:
 						pathObjsArray = pinkPathObjs;
 						pathSteppedObjsArray = pinkPathSteppedObjs;
+						numberObjsArray = {};
 						color = [0.7,0.3,0.3];
 						steppedColor = [1.0,0.4,0.4];
 						break;
 				}
 				
 				arrayLength = len(pathObjsArray);
-			
-				if(!pathAnim){
-					for(var i = 0; i < len(pathObjsArray); i++){
-						mSpotShader.Start();
-							mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
-							mSpotShader.SetParameter("outlineColor", color);
-							mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-							mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
+				
+				mSpotShader.Start();	
+					mSpotShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
+					mSpotShader.SetParameter("outlineColor", color);
+					mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+					mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);	
+							
+					if(!pathAnim){						
+						for(var i = 0; i < len(pathObjsArray); i++){
 							mSpotShader.SetParameter("stepped", false);
 							mSpotShader.SetParameter("outline", false);
 							pathObjsArray[i].Draw();
+							
 							mSpotShader.SetParameter("outline", true);
 							pathObjsArray[i].Draw();
-						mSpotShader.Stop();	
+						}
 					}
-				}
-				
-				for(var i = 0; i < len(pathSteppedObjsArray); i++){
-					mSpotShader.Start();
-						mSpotShader.SetParameter("offset", 0.03 * SCALE_FACTOR);
-						mSpotShader.SetParameter("outlineColor", steppedColor);
-						mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-						mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);
-						mSpotShader.SetParameter("stepped", true);
+					
+					mSpotShader.SetParameter("outlineColor", steppedColor);
+					for(var i = 0; i < len(pathSteppedObjsArray); i++){
+						mSpotShader.SetParameter("stepped", true);	
+						mSpotShader.SetParameter("outline", false);						
+						pathSteppedObjsArray[i].Draw();
+						
+						mSpotShader.SetParameter("outline", true);						
+						pathSteppedObjsArray[i].Draw();
+					}
+					
+					for(var i = 0; i < len(numberObjsArray); i++){
+						mSpotShader.SetParameter("offset", 0.01 * SCALE_FACTOR);
+						mSpotShader.SetParameter("stepped", true);	
 						mSpotShader.SetParameter("outline", false);
-						pathSteppedObjsArray[i].Draw();
+						numberObjsArray[i].Draw();
+						
 						mSpotShader.SetParameter("outline", true);
-						pathSteppedObjsArray[i].Draw();
-					mSpotShader.Stop();					
-				}			
+						numberObjsArray[i].Draw();
+					}
+					
+				mSpotShader.Stop();				
 			}
 		}
 	}
@@ -392,7 +433,6 @@ function Level2::Render()
 		for(var i = 0; i < 9; i++){		
 			numpadButtonsObj[i].Draw();
 		}	
-	
 	mToonShader.Stop();
 	
 	for(var i = 0; i < 9; i++){	
@@ -410,6 +450,9 @@ function Level2::Render()
 		}
 	mSilhouetteShader.Stop();
 
+
+	
+	
 	if(mIsVRon)
 	{
 		mController1.Draw();
@@ -699,7 +742,15 @@ function Level2::UpdateLogic(dt)
 				if(pathFullyWalked){
 					switch(j){
 						case 0:	
-							redPathWalked = true;				
+							redPathWalked = true;
+							for(var i = 0; i < len(redNumberObjs); i++){
+								var time = (Rand(10)+ 1) / 5;
+								var rotMatrix = redNumberObjs[i].GetRotationMatrix();
+								mAnimator.CreateRotatingTransition(redNumberObjs[i], rotMatrix[0], 0, [1,0,0], time-0.5, false, false);
+								mAnimator.CreateRotatingTransition(redNumberObjs[i], rotMatrix[1], 0, [0,1,0], time-0.5, false, false);
+								mAnimator.CreateRotatingTransition(redNumberObjs[i], rotMatrix[2], 0, [0,0,1], time-0.5, false, false);
+								mAnimator.CreateTransition(redNumberObjs[i], redNumberObjs[i].GetPosition(), [25*SCALE_FACTOR, 2*SCALE_FACTOR , 25*SCALE_FACTOR], time, false);
+							}				
 							outputln("\n\nRED PATH WALKED");
 							break;
 						case 1:
