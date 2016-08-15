@@ -51,6 +51,7 @@ class Level2
 	// draw the silhouettes for the portals' frames
 	var mSilhouetteShader;
 	var mSpotShader;
+	var mToonShader;
 	
 	// Booleans that indicate whether the elevator has appeared and if it's already open or not
 	var mIsElevatorPresent;
@@ -88,7 +89,9 @@ class Level2
 	
 	var floorObj;	
 	var provaMeshObj;
-	var numpadObj;
+	var numpadButtonsObj;
+	var numpadTextsObj;
+	var numpadHolderObj;
 	
 	var mController1;
 	var mController2;
@@ -99,7 +102,7 @@ class Level2
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
 	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness);
 	newTile(mesh, prevTilePos, offsets);
-	CreateNumPad(tilesSize, spaceSize, tilesThickness);
+	CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness);
 			
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -143,6 +146,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	mSpotShader = CVmShaderProgram("spotShader.glsl");	
+	mToonShader = CVmShaderProgram("toonShader.glsl");	
 	
 	if(mIsVRon)
 	{
@@ -264,7 +268,14 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 //	GeneratePath(pinkPathObjs, [-2,1,-1,6], 2.5*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.2 * SCALE_FACTOR)
 //	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 
-	numpadObj = CreateNumPad(0.75 * SCALE_FACTOR, 0.04 * SCALE_FACTOR, 0.08 * SCALE_FACTOR);
+	numpadButtonsObj = {};
+	numpadTextsObj = {};
+	var tilesSize = 0.75 * SCALE_FACTOR;
+	var tilesSpaces = 0.04 * SCALE_FACTOR;
+	var tilesThickness = 0.08 * SCALE_FACTOR;
+	CreateNumPad(numpadButtonsObj, numpadTextsObj, tilesSize, tilesSpaces, tilesThickness);	
+	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-tilesSize*5/2, 0, 0], [tilesSize*5/2, tilesSize*12, 0], tilesThickness*1.5));
+	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(tilesSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + tilesThickness);
 }
 
 
@@ -365,7 +376,39 @@ function Level2::Render()
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
 	provaMeshObj.Draw();
-	numpadObj.Draw();
+	
+	mToonShader.Start();
+		mToonShader.SetParameter("ambient", [1, 1, 1]);
+		mToonShader.SetParameter("diffuse", [0, 0, 0]);
+		mToonShader.SetParameter("specular", [0.5, 0.5, 0.5]);
+		mToonShader.SetParameter("shininess", 50);
+		mToonShader.SetParameter("lightsRangeMin", 0);
+		mToonShader.SetParameter("lightsRangeMax", 2);
+		mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+		mToonShader.SetParameter("alpha", 1.0);
+		
+		numpadHolderObj.Draw();
+	
+		for(var i = 0; i < 9; i++){		
+			numpadButtonsObj[i].Draw();
+		}	
+	
+	mToonShader.Stop();
+	
+	for(var i = 0; i < 9; i++){	
+		numpadTextsObj[i].Draw();
+	}
+	
+	mSilhouetteShader.Start();
+		mSilhouetteShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
+		mSilhouetteShader.SetParameter("color", [1, 1, 1]);
+		numpadHolderObj.Draw();
+		mSilhouetteShader.SetParameter("offset", 0.01 * SCALE_FACTOR);
+		mSilhouetteShader.SetParameter("color", [0.8, 0.8, 0.8]);
+		for(var i = 0; i < 9; i++){	
+			numpadButtonsObj[i].Draw();
+		}
+	mSilhouetteShader.Stop();
 
 	if(mIsVRon)
 	{
@@ -827,15 +870,11 @@ function Level2::GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, t
 }
 
 
-function Level2::CreateNumPad(tilesSize, spaceSize, tilesThickness){
-	var retObj;
+function Level2::CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness){
 	var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
-	var buttonsObj = {};
-	var texts = {};
-	retObj = CvmObj();
 	var offsetY = tilesSize + spaceSize;
 	var offsetX = tilesSize + spaceSize;
-	var offsetZ = tilesSize + spaceSize;
+	var offsetZ = tilesThickness;
 	
 	var txt;
 	var txtObj;
@@ -844,6 +883,9 @@ function Level2::CreateNumPad(tilesSize, spaceSize, tilesThickness){
 	
 	for(var i = 1; i < 4; i++){
 		for(var j = 1; j < 4; j++){
+			var buttonPosX = (mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) - (offsetX * j) + (tilesSize * 5);
+			var buttonPosY = mElevatorFinalPosition.y + offsetY*i;
+			var buttonPosZ = mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(tilesThickness * 2);
 			txt = CVmText();
 			txt.Load(char(48+(num--)));
 			txt.SetColor(0, 0, 0);
@@ -851,15 +893,19 @@ function Level2::CreateNumPad(tilesSize, spaceSize, tilesThickness){
 			txtObj = CVmObj();
 			txtObj.LinkToText(txt);
 			txtObj.SetScale(0.1,0.1,0.1);
+			txtObj.SetPosition(buttonPosX-(0.1*SCALE_FACTOR),buttonPosY-(1.65*SCALE_FACTOR), buttonPosZ+0.05*SCALE_FACTOR);
 			
 			buttonObj = CVmObj(buttonMesh);
+			buttonObj.SetPosition(buttonPosX, buttonPosY-(1.5*SCALE_FACTOR), buttonPosZ);	
+			
+			aadd(numberTextsObj, txtObj);
 			aadd(buttonsObj, buttonObj);
-			retObj.AddChild(buttonObj, -offsetX*j,offsetY*i,0);	
-			retObj.AddChild(txtObj, -offsetX*j-0.1*SCALE_FACTOR,offsetY*i-0.15*SCALE_FACTOR,0.05*SCALE_FACTOR);			
+//			retObj.AddChild(buttonObj, -offsetX*j,offsetY*i,0);	
+//			retObj.AddChild(txtObj, -offsetX*j-0.1*SCALE_FACTOR,offsetY*i-0.15*SCALE_FACTOR,0.05*SCALE_FACTOR);			
 		}
 	}
-	retObj.SetPosition(mElevatorFinalPosition + [mElevator.GetRoomWidth()/2+(offsetX*4), -1*SCALE_FACTOR, mElevator.GetRoomWidth()+tilesThickness]);
-	return retObj;
+	
+//	retObj.SetPosition(mElevatorFinalPosition + [mElevator.GetRoomWidth()/2+(offsetX*4), -1*SCALE_FACTOR, mElevator.GetRoomWidth()+tilesThickness]);
 }
 
 function Level2::SetupOpenglLights()
