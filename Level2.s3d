@@ -52,6 +52,7 @@ class Level2
 	var mSilhouetteShader;
 	var mSpotShader;
 	var mToonShader;
+	var mAlphaShader;
 	
 	// Booleans that indicate whether the elevator has appeared and if it's already open or not
 	var mIsElevatorPresent;
@@ -108,7 +109,8 @@ class Level2
 	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness);
 	newTile(mesh, prevTilePos, offsets);
 	CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness);
-	CreateBox(boxWidth, boxHeight, boxThickness, borderThickness, fullSides);
+	CreateBox(boxWidth, boxHeight, boxThickness, borderThickness);
+	CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition);
 			
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -135,7 +137,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 2, 2, true, false);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, false);
 	mPortalRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, true, 0, 0, false);	
 	mPortalRoom.Rotate(-90, 1, 0, 0);	
 	
@@ -153,6 +155,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	mSpotShader = CVmShaderProgram("spotShader.glsl");	
 	mToonShader = CVmShaderProgram("toonShader.glsl");	
+	mAlphaShader = CVmShaderProgram("colorModulatorShader.glsl");	
 	
 	if(mIsVRon)
 	{
@@ -171,9 +174,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		light.Disable();
 		
 	mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight1Position =[-10.0 * SCALE_FACTOR, -500 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight0Diffuse = [0,0,1];
+	mLight1Position =[20.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, -10.0 * SCALE_FACTOR];
+	mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 20.0 * SCALE_FACTOR];
+	mLight0Diffuse = [0.5,0.5,1];
 	mLight1Diffuse = [1,0,0];
 	mLight2Diffuse = [1,1,1];
 	
@@ -192,8 +195,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mLight2 = lights[2];
 	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(mLight2Diffuse.x, mLight2Diffuse.y, mLight2Diffuse.z);
-	mLight2.Enable();
-	
+	mLight2.Enable();	
 		
 	mElevator = elevator;
 	mElevator.SetLightsRange(2,2);
@@ -283,35 +285,18 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-tilesSize*5/2, 0, 0], [tilesSize*5/2, mElevator.GetRoomHeight(), 0], tilesThickness*1.5));
 	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(tilesSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + tilesThickness);
 
-	
-	redNumberObjs = {};
-	var triangleMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description
-	var offset = [20,0,20];
-	aadd(redNumberObjs, CvmObj(triangleMesh));
-	redNumberObjs[0].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-	redNumberObjs[0].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
-	aadd(redNumberObjs, CvmObj(triangleMesh));
-	redNumberObjs[1].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-	redNumberObjs[1].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
-	aadd(redNumberObjs, CvmObj(triangleMesh));
-	redNumberObjs[2].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-	redNumberObjs[2].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
-	aadd(redNumberObjs, CvmObj(triangleMesh));
-	redNumberObjs[3].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-	redNumberObjs[3].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
-	aadd(redNumberObjs, CvmObj(triangleMesh));
-	redNumberObjs[4].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-	redNumberObjs[4].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
-	aadd(redNumberObjs, CvmObj(triangleMesh));
-	redNumberObjs[5].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-	redNumberObjs[5].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
-	
-	var boxObjs = CreateBox(3*SCALE_FACTOR, 3*SCALE_FACTOR, 3*SCALE_FACTOR, 0.3*SCALE_FACTOR, [0, 0, 0, 0, 0, 0]);
-	boxObj = CVmObj();
-	for(var i = 0; i < len(boxObjs); i++){
-		boxObj.AddChild(boxObjs[i], 0,0,0);
+	var boxWidth = 20*SCALE_FACTOR;
+	var boxHeight = 5*SCALE_FACTOR;
+	var boxThickness = 8*SCALE_FACTOR;
+	var boxBordersThickness =  0.7*SCALE_FACTOR;
+	var boxPosition = [-5*SCALE_FACTOR, 0, 25*SCALE_FACTOR];
+	boxObj = CreateBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
+	for(var i = 0; i < len(boxObj); i++){
+		boxObj[i].SetPosition(boxPosition);	
 	}
-	boxObj.SetPosition(-20*SCALE_FACTOR, 1*SCALE_FACTOR, -35*SCALE_FACTOR);	
+	
+	var triangleMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description
+	redNumberObjs = CreateRandomMeshesInBox(triangleMesh, 200, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
 }
 
 
@@ -429,8 +414,8 @@ function Level2::Render()
 	
 	mToonShader.Start();
 		mToonShader.SetParameter("ambient", [1, 1, 1]);
-		mToonShader.SetParameter("diffuse", [0, 0, 0]);
-		mToonShader.SetParameter("specular", [0.5, 0.5, 0.5]);
+		mToonShader.SetParameter("diffuse", [1, 1, 1]);
+		mToonShader.SetParameter("specular", [0.1, 0.1, 0.1]);
 		mToonShader.SetParameter("shininess", 50);
 		mToonShader.SetParameter("lightsRangeMin", 0);
 		mToonShader.SetParameter("lightsRangeMax", 2);
@@ -439,32 +424,36 @@ function Level2::Render()
 		
 		numpadHolderObj.Draw();
 	
+		mToonShader.SetParameter("diffuse", [0.8, 0.8, 0.8]);
 		for(var i = 0; i < 9; i++){		
 			numpadButtonsObj[i].Draw();
-		}	
+		}		
+		
+		mToonShader.SetParameter("lightsRangeMin", 0);
+		mToonShader.SetParameter("lightsRangeMax", 0);
+		mToonShader.SetParameter("diffuse", [1, 1, 1]);
+		for(var i = 0; i < len(boxObj); i++){
+			if(i != 2){	
+				boxObj[i].Draw();
+			}
+		}		
 	mToonShader.Stop();
+			
+	var boxColor = [0.7, 0.7, 1];
+	var boxAlpha = 0.4;
+	mAlphaShader.Start();
+		mAlphaShader.SetParameter("time", 0);
+		mAlphaShader.SetParameter("alpha", boxAlpha);
+		mAlphaShader.SetParameter("startingColor", boxColor);
+		mAlphaShader.SetParameter("finalColor", boxColor);	
+		boxObj[2].Draw();
+	mAlphaShader.Stop();
 	
 	for(var i = 0; i < 9; i++){	
 		numpadTextsObj[i].Draw();
-	}
+	}	
 	
-	mSilhouetteShader.Start();
-		mSilhouetteShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
-		mSilhouetteShader.SetParameter("color", [1, 1, 1]);
-		numpadHolderObj.Draw();
-		
-		mSilhouetteShader.SetParameter("offset", 0.01 * SCALE_FACTOR);
-		mSilhouetteShader.SetParameter("color", [0.8, 0.8, 0.8]);
-		
-		for(var i = 0; i < 9; i++){	
-			numpadButtonsObj[i].Draw();
-		}
-		
-	mSilhouetteShader.Stop();
-	
-	boxObj.Draw();
-	if(mIsVRon)
-	{
+	if(mIsVRon){
 		mController1.Draw();
 		mController2.Draw();
 	}
@@ -970,7 +959,7 @@ function Level2::CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, 
 }
 
 
-function Level2::CreateBox(boxWidth, boxHeight, boxThickness, borderThickness, fullSides){
+function Level2::CreateBox(boxWidth, boxHeight, boxThickness, borderThickness){
 	var fixedOffset;	
 	var retObj = {};
 	aadd(retObj, CVmObj());
@@ -982,127 +971,103 @@ function Level2::CreateBox(boxWidth, boxHeight, boxThickness, borderThickness, f
 	aadd(retObj, CVmObj());	
 	
 	var frontBackTopBottomMesh;
-	if(fullSides[0] == 0){
-		frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );	
-	}
-	else {
-		frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );	
-	}
-	
+	frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
 	
 	var frontBackLeftRightMesh;
-	if(fullSides[1] == 0){
-		frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
-	}
-	else{
-		frontBackLeftRightMesh;
-	}
+	frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
 	
+	var frontBackMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth - borderThickness), -(boxHeight-borderThickness), 0], [+(boxWidth - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
 	
 	var sidesTopBottomMesh;
-	if(fullSides[2] == 0){
-		sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
-		sidesTopBottomMesh.Rotate(90,0,0,1);
-		sidesTopBottomMesh.Rotate(90,0,1,0);		
-	}
-	else {
-		sidesTopBottomMesh;
-	}
+	sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
+	sidesTopBottomMesh.Rotate(90,0,0,1);
+	sidesTopBottomMesh.Rotate(90,0,1,0);
 	
 	var sidesLeftRightMesh;
-	if(fullSides[3] == 0){
-		sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxHeight, 0], [borderThickness, boxHeight, 0], 2,2 );
-		sidesLeftRightMesh.Rotate(90,0,1,0);	
-	}
-	else {
-		sidesLeftRightMesh;
-	}
+	sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
+	sidesLeftRightMesh.Rotate(90,0,1,0);
+	
+	var sidesMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxThickness-borderThickness), -(boxHeight-borderThickness), 0], [+(boxThickness - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
+	sidesMesh.Rotate(90,0,1,0);
 	
 	var roofFloorLeftRightMesh;
-	if(fullSides[4] == 0){
-		roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
-		roofFloorLeftRightMesh.Rotate(90,1,0,0);
-	}
-	else {
-		roofFloorLeftRightMesh;
-	}
+	roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxThickness+borderThickness), 0], [borderThickness, boxThickness+borderThickness, 0], 2,2 );
+	roofFloorLeftRightMesh.Rotate(90,1,0,0);
 	
 	var roofFloorTopBottomMesh;
-	if(fullSides[5] == 0){
-		roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
-		roofFloorTopBottomMesh.Rotate(90,1,0,0);	
-	}
-	else {
-	}
+	roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
+	roofFloorTopBottomMesh.Rotate(90,1,0,0);	
 	
+	var roofFloorMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth-borderThickness), -(boxThickness-borderThickness), 0], [+(boxWidth - borderThickness), (boxThickness-borderThickness), 0], 2,2 );
+	roofFloorMesh.Rotate(90,1,0,0);
 	
+	fixedOffset = boxThickness*2+borderThickness;
 	//front
-	if(fullSides[0] == 0){
-		fixedOffset = boxThickness*2;
-		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 				0, 		  	 		fixedOffset);
-		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 				boxHeight*2, 		fixedOffset);
-		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh), 	boxWidth, 		boxHeight,   		fixedOffset);
-		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		fixedOffset);		
-	}
+	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	0, 		  	 		-borderThickness);
+	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	boxHeight*2, 		-borderThickness);
+	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	boxWidth, 		boxHeight,   		-borderThickness);
+	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		-borderThickness);	
+	retObj[2].AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			-borderThickness);
 	
 	//back
-	if(fullSides[1] == 0){
-		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 		0, 		  	 		0);
-		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 		boxHeight*2, 		0);
-		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	boxWidth, 		boxHeight,   		0);
-		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		0);
-	 }
-	else{
-		
-	}
+	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			0, 		  	 		fixedOffset);
+	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			boxHeight*2, 		fixedOffset);
+	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh), 	boxWidth, 		boxHeight,   		fixedOffset);
+	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		fixedOffset);	
+	retObj[1].AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			fixedOffset);	
 	 
 	//sideLeft
-	if(fullSides[2] == 0){
-		fixedOffset = boxWidth+borderThickness;
-		retObj[0].AddChild(CvmObj(sidesTopBottomMesh),   	fixedOffset, 	0, 						boxThickness);
-		retObj[0].AddChild(cvmObj(sidesTopBottomMesh),   	fixedOffset, 	boxHeight*2, 			boxThickness);
-		retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset, 	boxHeight, 			boxThickness*2-borderThickness);
-		retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset,	boxHeight, 			borderThickness);
-	}
-	else{
-		
-	}
+	fixedOffset = boxWidth+borderThickness;
+	retObj[0].AddChild(CvmObj(sidesTopBottomMesh),   	fixedOffset, 	0, 					boxThickness);
+	retObj[0].AddChild(cvmObj(sidesTopBottomMesh),   	fixedOffset, 	boxHeight*2, 		boxThickness);
+	retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset, 	boxHeight, 			boxThickness*2);
+	retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset,	boxHeight, 			0);
+	retObj[3].AddChild(CvmObj(sidesMesh), 				fixedOffset, 	boxHeight, 			boxThickness);
 	
 	//sideRight
-	if(fullSides[3] == 0){
-		retObj[0].AddChild(CvmObj(sidesTopBottomMesh), 		-fixedOffset, 	0, 					boxThickness);
-		retObj[0].AddChild(cvmObj(sidesTopBottomMesh), 		-fixedOffset, 	boxHeight*2, 		boxThickness);
-		retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			boxThickness*2-borderThickness);
-		retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			borderThickness);
-	}
-	else{
-		
-	}
+	retObj[0].AddChild(CvmObj(sidesTopBottomMesh), 		-fixedOffset, 	0, 					boxThickness);
+	retObj[0].AddChild(cvmObj(sidesTopBottomMesh), 		-fixedOffset, 	boxHeight*2, 		boxThickness);
+	retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			boxThickness*2);
+	retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			0);
+	retObj[4].AddChild(CvmObj(sidesMesh), 				-fixedOffset, 	boxHeight, 			boxThickness);
 	
 	//roof
-	if(fullSides[4] == 0){
-		fixedOffset = boxHeight*2 + borderThickness;
-		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0,				fixedOffset, 		borderThickness);
-		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0, 				fixedOffset, 		boxThickness*2-borderThickness);
-		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh), boxWidth,		fixedOffset, 		boxThickness);
-		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh), -boxWidth,		fixedOffset, 		boxThickness);
-	}
-	else{
-		
-	}
+	fixedOffset = boxHeight*2 + borderThickness;
+	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0,				fixedOffset, 		0);
+	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0, 				fixedOffset, 		boxThickness*2);
+	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),  boxWidth,		fixedOffset, 		boxThickness);
+	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh), -boxWidth,		fixedOffset, 		boxThickness);
+	retObj[5].AddChild(CvmObj(roofFloorMesh), 			0,				fixedOffset, 		boxThickness);
 	
 	//floor
-	if(fullSides[5] == 0){
-		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0,				-borderThickness,	borderThickness);
-		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0, 				-borderThickness, 	boxThickness*2-borderThickness);
-		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	boxWidth,		-borderThickness, 	boxThickness);
-		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	-boxWidth,		-borderThickness, 	boxThickness);	
-	}
-	else{
-		
-	}	
+	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0,				-borderThickness,	0);
+	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0, 				-borderThickness, 	boxThickness*2);
+	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	boxWidth,		-borderThickness, 	boxThickness);
+	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	-boxWidth,		-borderThickness, 	boxThickness);
+	retObj[6].AddChild(CvmObj(roofFloorMesh),			0,				-borderThickness, 	boxThickness);
 	
 	return retObj;	
+}
+
+
+function Level2::CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition){
+	var retObjsArray = {};
+	var offset = [5.2*SCALE_FACTOR, 1.5*SCALE_FACTOR, boxSize.a];
+	var randomx = 0;
+	var randomy = 0;
+	var randomz = 0;
+	var randomDecimal;
+	
+	for(var i = 0; i < number; i++){
+		randomx = Rand(boxSize.x*2) + boxPosition.x*5 ;
+		randomy = Rand(boxSize.y*2+boxSize[3]);
+		randomz = Rand(boxSize.z*2)+boxPosition.z + offset.z;
+		randomDecimal = Rand(20) / (Rand(50)+21);
+		aadd(retObjsArray, CvmObj(mesh));
+		retObjsArray[i].SetRotation(Rand(360)+randomDecimal, Rand(1), Rand(1), Rand(1));
+		retObjsArray[i].SetPosition(randomx+randomDecimal, randomy+randomDecimal, randomz+randomDecimal);
+	}
+	return retObjsArray;
 }
 
 function Level2::SetupOpenglLights()
