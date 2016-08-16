@@ -93,6 +93,8 @@ class Level2
 	var numpadTextsObj;
 	var numpadHolderObj;
 	
+	var boxContourObj;
+	
 	var mController1;
 	var mController2;
 	
@@ -303,6 +305,62 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	redNumberObjs[5].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
 	redNumberObjs[5].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
 	
+	
+	var boxWidth = 15*SCALE_FACTOR;
+	var boxThickness = 0.2*SCALE_FACTOR;
+	var boxHeight = 3*SCALE_FACTOR;
+	
+	var longSideMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -boxThickness, 0], [boxWidth, boxThickness, 0], 2,2 );
+	var shortLongSideMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight+boxThickness), 0], [boxThickness, boxHeight+boxThickness, 0], 2,2 );
+	
+	var shortTopMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight), 0], [boxThickness, boxHeight, 0], 2,2 );
+	var shortSideMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight), 0], [boxThickness, boxHeight, 0], 2,2 );
+	
+	var roofFloorShortMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight), 0], [boxThickness, boxHeight, 0], 2,2 );
+	var roofFloorLongMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -boxThickness, 0], [boxWidth, boxThickness, 0], 2,2 );
+	
+	shortTopMesh.Rotate(90,0,0,1);
+	shortTopMesh.Rotate(90,0,1,0);
+	shortSideMesh.Rotate(90,0,1,0);
+	roofFloorShortMesh.Rotate(90,1,0,0);
+	roofFloorLongMesh.Rotate(90,1,0,0);
+	
+	var fixedOffset = [0,0,0];
+	
+	boxContourObj = CVmObj();
+	
+	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 							0, 		  	 boxHeight*2);
+	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 							boxHeight*2, boxHeight*2);
+	boxContourObj.AddChild(CvmObj(shortLongSideMesh), 	boxWidth, 					boxHeight,   boxHeight*2);
+	boxContourObj.AddChild(CvmObj(shortLongSideMesh),	-boxWidth, 					boxHeight,   boxHeight*2);
+	
+	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 		 					0, 		  	 0);
+	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 		 					boxHeight*2, 0);
+	boxContourObj.AddChild(CvmObj(shortLongSideMesh),	boxWidth, 					boxHeight,   0);
+	boxContourObj.AddChild(CvmObj(shortLongSideMesh),	-boxWidth, 					boxHeight,   0);
+	 
+	
+	boxContourObj.AddChild(CvmObj(shortTopMesh),   		boxWidth+boxThickness, 		0, 				boxHeight);
+	boxContourObj.AddChild(cvmObj(shortTopMesh),   		boxWidth+boxThickness, 		boxHeight*2, 	boxHeight);
+	boxContourObj.AddChild(CvmObj(shortSideMesh),   	boxWidth+boxThickness, 		boxHeight, 		boxHeight*2-boxThickness);
+	boxContourObj.AddChild(CvmObj(shortSideMesh),   	boxWidth+boxThickness,		boxHeight, 		boxThickness);
+	
+	boxContourObj.AddChild(CvmObj(shortTopMesh), 		-(boxWidth+boxThickness), 	0, 				boxHeight);
+	boxContourObj.AddChild(cvmObj(shortTopMesh), 		-(boxWidth+boxThickness), 	boxHeight*2, 	boxHeight);
+	boxContourObj.AddChild(CvmObj(shortSideMesh), 		-(boxWidth+boxThickness), 	boxHeight, 		boxHeight*2-boxThickness);
+	boxContourObj.AddChild(CvmObj(shortSideMesh), 		-(boxWidth+boxThickness), 	boxHeight, 		boxThickness);
+	
+	boxContourObj.AddChild(CvmObj(roofFloorLongMesh),  	0,			boxHeight*2+boxThickness, 	boxThickness);
+	boxContourObj.AddChild(CvmObj(roofFloorLongMesh),  	0, 			boxHeight*2+boxThickness, 	boxHeight*2-boxThickness);
+	boxContourObj.AddChild(CvmObj(roofFloorShortMesh),  boxWidth,	boxHeight*2+boxThickness, 	boxHeight);
+	boxContourObj.AddChild(CvmObj(roofFloorShortMesh), 	-boxWidth,	boxHeight*2+boxThickness, 	boxHeight);
+	
+	boxContourObj.AddChild(CvmObj(roofFloorLongMesh), 	0,			-boxThickness,				boxThickness);
+	boxContourObj.AddChild(CvmObj(roofFloorLongMesh), 	0, 			-boxThickness, 				boxHeight*2-boxThickness);
+	boxContourObj.AddChild(CvmObj(roofFloorShortMesh),	boxWidth,	-boxThickness, 				boxHeight);
+	boxContourObj.AddChild(CvmObj(roofFloorShortMesh),	-boxWidth,	-boxThickness, 				boxHeight);
+	
+	boxContourObj.SetPosition(-20*SCALE_FACTOR, 1*SCALE_FACTOR, -35*SCALE_FACTOR);	
 }
 
 
@@ -443,16 +501,17 @@ function Level2::Render()
 		mSilhouetteShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
 		mSilhouetteShader.SetParameter("color", [1, 1, 1]);
 		numpadHolderObj.Draw();
+		
 		mSilhouetteShader.SetParameter("offset", 0.01 * SCALE_FACTOR);
 		mSilhouetteShader.SetParameter("color", [0.8, 0.8, 0.8]);
+		
 		for(var i = 0; i < 9; i++){	
 			numpadButtonsObj[i].Draw();
 		}
+		
 	mSilhouetteShader.Stop();
-
-
 	
-	
+	boxContourObj.Draw();
 	if(mIsVRon)
 	{
 		mController1.Draw();
