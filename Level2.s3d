@@ -93,7 +93,7 @@ class Level2
 	var numpadTextsObj;
 	var numpadHolderObj;
 	
-	var boxContourObj;
+	var boxObj;
 	
 	var mController1;
 	var mController2;
@@ -108,6 +108,7 @@ class Level2
 	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness);
 	newTile(mesh, prevTilePos, offsets);
 	CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness);
+	CreateBox(boxWidth, boxHeight, boxThickness, borderThickness, fullSides);
 			
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -305,62 +306,12 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	redNumberObjs[5].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
 	redNumberObjs[5].SetPosition((Rand(10)+offset.x)*SCALE_FACTOR,Rand(5)*SCALE_FACTOR,(Rand(10)+offset.z)*SCALE_FACTOR);
 	
-	
-	var boxWidth = 15*SCALE_FACTOR;
-	var boxThickness = 0.2*SCALE_FACTOR;
-	var boxHeight = 3*SCALE_FACTOR;
-	
-	var longSideMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -boxThickness, 0], [boxWidth, boxThickness, 0], 2,2 );
-	var shortLongSideMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight+boxThickness), 0], [boxThickness, boxHeight+boxThickness, 0], 2,2 );
-	
-	var shortTopMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight), 0], [boxThickness, boxHeight, 0], 2,2 );
-	var shortSideMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight), 0], [boxThickness, boxHeight, 0], 2,2 );
-	
-	var roofFloorShortMesh = CVmNewMesh(VRP_PLANE, 1, [-boxThickness, -(boxHeight), 0], [boxThickness, boxHeight, 0], 2,2 );
-	var roofFloorLongMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -boxThickness, 0], [boxWidth, boxThickness, 0], 2,2 );
-	
-	shortTopMesh.Rotate(90,0,0,1);
-	shortTopMesh.Rotate(90,0,1,0);
-	shortSideMesh.Rotate(90,0,1,0);
-	roofFloorShortMesh.Rotate(90,1,0,0);
-	roofFloorLongMesh.Rotate(90,1,0,0);
-	
-	var fixedOffset = [0,0,0];
-	
-	boxContourObj = CVmObj();
-	
-	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 							0, 		  	 boxHeight*2);
-	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 							boxHeight*2, boxHeight*2);
-	boxContourObj.AddChild(CvmObj(shortLongSideMesh), 	boxWidth, 					boxHeight,   boxHeight*2);
-	boxContourObj.AddChild(CvmObj(shortLongSideMesh),	-boxWidth, 					boxHeight,   boxHeight*2);
-	
-	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 		 					0, 		  	 0);
-	boxContourObj.AddChild(CvmObj(longSideMesh), 		0, 		 					boxHeight*2, 0);
-	boxContourObj.AddChild(CvmObj(shortLongSideMesh),	boxWidth, 					boxHeight,   0);
-	boxContourObj.AddChild(CvmObj(shortLongSideMesh),	-boxWidth, 					boxHeight,   0);
-	 
-	
-	boxContourObj.AddChild(CvmObj(shortTopMesh),   		boxWidth+boxThickness, 		0, 				boxHeight);
-	boxContourObj.AddChild(cvmObj(shortTopMesh),   		boxWidth+boxThickness, 		boxHeight*2, 	boxHeight);
-	boxContourObj.AddChild(CvmObj(shortSideMesh),   	boxWidth+boxThickness, 		boxHeight, 		boxHeight*2-boxThickness);
-	boxContourObj.AddChild(CvmObj(shortSideMesh),   	boxWidth+boxThickness,		boxHeight, 		boxThickness);
-	
-	boxContourObj.AddChild(CvmObj(shortTopMesh), 		-(boxWidth+boxThickness), 	0, 				boxHeight);
-	boxContourObj.AddChild(cvmObj(shortTopMesh), 		-(boxWidth+boxThickness), 	boxHeight*2, 	boxHeight);
-	boxContourObj.AddChild(CvmObj(shortSideMesh), 		-(boxWidth+boxThickness), 	boxHeight, 		boxHeight*2-boxThickness);
-	boxContourObj.AddChild(CvmObj(shortSideMesh), 		-(boxWidth+boxThickness), 	boxHeight, 		boxThickness);
-	
-	boxContourObj.AddChild(CvmObj(roofFloorLongMesh),  	0,			boxHeight*2+boxThickness, 	boxThickness);
-	boxContourObj.AddChild(CvmObj(roofFloorLongMesh),  	0, 			boxHeight*2+boxThickness, 	boxHeight*2-boxThickness);
-	boxContourObj.AddChild(CvmObj(roofFloorShortMesh),  boxWidth,	boxHeight*2+boxThickness, 	boxHeight);
-	boxContourObj.AddChild(CvmObj(roofFloorShortMesh), 	-boxWidth,	boxHeight*2+boxThickness, 	boxHeight);
-	
-	boxContourObj.AddChild(CvmObj(roofFloorLongMesh), 	0,			-boxThickness,				boxThickness);
-	boxContourObj.AddChild(CvmObj(roofFloorLongMesh), 	0, 			-boxThickness, 				boxHeight*2-boxThickness);
-	boxContourObj.AddChild(CvmObj(roofFloorShortMesh),	boxWidth,	-boxThickness, 				boxHeight);
-	boxContourObj.AddChild(CvmObj(roofFloorShortMesh),	-boxWidth,	-boxThickness, 				boxHeight);
-	
-	boxContourObj.SetPosition(-20*SCALE_FACTOR, 1*SCALE_FACTOR, -35*SCALE_FACTOR);	
+	var boxObjs = CreateBox(3*SCALE_FACTOR, 3*SCALE_FACTOR, 3*SCALE_FACTOR, 0.3*SCALE_FACTOR, [0, 0, 0, 0, 0, 0]);
+	boxObj = CVmObj();
+	for(var i = 0; i < len(boxObjs); i++){
+		boxObj.AddChild(boxObjs[i], 0,0,0);
+	}
+	boxObj.SetPosition(-20*SCALE_FACTOR, 1*SCALE_FACTOR, -35*SCALE_FACTOR);	
 }
 
 
@@ -511,7 +462,7 @@ function Level2::Render()
 		
 	mSilhouetteShader.Stop();
 	
-	boxContourObj.Draw();
+	boxObj.Draw();
 	if(mIsVRon)
 	{
 		mController1.Draw();
@@ -1016,6 +967,142 @@ function Level2::CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, 
 	}
 	
 //	retObj.SetPosition(mElevatorFinalPosition + [mElevator.GetRoomWidth()/2+(offsetX*4), -1*SCALE_FACTOR, mElevator.GetRoomWidth()+tilesThickness]);
+}
+
+
+function Level2::CreateBox(boxWidth, boxHeight, boxThickness, borderThickness, fullSides){
+	var fixedOffset;	
+	var retObj = {};
+	aadd(retObj, CVmObj());
+	aadd(retObj, CVmObj());
+	aadd(retObj, CVmObj());
+	aadd(retObj, CVmObj());
+	aadd(retObj, CVmObj());
+	aadd(retObj, CVmObj());
+	aadd(retObj, CVmObj());	
+	
+	var frontBackTopBottomMesh;
+	if(fullSides[0] == 0){
+		frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );	
+	}
+	else {
+		frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );	
+	}
+	
+	
+	var frontBackLeftRightMesh;
+	if(fullSides[1] == 0){
+		frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
+	}
+	else{
+		frontBackLeftRightMesh;
+	}
+	
+	
+	var sidesTopBottomMesh;
+	if(fullSides[2] == 0){
+		sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
+		sidesTopBottomMesh.Rotate(90,0,0,1);
+		sidesTopBottomMesh.Rotate(90,0,1,0);		
+	}
+	else {
+		sidesTopBottomMesh;
+	}
+	
+	var sidesLeftRightMesh;
+	if(fullSides[3] == 0){
+		sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxHeight, 0], [borderThickness, boxHeight, 0], 2,2 );
+		sidesLeftRightMesh.Rotate(90,0,1,0);	
+	}
+	else {
+		sidesLeftRightMesh;
+	}
+	
+	var roofFloorLeftRightMesh;
+	if(fullSides[4] == 0){
+		roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
+		roofFloorLeftRightMesh.Rotate(90,1,0,0);
+	}
+	else {
+		roofFloorLeftRightMesh;
+	}
+	
+	var roofFloorTopBottomMesh;
+	if(fullSides[5] == 0){
+		roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
+		roofFloorTopBottomMesh.Rotate(90,1,0,0);	
+	}
+	else {
+	}
+	
+	
+	//front
+	if(fullSides[0] == 0){
+		fixedOffset = boxThickness*2;
+		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 				0, 		  	 		fixedOffset);
+		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 				boxHeight*2, 		fixedOffset);
+		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh), 	boxWidth, 		boxHeight,   		fixedOffset);
+		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		fixedOffset);		
+	}
+	
+	//back
+	if(fullSides[1] == 0){
+		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 		0, 		  	 		0);
+		retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 		boxHeight*2, 		0);
+		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	boxWidth, 		boxHeight,   		0);
+		retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		0);
+	 }
+	else{
+		
+	}
+	 
+	//sideLeft
+	if(fullSides[2] == 0){
+		fixedOffset = boxWidth+borderThickness;
+		retObj[0].AddChild(CvmObj(sidesTopBottomMesh),   	fixedOffset, 	0, 						boxThickness);
+		retObj[0].AddChild(cvmObj(sidesTopBottomMesh),   	fixedOffset, 	boxHeight*2, 			boxThickness);
+		retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset, 	boxHeight, 			boxThickness*2-borderThickness);
+		retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset,	boxHeight, 			borderThickness);
+	}
+	else{
+		
+	}
+	
+	//sideRight
+	if(fullSides[3] == 0){
+		retObj[0].AddChild(CvmObj(sidesTopBottomMesh), 		-fixedOffset, 	0, 					boxThickness);
+		retObj[0].AddChild(cvmObj(sidesTopBottomMesh), 		-fixedOffset, 	boxHeight*2, 		boxThickness);
+		retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			boxThickness*2-borderThickness);
+		retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			borderThickness);
+	}
+	else{
+		
+	}
+	
+	//roof
+	if(fullSides[4] == 0){
+		fixedOffset = boxHeight*2 + borderThickness;
+		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0,				fixedOffset, 		borderThickness);
+		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0, 				fixedOffset, 		boxThickness*2-borderThickness);
+		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh), boxWidth,		fixedOffset, 		boxThickness);
+		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh), -boxWidth,		fixedOffset, 		boxThickness);
+	}
+	else{
+		
+	}
+	
+	//floor
+	if(fullSides[5] == 0){
+		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0,				-borderThickness,	borderThickness);
+		retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0, 				-borderThickness, 	boxThickness*2-borderThickness);
+		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	boxWidth,		-borderThickness, 	boxThickness);
+		retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	-boxWidth,		-borderThickness, 	boxThickness);	
+	}
+	else{
+		
+	}	
+	
+	return retObj;	
 }
 
 function Level2::SetupOpenglLights()
