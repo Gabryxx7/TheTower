@@ -70,12 +70,14 @@ class Elevator
  */
 function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin, lightsRangeMax)
 {
-	mElevatorRoom = Room(elevatorWidth, sideWallWidth, height, true, lightsRangeMin, lightsRangeMax, false);	
+	mElevatorRoom = Room(elevatorWidth, sideWallWidth, height, true, lightsRangeMin, lightsRangeMax, false, true);	
 	
 	var halfHeight = height/2.0;
 	
-	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
-	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
+//	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
+//	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
+	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0 * SCALE_FACTOR, -halfHeight - 0 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0 * SCALE_FACTOR, halfHeight + 0 * SCALE_FACTOR, 0], 2, 2);
+	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0 * SCALE_FACTOR, -halfHeight - 0 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0 * SCALE_FACTOR, halfHeight + 0 * SCALE_FACTOR, 0], 2, 2);
 	
 	// Adding the cel shader to the doors; the material is the same as for every wall
 	if(USE_TOON_SHADER == 2){		
@@ -121,8 +123,8 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	mElevatorDoorLeftObj = CVmObj(mElevatorDoorLeftMesh);
 	mElevatorDoorRightObj = CVmObj(mElevatorDoorRightMesh);
 	
-	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, 0, sideWallWidth];
-	mRightDoorClosedPosition = [elevatorWidth/4 - 0.1 * SCALE_FACTOR, 0, sideWallWidth];
+	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0 * SCALE_FACTOR, 0, sideWallWidth];
+	mRightDoorClosedPosition = [elevatorWidth/4 - 0 * SCALE_FACTOR, 0, sideWallWidth];
 	
 	mLeftDoorOpenPosition = mLeftDoorClosedPosition - [GetRoomWidth()/3.0 + 0.1 * SCALE_FACTOR, 0, 0];
 	mRightDoorOpenPosition = mRightDoorClosedPosition + [GetRoomWidth()/3.0 + 0.1 * SCALE_FACTOR,  0, 0];

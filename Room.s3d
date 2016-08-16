@@ -1,5 +1,3 @@
-//#include "Utils.s3d"
-
 /*
  * Class that represents a room, with an optional front wall (so that it can be used for portals' rooms, that don't have the front wall so the camera
  * dosn't get obstructed when the room is rendered). It gives more flexibility than simply creating a box, and it's easier to maintain
@@ -48,11 +46,16 @@ class Room
 	// Shader to draw the silhouettes of the objects contained in the room
 	var mSilhouetteShader;
 	
-	var mBorderShader;
-	
 	// Array that contains any object that is added to the room with the apposite function
 	var mChildren;
+		
+	// Meshes for the silhouette lines added to each wall
+	var	mFarWallSilhouetteLineMesh;
+	var mHeightSilhouetteLineMesh;
+	var mSideWallSilhouetteLineMesh;
 	
+	// Private functions
+	AddSilhouetteLines(wall, type);
 	
 	// Public functions
 	Draw();
@@ -90,9 +93,9 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mSideWallWidth = sideWallWidth;
 	mRoomHeight = height;
 	
-	mHalfFarWidth = mFarWallWidth/2;
-	mHalfSideWidth = mSideWallWidth/2;
-	mHalfHeight = mRoomHeight/2;
+	mHalfFarWidth = mFarWallWidth / 2.0;
+	mHalfSideWidth = mSideWallWidth / 2.0;
+	mHalfHeight = mRoomHeight / 2.0;
 	
 	if(hasFront == NULL)
 		mHasFront = true;
@@ -113,15 +116,6 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mFarWallMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfFarWidth, -mHalfHeight, 0], [mHalfFarWidth, mHalfHeight, 0], 2, 2);
 	mSideWallMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfSideWidth, -mHalfHeight, 0], [mHalfSideWidth, mHalfHeight, 0], 2, 2);
 	mRoofMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfFarWidth, -mHalfSideWidth, 0], [mHalfFarWidth, mHalfSideWidth, 0], 2, 2);
-	
-//	var mat = CVmMaterial();
-//	mat.ambient = [1,1,1];
-//	mat.diffuse = [1, 1, 1];
-//	mat.specular = [0, 0, 0];
-//	
-//	mFarWallMesh.forceMaterial(mat);
-//	mSideWallMesh.forceMaterial(mat);
-//	mRoofMesh.forceMaterial(mat);
 	
 	
 	// Adding the toon shader to the mesh's subset 0 (so the whole mesh in this case) and activating it
@@ -188,21 +182,48 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
 	mRoofMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	mRoofMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	
+		
 	// Created the meshes, time to create the CVmObjects
 	mBackWallObj = CVmObj(mFarWallMesh);
 	mRoofObj = CVmObj(mRoofMesh);
 	mLeftWallObj = CVmObj(mSideWallMesh);
 	mRightWallObj = CVmObj(mSideWallMesh);
 	
+	// Size of the silhouettes lines
+	var silhouetteLineHalfWidth = 0.02 * SCALE_FACTOR;
+
+	// Meshes for the lines of the silhouettes (actually they're thin planes)
+	mFarWallSilhouetteLineMesh = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, 0, 0], [silhouetteLineHalfWidth, mFarWallWidth, 0], 2, 2);
+	mHeightSilhouetteLineMesh = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, 0, 0], [silhouetteLineHalfWidth, mRoomHeight, 0], 2, 2);
+	mSideWallSilhouetteLineMesh = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, 0, 0], [silhouetteLineHalfWidth, sideWallWidth, 0], 2, 2);
+	
+	// Black material for the lines
+	var silhouetteMaterial = CVmMaterial();
+	silhouetteMaterial.diffuse = [0, 0, 0];
+	silhouetteMaterial.ambient = [0, 0, 0];
+	silhouetteMaterial.specular = [0, 0, 0];
+	
+	mFarWallSilhouetteLineMesh.ForceMaterial(silhouetteMaterial);
+	mHeightSilhouetteLineMesh.ForceMaterial(silhouetteMaterial);
+	mSideWallSilhouetteLineMesh.ForceMaterial(silhouetteMaterial);
+
+	// Adding the silhouettes lines to every wall in the room
+	AddSilhouetteLines(mBackWallObj, 0);
+	AddSilhouetteLines(mLeftWallObj, 1);
+	AddSilhouetteLines(mRightWallObj, 1);
+	AddSilhouetteLines(mRoofObj, 2);
+	
 	// If the room has a front wall I create that too
 	if(mHasFront)
+	{
 		mFrontWallObj = CVmObj(mFarWallMesh);
+		AddSilhouetteLines(mFrontWallObj, 0);
+	}
 		
 	if(mHasFloor){
 		mFloorObj = CVmObj(mRoofMesh);
 		mFloorObj.Rotate(90, 1, 0, 0);
+		AddSilhouetteLines(mFloorObj, 2);
 	}
 	
 	// Rotating the roof and floor so they get perpendicular to the y axis
@@ -215,17 +236,17 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	// Creating the container object. Each wall is translated to ro the right positions, sometimes using little offset so that they're 
 	// NOT completely attached; this way the black contour created using the silhouette shader can be seen. These offset values are a bit random
 	mRoom = CVmObj();
-	mRoom.AddChild(mBackWallObj, 0, 0, -0.09 * SCALE_FACTOR);
-	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0.05 * SCALE_FACTOR, mHalfSideWidth);
+	mRoom.AddChild(mBackWallObj, 0, 0, 0 * SCALE_FACTOR);
+	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0 * SCALE_FACTOR, mHalfSideWidth);
 	
 	if(mHasFloor)
-		mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0.05 * SCALE_FACTOR, mHalfSideWidth);
+		mRoom.AddChild(mFloorObj, 0, -mHalfHeight - 0 * SCALE_FACTOR, mHalfSideWidth);
 		
 	mRoom.AddChild(mLeftWallObj, -mHalfFarWidth, 0, mHalfSideWidth);
 	mRoom.AddChild(mRightWallObj, mHalfFarWidth, 0, mHalfSideWidth);
 	
 	if(mHasFront)
-		mRoom.AddChild(mFrontWallObj, 0, 0, mSideWallWidth + 0.05 * SCALE_FACTOR);
+		mRoom.AddChild(mFrontWallObj, 0, 0, mSideWallWidth + 0 * SCALE_FACTOR);
 		
 	// Moving the room in the origin if the user chose so
 	if(centerInOrigin)
@@ -251,10 +272,7 @@ function Room::Draw()
 {
 	// In order to draw the silhouette of a object, I need to first draw a black, bigger version of it (or any color you want for the outline) by culling 
 	// the front faces, so that only the back faces gets drawn. This way I can draw later the same object (the normal version) by culling the back faces instead,
-	// so that it looks like to be over the black mesh. So first, I enable face culling
-	glEnable(GL_CULL_FACE);
-
-	// I state that I want to cull the front faces; only the back faces will be drawn
+	// so that it looks like to be over the black mesh. So first, I state that I want to cull the front faces; only the back faces will be drawn
     glCullFace (GL_FRONT);
     
     // Enabling writes to Z-buffer and the depth test, in case these weren't active
@@ -300,11 +318,114 @@ function Room::Draw()
 	
 	// And finally draw the room
 	mRoom.Draw();
-	
-	// Disabling the face culling; no longer needed for the moment
-	glDisable(GL_CULL_FACE); 
 }
 
+/*
+ * Ausialiary method that adds lines that works as silhouette to a wall; the type can be 0 for front/back fwalls, 1 for side walls, 2 for roof/floor
+ */
+function Room::AddSilhouetteLines(wall, type)
+{
+	// Front/back wall
+	switch(type)	
+	{
+		// Front/back wall
+		case 0:
+		{
+			// I have to create objects both for front and back lines
+			var farWallSilhouetteLineFront1 = CVmObj(mFarWallSilhouetteLineMesh);
+			var farWallSilhouetteLineFront2 = CVmObj(mFarWallSilhouetteLineMesh);
+			var heightSilhouetteLineFront1 = CVmObj(mHeightSilhouetteLineMesh);
+			var heightSilhouetteLineFront2 = CVmObj(mHeightSilhouetteLineMesh);
+			
+			var farWallSilhouetteLineBack1 = CVmObj(mFarWallSilhouetteLineMesh);
+			var farWallSilhouetteLineBack2 = CVmObj(mFarWallSilhouetteLineMesh);
+			var heightSilhouetteLineBack1 = CVmObj(mHeightSilhouetteLineMesh);
+			var heightSilhouetteLineBack2 = CVmObj(mHeightSilhouetteLineMesh);
+			
+			// Initially the plane is vertical, so I rotate it
+			farWallSilhouetteLineFront1.Rotate(90, 0, 0, 1);
+			farWallSilhouetteLineFront2.Rotate(90, 0, 0, 1);
+			
+			farWallSilhouetteLineBack1.Rotate(90, 0, 0, 1);
+			farWallSilhouetteLineBack2.Rotate(90, 0, 0, 1);
+			
+			wall.AddChild(farWallSilhouetteLineFront1, mHalfFarWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, -0.01 * SCALE_FACTOR);
+			wall.AddChild(farWallSilhouetteLineFront2, mHalfFarWidth - 0.01 * SCALE_FACTOR, mHalfHeight, -0.01 * SCALE_FACTOR);
+			wall.AddChild(heightSilhouetteLineFront1, -mHalfFarWidth + 0.01 * SCALE_FACTOR, -mHalfHeight, -0.01 * SCALE_FACTOR);
+			wall.AddChild(heightSilhouetteLineFront2, mHalfFarWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, -0.01 * SCALE_FACTOR);
+			
+//			wall.AddChild(farWallSilhouetteLineBack1, mHalfFarWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(farWallSilhouetteLineBack2, mHalfFarWidth - 0.01 * SCALE_FACTOR, mHalfHeight, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(heightSilhouetteLineBack1, -mHalfFarWidth + 0.01 * SCALE_FACTOR, -mHalfHeight, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(heightSilhouetteLineBack2, mHalfFarWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, 0.01 * SCALE_FACTOR);
+			
+			break;
+		}
+		// Sidewall
+		case 1:
+		{
+			var sideWallSilhouetteLineFront1 = CVmObj(mSideWallSilhouetteLineMesh);
+			var sideWallSilhouetteLineFront2 = CVmObj(mSideWallSilhouetteLineMesh);
+			var heightSilhouetteLineFront1 = CVmObj(mHeightSilhouetteLineMesh);
+			var heightSilhouetteLineFront2 = CVmObj(mHeightSilhouetteLineMesh);
+			
+			var sideWallSilhouetteLineBack1 = CVmObj(mSideWallSilhouetteLineMesh);
+			var sideWallSilhouetteLineBack2 = CVmObj(mSideWallSilhouetteLineMesh);
+			var heightSilhouetteLineBack1 = CVmObj(mHeightSilhouetteLineMesh);
+			var heightSilhouetteLineBack2 = CVmObj(mHeightSilhouetteLineMesh);
+			
+			sideWallSilhouetteLineFront1.Rotate(90, 0, 0, 1);
+			sideWallSilhouetteLineFront2.Rotate(90, 0, 0, 1);
+			
+			sideWallSilhouetteLineBack1.Rotate(90, 0, 0, 1);
+			sideWallSilhouetteLineBack2.Rotate(90, 0, 0, 1);
+			
+			wall.AddChild(sideWallSilhouetteLineFront1, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, -0.01 * SCALE_FACTOR);
+			wall.AddChild(sideWallSilhouetteLineFront2, mHalfSideWidth - 0.01 * SCALE_FACTOR , mHalfHeight, -0.01 * SCALE_FACTOR);
+			wall.AddChild(heightSilhouetteLineFront1, -mHalfSideWidth + 0.01 * SCALE_FACTOR, -mHalfHeight, -0.01 * SCALE_FACTOR);
+			wall.AddChild(heightSilhouetteLineFront2, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, -0.01 * SCALE_FACTOR);
+			
+//			wall.AddChild(sideWallSilhouetteLineBack1, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(sideWallSilhouetteLineBack2, mHalfSideWidth - 0.01 * SCALE_FACTOR, mHalfHeight, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(heightSilhouetteLineBack1, -mHalfSideWidth + 0.01 * SCALE_FACTOR, -mHalfHeight, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(heightSilhouetteLineBack2, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfHeight, 0.01 * SCALE_FACTOR);
+			
+			break;
+		}
+		// Roof/floor wall
+		case 2:
+		{
+			var farWallSilhouetteLineFront1 = CVmObj(mFarWallSilhouetteLineMesh);
+			var farWallSilhouetteLineFront2 = CVmObj(mFarWallSilhouetteLineMesh);
+			var sideWallSilhouetteLineFront1 = CVmObj(mSideWallSilhouetteLineMesh);
+			var sideWallSilhouetteLineFront2 = CVmObj(mSideWallSilhouetteLineMesh);
+			
+			var farWallSilhouetteLineBack1 = CVmObj(mFarWallSilhouetteLineMesh);
+			var farWallSilhouetteLineBack2 = CVmObj(mFarWallSilhouetteLineMesh);
+			var sideWallSilhouetteLineBack1 = CVmObj(mSideWallSilhouetteLineMesh);
+			var sideWallSilhouetteLineBack2 = CVmObj(mSideWallSilhouetteLineMesh);
+			
+			farWallSilhouetteLineFront1.Rotate(90, 0, 0, 1);
+			farWallSilhouetteLineFront2.Rotate(90, 0, 0, 1);
+			
+			farWallSilhouetteLineBack1.Rotate(90, 0, 0, 1);
+			farWallSilhouetteLineBack2.Rotate(90, 0, 0, 1);
+			
+			wall.AddChild(farWallSilhouetteLineFront1, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfFarWidth, -0.01 * SCALE_FACTOR);
+			wall.AddChild(farWallSilhouetteLineFront2, mHalfSideWidth - 0.01 * SCALE_FACTOR, mHalfFarWidth, -0.01 * SCALE_FACTOR);
+			wall.AddChild(sideWallSilhouetteLineFront1, -mHalfSideWidth + 0.01 * SCALE_FACTOR, -mHalfFarWidth, -0.01 * SCALE_FACTOR);
+			wall.AddChild(sideWallSilhouetteLineFront2, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfFarWidth, -0.01 * SCALE_FACTOR);
+			
+//			wall.AddChild(farWallSilhouetteLineBack1, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfFarWidth, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(farWallSilhouetteLineBack2, mHalfSideWidth - 0.01 * SCALE_FACTOR, mHalfFarWidth, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(sideWallSilhouetteLineBack1, -mHalfSideWidth + 0.01 * SCALE_FACTOR, -mHalfFarWidth, 0.01 * SCALE_FACTOR);
+//			wall.AddChild(sideWallSilhouetteLineBack2, mHalfSideWidth - 0.01 * SCALE_FACTOR, -mHalfFarWidth, 0.01 * SCALE_FACTOR);
+			
+			break;
+		}
+	}
+	
+}
 
 /*
  * This method checks where the given ray intersects the world, and returns true if that position is valid for the player

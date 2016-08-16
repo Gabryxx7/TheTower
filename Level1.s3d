@@ -157,7 +157,8 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
+//	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mLinesTimeVariable = 0;
@@ -168,11 +169,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	var offset = 10 * SCALE_FACTOR;
 	
 	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
-	connector1.SetPosition([-offset, 0, offsetFromFarWall]);
+	connector1.SetPosition([-offset, 0.05, offsetFromFarWall]);
 	connector1.Rotate(85, 0, 1, 0);
 	
 	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
-	connector2.SetPosition([offset, 0, offsetFromFarWall]);
+	connector2.SetPosition([offset, 0.05, offsetFromFarWall]);
 	connector2.Rotate(135, 0, 1, 0);
 	
 	// This is group 1: the connectors in front of the elevator
@@ -184,11 +185,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	offset = 7.0 * SCALE_FACTOR;
 	
 	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
-	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0, offset - 5 * SCALE_FACTOR]);
+	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0.05, offset - 5 * SCALE_FACTOR]);
 	connector3.Rotate(85 * 2, 0, 1, 0);
 	
 	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
+	connector4.SetPosition([offsetFromSideWall, 0.05, -offset - 5 * SCALE_FACTOR]);
 	connector4.Rotate(115 * 2, 0, 1, 0);
 	
 	// This is group 2: the connectors on the left of the elevator
@@ -196,11 +197,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	
 	var connector5 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector5.SetPosition([-offsetFromSideWall, 0, offset - 5 * SCALE_FACTOR]);
+	connector5.SetPosition([-offsetFromSideWall, 0.05, offset - 5 * SCALE_FACTOR]);
 	connector5.Rotate(42, 0, 1, 0);
 	
 	var connector6 = DrawingsConnector([0, 1.0, 0.6], 1, 2);
-	connector6.SetPosition([-offsetFromSideWall, 0, -offset - 5 * SCALE_FACTOR]);
+	connector6.SetPosition([-offsetFromSideWall, 0.05, -offset - 5 * SCALE_FACTOR]);
 	connector6.Rotate(-12, 0, 1, 0);
 	
 	// This is group 3: the connectors on the right of the elevator
@@ -210,23 +211,23 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	offsetFromFarWall = -mMainRoom.GetRoomDepth()/2 + 15.0 * SCALE_FACTOR;
 	
 	var connector7 = DrawingsConnector([1.0, 0.0, 0.0], 1, 2);
-	connector7.SetPosition([-8 * SCALE_FACTOR, 0, offsetFromFarWall - 0 * SCALE_FACTOR]);
+	connector7.SetPosition([-8 * SCALE_FACTOR, 0.05, offsetFromFarWall - 0 * SCALE_FACTOR]);
 	connector7.Rotate(24, 0, 1, 0);
 	
 	var connector8 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector8.SetPosition([-7 * SCALE_FACTOR, 0, offsetFromFarWall - 4 * SCALE_FACTOR]);
+	connector8.SetPosition([-7 * SCALE_FACTOR, 0.05, offsetFromFarWall - 4 * SCALE_FACTOR]);
 	connector8.Rotate(-42, 0, 1, 0);
 	
 	var connector9 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0, offsetFromFarWall - 7 * SCALE_FACTOR]);
+	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0.05, offsetFromFarWall - 7 * SCALE_FACTOR]);
 	connector9.Rotate(-69, 0, 1, 0);
 	
 	var connector10 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector10.SetPosition([2 * SCALE_FACTOR, 0, offsetFromFarWall - 5 * SCALE_FACTOR]);
+	connector10.SetPosition([2 * SCALE_FACTOR, 0.05, offsetFromFarWall - 5 * SCALE_FACTOR]);
 	connector10.Rotate(-89, 0, 1, 0);
 	
 	var connector11 = DrawingsConnector([0.0, 0.0, 1.0], 1, 2);
-	connector11.SetPosition([4 * SCALE_FACTOR, 0, offsetFromFarWall - 2 * SCALE_FACTOR]);
+	connector11.SetPosition([4 * SCALE_FACTOR, 0.05, offsetFromFarWall - 2 * SCALE_FACTOR]);
 	connector11.Rotate(-162, 0, 1, 0);
 	
 	// This is group 4: the connectors behind the elevator

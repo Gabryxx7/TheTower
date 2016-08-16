@@ -248,7 +248,8 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	var halfHeight = PORTAL_ROOM_HEIGHT/2.0;
 	
 	// Creating the mesh for the frames; it's the same for every portal room, since they all have the same size
-	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfHeight, 0], 2, 2);
+//	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfHeight, 0], 2, 2);
+	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth - 0.05 * SCALE_FACTOR, -halfHeight, 0], [halfWidth + 0.05 * SCALE_FACTOR, halfHeight, 0], 2, 2);
 	
 	// Linking the frame objects to the mesh
 	var portalFrameObj1 = CVmObj(portalFrameMesh);
@@ -258,10 +259,14 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Moving the frames so that they form a sort of cube; i take into account the fact that they have silhouettes, so in order to show that 
 	// I don't attach them together, but leave some pixels in between (chosen semi-randomly)
-	portalFrameObj1.Translate(0, halfHeight + 0.3 * SCALE_FACTOR, -0.05 * SCALE_FACTOR);
-	portalFrameObj2.Translate(halfWidth - 0.05 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth);
-	portalFrameObj3.Translate(0.05 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth*2);
-	portalFrameObj4.Translate(-halfWidth, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth + 0.05 * SCALE_FACTOR);
+//	portalFrameObj1.Translate(0, halfHeight + 0.3 * SCALE_FACTOR, 0 * SCALE_FACTOR);
+//	portalFrameObj2.Translate(halfWidth - 0.05 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth);
+//	portalFrameObj3.Translate(0.05 * SCALE_FACTOR - 0.10 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth*2 + 0.05 * SCALE_FACTOR);
+//	portalFrameObj4.Translate(-halfWidth, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth + 0.05 * SCALE_FACTOR);
+	portalFrameObj1.Translate(0, halfHeight, 0.09 * SCALE_FACTOR);
+	portalFrameObj2.Translate(halfWidth + 0.05 * SCALE_FACTOR, halfHeight, -halfWidth + 0.09 * SCALE_FACTOR);
+	portalFrameObj3.Translate(0, halfHeight, -halfWidth*2 + 0.09 * SCALE_FACTOR);
+	portalFrameObj4.Translate(-halfWidth - 0.05 * SCALE_FACTOR, halfHeight, -halfWidth + 0.09 * SCALE_FACTOR);
 	
 	// Rotating the frames, so that each one reflects its portal's room orientation
 	portalFrameObj2.Rotate(90, 0, 1, 0);
@@ -325,12 +330,14 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	
 	// Now I create the elevator, as a "Elevator" object; the width is a little less than the size of the frames, otherwise we get z-buffer problems
-	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.3 * SCALE_FACTOR;
-
+//	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.3 * SCALE_FACTOR;
+	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH;
+	
 	mElevator = Elevator(elevatorWidth, PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 1, 1);
 		
 	// Positioning the room so that is right behind the first portal frame
-	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH - 0.285 * SCALE_FACTOR]);
+//	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH - 0.285 * SCALE_FACTOR]);
+	mElevator.SetPosition([0, halfHeight + 0.08 * SCALE_FACTOR, -PORTAL_ROOM_SIDE_WALL_WIDTH + 0.185 * SCALE_FACTOR]);
 	
 	// At start I hide the elevator; it will appear later
 	mElevator.Hide();
@@ -347,7 +354,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Text for the elevator
 	var elevatorText = Text("The Tower");
-	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.0);
+	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.05);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -636,12 +643,12 @@ function Level0::DrawAllPortals()
 	for(var i = 0; i < PORTALS_NUMBER; i++)
 	{
 		// I use the silhouette shader so that the outline of the frames will be there
-		mSilhouetteShader.Start();
-			mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
-    		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-    		
-    		mPortalFrames[i].Draw();
-		mSilhouetteShader.Stop();
+//		mSilhouetteShader.Start();
+//			mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
+//    		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+//    		
+//    		mPortalFrames[i].Draw();
+//		mSilhouetteShader.Stop();
 		
 		mPortalFrames[i].Draw();
 	}
@@ -698,7 +705,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	var framePos = portalFrame.GetPosition();
 	
 	// First I need to place the camera at the end of the portal's room, so I'm going to compute that position
-	var localPoint = [0, 0, portalRoom.GetRoomDepth()];
+	var localPoint = [0, 0, portalRoom.GetRoomDepth() + 0.1 * SCALE_FACTOR];
 	var newCameraPosition = portalRoom.LocalToWorld(localPoint);
 	
 	// Now I need to compute the translation I need to apply to the camera. For example, imagine being really close to the portal's frame: the portal room

@@ -135,11 +135,11 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	// The first 2 connectors that appear
 	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
-	connector1.SetPosition([-offset, 0, -offsetFromFarWall]);
+	connector1.SetPosition([-offset, 0.05, -offsetFromFarWall]);
 	connector1.Rotate(15, 0, 1, 0);
 	
 	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
-	connector2.SetPosition([offset, 0, -offsetFromFarWall]);
+	connector2.SetPosition([offset, 0.05, -offsetFromFarWall]);
 	connector2.Rotate(203, 0, 1, 0);
 	
 	// This is group 1: the connectors in front of the elevator
@@ -148,11 +148,11 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	// The second group of connectors
 	var connector3 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector3.SetPosition([-offset, 0, offsetFromFarWall]);
+	connector3.SetPosition([-offset, 0.05, offsetFromFarWall]);
 	connector3.Rotate(15, 0, 1, 0);
 	
 	var connector4 = DrawingsConnector([0.0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offset, 0, offsetFromFarWall]);
+	connector4.SetPosition([offset, 0.05, offsetFromFarWall]);
 	connector4.Rotate(203, 0, 1, 0);
 	
 	connector4.SetLinkedConnector(connector3);
@@ -520,8 +520,8 @@ function Level4::UpdateLogic(dt)
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
 		{
-			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-		    	mInputManager.RestoreCameraPosition();
+//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
 		    	
 	    	// Now I have to change the position of the duplicates controller so that they mirror the real ones
 	    	for(var i = 0; i < len(mControllersArray); i++)
