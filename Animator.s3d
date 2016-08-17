@@ -53,11 +53,15 @@ class Animator
 	// what is the delta angle (i.e. the difference between the starting angle and the current angle they're at), the axis around which they have to rotate to
 	// (it's actually a vector [x, y, z]), and whether they have to reverse the rotation when they reach the limit (this is checked only if the rotation is set 
 	// to be a loop). These arrays are meaningful only for rotations, so for common transitions they're empty
-	var mIsRotatingArray;
+//	var mIsRotatingArray;
 	var mFinalAngleArray;
 	var mAngleDeltaArray;
 	var mAxisArray;
 	var mReverseArray;
+	
+	// 0 == transition, 1 == rotation, 2 == scaling
+	var mTransitionTypeArray;
+	
 	
 	// Boolean used to indicate whether the waypoints of transitions are inverted or not
 	var mAreTransitionsInverted;
@@ -68,6 +72,7 @@ class Animator
 	CreatePathTransition(object, waypoints, time, loop);
 	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	ChangeScaleFactors(newFactor);
+	CreateScalingTransition(object, startingScale, endingScale, time, loop);
 	
 	// Private functions
 	InvertTransitions();
@@ -93,7 +98,7 @@ function Animator::Animator()
 	mWaypointsArray = {};
 	mWaypointsCounterArray = {};
 	
-	mIsRotatingArray = {};
+	mTransitionTypeArray = {};
 	mFinalAngleArray = {};
 	mAxisArray = {};
 	mAngleDeltaArray = {};
@@ -115,7 +120,7 @@ function Animator::Animator()
 function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 {
 	// If there is already a transition active for the object, I remove it ("false" indicates a movement transition); if there isn't this doesn't do anything
-	RemoveTransitionByObject(object, false);
+	RemoveTransitionByObject(object, 0);
 	
 	// For starter, I move the object to the starting position, in case it wasn't there already
 	object.SetPosition(startingPos);
@@ -183,7 +188,7 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 	// Since this is a transition, the arrays regarding rotation are filled with random things since they won't be used. I fill them anyway in order
 	// to have a 1:1 ratio between transitions and rotations array, so that I can reuse the same arrays for the things that are common between
 	// transitions and rotations
-	aadd(mIsRotatingArray, false);
+	aadd(mTransitionTypeArray, 0);
 	aadd(mAxisArray, 0);
 	aadd(mFinalAngleArray, 0);
 	aadd(mAngleDeltaArray, 0);
@@ -203,7 +208,7 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse)
 {		
 	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
-	RemoveTransitionByObject(object, true);
+	RemoveTransitionByObject(object, 1);
 	
 	// First off, I'm setting the starting rotation
 //	object.SetRotation(startingAngle, axis);
@@ -215,7 +220,7 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 	aadd(mScaleFactorArray, 1.0);
 	
 	// I state that this object has a rotation
-	aadd(mIsRotatingArray, true);
+	aadd(mTransitionTypeArray, 1);
 	
 	// Computing the speed of the rotation, based on the given time
 	var speed = (finalAngle - startingAngle) / (time);
@@ -239,6 +244,86 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 	aadd(mWaypointsCounterArray, 0);
 }
 
+function Animator::CreateScalingTransition(object, startingScale, endingScale, time, loop)
+{		
+	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
+	RemoveTransitionByObject(object, 2);
+	
+	// First off, I'm setting the starting scale
+	object.SetScale(startingScale);
+	
+	aadd(mObjects, object);
+	aadd(mStartingPositions, startingScale);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, time);
+	aadd(mScaleFactorArray, 1.0);
+	
+	// I state that this object is scaling
+	aadd(mTransitionTypeArray, 2);
+	
+	var endScale = endingScale;
+	
+	// To incorporate both common transitions and path transitions (i.e. with waypoints), I check the type of "endingPos". In fact, if it's a common transition
+	// it will be a vector, otherwise an array of vectors (actually, I'm assuming it's vectors; I'm trusting the user here).
+	// So if the type is "A" (Array), I populate the waypoints' arrays with useful things
+	if(valtype(endingScale) == "A")
+	{
+		// The first waypoint is the current end point, so I get it to do some computations soon
+		endScale = endingScale[0];
+		
+		// I'm creating a waypoints array that contains all waypoints, including the starting position, to make the update of the object's position easier
+		var waypoints = {startingScale};
+		
+		// I add each waypoint to this array
+		foreach(var waypoint in endingScale)
+		{
+			aadd(waypoints, waypoint);
+		}
+		
+		// I state that this object has waypoints, and I'm passing the waypoints. I'm also starting the waypointsCounter (i.e. the variable that says what is
+		// the next waypoint) to 2, since the first is the starting position and the second is the waypoint I'm already traveling to
+		aadd(mHasWaypointsArray, true);
+		aadd(mWaypointsArray, waypoints);
+		aadd(mWaypointsCounterArray, 2);
+	}
+	else
+	{		
+		// If this object doesn't have transitions, I state so by putting "false" in the array; I also save the ending position in the waypoints array, even though
+		// technically there are no waypoints (but it saves space)
+		aadd(mHasWaypointsArray, false);
+		aadd(mWaypointsArray, endingScale);
+		aadd(mWaypointsCounterArray, 0);
+	}
+	
+	// Computing the distance (which is the length of the difference of the 2 vectors) and the direction it has to move to
+	var distance = Modulus(endScale - startingScale);
+//	var direction = Norm(endPoint - startingPos);
+//	
+	aadd(mDistanceArray, distance);	
+	aadd(mDirectionsArray, 0);
+	
+	// For each axis, I compute the speed the component has to increment (or decrement to); it's basically "velocity = space / time". 
+	// Note: I use an absolute value after the computation in order to always have positive speeds, since I'm using the "direction" vector to find out
+	// whether one of these components has to be incremented or decremented
+	var xSpeed = ((endScale.x - startingScale.x) / time);
+	var ySpeed = ((endScale.y - startingScale.y) / time);
+	var zSpeed = ((endScale.z - startingScale.z) / time);
+	
+	aadd(mXSpeedArray, xSpeed);
+	aadd(mYSpeedArray, ySpeed);
+	aadd(mZSpeedArray, zSpeed);
+
+	
+	// Since this is a transition, the arrays regarding rotation are filled with random things since they won't be used. I fill them anyway in order
+	// to have a 1:1 ratio between transitions and rotations array, so that I can reuse the same arrays for the things that are common between
+	// transitions and rotations
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+}
+
+
 /*
  * This method as to be called by the caller in its "update" function, so that the objects' positions will be constantly updated
  * 
@@ -252,7 +337,7 @@ function Animator::UpdateTransitions(dt)
 		var object = mObjects[i];
 		
 		// Case where this object is a transition object and NOT a rotation one
-		if(!mIsRotatingArray[i])
+		if(mTransitionTypeArray[i] == 0)
 		{
 			// Getting some useful information from the arrays
 			var currentPosition = object.GetPosition();
@@ -346,7 +431,7 @@ function Animator::UpdateTransitions(dt)
 			}
 		}
 		// If the object has not a transition but a rotation, it's a bit different
-		else
+		else if(mTransitionTypeArray[i] == 1)
 		{
 			// Taking some useful stuff
 			var speed = mXSpeedArray[i];
@@ -393,6 +478,77 @@ function Animator::UpdateTransitions(dt)
 			else
 				mAngleDeltaArray[i] = currentAngle;
 		}
+		// Case where we have a scaling transition
+		else if(mTransitionTypeArray[i] == 2)
+		{
+			// Getting some useful information from the arrays
+			var currentScale = object.GetScale();
+			var startingScale = mStartingPositions[i];
+			var distance = mDistanceArray[i];
+			var xSpeed = mXSpeedArray[i];
+			var ySpeed = mYSpeedArray[i];
+			var zSpeed = mZSpeedArray[i];
+			
+			currentScale.x += dt * xSpeed * mScaleFactorArray[i];
+			currentScale.y += dt * ySpeed * mScaleFactorArray[i];
+			currentScale.z += dt * zSpeed * mScaleFactorArray[i];
+			
+			object.SetScale(currentScale);
+	
+			if(Modulus(startingScale - currentScale) >= distance)
+			{
+				if(mHasWaypointsArray[i])
+				{
+					var waypoints = mWaypointsArray[i];
+					
+					if(mAreTransitionsInverted && mWaypointsCounterArray[i] == 0 && !mIsLoopArray[i]) 
+						RemoveTransitionByIndex(i);
+					else if(mWaypointsCounterArray[i] < len(waypoints))
+					{
+						var endpoint = waypoints[mWaypointsCounterArray[i]];
+						mStartingPositions[i] = currentScale;
+						
+						distance = Modulus(currentScale - endpoint);
+										
+						mDistanceArray[i] = distance;
+						
+						xSpeed = (endpoint.x - currentScale.x) / mTimeArray[i];
+						ySpeed = (endpoint.y - currentScale.y) / mTimeArray[i];
+						zSpeed = (endpoint.z - currentScale.z) / mTimeArray[i];
+												
+						mXSpeedArray[i] = xSpeed;
+						mYSpeedArray[i] = ySpeed;
+						mZSpeedArray[i] = zSpeed;
+
+						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+							mWaypointsCounterArray[i]--;
+						else if(mAreTransitionsInverted)
+							mWaypointsCounterArray[i] = len(waypoints) - 1;
+						else
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
+						
+						if(mIsLoopArray[i])
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
+					}
+					else
+						RemoveTransitionByIndex(i);
+				}
+				// If the object doesn't have waypoints but is looping, I invert the sign of the direction and putting as starting position the current one;
+				// I also save the final position in the mWaypointsArray, although technically it doesn't have waypoints.
+				// The rest (distance to travel, speed and so on) obviously stays the same
+				else if(mIsLoopArray[i])
+			    {
+				 	mXSpeedArray[i] = -mXSpeedArray[i];
+					mYSpeedArray[i] = -mYSpeedArray[i];
+					mZSpeedArray[i] = -mZSpeedArray[i];
+				 	mWaypointsArray[i] = mStartingPositions[i];
+				 	mStartingPositions[i] = currentScale;
+				}
+				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
+				else
+					RemoveTransitionByIndex(i);
+			}
+		}
 	}
 }
 
@@ -424,8 +580,8 @@ function Animator::InvertTransitions()
 	// Scanning all the objects; we need to update some things for every type of transitions we have
 	for(var i = 0; i < len(mObjects); i++)
 	{
-		// If it's not rotating...
-		if(!mIsRotatingArray[i])
+		// If it's a moving transition
+		if(mTransitionTypeArray[i] == 0)
 		{
 			// If it has waypoints we need to change the current waypoint's starting poisition with the ending position, and invert the directions;
 			// i.e., if we're moving from A to B with direction 1, we need to use as new starting position B and ending position A, with direction -1.
@@ -488,15 +644,80 @@ function Animator::InvertTransitions()
 			}
 		}
 		// If the object is involved in a rotation transition, I simply need to invert its speed, so it goes backward
-		else
+		else if(mTransitionTypeArray[i] == 1)
 			mXSpeedArray[i] = -mXSpeedArray[i];
+		else if(mTransitionTypeArray[i] == 2)
+		{
+			if(mHasWaypointsArray[i])
+			{		
+				var waypoints = mWaypointsArray[i];
+				
+				var newStartingPosCounter = 0;
+				
+				// Finding the new starting point is a bit messy; the whole thing could have been handled better. Basically if we're going backwards we need
+				// to take as starting position the previous one in the counter of the waypoints, but I need to make sure that if the counter is at position 0
+				// it goes to the last waypoint instead. Otherwise, if we're going forward (and previously we were going backward) I simply increment
+				// the counter and do the modulo operation so that we start at the beginning of the array if we're at the end
+				if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+					newStartingPosCounter = mWaypointsCounterArray[i] - 1;
+				else if(mAreTransitionsInverted)
+					newStartingPosCounter = len(waypoints) - 1;
+				else 
+					newStartingPosCounter = (mWaypointsCounterArray[i] + 1) % len(waypoints);
+					
+				// Setting the new starting position from the counter we found
+				mStartingPositions[i] = waypoints[newStartingPosCounter];
+				
+				var newWaypointsCounter = newStartingPosCounter;
+				
+				// Now I need to find the new counter, i.e. the index of the waypoint we're going to move to next. NEXT. Not the waypoint we're moving to now.
+				// It's a bit confusing and I could have handle it better. To find the new counter we start from the index of the starting position.
+				// The counter needs to point 2 indices AFTER this index, but depending whether we're reversing of going forward it's 2 indices before or after
+				// this one. So I need to check the cases and make sure that the counter remains in the boundaries of the array
+				if(mAreTransitionsInverted)
+				{
+					if(newWaypointsCounter > 1)
+						newWaypointsCounter -= 2;
+					else if (newWaypointsCounter == 1)
+						newWaypointsCounter = len(waypoints) - 1;
+					else
+						newWaypointsCounter = len(waypoints) - 2;
+				}
+				else
+					newWaypointsCounter = (newWaypointsCounter + 2) % len(waypoints);
+	
+				// Setting the new counter
+				mWaypointsCounterArray[i] = newWaypointsCounter;
+	
+				// Inverting the direction, so that the object goes back where it came from
+//				mDirectionsArray[i] = -mDirectionsArray[i];
+				mXSpeedArray[i] = -mXSpeedArray[i];
+				mYSpeedArray[i] = -mYSpeedArray[i];
+				mZSpeedArray[i] = -mZSpeedArray[i];
+			}
+			// If the object doesn't have waypoints...
+			else
+			{
+				// I invert the direction
+//				mDirectionsArray[i] = -mDirectionsArray[i];
+				mXSpeedArray[i] = -mXSpeedArray[i];
+				mYSpeedArray[i] = -mYSpeedArray[i];
+				mZSpeedArray[i] = -mZSpeedArray[i];
+				
+				// I swap the starting position with the ending position (which is held in the mWaypointsArray to save space), so we can check 
+				// in the update method if the object reached the end of the transition or not
+				var tmp = mStartingPositions[i];
+			 	mStartingPositions[i] = mWaypointsArray[i];
+			 	mWaypointsArray[i] = tmp;
+			}
+		}
 	}
 }
 
 /*
  * This (public) method that removes an object from the active transitions/rotations. To use it, you have to specify the type of transition (rotating or not)
  */
-function Animator::RemoveTransitionByObject(object, isRotating)
+function Animator::RemoveTransitionByObject(object, isType)
 {
 	var found = false;
 	
@@ -504,7 +725,7 @@ function Animator::RemoveTransitionByObject(object, isRotating)
 	{
 		found = mObjects[i] == object;
 		
-		if(found && mIsRotatingArray[i] == isRotating)
+		if(found && mTransitionTypeArray[i] == isType)
 			RemoveTransitionByIndex(i);
 		else
 			found = false;
@@ -531,7 +752,7 @@ function Animator::RemoveTransitionByIndex(index)
 	adel(mWaypointsArray, index);
 	adel(mWaypointsCounterArray, index);
 	
-	adel(mIsRotatingArray, index);
+	adel(mTransitionTypeArray, index);
 	adel(mFinalAngleArray, index);
 	adel(mAxisArray, index);
 	adel(mAngleDeltaArray, index);

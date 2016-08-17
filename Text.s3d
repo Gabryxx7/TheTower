@@ -7,6 +7,8 @@ class Text
 	// The complete text string
 	var mString;
 	
+	var mSubstrings;
+	
 	// The array of the substrings, i.e. the parts of the complete text string that are separated by "\n"
 	var mStringList;
 	
@@ -33,6 +35,7 @@ class Text
 	LoadString(string);
 	SetPosition(position);
 	GetPosition();
+	GetWidthOfLine(lineNumber);
 	SetScale(scale);
 	GetObj();
 	Rotate(angle, x, y, z);
@@ -58,14 +61,14 @@ function Text::Text(string, scale)
 	mTextContainerObj = CVmObj();
 	
 	// I obtain the substrings by using the Split function with "\n" as separator
-	var substrings = Split(mString, "\n");
-	mNumberOfSubstrings = len(substrings);
+	mSubstrings = Split(mString, "\n");
+	mNumberOfSubstrings = len(mSubstrings);
 	
 	// For each substring found, I create a CVmObj with the substring as CVmText
 	for(var i = 0; i < mNumberOfSubstrings; i++)
 	{
 		var txt = CVmText();
-		txt.Load(substrings[i]);
+		txt.Load(mSubstrings[i]);
 		txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
 		txt.SetColor(0, 0, 0);
 						
@@ -76,7 +79,7 @@ function Text::Text(string, scale)
 		aadd(mStringObjList, txtObj);
 		
 		// Computing the string width 
-		var stringWidth = len(substrings[i]) * mStringWidthMultiplier;
+		var stringWidth = len(mSubstrings[i]) * mStringWidthMultiplier;
 		
 		// Adding the new object as child of the main container, positioning it so that it stays in the center and each new object stays below the previous
 		mTextContainerObj.AddChild(txtObj, -stringWidth, -(i * mStringHeight), 0);
@@ -209,6 +212,11 @@ function Text::Translate(x, y, z)
 function Text::GetPosition()
 {
 	return mTextContainerObj.GetPosition();
+}
+
+function Text::GetWidthOfLine(lineNumber)
+{
+	return len(mSubstrings[lineNumber]) * mStringWidthMultiplier;
 }
 
 function Text::Draw()

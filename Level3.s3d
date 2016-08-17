@@ -76,21 +76,13 @@ class Level3
 	var mController1;
 	var mController2;
 	
-	// Private functions
-	DrawAllPortals();
-	DrawPortal(portalFrame, portalRoom);
-	FadeToBlackScreen(fadeIn);
-	
-	intersect3D_SegmentPlane( p0, p1, v0, normal);
-	
-	Selection(object);
+	var mFrontText;
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
-	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
@@ -120,39 +112,19 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 
 	mMainClock = Clock(1, 2);
 	mMainClock.Translate(0, 5 * SCALE_FACTOR, 14 * SCALE_FACTOR);
-	
-	var num_seg = 30;
-	var radius = 2 * SCALE_FACTOR;
-	var hemisphere = 1;  // 0.5 = hemisphere, 1 = sphere
-	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
-	global var sphere = CVmObj(sphereMesh1);
-	sphere.SetPosition(0, 5 * SCALE_FACTOR, 20 * SCALE_FACTOR);
-	
-	
-	
-		
-	var first = sphere.GetPosition();
-	var second = first + [0, 0, 6 * SCALE_FACTOR];
-	var third = second + [4.5 * SCALE_FACTOR, 0, 0];
-	var fourth  = third + [0, 0, -6 * SCALE_FACTOR];
-	var fifth  = fourth + [1 * SCALE_FACTOR, 0, 2 * SCALE_FACTOR];
-	
-	mAnimator.CreateTransition(sphere, first, {second, third, fourth, fifth}, 3.0, true);
-//	mAnimator.CreateTransition(sphere, first, {second, third, fourth}, 10.0, true);
-//	mAnimator.CreateTransition(sphere, first, {second, third}, 1.0, true);
-	
-//	mAnimator.CreateTransition(sphere, first, second, 1.0, true);
 
-	global var flyingFuck2 = Text("Flying Fact");
-	flyingFuck2.SetPosition(sphere.GetPosition() + [-3 * SCALE_FACTOR, 0, 0]);
-	flyingFuck2.Rotate(90, 0, 1, 0);
-
-	// Transition and rotation for the flying fuck
-	mAnimator.CreateRotatingTransition(flyingFuck2, 0, (360*5 + 180), [0, 1, 0], 40.0, false, false);
-	
+	// Initially the time runs forward
 	mTimeDirection = 1;
 	
-	mNumberOfClocks = 6;
+		
+	// Creating texts object for the scene
+	mFrontText = Text("Time is relative", 2.0);
+	mFrontText.Rotate(180, 0, 1, 0);
+	var textPos = [2 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2.0 - 0.1 * SCALE_FACTOR];
+	var textBoundingBox = [textPos.x - mFrontText.GetWidthOfLine(0) * 2.0, textPos.y - 2.5 * SCALE_FACTOR, textPos.x + mFrontText.GetWidthOfLine(0) * 2.0, textPos.y + 2.5 * SCALE_FACTOR];
+	mFrontText.SetPosition(textPos);
+	
+	mNumberOfClocks = 8;
 	mNumberOfClockRows = 6;
 	mClocks = {};
 	
@@ -163,24 +135,36 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	{
 		for(var j = 0; j < mNumberOfClocks; j++)
 		{
-			aadd(mClocks, Clock(1, 2));
+			var newClock = Clock(1, 2);
+			
+			var x = (mMainRoom.GetRoomWidth()/2.0 - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			var z = mMainRoom.GetRoomDepth() - 0.3 * SCALE_FACTOR;
+			
+			aadd(mClocks, newClock);
 			
 			// These coordinates are used if the clocks aren't put as children of the main room; I'll leave it for now as a reminder
 //			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
 //			var y = mMainRoom.GetRoomHeight() - 4.0 - heightStep*i;
 //			var z = mMainRoom.GetRoomDepth()/2.0 - 0.3;
-
-			var x = 0 + (mMainRoom.GetRoomWidth()/2.0 - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
-			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
-			var z = mMainRoom.GetRoomDepth() - 0.3 * SCALE_FACTOR;
 			
 			var position = [x, y, z];
+			
+			if(position.x >= textBoundingBox[0] && position.x <= textBoundingBox[2]
+			&& position.y >= textBoundingBox[1] - mMainRoom.GetRoomHeight()/ 2.0&& position.y <= textBoundingBox[3] - mMainRoom.GetRoomHeight()/ 2.0)
+			{
+				continue;
+			}
+				
 		
 			position.x += Rand(1) == 0 ? Rand(8)/30.0 * SCALE_FACTOR : -Rand(8)/30.0 * SCALE_FACTOR;
-			position.y += Rand(1) == 0 ? Rand(8)/10.0 * SCALE_FACTOR : -Rand(8)/10.0 * SCALE_FACTOR;
+			position.y += Rand(1) == 0 ? Rand(2)/2.0 * SCALE_FACTOR : -Rand(2)/2.0 * SCALE_FACTOR;
 			
-			var newClock = mClocks[i*mNumberOfClocks + j];
-			
+			// If the position is below the floor (taking into account that position.y is in the object's coordinate system so I have to add the half-height of
+			// the room, minus the height of the circle) I re-increment the y
+			while(position.y + mMainRoom.GetRoomHeight()/ 2.0 - 1 * SCALE_FACTOR <= 0)
+				position.y += Rand(9)/5.0 * SCALE_FACTOR;
+						
 //			newClock.SetPosition(position);
 			
 			mAnimator.CreateRotatingTransition(newClock.GetMinutesArrowObj(), 0, (360), [0, 0, 1], 10.0, true, false);
@@ -195,7 +179,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
 	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0  * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
 	
-	// Need also to scale the mesh itself; if the sizez are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
+	// Need also to scale the mesh itself; if the sizes are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
 	pyramidMesh1.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	pyramidMesh2.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	
@@ -228,7 +212,6 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	global var pyramidObj = CVmObj();
 	pyramidObj.AddChild(pyramidObj1, 0, 0, 0);
 	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
-//	pyramidObj2.SetPivotPoint(0, pyramidHeight, 0);
 	pyramidObj2.Rotate(180, 0, 0, 1);
 	pyramidObj2.Translate(0, pyramidHeight/2.0 + 0.47 * SCALE_FACTOR, 0);
 	
@@ -246,6 +229,40 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
 	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
+	
+	var baseSize = 1.0 * SCALE_FACTOR;
+//	global var baseBoxMesh = CVmNewMesh(VRP_BOX, 120, [-baseSize / 2.0, -baseSize / 2.0, 0], [baseSize / 2.0, baseSize / 2.0, 0], baseSize);
+
+	var otherPyramidHeight = 2.0 * SCALE_FACTOR;
+	
+//	global var baseBoxMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
+//	baseBoxMesh.Translate(5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	
+	var otherPyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, otherPyramidHeight);
+	global var otherPyramidObj1 = CVmObj(otherPyramidMesh);
+	var otherPyramidObj2 = CVmObj(otherPyramidMesh);
+	var otherPyramidObj3 = CVmObj(otherPyramidMesh);
+	var otherPyramidObj4 = CVmObj(otherPyramidMesh);
+	var otherPyramidObj5 = CVmObj(otherPyramidMesh);
+	var otherPyramidObj6 = CVmObj(otherPyramidMesh);
+	
+	otherPyramidObj2.Rotate(90, 0, 0, 1);
+	otherPyramidObj3.Rotate(180, 0, 0, 1);
+	otherPyramidObj4.Rotate(270, 0, 0, 1);
+	otherPyramidObj5.Rotate(90, 1, 0, 0);
+	otherPyramidObj6.Rotate(-90, 1, 0, 0);
+	
+	global var otherPyramidObj = CVmObj();
+	otherPyramidObj.AddChild(otherPyramidObj1, 0, 0, 0);
+	otherPyramidObj.AddChild(otherPyramidObj2, 0, -baseSize, 0);
+	otherPyramidObj.AddChild(otherPyramidObj3, baseSize, -baseSize, 0);
+	otherPyramidObj.AddChild(otherPyramidObj4, baseSize, 0, 0);
+	otherPyramidObj.AddChild(otherPyramidObj5, 0, -baseSize, 0);
+	otherPyramidObj.AddChild(otherPyramidObj6, 0, 0, -baseSize);
+	
+	otherPyramidObj.Translate(5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 15 * SCALE_FACTOR);
+	
+	mAnimator.CreateScalingTransition(otherPyramidObj, [1.0, 1.0, 1.0], {[1.0, 0.3, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.3], [1.0, 1.0, 1.0], [0.3, 1.0, 1.0]}, 3.0, true);
 	
 	if(mIsVRon)
 	{
@@ -303,7 +320,6 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	var lightPos = mLight1.GetPosition();
 	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
-//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
 	
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
@@ -326,6 +342,22 @@ function Level3::Render()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+ 	
+ 	static var increment = 1.0;
+ 	
+ 	if(Keypressed("K"))
+ 	{
+ 		increment -= 0.01;
+ 		outputln(increment);
+ 		otherPyramidObj.SetScale(1.0, increment, 1.0);
+	}
+	
+	if(Keypressed("I"))
+ 	{
+ 		increment += 0.01;
+ 		outputln(increment);
+ 		otherPyramidObj.SetScale(1.0, increment, 1.0);
+	}
 	
 	switch(mLevelStatus)
 	{
@@ -335,8 +367,11 @@ function Level3::Render()
 		case STATUS_LEVEL_STARTED:
 			mMainRoom.Draw();
 			mMainClock.Draw();
-			sphere.Draw();
-			flyingFuck2.Draw();
+			
+			mFrontText.Draw();
+			
+			
+			otherPyramidObj.Draw();
 			break;
 	}
 	
