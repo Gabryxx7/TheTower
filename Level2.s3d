@@ -69,6 +69,7 @@ class Level2
 	
 	var redPathObjs;
 	var redPathSteppedObjs;
+	var timesWalked;
 	var redPathWalked;
 	var greenPathObjs;
 	var greenPathSteppedObjs;
@@ -108,7 +109,7 @@ class Level2
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
-	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness);
+	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness, startingPos);
 	newTile(mesh, prevTilePos, offsets);
 	CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness);
 	CreateBox(boxWidth, boxHeight, boxThickness, borderThickness);
@@ -201,9 +202,11 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		
 	mElevator = elevator;
 	mElevator.SetLightsRange(2,2);
+//	mElevator.SetPosition(-50*SCALE_FACTOR, mElevator.GetRoomHeight()/2 + 0.08*SCALE_FACTOR, 200*SCALE_FACTOR);
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
+//	mCamera.SetPosition(mElevator.GetPosition());
 	
 	// Values used to move the portals' rooms light around, for a dynamic effect
 	mIncrement = 0.03 * SCALE_FACTOR;
@@ -271,36 +274,48 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	pinkPathSteppedObjs = {};
 	pinkPathWalked = false;
 	numberOfPaths = 3;
-	//-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-	GeneratePath(redPathObjs, [3,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
-	GeneratePath(greenPathObjs, [-1,5,-1,2,-2,6,-1,4,-1,3], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
-	GeneratePath(bluePathObjs, [-2,3,-1,2,-2,3,-1,1,-2,3,-1,3,-1,3,-2,2], 2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR, 0.25 * SCALE_FACTOR);
-//	GeneratePath(pinkPathObjs, [-2,1,-1,6], 2.5*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.2 * SCALE_FACTOR)
+	var tilesWidth = 2.75 * SCALE_FACTOR;
+	var tilesThickness =  0.25 * SCALE_FACTOR;
+	var tilesSpacing =  0.25 * SCALE_FACTOR;
+	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesWidth/2+tilesSpacing*2];	
+	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];
+	
+	startingTilesPos = elevatorFrontPosition + [2*SCALE_FACTOR, 0, 0*SCALE_FACTOR];
+	GeneratePath(redPathObjs, [3,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
+	startingTilesPos = elevatorFrontPosition + [4*SCALE_FACTOR, 0, 0*SCALE_FACTOR];
+	GeneratePath(greenPathObjs, [-1,5,-1,2,-2,6,-1,4,-1,3], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
+	startingTilesPos = elevatorFrontPosition + [-3*SCALE_FACTOR, 0, 0*SCALE_FACTOR];
+	GeneratePath(bluePathObjs, [-2,3,-1,2,-2,3,-1,1,-2,3,-1,3,-1,3,-2,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
+
+//	GeneratePath(pinkPathObjs, [-2,1,-1,6], tileWidth, tileThickness, tilesSpacing, [0,0,0]); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
+
 //	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 
 	numpadButtonsObj = {};
 	numpadTextsObj = {};
-	var tilesSize = 0.75 * SCALE_FACTOR;
-	var tilesSpaces = 0.04 * SCALE_FACTOR;
-	var tilesThickness = 0.1 * SCALE_FACTOR;
-	CreateNumPad(numpadButtonsObj, numpadTextsObj, tilesSize, tilesSpaces, tilesThickness);	
-	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-tilesSize*5/2, 0, 0], [tilesSize*5/2, mElevator.GetRoomHeight(), 0], tilesThickness*1.5));
-	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(tilesSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + tilesThickness);
+	var buttonsSize = 0.75 * SCALE_FACTOR;
+	var buttonsSpacing = 0.04 * SCALE_FACTOR;
+	var buttonsThickness = 0.1 * SCALE_FACTOR;
+	CreateNumPad(numpadButtonsObj, numpadTextsObj, buttonsSize, buttonsSpacing, buttonsThickness);	
+	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize*5/2, 0, 0], [buttonsSize*5/2, mElevator.GetRoomHeight(), 0], buttonsThickness*1.5));
+	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsThickness);
 
-	var boxWidth = 20*SCALE_FACTOR;
-	var boxHeight = 5*SCALE_FACTOR;
+//	var boxWidth = 30*SCALE_FACTOR;
+	var boxBordersThickness =  0.5*SCALE_FACTOR;
+	var boxWidth = ROOM_SIDE_WALL_WIDTH/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
+	var boxHeight = 9*SCALE_FACTOR;
 	var boxThickness = 8*SCALE_FACTOR;
-	var boxBordersThickness =  0.7*SCALE_FACTOR;
-	var boxPosition = [7*SCALE_FACTOR, 0, 25*SCALE_FACTOR];
+	var boxPosition = [0, 0, boxThickness * 4 + (boxBordersThickness)*3 - (0.1*SCALE_FACTOR)];
 	boxObj = CreateBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
 	for(var i = 0; i < len(boxObj); i++){
 		boxObj[i].SetPosition(boxPosition);	
 	}
 	
-	var triangleMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description
-	redNumberObjs = CreateRandomMeshesInBox(triangleMesh, 70, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
-	blueNumberObjs = CreateRandomMeshesInBox(triangleMesh, 70, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
-	greenNumberObjs = CreateRandomMeshesInBox(triangleMesh, 70, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
+	var pyramidMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description
+	var afasf =  CVmObj(pyramidMesh);
+	redNumberObjs = CreateRandomMeshesInBox(pyramidMesh, 120, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
+	blueNumberObjs = CreateRandomMeshesInBox(pyramidMesh, 120, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
+	greenNumberObjs = CreateRandomMeshesInBox(pyramidMesh, 120, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
 }
 
 
@@ -687,9 +702,9 @@ function Level2::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-		    	mInputManager.RestoreCameraPosition();
-			
+//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
+//			
 			var cameraPos = mCamera.GetPosition();
 			var tilePos;
 			
@@ -702,21 +717,23 @@ function Level2::UpdateLogic(dt)
 			var pathSteppedObjsArray;
 			var originaLength;
 			var arrayLength;
-			var pathFullyWalked;
+			var numberArrayObjs;
 			for(var j = 0; j < numberOfPaths; j++){
-				pathFullyWalked = false;
 				switch(j){
 					case 0:
 						pathObjsArray = redPathObjs;
 						pathSteppedObjsArray = redPathSteppedObjs;
+						numberArrayObjs = redNumberObjs;
 						break;
 					case 1:
 						pathObjsArray = greenPathObjs;
 						pathSteppedObjsArray = greenPathSteppedObjs;
+						numberArrayObjs = greenNumberObjs;
 						break;
 					case 2:
 						pathObjsArray = bluePathObjs;
 						pathSteppedObjsArray = bluePathSteppedObjs;
+						numberArrayObjs = blueNumberObjs;
 						break;
 					case 3:
 						pathObjsArray = pinkPathObjs;
@@ -739,29 +756,23 @@ function Level2::UpdateLogic(dt)
 					}
 				}	
 				
-				if(originaLength != arrayLength && arrayLength < 1)
-					pathFullyWalked = true;	
-					
-				if(pathFullyWalked){
+				var finalPos;
+				var finalAngle;
+				if(originaLength != arrayLength && arrayLength < 1){
 					switch(j){
 						case 0:	
 							redPathWalked = true;
-							for(var i = 0; i < len(redNumberObjs); i++){
-								var time = (Rand(10)+ 1) / 5;
-								var rotMatrix = redNumberObjs[i].GetRotationMatrix();
-								mAnimator.CreateRotatingTransition(redNumberObjs[i], rotMatrix[0], 0, [1,0,0], time-0.5, false, false);
-								mAnimator.CreateRotatingTransition(redNumberObjs[i], rotMatrix[1], 0, [0,1,0], time-0.5, false, false);
-								mAnimator.CreateRotatingTransition(redNumberObjs[i], rotMatrix[2], 0, [0,0,1], time-0.5, false, false);
-								mAnimator.CreateTransition(redNumberObjs[i], redNumberObjs[i].GetPosition(), [25*SCALE_FACTOR, 2*SCALE_FACTOR , 25*SCALE_FACTOR], time, false);
-							}				
+							finalPos = [20*SCALE_FACTOR, 3*SCALE_FACTOR,5*SCALE_FACTOR];
 							outputln("\n\nRED PATH WALKED");
 							break;
 						case 1:
 							greenPathWalked = true;			
 							outputln("\n\nGREEN PATH WALKED");
+							finalPos = [10*SCALE_FACTOR, 0,0];
 							break;
 						case 2:
 							bluePathWalked = true;			
+							finalPos = [0*SCALE_FACTOR, 0,0];
 							outputln("\n\nBLUE PATH WALKED");
 							break;
 						case 3:
@@ -769,7 +780,23 @@ function Level2::UpdateLogic(dt)
 							outputln("\n\nPINK PATH WALKED");
 							break;
 					}
-				}	
+					
+					var time;
+					var rotMatrix;
+					var originalPos;
+					for(var i = 0; i < len(numberArrayObjs); i++){
+						time = (Rand(10)+ 1) / 5;
+						rotMatrix = numberArrayObjs[i].GetRotationMatrix();
+						originalPos = numberArrayObjs[i].GetPosition();
+						finalAngle = 360 - rotMatrix[3] ;
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], rotMatrix[3], finalAngle, [1,0,0], time-0.5, false, false);
+						finalAngle = 360 - rotMatrix[4] ;
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], rotMatrix[4], finalAngle, [0,1,0], time-0.5, false, false);
+						finalAngle = 360 - rotMatrix[5] ;
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], rotMatrix[5], finalAngle, [0,0,1], time-0.5, false, false);
+						mAnimator.CreateTransition(numberArrayObjs[i], originalPos, finalPos, time, false);
+					}					
+				}		
 			}
 			break;
 		}
@@ -876,7 +903,7 @@ function Level2::newTile(mesh, prevTilePos, offsets){
 }
 
 
-function Level2::GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness){
+function Level2::GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness, startingPos){
 	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
 	
 	var yOffset = -tilesThickness;
@@ -886,7 +913,7 @@ function Level2::GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, t
 	var tileObj;	
 	
 	//add the first tile
-	tileObj = newTile(tileMesh, [0,0,0], [(0*SCALE_FACTOR), yOffset, 1.7*SCALE_FACTOR]);
+	tileObj = newTile(tileMesh, [0,0,0], startingPos);
 	
 //	aadd(pathTilesObjs, tileObj);
 	
@@ -1068,8 +1095,8 @@ function Level2::CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition){
 		randomz = Rand(boxSize.z*2-offset.z)+boxPosition.z+boxSize.a;
 		randomDecimal = Rand(20) / (Rand(50)+21);
 		aadd(retObjsArray, CvmObj(mesh));
-		retObjsArray[i].SetRotation(Rand(360)+randomDecimal, Rand(1), Rand(1), Rand(1));
-		retObjsArray[i].SetPosition(randomx+randomDecimal, randomy+randomDecimal, randomz+randomDecimal);
+		retObjsArray[i].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
+		retObjsArray[i].SetPosition(randomx, randomy, randomz);
 	}
 	return retObjsArray;
 }

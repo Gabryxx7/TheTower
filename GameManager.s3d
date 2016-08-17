@@ -184,7 +184,7 @@ function GameManager::GameManager(HMD)
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
 				
-		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 1;
@@ -358,7 +358,7 @@ function GameManager::XVRRendering(){
 		mDashedLinesOffset = 0;
 	
 	
-	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff
+	// Drawing the crosshair and everything that levelis 2D after I'm finished with the 3D stuff
 	if(!mIsVRon)
 		DrawCrosshair();
 	
