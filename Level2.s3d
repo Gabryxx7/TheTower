@@ -102,16 +102,19 @@ class Level2
 	
 	var animStarted;
 	var redNumberObjs;
+	var redNumberObjsAnims;
 	var redNumberObjsOriginalAngles;
 	var redNumberObjsFinalAngles;
 	var redNumberObjsOriginalPos;
 	var redNumberObjsFinalPos;
 	var blueNumberObjs;
+	var blueNumberObjsAnims;
 	var blueNumberObjsOriginalAngles;
 	var blueNumberObjsFinalAngles;
 	var blueNumberObjsOriginalPos;
 	var blueNumberObjsFinalPos;
 	var greenNumberObjs;
+	var greenNumberObjsAnims;
 	var greenNumberObjsOriginalAngles;
 	var greenNumberObjsFinalAngles;
 	var greenNumberObjsOriginalPos;
@@ -330,29 +333,35 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	redNumberObjsFinalAngles = {};
 	redNumberObjsOriginalPos = {};
 	redNumberObjsFinalPos = {};
+	redNumberObjsAnims = {};
 	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, redNumberObjs, redNumberObjsOriginalAngles, redNumberObjsOriginalPos);
 	blueNumberObjs = {};
 	blueNumberObjsOriginalAngles = {};
 	blueNumberObjsFinalAngles = {};
 	blueNumberObjsOriginalPos = {};
 	blueNumberObjsFinalPos = {};
+	blueNumberObjsAnims = {};
 	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, blueNumberObjs, blueNumberObjsOriginalAngles, blueNumberObjsOriginalPos);
 	greenNumberObjs = {};
 	greenNumberObjsOriginalAngles = {};
 	greenNumberObjsFinalAngles = {};
 	greenNumberObjsOriginalPos = {};
 	greenNumberObjsFinalPos = {};
+	greenNumberObjsAnims = {};
 	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, greenNumberObjs, greenNumberObjsOriginalAngles, greenNumberObjsOriginalPos);
 	
 	for(var i = 0; i < randomMeshNumber; i++){
 		aadd(redNumberObjsFinalAngles,[0, 90, 0]);
-		aadd(redNumberObjsFinalPos,[0, 0, -2*SCALE_FACTOR]);
+		aadd(redNumberObjsFinalPos,[0, 0, 2*SCALE_FACTOR]);		
+		aadd(redNumberObjsAnims, [0, 0, 0]);
 		
 		aadd(blueNumberObjsFinalAngles,[0, 90, 0]);
-		aadd(blueNumberObjsFinalPos,[0, 0, 0]);
+		aadd(blueNumberObjsFinalPos,[-2*SCALE_FACTOR, 0, 2*SCALE_FACTOR]);		
+		aadd(blueNumberObjsAnims, [0, 0, 0]);
 		
 		aadd(greenNumberObjsFinalAngles,[0, 90, 0]);
-		aadd(greenNumberObjsFinalPos,[0, 0, 2*SCALE_FACTOR]);
+		aadd(greenNumberObjsFinalPos,[2*SCALE_FACTOR, 0, 2*SCALE_FACTOR]);		
+		aadd(greenNumberObjsAnims, [0, 0, 0]);
 	}
 	animStarted = false;
 }
@@ -826,47 +835,66 @@ function Level2::UpdateLogic(dt)
 						arrayLength--;
 					}
 				}
-								
+						
+				var startPos;
+				var finalPos;
+				var startAngle;
+				var finalAngle;
+				var time;
+				var numberArrayObjs;	
+				var walkedPath;
+				var objsAnimations;
+				switch(j){
+					case 0:	
+						numberArrayObjs = redNumberObjs;
+						objsAnimations = redNumberObjsAnims;
+						startAngle = redNumberObjsOriginalAngles;
+						finalAngle = redNumberObjsFinalAngles;
+						startPos = redNumberObjsOriginalPos;
+						finalPos = redNumberObjsFinalPos;	
+						walkedPath = redPathWalked;
+						break;
+					case 1:
+						numberArrayObjs = greenNumberObjs;
+						objsAnimations = greenNumberObjsAnims;
+						startAngle = greenNumberObjsOriginalAngles;
+						finalAngle = greenNumberObjsFinalAngles;
+						startPos = greenNumberObjsOriginalPos;
+						finalPos = greenNumberObjsFinalPos;
+						walkedPath = greenPathWalked;		
+						break;
+					case 2:
+						numberArrayObjs = blueNumberObjs;
+						objsAnimations = blueNumberObjsAnims;
+						startAngle = blueNumberObjsOriginalAngles;
+						finalAngle = blueNumberObjsFinalAngles;
+						startPos = blueNumberObjsOriginalPos;
+						finalPos = blueNumberObjsFinalPos;
+						walkedPath = bluePathWalked;		
+						break;
+					case 3:
+						pinkPathWalked = true;			
+						outputln("\n\nPINK PATH WALKED");
+						break;
+				}	
+						
 				if(originaLength != arrayLength && arrayLength < 1){
-					var startPos;
-					var finalPos;
-					var startAngle;
-					var finalAngle;
-					var time;
-					var numberArrayObjs;
-					switch(j){
-						case 0:	
-							numberArrayObjs = redNumberObjs;
-							startAngle = redNumberObjsOriginalAngles;
-							finalAngle = redNumberObjsFinalAngles;
-							startPos = redNumberObjsOriginalPos;
-							finalPos = redNumberObjsFinalPos;
-							redPathWalked = true;
-							outputln("\n\nRED PATH WALKED");
-							break;
-						case 1:
-							numberArrayObjs = greenNumberObjs;
-							startAngle = greenNumberObjsOriginalAngles;
-							finalAngle = greenNumberObjsFinalAngles;
-							startPos = greenNumberObjsOriginalPos;
-							finalPos = greenNumberObjsFinalPos;
-							greenPathWalked = true;			
-							outputln("\n\nGREEN PATH WALKED");
-							break;
-						case 2:
-							numberArrayObjs = blueNumberObjs;
-							startAngle = blueNumberObjsOriginalAngles;
-							finalAngle = blueNumberObjsFinalAngles;
-							startPos = blueNumberObjsOriginalPos;
-							finalPos = blueNumberObjsFinalPos;
-							bluePathWalked = true;			
-							outputln("\n\nBLUE PATH WALKED");
-							break;
-						case 3:
-							pinkPathWalked = true;			
-							outputln("\n\nPINK PATH WALKED");
-							break;
-					}	
+					if(j == 0){	
+						redPathWalked = true;
+						walkedPath = true;				
+						outputln("\n\nRED PATH WALKED");						
+					}
+					else if(j == 1){
+						greenPathWalked = true;	
+						walkedPath = true;		
+						outputln("\n\nGREEN PATH WALKED");
+						
+					}
+					else if(j == 2){
+						bluePathWalked = true;	
+						walkedPath = true;		
+						outputln("\n\nBLUE PATH WALKED");					
+					}
 					
 					for(var i = 0; i < len(numberArrayObjs); i++){
 						time = (Rand(10)+ 11) / 5;
@@ -877,11 +905,39 @@ function Level2::UpdateLogic(dt)
 						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
 						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
 						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
-						
+												
 //						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [startPos[i].x, startPos[i].y, finalPos[i].z], time, false);
-//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, finalPos[i].z], [startPos[i].x, finalPos[i].y, startPos[i].z], time, false);
-//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, finalPos[i].y, finalPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
+//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, finalPos[i].z], [startPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
+//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, finalPos[i].y, finalPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
 					}	
+				}
+				
+				
+				//Workaround for the mAnimator diagonal transition bug
+				//I'll start first the animation on the x axis, then the one on the Y axis and in the end the one on the z axis
+				//so that the movement are computed correctly for every direction
+				if(walkedPath){
+					var objPos;
+					var checkOffs = 0.35*SCALE_FACTOR; //The position is never perfect
+					for(var i = 0; i < len(numberArrayObjs); i++){
+						objPos = numberArrayObjs[i].GetPosition();
+						time = (Rand(10)+ 11) / 5;
+						
+						if(objsAnimations[i].x == 0){
+							objsAnimations[i].x = 1;
+							mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
+						}
+						
+						if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
+							objsAnimations[i].y = 1;
+							mAnimator.CreateTransition(numberArrayObjs[i], [finalPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, startPos[i].z], time, false);
+						}
+						
+						if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
+							objsAnimations[i].z = 1;
+							mAnimator.CreateTransition(numberArrayObjs[i], [finalPos[i].x, finalPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
+						}
+					}
 				}
 			}
 			break;
