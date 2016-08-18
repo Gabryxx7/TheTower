@@ -1,0 +1,252 @@
+class GlassBox{	
+	var mFrontBorders;
+//	var mFrontBordersColor;
+	var mFrontPanel;
+//	var mFrontPanelColor;
+	var mBackBorders;
+//	var mBackBordersColor;
+	var mBackPanel;
+//	var mBackPanelColor;
+	var mLeftBorders;
+//	var mLeftBordersColor;
+	var mLeftPanel;
+//	var mLeftPanelColor;
+	var mRightBorders;
+//	var mRightBordersColor;
+	var mRightPanel;
+//	var mRightPanelColor;
+	var mRoofBorders;
+//	var mRoofBordersColor;
+	var mRoofPanel;
+//	var mRoofPanelColor;
+	var mFloorBorders;
+//	var mFloorBordersColor;
+	var mFloorPanel;
+//	var mFloorPanelColor;	
+	
+	Draw(panelsBoolean, bordersBoolean);
+	SetPosition(Pos);
+	
+	GetFrontBroders();
+	GetBackBroders();
+	GetLeftBroders();
+	GetRightBroders();
+	GetRoofBroders();
+	GetFloorBroders();
+	
+	GetFrontPanel();
+	GetBackPanel();
+	GetLeftPanel();
+	GetRightPanel();
+	GetRoofPanel();
+	GetFloorPanel();
+};
+
+
+//function GlassBox::GlassBox(boxWidth, boxHeight, boxThickness, borderThickness, bordersColors, planesColors){
+function GlassBox::GlassBox(boxWidth, boxHeight, boxThickness, borderThickness){
+	var fixedOffset;	
+	
+	var frontBackTopBottomMesh;
+	frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
+	
+	var frontBackLeftRightMesh;
+	frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
+	
+	var frontBackMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth - borderThickness), -(boxHeight-borderThickness), 0], [+(boxWidth - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
+	
+	var sidesTopBottomMesh;
+	sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
+	sidesTopBottomMesh.Rotate(90,0,0,1);
+	sidesTopBottomMesh.Rotate(90,0,1,0);
+	
+	var sidesLeftRightMesh;
+	sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
+	sidesLeftRightMesh.Rotate(90,0,1,0);
+	
+	var sidesMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxThickness-borderThickness), -(boxHeight-borderThickness), 0], [+(boxThickness - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
+	sidesMesh.Rotate(90,0,1,0);
+	
+	var roofFloorLeftRightMesh;
+	roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxThickness+borderThickness), 0], [borderThickness, boxThickness+borderThickness, 0], 2,2 );
+	roofFloorLeftRightMesh.Rotate(90,1,0,0);
+	
+	var roofFloorTopBottomMesh;
+	roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
+	roofFloorTopBottomMesh.Rotate(90,1,0,0);	
+	
+	var roofFloorMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth-borderThickness), -(boxThickness-borderThickness), 0], [+(boxWidth - borderThickness), (boxThickness-borderThickness), 0], 2,2 );
+	roofFloorMesh.Rotate(90,1,0,0);
+	
+	//front
+	mFrontBorders = CVmObj();
+	mFrontPanel = CVmObj();
+	fixedOffset = boxThickness*2+borderThickness;
+	mFrontBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	0, 		  	 		-borderThickness);
+	mFrontBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	boxHeight*2, 		-borderThickness);
+	mFrontBorders.AddChild(CvmObj(frontBackLeftRightMesh),	boxWidth, 		boxHeight,   		-borderThickness);
+	mFrontBorders.AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		-borderThickness);	
+	mFrontPanel.AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			-borderThickness);
+	
+	//back
+	mBackBorders = CVmObj();
+	mBackPanel = CVmObj();
+	mBackBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			0, 		  	 		fixedOffset);
+	mBackBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			boxHeight*2, 		fixedOffset);
+	mBackBorders.AddChild(CvmObj(frontBackLeftRightMesh), 	boxWidth, 		boxHeight,   		fixedOffset);
+	mBackBorders.AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		fixedOffset);	
+	mBackPanel.AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			fixedOffset);	
+	 
+	//sideLeft
+	mLeftBorders = CVmObj();
+	mLeftPanel = CVmObj();
+	fixedOffset = boxWidth+borderThickness;
+	mLeftBorders.AddChild(CvmObj(sidesTopBottomMesh),   	fixedOffset, 	0, 					boxThickness);
+	mLeftBorders.AddChild(cvmObj(sidesTopBottomMesh),   	fixedOffset, 	boxHeight*2, 		boxThickness);
+	mLeftBorders.AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset, 	boxHeight, 			boxThickness*2);
+	mLeftBorders.AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset,	boxHeight, 			0);
+	mLeftPanel.AddChild(CvmObj(sidesMesh), 				fixedOffset, 	boxHeight, 			boxThickness);
+	
+	//sideRight
+	mRightBorders = CVmObj();
+	mRightPanel = CVmObj();
+	mRightBorders.AddChild(CvmObj(sidesTopBottomMesh), 		-fixedOffset, 	0, 					boxThickness);
+	mRightBorders.AddChild(cvmObj(sidesTopBottomMesh), 		-fixedOffset, 	boxHeight*2, 		boxThickness);
+	mRightBorders.AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			boxThickness*2);
+	mRightBorders.AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			0);
+	mRightPanel.AddChild(CvmObj(sidesMesh), 				-fixedOffset, 	boxHeight, 			boxThickness);
+	
+	//roof
+	mRoofBorders = CVmObj();
+	mRoofPanel = CVmObj();
+	fixedOffset = boxHeight*2 + borderThickness;
+	mRoofBorders.AddChild(CvmObj(roofFloorTopBottomMesh),  0,				fixedOffset, 		0);
+	mRoofBorders.AddChild(CvmObj(roofFloorTopBottomMesh),  0, 				fixedOffset, 		boxThickness*2);
+	mRoofBorders.AddChild(CvmObj(roofFloorLeftRightMesh),  boxWidth,		fixedOffset, 		boxThickness);
+	mRoofBorders.AddChild(CvmObj(roofFloorLeftRightMesh), -boxWidth,		fixedOffset, 		boxThickness);
+	mRoofPanel.AddChild(CvmObj(roofFloorMesh), 			0,				fixedOffset, 		boxThickness);
+	
+	//floor
+	mFloorBorders = CVmObj();
+	mFloorPanel = CVmObj();
+	mFloorBorders.AddChild(CvmObj(roofFloorTopBottomMesh), 	0,				-borderThickness,	0);
+	mFloorBorders.AddChild(CvmObj(roofFloorTopBottomMesh), 	0, 				-borderThickness, 	boxThickness*2);
+	mFloorBorders.AddChild(CvmObj(roofFloorLeftRightMesh),	boxWidth,		-borderThickness, 	boxThickness);
+	mFloorBorders.AddChild(CvmObj(roofFloorLeftRightMesh),	-boxWidth,		-borderThickness, 	boxThickness);
+	mFloorPanel.AddChild(CvmObj(roofFloorMesh),			0,				-borderThickness, 	boxThickness);
+}
+
+
+function GlassBox::SetPosition(pos){	
+	mFrontBorders.SetPosition(pos);
+	mFrontPanel.SetPosition(pos);
+	mBackBorders.SetPosition(pos);
+	mBackPanel.SetPosition(pos);
+	mLeftBorders.SetPosition(pos);
+	mLeftPanel.SetPosition(pos);
+	mRightBorders.SetPosition(pos);
+	mRightPanel.SetPosition(pos);
+	mRoofBorders.SetPosition(pos);
+	mRoofPanel.SetPosition(pos);
+	mFloorBorders.SetPosition(pos);
+	mFloorPanel.SetPosition(pos);
+}
+
+function GlassBox::Draw(panelsBoolean, bordersBoolean){
+	if(valtype(bordersBoolean) == "")
+		bordersBoolean = [1,1,1,1,1,1];
+	else if(valtype(bordersBoolean) == "I")
+		if(bordersBoolean == 1)
+			bordersBoolean = [1,1,1,1,1,1];
+		else
+			bordersBoolean = [0,0,0,0,0,0];
+		
+	
+	if(valtype(panelsBoolean) == "")
+		panelsBoolean = [1,1,1,1,1,1];
+	else if(valtype(panelsBoolean) == "I")
+		if(panelsBoolean == 1)
+			panelsBoolean = [1,1,1,1,1,1];
+		else
+			panelsBoolean = [0,0,0,0,0,0];
+	
+	if(bordersBoolean[0] == 1)	
+		mFrontBorders.Draw();		
+	if(panelsBoolean[0] == 1)
+		mFrontPanel.Draw();
+		
+	if(bordersBoolean[1] == 1)	
+		mBackBorders.Draw();		
+	if(panelsBoolean[1] == 1)
+		mBackPanel.Draw();		
+	
+	if(bordersBoolean[2] == 1)	
+		mLeftBorders.Draw();		
+	if(panelsBoolean[2] == 1)
+		mLeftPanel.Draw();		
+	
+	if(bordersBoolean[3] == 1)	
+		mRightBorders.Draw();		
+	if(panelsBoolean[3] == 1)
+		mRightPanel.Draw();
+			
+	if(bordersBoolean[4] == 1)	
+		mRoofBorders.Draw();		
+	if(panelsBoolean[4] == 1)
+		mRoofPanel.Draw();		
+	
+	if(bordersBoolean[5] == 1)	
+		mFloorBorders.Draw();		
+	if(panelsBoolean[5] == 1)
+		mFloorPanel.Draw();
+}
+
+
+function GlassBox::GetFrontBroders(){
+	return mFrontBorders;
+}
+
+function GlassBox::GetBackBroders(){
+	return mBackBorders;	
+}
+
+function GlassBox::GetLeftBroders(){
+	return mLeftBorders;
+}
+
+function GlassBox::GetRightBroders(){
+	return mRightBorders;
+}
+
+function GlassBox::GetRoofBroders(){
+	return mRoofBorders;
+}
+
+function GlassBox::GetFloorBroders(){
+	return mFloorBorders;
+}
+
+
+function GlassBox::GetFrontPanel(){
+	return mFrontPanel;
+}
+
+function GlassBox::GetBackPanel(){
+	return mBackPanel;
+}
+
+function GlassBox::GetLeftPanel(){
+	return mLeftPanel;
+}
+
+function GlassBox::GetRightPanel(){
+	return mRightPanel;
+}
+
+function GlassBox::GetRoofPanel(){
+	return mRoofPanel;
+}
+
+function GlassBox::GetFloorPanel(){
+	return mFloorPanel;
+}

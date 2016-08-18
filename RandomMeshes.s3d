@@ -1,0 +1,79 @@
+class RandomMeshes{	
+	var mObjsArray;
+	var mObjsOrigAngles;
+	var mObjsOrigPos;
+	var mObjsFinalAngles;
+	var mObjsFinalPos;
+	var mObjsAnimations;
+	var mColor;
+	
+	GetObjs();
+	GetAnimationsVector();
+	GetOriginalPos();
+	GetFinalPos();
+	GetOriginalAngles();
+	GetFinalAngles();
+	GetColor();	
+};
+
+
+function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color){
+	mObjsArray = {};
+	mObjsOrigPos = {};	
+	mObjsFinalPos = {};	
+	mObjsOrigAngles = {};
+	mObjsFinalAngles = {};	
+	mObjsAnimations = {};
+	mColor = color;
+	
+	var offset = [1*SCALE_FACTOR, 0.5*SCALE_FACTOR, 1*SCALE_FACTOR];
+	var randomx = 0;
+	var randomy = 0;
+	var randomz = 0;
+	var randomDecimal;
+	
+	for(var i = 0; i < amount; i++){
+		randomx = Rand(boxSize.x*2 -offset.x) + boxPosition.x - boxSize.x +offset.x+boxSize.a;
+		randomy = Rand(boxSize.y*2)+boxPosition.y;
+		randomz = Rand(boxSize.z*2)+boxPosition.z;
+		randomDecimal = 1 / (Rand(99)+1);
+		
+		aadd(mObjsArray, CvmObj(mesh));
+		
+		aadd(mObjsOrigAngles,[Rand(360), Rand(360), Rand(360)]);
+		mObjsArray[i].SetRotation(mObjsOrigAngles[i].x, 1, 0, 0);
+		mObjsArray[i].SetRotation(mObjsOrigAngles[i].y, 0, 1, 0);
+		mObjsArray[i].SetRotation(mObjsOrigAngles[i].z, 0, 0, 1);
+		
+		aadd(mObjsOrigPos, [randomx+randomDecimal, randomy+randomDecimal, randomz+randomDecimal]);
+		mObjsArray[i].SetPosition(mObjsOrigPos[i].x, mObjsOrigPos[i].y, mObjsOrigPos[i].z);
+	}	
+}
+
+function RandomMeshes::GetObjs(){	
+	return mObjsArray;
+}
+
+function RandomMeshes::GetAnimationsVector(){
+	return mObjsAnimations;
+}
+
+function RandomMeshes::GetOriginalPos(){
+	return mObjsOrigPos;
+}
+
+function RandomMeshes::GetFinalPos(){
+	return mObjsFinalPos;
+}
+
+function RandomMeshes::GetOriginalAngles(){
+	return mObjsOrigAngles;
+}
+
+function RandomMeshes::GetFinalAngles(){
+	return mObjsFinalAngles;
+}
+
+function RandomMeshes::GetColor(){
+	return mColor;
+}

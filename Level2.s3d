@@ -1,5 +1,10 @@
 //#include <Utils.s3d>
 #include <MarcelloUtils.s3d>
+#include <TilesPath.s3d>
+#include <CubeNumbers.s3d>
+#include <GlassBox.s3d>
+#include <Numpad.s3d>
+#include <RandomMeshes.s3d>
 
 #define PIT_WIDTH 25.0 * SCALE_FACTOR
 #define PIT_HEIGHT 1000.0 * SCALE_FACTOR
@@ -65,21 +70,9 @@ class Level2
 	var mPortalFrameNormal;
 	
 	var pathAnim;
-	var numberOfPaths;
 	
-	var redPathObjs;
-	var redPathSteppedObjs;
-	var timesWalked;
-	var redPathWalked;
-	var greenPathObjs;
-	var greenPathSteppedObjs;
-	var greenPathWalked;
-	var bluePathObjs;
-	var bluePathSteppedObjs;
-	var bluePathWalked;
-	var pinkPathObjs;
-	var pinkPathSteppedObjs;
-	var pinkPathWalked;
+	var paths;
+	var randomCubes;
 	
 	var mCurrentlyVisiblePortalFrames;
 	
@@ -91,46 +84,21 @@ class Level2
 	
 	var floorObj;	
 	var provaMeshObj;
-	var numpadButtonsObj;
-	var numpadTextsObj;
+	var numpadObj;
 	var numpadHolderObj;
 	var selectedNums;
 	
-	var boxObj;
+	var box;
 	
 	var mController1;
 	var mController2;
 	
 	var animStarted;
-	var redNumberObjs;
-	var redNumberObjsAnims;
-	var redNumberObjsOriginalAngles;
-	var redNumberObjsFinalAngles;
-	var redNumberObjsOriginalPos;
-	var redNumberObjsFinalPos;
-	var blueNumberObjs;
-	var blueNumberObjsAnims;
-	var blueNumberObjsOriginalAngles;
-	var blueNumberObjsFinalAngles;
-	var blueNumberObjsOriginalPos;
-	var blueNumberObjsFinalPos;
-	var greenNumberObjs;
-	var greenNumberObjsAnims;
-	var greenNumberObjsOriginalAngles;
-	var greenNumberObjsFinalAngles;
-	var greenNumberObjsOriginalPos;
-	var greenNumberObjsFinalPos;
 		
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
-	GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness, startingPos);
-	newTile(mesh, prevTilePos, offsets);
-	CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness);
-	CreateBox(boxWidth, boxHeight, boxThickness, borderThickness);
-	CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition, objsArray, objAngles, objsPos);
-	GenerateNumberPositions(number, offset);
 			
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -150,7 +118,6 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;
-	pathAnim = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -270,138 +237,104 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	provaMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	provaMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
 	provaMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	provaMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	provaMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
-	
+	provaMesh.ShaderSetParameter(0, "alpha", 0, 1.0);	
+	provaMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);	
 	provaMeshObj = CVmObj(provaMesh);
 	provaMeshObj.rotate(45,1,1,0);
 	provaMeshObj.SetPosition(15*SCALE_FACTOR, -50*SCALE_FACTOR, -10*SCALE_FACTOR);
 	
-	redPathObjs = {};
-	redPathSteppedObjs = {};
-	redPathWalked = false;
-	greenPathObjs = {};
-	greenPathSteppedObjs = {};
-	greenPathWalked = false;
-	bluePathObjs = {};
-	bluePathSteppedObjs = {};
-	bluePathWalked = false;
-	pinkPathObjs = {};
-	pinkPathSteppedObjs = {};
-	pinkPathWalked = false;
-	numberOfPaths = 3;
-	var tilesWidth = 2.75 * SCALE_FACTOR;
-	var tilesThickness =  0.25 * SCALE_FACTOR;
-	var tilesSpacing =  0.25 * SCALE_FACTOR;
-	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesWidth/2+tilesSpacing*2];	
-	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];
 	
-	startingTilesPos = elevatorFrontPosition + [0*SCALE_FACTOR, 0, tilesWidth+tilesSpacing];
-	GeneratePath(redPathObjs, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, tilesSpacing];
-	GeneratePath(greenPathObjs, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, tilesSpacing];
-	GeneratePath(bluePathObjs, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-//	GeneratePath(pinkPathObjs, [-2,1,-1,6], tileWidth, tileThickness, tilesSpacing, [0,0,0]); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-//	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
-
-	numpadButtonsObj = {};
-	numpadTextsObj = {};
+	///// NUMBER PAD GENERATION /////
 	var buttonsSize = 0.75 * SCALE_FACTOR;
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
 	var buttonsThickness = 0.1 * SCALE_FACTOR;
-	CreateNumPad(numpadButtonsObj, numpadTextsObj, buttonsSize, buttonsSpacing, buttonsThickness);	
+	var numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize * 5), mElevatorFinalPosition.y, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsThickness * 2)];
+	numpadObj = Numpad(buttonsSize, buttonsSpacing, buttonsThickness, numpadPos, [0.7,0.7,0.7], [0,0,0], [0,0,0]);	
 	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize*5/2, 0, 0], [buttonsSize*5/2, mElevator.GetRoomHeight(), 0], buttonsThickness*1.5));
 	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsThickness);
+	/////////////////////////////////////////////////////////
 
-//	var boxWidth = 30*SCALE_FACTOR;
+	
+	///// CONTAINER BOX GENERATION /////
 	var boxBordersThickness =  0.5*SCALE_FACTOR;
 	var boxWidth = ROOM_SIDE_WALL_WIDTH/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
 	var boxHeight = ROOM_HEIGHT/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
 	var boxThickness = 10*SCALE_FACTOR;
 	var boxPosition = [0, 0, mMainRoom.GetPosition().z + ROOM_SIDE_WALL_WIDTH - boxThickness*2 - boxBordersThickness - (0.1*SCALE_FACTOR)];
-	boxObj = CreateBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
-	for(var i = 0; i < len(boxObj); i++){
-		boxObj[i].SetPosition(boxPosition);	
-	}
+	box = GlassBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
+	box.SetPosition(boxPosition);
+	/////////////////////////////////////////////////////////
 	
-//	var pyramidMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description	
+	///// PATHS + RANDOM MESHES GENERATION /////
+	var tilesWidth = 2.75 * SCALE_FACTOR;
+	var tilesThickness =  0.25 * SCALE_FACTOR;
+	var tilesSpacing =  0.25 * SCALE_FACTOR;
+	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesWidth/2+tilesSpacing*3];	
+	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
+	
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var pyramidMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-	var randomMeshNumber = 250; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
-	redNumberObjs = {};
-	redNumberObjsOriginalAngles = {};
-	redNumberObjsFinalAngles = {};
-	redNumberObjsOriginalPos = {};
-	redNumberObjsFinalPos = {};
-	redNumberObjsAnims = {};
-	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, redNumberObjs, redNumberObjsOriginalAngles, redNumberObjsOriginalPos);
-	blueNumberObjs = {};
-	blueNumberObjsOriginalAngles = {};
-	blueNumberObjsFinalAngles = {};
-	blueNumberObjsOriginalPos = {};
-	blueNumberObjsFinalPos = {};
-	blueNumberObjsAnims = {};
-	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, blueNumberObjs, blueNumberObjsOriginalAngles, blueNumberObjsOriginalPos);
-	greenNumberObjs = {};
-	greenNumberObjsOriginalAngles = {};
-	greenNumberObjsFinalAngles = {};
-	greenNumberObjsOriginalPos = {};
-	greenNumberObjsFinalPos = {};
-	greenNumberObjsAnims = {};
-	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, greenNumberObjs, greenNumberObjsOriginalAngles, greenNumberObjsOriginalPos);
+	var cubeMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
-	for(var i = 0; i < randomMeshNumber; i++){
-		aadd(redNumberObjsFinalAngles,[0, 0, 0]);
-		aadd(redNumberObjsAnims, [0, 0, 0]);
-		
-		aadd(blueNumberObjsFinalAngles,[0, 0, 0]);
-		aadd(blueNumberObjsAnims, [0, 0, 0]);
-		
-		aadd(greenNumberObjsFinalAngles,[0, 0, 0]);		
-		aadd(greenNumberObjsAnims, [0, 0, 0]);
-	}
+	randomCubes = {};
+	paths = {};
 	
-	var numbersPositions = {};
-	aadd(numbersPositions, boxPosition + [0, boxHeight/2, boxThickness]);
-	aadd(numbersPositions, boxPosition + [-boxWidth/3, boxHeight/2, boxThickness]);
-	aadd(numbersPositions, boxPosition + [boxWidth/3, boxHeight/2, boxThickness]);
+	//From leftmost to rightmost		
+	//GREEN
+	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath([-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
+	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,0]));
+	
+	//LIGHT BLUE
+	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath([4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
+	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,1]));
+	
+	//RED
+	startingTilesPos = elevatorFrontPosition + [0, 0, tilesWidth];
+	aadd(paths, TilesPath([8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
+	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,0,0]));
+	
+	//WHITE
+	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath([4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
+	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,1,1]));
+	
+	//BLUE
+	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath([-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
+	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,0,1]));
 	
 	selectedNums = {};
 	var finalPositions;
-	var selectedIndex;
-	var steps;
-	var stepSize;
-	var rest;
 	var finalPosArray;
-	var objsArray;
-	for(var n = 0; n < numberOfPaths; n++){
-		aadd(selectedNums, Rand(9));
-		finalPositions = GenerateNumberPositions(selectedNums[n], numbersPositions[n]);		
-			
-		if(n == 0){
-			finalPosArray = redNumberObjsFinalPos;
-			objsArray = redNumberObjs;
-		}else if(n == 1){
-			finalPosArray = blueNumberObjsFinalPos;
-			objsArray = blueNumberObjs;
-		}else if(n == 2){
-			finalPosArray = greenNumberObjsFinalPos;
-			objsArray = greenNumberObjs;
+	var objsArray;	
+	var cubeNums = CubeNumbers();
+	var numPosOffset = len(randomCubes)/2;
+	var numberPosition;
+	for(var i = 0; i < len(randomCubes); i++){
+		numberPosition = boxPosition + [(14*cubeSizes)*(numPosOffset--), boxHeight/2, boxThickness];
+		for(var j = 0; j < randomMeshNumber; j++){
+			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
+			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
 		}
+			
+		aadd(selectedNums, Rand(9));
+		finalPositions = cubeNums.GenerateNumberPositions(selectedNums[i], numberPosition);
 		
 		var j = 0;
-		while(len(finalPosArray) < len(objsArray)){	
-			aadd(finalPosArray,[finalPositions[j].x, finalPositions[j].y, finalPositions[j].z]);	
+		while(len(randomCubes[i].GetFinalPos()) < len(randomCubes[i].GetObjs())){	
+			aadd(randomCubes[i].GetFinalPos(),[finalPositions[j].x, finalPositions[j].y, finalPositions[j].z]);	
 					
 			if(j+1 == len(finalPositions))
 				j = 0;
 			else
 				j += 1;
-		}
-	}
+		}		
+	}	
+	/////////////////////////////////////////////////////////
 	
+	pathAnim = false;
 	animStarted = false;
 }
 
@@ -432,85 +365,57 @@ function Level2::Render()
 			
 			mMainRoom.Draw();
 			
-			var pathObjsArray;
-			var pathSteppedObjsArray;
-			var numberObjsArray;
-			var arrayLength;
-			var color;
-			var steppedColor;
-			for(var j = 0; j < numberOfPaths; j++){
-				switch(j){
-					case 0:
-						pathObjsArray = redPathObjs;
-						pathSteppedObjsArray = redPathSteppedObjs;
-						numberObjsArray = redNumberObjs;
-						color = [0.65,0.0,0.0];
-						steppedColor = [1.0,0.0,0.0];
-						break;
-					case 1:
-						pathObjsArray = greenPathObjs;
-						pathSteppedObjsArray = greenPathSteppedObjs;
-						numberObjsArray = greenNumberObjs;
-						color = [0.0,0.65,0.0];
-						steppedColor = [0.0,1.0,0.0];
-						break;
-					case 2:		
-						pathObjsArray = bluePathObjs;
-						pathSteppedObjsArray = bluePathSteppedObjs;
-						numberObjsArray = blueNumberObjs;
-						color = [0.0,0.0,0.65];
-						steppedColor = [0.0,0.0,1.0];										
-						break;
-					case 3:
-						pathObjsArray = pinkPathObjs;
-						pathSteppedObjsArray = pinkPathSteppedObjs;
-						numberObjsArray = {};
-						color = [0.7,0.3,0.3];
-						steppedColor = [1.0,0.4,0.4];
-						break;
+			var tilesObjs;
+			var steppedTilesObjs;
+			
+			mSpotShader.Start();							
+				mSpotShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
+				mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+				mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);	
+						
+				for(var j = 0; j < len(paths); j++){
+					tilesObjs = paths[j].GetTilesObjs();
+					steppedTilesObjs = paths[j].GetSteppedTilesObjs();
+					
+					mSpotShader.SetParameter("outlineColor", paths[j].GetColor());														
+						for(var i = 0; i < len(tilesObjs); i++){
+							if(!pathAnim){
+								mSpotShader.SetParameter("stepped", false);
+								mSpotShader.SetParameter("outline", false);
+								tilesObjs[i].Draw();
+								
+								mSpotShader.SetParameter("outline", true);
+								tilesObjs[i].Draw();
+							}
+						}
+						mSpotShader.SetParameter("outlineColor", paths[j].GetSteppedColor());
+						for(var i = 0; i < len(steppedTilesObjs); i++){
+							mSpotShader.SetParameter("stepped", true);	
+							mSpotShader.SetParameter("outline", false);						
+							steppedTilesObjs[i].Draw();
+							
+							mSpotShader.SetParameter("outline", true);						
+							steppedTilesObjs[i].Draw();
+						}
+							
 				}
 				
-				arrayLength = len(pathObjsArray);
-				
-				mSpotShader.Start();	
-					mSpotShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
-					mSpotShader.SetParameter("outlineColor", color);
-					mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-					mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);	
-							
-					if(!pathAnim){						
-						for(var i = 0; i < len(pathObjsArray); i++){
-							mSpotShader.SetParameter("stepped", false);
-							mSpotShader.SetParameter("outline", false);
-							pathObjsArray[i].Draw();
-							
-							mSpotShader.SetParameter("outline", true);
-							pathObjsArray[i].Draw();
-						}
-					}
-					
-					mSpotShader.SetParameter("outlineColor", steppedColor);
-					for(var i = 0; i < len(pathSteppedObjsArray); i++){
-						mSpotShader.SetParameter("stepped", true);	
-						mSpotShader.SetParameter("outline", false);						
-						pathSteppedObjsArray[i].Draw();
+				var cubesObjs;
+				for(var j = 0; j < len(randomCubes); j++){
+					cubesObjs = randomCubes[j].GetObjs();
 						
-						mSpotShader.SetParameter("outline", true);						
-						pathSteppedObjsArray[i].Draw();
-					}
-					
-					for(var i = 0; i < len(numberObjsArray); i++){
-						mSpotShader.SetParameter("offset", 0.01 * SCALE_FACTOR);
+					mSpotShader.SetParameter("outlineColor", randomCubes[j].GetColor());
+					mSpotShader.SetParameter("offset", 0.01 * SCALE_FACTOR);		
+					for(var i = 0; i < len(cubesObjs); i++){
 						mSpotShader.SetParameter("stepped", true);	
 						mSpotShader.SetParameter("outline", false);
-						numberObjsArray[i].Draw();
+						cubesObjs[i].Draw();
 						
 						mSpotShader.SetParameter("outline", true);
-						numberObjsArray[i].Draw();
-					}
-					
-				mSpotShader.Stop();				
-			}
+						cubesObjs[i].Draw();
+					}			
+				}
+			mSpotShader.Stop();	
 		}
 	}
 
@@ -530,19 +435,13 @@ function Level2::Render()
 		
 		numpadHolderObj.Draw();
 	
-		mToonShader.SetParameter("diffuse", [0.8, 0.8, 0.8]);
-		for(var i = 0; i < 9; i++){		
-			numpadButtonsObj[i].Draw();
-		}		
+		mToonShader.SetParameter("diffuse", numpadObj.GetButtonColor());
+		numpadObj.Draw(1,0,0);
 		
 		mToonShader.SetParameter("lightsRangeMin", 0);
 		mToonShader.SetParameter("lightsRangeMax", 2);
 		mToonShader.SetParameter("diffuse", [1, 1, 1]);
-		for(var i = 0; i < len(boxObj); i++){
-			if(i != 2){	//Glass wall
-				boxObj[i].Draw();
-			}
-		}		
+		box.Draw([0,1,1,1,1,1]);
 	mToonShader.Stop();
 			
 	var boxColor = [0.6, 0.6, 1];
@@ -551,13 +450,11 @@ function Level2::Render()
 		mAlphaShader.SetParameter("time", 0);
 		mAlphaShader.SetParameter("alpha", boxAlpha);
 		mAlphaShader.SetParameter("startingColor", boxColor);
-		mAlphaShader.SetParameter("finalColor", boxColor);	
-		boxObj[2].Draw(); //Glass wall
+		mAlphaShader.SetParameter("finalColor", boxColor);
+		box.Draw([1,0,0,0,0,0], 0);
 	mAlphaShader.Stop();
 	
-	for(var i = 0; i < 9; i++){	
-		numpadTextsObj[i].Draw();
-	}	
+	numpadObj.Draw(0,0,1);
 	
 	if(mIsVRon){
 		mController1.Draw();
@@ -783,33 +680,14 @@ function Level2::UpdateLogic(dt)
 			}
 			
 			if(!animStarted){
-				animStarted = true;
-				var startAngle;
-				var finalAngle;
 				var time;
 				var numberArrayObjs;
-				for(var j = 0; j < numberOfPaths; j++){
-					switch(j){
-						case 0:	
-							numberArrayObjs = redNumberObjs;
-							startAngle = redNumberObjsOriginalAngles;
-							finalAngle = redNumberObjsFinalAngles;
-							break;
-						case 1:
-							numberArrayObjs = greenNumberObjs;
-							startAngle = greenNumberObjsOriginalAngles;
-							finalAngle = greenNumberObjsFinalAngles;
-							break;
-						case 2:
-							numberArrayObjs = blueNumberObjs;
-							startAngle = blueNumberObjsOriginalAngles;
-							finalAngle = blueNumberObjsFinalAngles;
-							break;
-					}
-					
-					for(var i = 0; i < len(numberArrayObjs); i++){
+				animStarted = true;
+				
+				for(var j = 0; j < len(randomCubes); j++){		
+					for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
 						time = (Rand(13)+ 11) / 5;
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+						mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 					}	
 				}
 			}
@@ -825,150 +703,82 @@ function Level2::UpdateLogic(dt)
 //		    	mInputManager.RestoreCameraPosition();
 //			
 			var cameraPos = mCamera.GetPosition();
+			
+			var stepDistance = pathAnim ? 8*SCALE_FACTOR : 3*SCALE_FACTOR;				
 			var tilePos;
-			
-			var stepDistance = 3*SCALE_FACTOR;
-			
-			if(pathAnim)
-				stepDistance = 8*SCALE_FACTOR;
-				
-			var pathObjsArray;
-			var pathSteppedObjsArray;
+			var tilesObjs;
+			var steppedTilesObjs;
 			var originaLength;
-			var arrayLength;
-			var pathWalked;
-			for(var j = 0; j < numberOfPaths; j++){
-				switch(j){
-					case 0:
-						pathObjsArray = redPathObjs;
-						pathSteppedObjsArray = redPathSteppedObjs;
-						pathWalked = redPathWalked;
-						break;
-					case 1:
-						pathObjsArray = greenPathObjs;
-						pathSteppedObjsArray = greenPathSteppedObjs;
-						pathWalked = greenPathWalked;
-						break;
-					case 2:
-						pathObjsArray = bluePathObjs;
-						pathSteppedObjsArray = bluePathSteppedObjs;
-						pathWalked = bluePathWalked;
-						break;
-					case 3:
-						pathObjsArray = pinkPathObjs;
-						pathSteppedObjsArray = pinkPathSteppedObjs;
-						break;
-				}
-				arrayLength = len(pathObjsArray);
-				originaLength = len(pathObjsArray);
+			for(var j = 0; j < len(paths); j++){
+				tilesObjs = paths[j].GetTilesObjs();
+				steppedTilesObjs = paths[j].GetSteppedTilesObjs();
+
+				originaLength = len(tilesObjs);
 				
-				for(var i = 0; i < arrayLength; i++){			
-					tilePos = pathObjsArray[i].GetPosition();
-					if(cameraPos.x < tilePos.x + stepDistance && cameraPos.x > tilePos.x - stepDistance
-						&& cameraPos.z < tilePos.z + stepDistance && cameraPos.z  > tilePos.z - stepDistance){
+				for(var i = 0; i < len(tilesObjs); i++){			
+					tilePos = tilesObjs[i].GetPosition();
+					if(cameraPos.x < tilePos.x + stepDistance && cameraPos.x > tilePos.x - stepDistance && cameraPos.z < tilePos.z + stepDistance && cameraPos.z  > tilePos.z - stepDistance){
 						if(pathAnim)
-							mAnimator.CreateTransition(pathObjsArray[i], pathObjsArray[i].GetPosition() + [0, -10*SCALE_FACTOR, 0], pathObjsArray[i].GetPosition(), 0.25, false);
-						aadd(pathSteppedObjsArray, pathObjsArray[i]);
-						adel(pathObjsArray, i);
+							mAnimator.CreateTransition(tilesObjs[i], tilesObjs[i].GetPosition() + [0, -10*SCALE_FACTOR, 0], tilesObjs[i].GetPosition(), 0.25, false);
+							
+						aadd(steppedTilesObjs, tilesObjs[i]);
+						adel(tilesObjs, i);
 						i = 0;
-						arrayLength--;
 					}
 				}
 						
-				var startPos;
-				var finalPos;
-				var startAngle;
-				var finalAngle;
-				var time;
-				var numberArrayObjs;	
-				var walkedPath;
-				var objsAnimations;
-				switch(j){
-					case 0:	
-						numberArrayObjs = redNumberObjs;
-						objsAnimations = redNumberObjsAnims;
-						startAngle = redNumberObjsOriginalAngles;
-						finalAngle = redNumberObjsFinalAngles;
-						startPos = redNumberObjsOriginalPos;
-						finalPos = redNumberObjsFinalPos;	
-						walkedPath = redPathWalked;
-						break;
-					case 1:
-						numberArrayObjs = greenNumberObjs;
-						objsAnimations = greenNumberObjsAnims;
-						startAngle = greenNumberObjsOriginalAngles;
-						finalAngle = greenNumberObjsFinalAngles;
-						startPos = greenNumberObjsOriginalPos;
-						finalPos = greenNumberObjsFinalPos;
-						walkedPath = greenPathWalked;		
-						break;
-					case 2:
-						numberArrayObjs = blueNumberObjs;
-						objsAnimations = blueNumberObjsAnims;
-						startAngle = blueNumberObjsOriginalAngles;
-						finalAngle = blueNumberObjsFinalAngles;
-						startPos = blueNumberObjsOriginalPos;
-						finalPos = blueNumberObjsFinalPos;
-						walkedPath = bluePathWalked;		
-						break;
-					case 3:
-						pinkPathWalked = true;			
-						outputln("\n\nPINK PATH WALKED");
-						break;
-				}	
-						
-				if(originaLength != arrayLength && arrayLength < 1){
-					if(j == 0){	
-						redPathWalked = true;
-						walkedPath = true;				
+				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
+					if(j == 0){		
 						outputln("\n\nRED PATH WALKED");						
 					}
-					else if(j == 1){
-						greenPathWalked = true;	
-						walkedPath = true;		
-						outputln("\n\nGREEN PATH WALKED");
-						
+					else if(j == 1){		
+						outputln("\n\nGREEN PATH WALKED");						
 					}
-					else if(j == 2){
-						bluePathWalked = true;	
-						walkedPath = true;		
+					else if(j == 2){		
 						outputln("\n\nBLUE PATH WALKED");					
 					}
 				}
 				
-				
 				//Workaround for the mAnimator diagonal transition bug
 				//I'll start first the animation on the x axis, then the one on the Y axis and in the end the one on the z axis
 				//so that the movement are computed correctly for every direction
-				if(walkedPath){
+				if(paths[j].HasBeenWalked() && j < len(randomCubes)){	
+					var time;
+					var cubesObjs = randomCubes[j].GetObjs();
+					var objsAnimations = randomCubes[j].GetAnimationsVector();
+					var startAngle = randomCubes[j].GetOriginalAngles();
+					var finalAngle = randomCubes[j].GetFinalAngles();
+					var startPos = randomCubes[j].GetOriginalPos();
+					var finalPos = randomCubes[j].GetFinalPos();
 					var objPos;
 					var checkOffs = 0.15*SCALE_FACTOR; //The position is never perfect
-					for(var i = 0; i < len(numberArrayObjs); i++){
-						objPos = numberArrayObjs[i].GetPosition();
+					
+					for(var i = 0; i < len(cubesObjs); i++){
+						objPos = cubesObjs[i].GetPosition();
 						time = (Rand(10)+ 11) / 5;
-						
-						if(objsAnimations[i].x == 0){
+												
+						if(objsAnimations[i].x == 0){	
 							objsAnimations[i].x = 1;
-							mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
-							numberArrayObjs[i].SetRotation(startAngle[i].x, 1,0,0);
+							mAnimator.CreateTransition(cubesObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
+							cubesObjs[i].SetRotation(startAngle[i].x, 1,0,0);
 							time = (Rand(10)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
+							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
 						}
 						
 						if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
 							objsAnimations[i].y = 1;
-							mAnimator.CreateTransition(numberArrayObjs[i], [finalPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, startPos[i].z], time, false);
-							numberArrayObjs[i].SetRotation(startAngle[i].y, 0,1,0);
+							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, startPos[i].z], time, false);
+							cubesObjs[i].SetRotation(startAngle[i].y, 0,1,0);
 							time = (Rand(10)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
+							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
 						}
 						
 						if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
 							objsAnimations[i].z = 1;
-							mAnimator.CreateTransition(numberArrayObjs[i], [finalPos[i].x, finalPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
-							numberArrayObjs[i].SetRotation(startAngle[i].z, 0,0,1);
+							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, finalPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
+							cubesObjs[i].SetRotation(startAngle[i].z, 0,0,1);
 							time = (Rand(10)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
+							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
 						}
 						
 						if(objPos.z < finalPos[i].z + checkOffs && objPos.z > finalPos[i].z - checkOffs && objsAnimations[i].z == 1){
@@ -1073,782 +883,6 @@ function Level2::GenerateFloorTiles(tilesSize, spaceSize, tilesThickness)
 	return returnObj;
 }
 
-
-function Level2::newTile(mesh, prevTilePos, offsets){
-	var newObj = CVmObj(mesh);
-	newObj.rotate(90, 1, 0, 0);
-	newObj.SetPosition(prevTilePos.x + offsets.x, prevTilePos.y + offsets.y, prevTilePos.z + offsets.z);	
-	return newObj;
-}
-
-
-function Level2::GeneratePath(pathTilesObjs, pathVector, tilesSize, spaceSize, tilesThickness, startingPos){
-	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
-	
-	var yOffset = -tilesThickness;
-	var xOffset = spaceSize + tilesSize;
-	var zOffset = spaceSize + tilesSize;
-	
-	var tileObj;	
-	
-	//add the first tile
-	tileObj = newTile(tileMesh, [0,0,0], startingPos);
-	
-//	aadd(pathTilesObjs, tileObj);
-	
-	var direction = [0,0,1,0]; //Defines in which direction the path is going	
-//	var pathVector = [0,0,0,1,0,0,2,0,0,1,0,0,0]; //0 = straight, 1 = turn left, 2 = turn right
-	for(var i = 0; i < len(pathVector); i++){	
-		if(pathVector[i] < 0){
-			if(pathVector[i] == -1 && direction.z == 1){
-				direction = [1,0,0,1];
-			}else if(pathVector[i] == -2 && direction.z == 1){
-				direction = [-1,0,0,1];
-			}else if(pathVector[i] == -1 && direction.z == -1){
-				direction = [-1,0,0,1];			
-			}else if(pathVector[i] == -2 && direction.z == -1){
-				direction = [1,0,0,1];
-			}else if(pathVector[i] == -1 && direction.x == 1){
-				direction = [0,0,-1,1];			
-			}else if(pathVector[i] == -2 && direction.x == 1){
-				direction = [0,0,1,1];
-			}else if(pathVector[i] == -1 && direction.x == -1){
-				direction = [0,0,1,1];			
-			}else if(pathVector[i] == -2 && direction.x == -1){
-				direction = [0,0,-1,1];
-			}
-		}		
-		if(direction[3] == 0){
-			for(var j = 0; j < pathVector[i]; j++){
-				tileObj = newTile(tileMesh, tileObj.GetPosition(), [xOffset*direction.x, yOffset*direction.y, zOffset*direction.z]);				
-				aadd(pathTilesObjs, tileObj);						
-			}			
-		}	
-		else
-			direction[3] = 0;
-	}
-}
-
-
-function Level2::CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness){
-	var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
-	var offsetY = tilesSize + spaceSize;
-	var offsetX = tilesSize + spaceSize;
-	var offsetZ = tilesThickness;
-	
-	var txt;
-	var txtObj;
-	var buttonObj;
-	var num = 9;
-	
-	for(var i = 1; i < 4; i++){
-		for(var j = 1; j < 4; j++){
-			var buttonPosX = (mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) - (offsetX * j) + (tilesSize * 5);
-			var buttonPosY = mElevatorFinalPosition.y + offsetY*i;
-			var buttonPosZ = mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(tilesThickness * 2);
-			txt = CVmText();
-			txt.Load(char(48+(num--)));
-			txt.SetColor(0, 0, 0);
-			
-			txtObj = CVmObj();
-			txtObj.LinkToText(txt);
-			txtObj.SetScale(0.1,0.1,0.1);
-			txtObj.SetPosition(buttonPosX-(0.1*SCALE_FACTOR),buttonPosY-(1.65*SCALE_FACTOR), buttonPosZ+0.05*SCALE_FACTOR);
-			
-			buttonObj = CVmObj(buttonMesh);
-			buttonObj.SetPosition(buttonPosX, buttonPosY-(1.5*SCALE_FACTOR), buttonPosZ);	
-			
-			aadd(numberTextsObj, txtObj);
-			aadd(buttonsObj, buttonObj);
-//			retObj.AddChild(buttonObj, -offsetX*j,offsetY*i,0);	
-//			retObj.AddChild(txtObj, -offsetX*j-0.1*SCALE_FACTOR,offsetY*i-0.15*SCALE_FACTOR,0.05*SCALE_FACTOR);			
-		}
-	}
-	
-//	retObj.SetPosition(mElevatorFinalPosition + [mElevator.GetRoomWidth()/2+(offsetX*4), -1*SCALE_FACTOR, mElevator.GetRoomWidth()+tilesThickness]);
-}
-
-
-function Level2::CreateBox(boxWidth, boxHeight, boxThickness, borderThickness){
-	var fixedOffset;	
-	var retObj = {};
-	aadd(retObj, CVmObj());
-	aadd(retObj, CVmObj());
-	aadd(retObj, CVmObj());
-	aadd(retObj, CVmObj());
-	aadd(retObj, CVmObj());
-	aadd(retObj, CVmObj());
-	aadd(retObj, CVmObj());	
-	
-	var frontBackTopBottomMesh;
-	frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
-	
-	var frontBackLeftRightMesh;
-	frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
-	
-	var frontBackMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth - borderThickness), -(boxHeight-borderThickness), 0], [+(boxWidth - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
-	
-	var sidesTopBottomMesh;
-	sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
-	sidesTopBottomMesh.Rotate(90,0,0,1);
-	sidesTopBottomMesh.Rotate(90,0,1,0);
-	
-	var sidesLeftRightMesh;
-	sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
-	sidesLeftRightMesh.Rotate(90,0,1,0);
-	
-	var sidesMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxThickness-borderThickness), -(boxHeight-borderThickness), 0], [+(boxThickness - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
-	sidesMesh.Rotate(90,0,1,0);
-	
-	var roofFloorLeftRightMesh;
-	roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxThickness+borderThickness), 0], [borderThickness, boxThickness+borderThickness, 0], 2,2 );
-	roofFloorLeftRightMesh.Rotate(90,1,0,0);
-	
-	var roofFloorTopBottomMesh;
-	roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
-	roofFloorTopBottomMesh.Rotate(90,1,0,0);	
-	
-	var roofFloorMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth-borderThickness), -(boxThickness-borderThickness), 0], [+(boxWidth - borderThickness), (boxThickness-borderThickness), 0], 2,2 );
-	roofFloorMesh.Rotate(90,1,0,0);
-	
-	fixedOffset = boxThickness*2+borderThickness;
-	//front
-	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	0, 		  	 		-borderThickness);
-	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	boxHeight*2, 		-borderThickness);
-	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	boxWidth, 		boxHeight,   		-borderThickness);
-	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		-borderThickness);	
-	retObj[2].AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			-borderThickness);
-	
-	//back
-	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			0, 		  	 		fixedOffset);
-	retObj[0].AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			boxHeight*2, 		fixedOffset);
-	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh), 	boxWidth, 		boxHeight,   		fixedOffset);
-	retObj[0].AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		fixedOffset);	
-	retObj[1].AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			fixedOffset);	
-	 
-	//sideLeft
-	fixedOffset = boxWidth+borderThickness;
-	retObj[0].AddChild(CvmObj(sidesTopBottomMesh),   	fixedOffset, 	0, 					boxThickness);
-	retObj[0].AddChild(cvmObj(sidesTopBottomMesh),   	fixedOffset, 	boxHeight*2, 		boxThickness);
-	retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset, 	boxHeight, 			boxThickness*2);
-	retObj[0].AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset,	boxHeight, 			0);
-	retObj[3].AddChild(CvmObj(sidesMesh), 				fixedOffset, 	boxHeight, 			boxThickness);
-	
-	//sideRight
-	retObj[0].AddChild(CvmObj(sidesTopBottomMesh), 		-fixedOffset, 	0, 					boxThickness);
-	retObj[0].AddChild(cvmObj(sidesTopBottomMesh), 		-fixedOffset, 	boxHeight*2, 		boxThickness);
-	retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			boxThickness*2);
-	retObj[0].AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			0);
-	retObj[4].AddChild(CvmObj(sidesMesh), 				-fixedOffset, 	boxHeight, 			boxThickness);
-	
-	//roof
-	fixedOffset = boxHeight*2 + borderThickness;
-	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0,				fixedOffset, 		0);
-	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh),  0, 				fixedOffset, 		boxThickness*2);
-	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),  boxWidth,		fixedOffset, 		boxThickness);
-	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh), -boxWidth,		fixedOffset, 		boxThickness);
-	retObj[5].AddChild(CvmObj(roofFloorMesh), 			0,				fixedOffset, 		boxThickness);
-	
-	//floor
-	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0,				-borderThickness,	0);
-	retObj[0].AddChild(CvmObj(roofFloorTopBottomMesh), 	0, 				-borderThickness, 	boxThickness*2);
-	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	boxWidth,		-borderThickness, 	boxThickness);
-	retObj[0].AddChild(CvmObj(roofFloorLeftRightMesh),	-boxWidth,		-borderThickness, 	boxThickness);
-	retObj[6].AddChild(CvmObj(roofFloorMesh),			0,				-borderThickness, 	boxThickness);
-	
-	return retObj;	
-}
-
-
-function Level2::CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition, objsArray, objsAngles, objsPos){
-	var offset = [1*SCALE_FACTOR, 0.5*SCALE_FACTOR, 1*SCALE_FACTOR];
-	var randomx = 0;
-	var randomy = 0;
-	var randomz = 0;
-	var randomDecimal;
-	
-	for(var i = 0; i < number; i++){
-		randomx = Rand(boxSize.x*2 -offset.x) + boxPosition.x - boxSize.x +offset.x+boxSize.a;
-		randomy = Rand(boxSize.y*2)+boxPosition.y;
-		randomz = Rand(boxSize.z*2)+boxPosition.z;
-		randomDecimal = Rand(20) / (Rand(50)+21);
-		
-		aadd(objsArray, CvmObj(mesh));
-		
-		aadd(objsAngles,[Rand(360), Rand(360), Rand(360)]);
-		objsArray[i].SetRotation(objsAngles[i].x, 1, 0, 0);
-		objsArray[i].SetRotation(objsAngles[i].y, 0, 1, 0);
-		objsArray[i].SetRotation(objsAngles[i].z, 0, 0, 1);
-		
-		aadd(objsPos, [randomx, randomy, randomz]);
-		objsArray[i].SetPosition(objsPos[i].x, objsPos[i].y, objsPos[i].z);
-	}
-}
-
-
-function level2::GenerateNumberPositions(number, offset){
-	var ret = {};
-	switch(number){	
-		case 0:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;
-		case 1:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			
-			//Height
-			aadd(ret, [0*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//		
-			
-			//Top
-			aadd(ret, [0*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			break;
-			
-		case 2:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//			
-			
-			//Height
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//					
-			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;
-		
-		case 3:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;		
-		
-		case 4:
-			//Base
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//		
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;	
-		
-		case 5:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//s
-			
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;			
-		
-		case 6:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//s
-			
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;	
-		
-		case 7:
-			//Base
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;		
-		
-		case 8:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;		
-		
-		case 9:
-			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//	
-			
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//				
-			break;
-	}
-	
-	return ret;
-}
 
 function Level2::SetupOpenglLights()
 {
