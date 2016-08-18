@@ -895,21 +895,6 @@ function Level2::UpdateLogic(dt)
 						walkedPath = true;		
 						outputln("\n\nBLUE PATH WALKED");					
 					}
-					
-					for(var i = 0; i < len(numberArrayObjs); i++){
-						time = (Rand(10)+ 11) / 5;
-						mAnimator.RemoveTransitionByObject(numberArrayObjs[i], 1);
-						numberArrayObjs[i].SetRotation(startAngle[i].x, 1,0,0);
-						numberArrayObjs[i].SetRotation(startAngle[i].y, 0,1,0);
-						numberArrayObjs[i].SetRotation(startAngle[i].z, 0,0,1);
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
-												
-//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [startPos[i].x, startPos[i].y, finalPos[i].z], time, false);
-//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, finalPos[i].z], [startPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
-//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, finalPos[i].y, finalPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
-					}	
 				}
 				
 				
@@ -926,16 +911,25 @@ function Level2::UpdateLogic(dt)
 						if(objsAnimations[i].x == 0){
 							objsAnimations[i].x = 1;
 							mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
+							numberArrayObjs[i].SetRotation(startAngle[i].x, 1,0,0);
+							time = (Rand(10)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
 						}
 						
 						if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
 							objsAnimations[i].y = 1;
 							mAnimator.CreateTransition(numberArrayObjs[i], [finalPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, startPos[i].z], time, false);
+							numberArrayObjs[i].SetRotation(startAngle[i].y, 0,1,0);
+							time = (Rand(10)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
 						}
 						
 						if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
 							objsAnimations[i].z = 1;
 							mAnimator.CreateTransition(numberArrayObjs[i], [finalPos[i].x, finalPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
+							numberArrayObjs[i].SetRotation(startAngle[i].z, 0,0,1);
+							time = (Rand(10)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
 						}
 					}
 				}
