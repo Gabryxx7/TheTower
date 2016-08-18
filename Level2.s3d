@@ -100,10 +100,22 @@ class Level2
 	var mController1;
 	var mController2;
 	
-	
+	var animStarted;
 	var redNumberObjs;
+	var redNumberObjsOriginalAngles;
+	var redNumberObjsFinalAngles;
+	var redNumberObjsOriginalPos;
+	var redNumberObjsFinalPos;
 	var blueNumberObjs;
+	var blueNumberObjsOriginalAngles;
+	var blueNumberObjsFinalAngles;
+	var blueNumberObjsOriginalPos;
+	var blueNumberObjsFinalPos;
 	var greenNumberObjs;
+	var greenNumberObjsOriginalAngles;
+	var greenNumberObjsFinalAngles;
+	var greenNumberObjsOriginalPos;
+	var greenNumberObjsFinalPos;
 		
 	// Private functions
 	DrawAllPortals();
@@ -113,7 +125,7 @@ class Level2
 	newTile(mesh, prevTilePos, offsets);
 	CreateNumPad(buttonsObj, numberTextsObj, tilesSize, spaceSize, tilesThickness);
 	CreateBox(boxWidth, boxHeight, boxThickness, borderThickness);
-	CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition);
+	CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition, objsArray, objAngles, objsPos);
 			
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -303,19 +315,46 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 //	var boxWidth = 30*SCALE_FACTOR;
 	var boxBordersThickness =  0.5*SCALE_FACTOR;
 	var boxWidth = ROOM_SIDE_WALL_WIDTH/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
-	var boxHeight = 9*SCALE_FACTOR;
-	var boxThickness = 8*SCALE_FACTOR;
-	var boxPosition = [0, 0, boxThickness * 4 + (boxBordersThickness)*3 - (0.1*SCALE_FACTOR)];
+	var boxHeight = ROOM_HEIGHT/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
+	var boxThickness = 10*SCALE_FACTOR;
+	var boxPosition = [0, 0, mMainRoom.GetPosition().z + ROOM_SIDE_WALL_WIDTH - boxThickness*2 - boxBordersThickness - (0.1*SCALE_FACTOR)];
 	boxObj = CreateBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
 	for(var i = 0; i < len(boxObj); i++){
 		boxObj[i].SetPosition(boxPosition);	
 	}
 	
 	var pyramidMesh =  CVmNewMesh(VRP_PYRAMID, 1, 1*SCALE_FACTOR, 1*SCALE_FACTOR );       // subset description
-	var afasf =  CVmObj(pyramidMesh);
-	redNumberObjs = CreateRandomMeshesInBox(pyramidMesh, 120, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
-	blueNumberObjs = CreateRandomMeshesInBox(pyramidMesh, 120, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
-	greenNumberObjs = CreateRandomMeshesInBox(pyramidMesh, 120, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition);
+	var randomMeshNumber = 200;
+	redNumberObjs = {};
+	redNumberObjsOriginalAngles = {};
+	redNumberObjsFinalAngles = {};
+	redNumberObjsOriginalPos = {};
+	redNumberObjsFinalPos = {};
+	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, redNumberObjs, redNumberObjsOriginalAngles, redNumberObjsOriginalPos);
+	blueNumberObjs = {};
+	blueNumberObjsOriginalAngles = {};
+	blueNumberObjsFinalAngles = {};
+	blueNumberObjsOriginalPos = {};
+	blueNumberObjsFinalPos = {};
+	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, blueNumberObjs, blueNumberObjsOriginalAngles, blueNumberObjsOriginalPos);
+	greenNumberObjs = {};
+	greenNumberObjsOriginalAngles = {};
+	greenNumberObjsFinalAngles = {};
+	greenNumberObjsOriginalPos = {};
+	greenNumberObjsFinalPos = {};
+	CreateRandomMeshesInBox(pyramidMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, greenNumberObjs, greenNumberObjsOriginalAngles, greenNumberObjsOriginalPos);
+	
+	for(var i = 0; i < randomMeshNumber; i++){
+		aadd(redNumberObjsFinalAngles,[0, 90, 0]);
+		aadd(redNumberObjsFinalPos,[0, 0, -2*SCALE_FACTOR]);
+		
+		aadd(blueNumberObjsFinalAngles,[0, 90, 0]);
+		aadd(blueNumberObjsFinalPos,[0, 0, 0]);
+		
+		aadd(greenNumberObjsFinalAngles,[0, 90, 0]);
+		aadd(greenNumberObjsFinalPos,[0, 0, 2*SCALE_FACTOR]);
+	}
+	animStarted = false;
 }
 
 
@@ -449,23 +488,23 @@ function Level2::Render()
 		}		
 		
 		mToonShader.SetParameter("lightsRangeMin", 0);
-		mToonShader.SetParameter("lightsRangeMax", 0);
+		mToonShader.SetParameter("lightsRangeMax", 2);
 		mToonShader.SetParameter("diffuse", [1, 1, 1]);
 		for(var i = 0; i < len(boxObj); i++){
-			if(i != 2){	
+			if(i != 2){	//Glass wall
 				boxObj[i].Draw();
 			}
 		}		
 	mToonShader.Stop();
 			
-	var boxColor = [0.7, 0.7, 1];
-	var boxAlpha = 0.4;
+	var boxColor = [0.6, 0.6, 1];
+	var boxAlpha = 0.3;
 	mAlphaShader.Start();
 		mAlphaShader.SetParameter("time", 0);
 		mAlphaShader.SetParameter("alpha", boxAlpha);
 		mAlphaShader.SetParameter("startingColor", boxColor);
 		mAlphaShader.SetParameter("finalColor", boxColor);	
-		boxObj[2].Draw();
+		boxObj[2].Draw(); //Glass wall
 	mAlphaShader.Stop();
 	
 	for(var i = 0; i < 9; i++){	
@@ -695,6 +734,39 @@ function Level2::UpdateLogic(dt)
 				mLevelStatus = STATUS_LEVEL_STARTED;
 			}
 			
+			if(!animStarted){
+				animStarted = true;
+				var startAngle;
+				var finalAngle;
+				var time;
+				var numberArrayObjs;
+				for(var j = 0; j < numberOfPaths; j++){
+					switch(j){
+						case 0:	
+							numberArrayObjs = redNumberObjs;
+							startAngle = redNumberObjsOriginalAngles;
+							finalAngle = redNumberObjsFinalAngles;
+							break;
+						case 1:
+							numberArrayObjs = greenNumberObjs;
+							startAngle = greenNumberObjsOriginalAngles;
+							finalAngle = greenNumberObjsFinalAngles;
+							break;
+						case 2:
+							numberArrayObjs = blueNumberObjs;
+							startAngle = blueNumberObjsOriginalAngles;
+							finalAngle = blueNumberObjsFinalAngles;
+							break;
+					}
+					
+					for(var i = 0; i < len(numberArrayObjs); i++){
+						time = (Rand(13)+ 11) / 5;
+						mAnimator.RemoveTransitionByObject(numberArrayObjs[i], true);
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+					}	
+				}
+			}
+			
 			
 			break;
 		}
@@ -717,23 +789,23 @@ function Level2::UpdateLogic(dt)
 			var pathSteppedObjsArray;
 			var originaLength;
 			var arrayLength;
-			var numberArrayObjs;
+			var pathWalked;
 			for(var j = 0; j < numberOfPaths; j++){
 				switch(j){
 					case 0:
 						pathObjsArray = redPathObjs;
 						pathSteppedObjsArray = redPathSteppedObjs;
-						numberArrayObjs = redNumberObjs;
+						pathWalked = redPathWalked;
 						break;
 					case 1:
 						pathObjsArray = greenPathObjs;
 						pathSteppedObjsArray = greenPathSteppedObjs;
-						numberArrayObjs = greenNumberObjs;
+						pathWalked = greenPathWalked;
 						break;
 					case 2:
 						pathObjsArray = bluePathObjs;
 						pathSteppedObjsArray = bluePathSteppedObjs;
-						numberArrayObjs = blueNumberObjs;
+						pathWalked = bluePathWalked;
 						break;
 					case 3:
 						pathObjsArray = pinkPathObjs;
@@ -754,49 +826,64 @@ function Level2::UpdateLogic(dt)
 						i = 0;
 						arrayLength--;
 					}
-				}	
-				
-				var finalPos;
-				var finalAngle;
+				}
+								
 				if(originaLength != arrayLength && arrayLength < 1){
+					var startPos;
+					var finalPos;
+					var startAngle;
+					var finalAngle;
+					var time;
+					var numberArrayObjs;
 					switch(j){
 						case 0:	
+							numberArrayObjs = redNumberObjs;
+							startAngle = redNumberObjsOriginalAngles;
+							finalAngle = redNumberObjsFinalAngles;
+							startPos = redNumberObjsOriginalPos;
+							finalPos = redNumberObjsFinalPos;
 							redPathWalked = true;
-							finalPos = [20*SCALE_FACTOR, 3*SCALE_FACTOR,5*SCALE_FACTOR];
 							outputln("\n\nRED PATH WALKED");
 							break;
 						case 1:
+							numberArrayObjs = greenNumberObjs;
+							startAngle = greenNumberObjsOriginalAngles;
+							finalAngle = greenNumberObjsFinalAngles;
+							startPos = greenNumberObjsOriginalPos;
+							finalPos = greenNumberObjsFinalPos;
 							greenPathWalked = true;			
 							outputln("\n\nGREEN PATH WALKED");
-							finalPos = [10*SCALE_FACTOR, 0,0];
 							break;
 						case 2:
+							numberArrayObjs = blueNumberObjs;
+							startAngle = blueNumberObjsOriginalAngles;
+							finalAngle = blueNumberObjsFinalAngles;
+							startPos = blueNumberObjsOriginalPos;
+							finalPos = blueNumberObjsFinalPos;
 							bluePathWalked = true;			
-							finalPos = [0*SCALE_FACTOR, 0,0];
 							outputln("\n\nBLUE PATH WALKED");
 							break;
 						case 3:
 							pinkPathWalked = true;			
 							outputln("\n\nPINK PATH WALKED");
 							break;
-					}
+					}	
 					
-					var time;
-					var rotMatrix;
-					var originalPos;
 					for(var i = 0; i < len(numberArrayObjs); i++){
-						time = (Rand(10)+ 1) / 5;
-						rotMatrix = numberArrayObjs[i].GetRotationMatrix();
-						originalPos = numberArrayObjs[i].GetPosition();
-						finalAngle = 360 - rotMatrix[3] ;
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], rotMatrix[3], finalAngle, [1,0,0], time-0.5, false, false);
-						finalAngle = 360 - rotMatrix[4] ;
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], rotMatrix[4], finalAngle, [0,1,0], time-0.5, false, false);
-						finalAngle = 360 - rotMatrix[5] ;
-						mAnimator.CreateRotatingTransition(numberArrayObjs[i], rotMatrix[5], finalAngle, [0,0,1], time-0.5, false, false);
-						mAnimator.CreateTransition(numberArrayObjs[i], originalPos, finalPos, time, false);
-					}					
-				}		
+						time = (Rand(10)+ 11) / 5;
+						mAnimator.RemoveTransitionByObject(numberArrayObjs[i], true);
+						numberArrayObjs[i].SetRotation(startAngle[i].x, 1,0,0);
+						numberArrayObjs[i].SetRotation(startAngle[i].y, 0,1,0);
+						numberArrayObjs[i].SetRotation(startAngle[i].z, 0,0,1);
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
+						mAnimator.CreateRotatingTransition(numberArrayObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
+						
+//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [startPos[i].x, startPos[i].y, finalPos[i].z], time, false);
+//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, startPos[i].y, finalPos[i].z], [startPos[i].x, finalPos[i].y, startPos[i].z], time, false);
+//						mAnimator.CreateTransition(numberArrayObjs[i], [startPos[i].x, finalPos[i].y, finalPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
+					}	
+				}
 			}
 			break;
 		}
@@ -1081,8 +1168,7 @@ function Level2::CreateBox(boxWidth, boxHeight, boxThickness, borderThickness){
 }
 
 
-function Level2::CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition){
-	var retObjsArray = {};
+function Level2::CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition, objsArray, objsAngles, objsPos){
 	var offset = [1*SCALE_FACTOR, 0.5*SCALE_FACTOR, 1*SCALE_FACTOR];
 	var randomx = 0;
 	var randomy = 0;
@@ -1092,13 +1178,19 @@ function Level2::CreateRandomMeshesInBox(mesh, number, boxSize, boxPosition){
 	for(var i = 0; i < number; i++){
 		randomx = Rand(boxSize.x*2 -offset.x) + boxPosition.x - boxSize.x +offset.x+boxSize.a;
 		randomy = Rand(boxSize.y*2)+boxPosition.y;
-		randomz = Rand(boxSize.z*2-offset.z)+boxPosition.z+boxSize.a;
+		randomz = Rand(boxSize.z*2)+boxPosition.z;
 		randomDecimal = Rand(20) / (Rand(50)+21);
-		aadd(retObjsArray, CvmObj(mesh));
-		retObjsArray[i].SetRotation(Rand(360), Rand(1), Rand(1), Rand(1));
-		retObjsArray[i].SetPosition(randomx, randomy, randomz);
+		
+		aadd(objsArray, CvmObj(mesh));
+		
+		aadd(objsAngles,[Rand(360), Rand(360), Rand(360)]);
+		objsArray[i].SetRotation(objsAngles[i].x, 1, 0, 0);
+		objsArray[i].SetRotation(objsAngles[i].y, 0, 1, 0);
+		objsArray[i].SetRotation(objsAngles[i].z, 0, 0, 1);
+		
+		aadd(objsPos, [randomx, randomy, randomz]);
+		objsArray[i].SetPosition(objsPos[i].x, objsPos[i].y, objsPos[i].z);
 	}
-	return retObjsArray;
 }
 
 function Level2::SetupOpenglLights()
