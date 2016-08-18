@@ -269,6 +269,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var tilesWidth = 2.75 * SCALE_FACTOR;
 	var tilesThickness =  0.25 * SCALE_FACTOR;
 	var tilesSpacing =  0.25 * SCALE_FACTOR;
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesWidth/2, -tilesWidth/2, 0], [tilesWidth/2, tilesWidth/2, 0], tilesThickness);
 	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesWidth/2+tilesSpacing*3];	
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
 	
@@ -282,27 +283,27 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	//From leftmost to rightmost		
 	//GREEN
 	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath([-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
+	aadd(paths, TilesPath(tileMesh, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
 	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,0]));
 	
 	//LIGHT BLUE
 	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath([4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
+	aadd(paths, TilesPath(tileMesh, [4], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
 	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,1]));
 	
 	//RED
 	startingTilesPos = elevatorFrontPosition + [0, 0, tilesWidth];
-	aadd(paths, TilesPath([8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
+	aadd(paths, TilesPath(tileMesh, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
 	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,0,0]));
 	
 	//WHITE
 	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath([4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
+	aadd(paths, TilesPath(tileMesh, [4], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
 	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,1,1]));
 	
 	//BLUE
 	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath([-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
+	aadd(paths, TilesPath(tileMesh, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
 	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,0,1]));
 	
 	selectedNums = {};

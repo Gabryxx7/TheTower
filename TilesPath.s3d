@@ -15,18 +15,17 @@ class TilesPath{
 };
 
 
-function TilesPath::TilesPath(pathVector, tilesSize, spaceSize, tilesThickness, startingPos, color, steppedColor){	
+function TilesPath::TilesPath(tileMesh, pathVector, tilesWidth, spacing, startingPos, color, steppedColor){	
 	mTilesObjs =  {};
 	mSteppedTilesObjs =  {};
 	mPathWalked = false;
 	mColor = color;
 	mSteppedColor = steppedColor;
 	
-	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
 	
-	var yOffset = -tilesThickness;
-	var xOffset = spaceSize + tilesSize;
-	var zOffset = spaceSize + tilesSize;
+	var yOffset = 0;
+	var xOffset = spacing + tilesWidth;
+	var zOffset = spacing + tilesWidth;
 	
 	var tileObj;	
 	
