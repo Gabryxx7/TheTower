@@ -761,7 +761,6 @@ function Level2::UpdateLogic(dt)
 					
 					for(var i = 0; i < len(numberArrayObjs); i++){
 						time = (Rand(13)+ 11) / 5;
-						mAnimator.RemoveTransitionByObject(numberArrayObjs[i], true);
 						mAnimator.CreateRotatingTransition(numberArrayObjs[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 					}	
 				}
@@ -871,7 +870,7 @@ function Level2::UpdateLogic(dt)
 					
 					for(var i = 0; i < len(numberArrayObjs); i++){
 						time = (Rand(10)+ 11) / 5;
-						mAnimator.RemoveTransitionByObject(numberArrayObjs[i], true);
+						mAnimator.RemoveTransitionByObject(numberArrayObjs[i], 1);
 						numberArrayObjs[i].SetRotation(startAngle[i].x, 1,0,0);
 						numberArrayObjs[i].SetRotation(startAngle[i].y, 0,1,0);
 						numberArrayObjs[i].SetRotation(startAngle[i].z, 0,0,1);
