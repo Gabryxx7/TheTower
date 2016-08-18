@@ -49,17 +49,16 @@ class Animator
 	var mWaypointsArray;
 	var mWaypointsCounterArray;
 	
-	// These arrays are used in case of rotation objects. For each element they indicate if they're a rotating object, what is the final angle they have to reach,
+	// These arrays are used in case of rotation objects. For each element they indicate what is the final angle they have to reach,
 	// what is the delta angle (i.e. the difference between the starting angle and the current angle they're at), the axis around which they have to rotate to
 	// (it's actually a vector [x, y, z]), and whether they have to reverse the rotation when they reach the limit (this is checked only if the rotation is set 
 	// to be a loop). These arrays are meaningful only for rotations, so for common transitions they're empty
-//	var mIsRotatingArray;
 	var mFinalAngleArray;
 	var mAngleDeltaArray;
 	var mAxisArray;
 	var mReverseArray;
 	
-	// 0 == transition, 1 == rotation, 2 == scaling
+	// For each object it contains the type of transition (0 == normal transition, 1 == rotation, 2 == scaling, 3 == rotation around point)
 	var mTransitionTypeArray;
 	
 	
@@ -73,6 +72,7 @@ class Animator
 	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	ChangeScaleFactors(newFactor);
 	CreateScalingTransition(object, startingScale, endingScale, time, loop);
+	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop);
 	
 	// Private functions
 	InvertTransitions();
@@ -244,9 +244,12 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 	aadd(mWaypointsCounterArray, 0);
 }
 
+
+/*
+ * This method creates scaling transitions; the code is pretty much the same as for movement transitions
+ */
 function Animator::CreateScalingTransition(object, startingScale, endingScale, time, loop)
 {		
-	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
 	RemoveTransitionByObject(object, 2);
 	
 	// First off, I'm setting the starting scale
@@ -263,48 +266,30 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 	
 	var endScale = endingScale;
 	
-	// To incorporate both common transitions and path transitions (i.e. with waypoints), I check the type of "endingPos". In fact, if it's a common transition
-	// it will be a vector, otherwise an array of vectors (actually, I'm assuming it's vectors; I'm trusting the user here).
-	// So if the type is "A" (Array), I populate the waypoints' arrays with useful things
 	if(valtype(endingScale) == "A")
 	{
-		// The first waypoint is the current end point, so I get it to do some computations soon
 		endScale = endingScale[0];
 		
-		// I'm creating a waypoints array that contains all waypoints, including the starting position, to make the update of the object's position easier
 		var waypoints = {startingScale};
 		
-		// I add each waypoint to this array
 		foreach(var waypoint in endingScale)
-		{
-			aadd(waypoints, waypoint);
-		}
-		
-		// I state that this object has waypoints, and I'm passing the waypoints. I'm also starting the waypointsCounter (i.e. the variable that says what is
-		// the next waypoint) to 2, since the first is the starting position and the second is the waypoint I'm already traveling to
+			aadd(waypoints, waypoint);		
+
 		aadd(mHasWaypointsArray, true);
 		aadd(mWaypointsArray, waypoints);
 		aadd(mWaypointsCounterArray, 2);
 	}
 	else
 	{		
-		// If this object doesn't have transitions, I state so by putting "false" in the array; I also save the ending position in the waypoints array, even though
-		// technically there are no waypoints (but it saves space)
 		aadd(mHasWaypointsArray, false);
 		aadd(mWaypointsArray, endingScale);
 		aadd(mWaypointsCounterArray, 0);
 	}
 	
-	// Computing the distance (which is the length of the difference of the 2 vectors) and the direction it has to move to
 	var distance = Modulus(endScale - startingScale);
-//	var direction = Norm(endPoint - startingPos);
-//	
+
 	aadd(mDistanceArray, distance);	
-	aadd(mDirectionsArray, 0);
 	
-	// For each axis, I compute the speed the component has to increment (or decrement to); it's basically "velocity = space / time". 
-	// Note: I use an absolute value after the computation in order to always have positive speeds, since I'm using the "direction" vector to find out
-	// whether one of these components has to be incremented or decremented
 	var xSpeed = ((endScale.x - startingScale.x) / time);
 	var ySpeed = ((endScale.y - startingScale.y) / time);
 	var zSpeed = ((endScale.z - startingScale.z) / time);
@@ -314,15 +299,64 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 	aadd(mZSpeedArray, zSpeed);
 
 	
-	// Since this is a transition, the arrays regarding rotation are filled with random things since they won't be used. I fill them anyway in order
-	// to have a 1:1 ratio between transitions and rotations array, so that I can reuse the same arrays for the things that are common between
-	// transitions and rotations
+	// Arrays not used; filled with useless stuff
+	aadd(mDirectionsArray, 0);
 	aadd(mAxisArray, 0);
 	aadd(mFinalAngleArray, 0);
 	aadd(mAngleDeltaArray, 0);
 	aadd(mReverseArray, false);
 }
 
+
+/*
+ * This method creates rotation-around-point transitions; the code is pretty much the same as for simple rotation transitions
+ */
+function Animator::CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop)
+{		
+	RemoveTransitionByObject(object, 3);
+	
+	object.SetPosition(startingPoint);
+	
+	aadd(mObjects, object);
+	aadd(mStartingPositions, centerPoint);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, period);
+	aadd(mScaleFactorArray, 1.0);
+	
+	aadd(mAxisArray, 0.0);  // This is actually the starting angle of the rotation; it's always 0; I don't want to create another array just for this
+	
+	// I state that this object is a rotation-around-point
+	aadd(mTransitionTypeArray, 3);
+	
+	
+	// Computing the angular velocity of the rotation, based on the given time (formula taken by wiki); I'm not sure why I have to divide by two, and even though 
+	// I do that the period will be off by a second more or less, no idea why. Good enough
+	var angularVelocity = (360.0 * GRAD_TO_RAD) / (period / 2.0);
+		
+	var radius = Modulus(centerPoint - startingPoint);
+	
+	// Speed (tells me wiki) is radius multiplied by the angular velocity
+	var speed = radius * angularVelocity;
+	
+	
+	aadd(mDistanceArray, radius);
+	
+	// I am adding the speed to the mXSpeedArray, even though the X doesn't really fit; I do so tho avoid creating a completely new array
+	aadd(mXSpeedArray, speed);
+		
+	// Filling some useful arrays
+	aadd(mFinalAngleArray, 360.0);
+	aadd(mAngleDeltaArray, 0);
+	
+	// Filling the not used arrays with pseudo-random content
+	aadd(mYSpeedArray, 0);
+	aadd(mZSpeedArray, 0);
+	aadd(mDirectionsArray, 0);
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, 0);
+	aadd(mWaypointsCounterArray, 0);
+	aadd(mReverseArray, 0);
+}
 
 /*
  * This method as to be called by the caller in its "update" function, so that the objects' positions will be constantly updated
@@ -549,6 +583,53 @@ function Animator::UpdateTransitions(dt)
 					RemoveTransitionByIndex(i);
 			}
 		}
+		// Case where the transition has type rotation-around-point; code is very similar to the case of simple rotations
+		else if(mTransitionTypeArray[i] == 3)
+		{
+			// Taking some useful stuff
+			var speed = mXSpeedArray[i];
+			var startingAngle = mAxisArray[i];
+			var centerPoint = mStartingPositions[i];
+			var finalAngle = mFinalAngleArray[i];
+			var currentAngle = mAngleDeltaArray[i];
+			var radius = mDistanceArray[i];
+
+			// The increment is set by the speed and the delta time
+			var increment = speed * dt * mScaleFactorArray[i];
+			
+			var currentPosition = object.GetPosition();
+			
+			// I update the position as if the object was a point moving around in a circle with z as the y and x as the x
+			currentPosition.x = cos(currentAngle) * radius + centerPoint.x;
+			currentPosition.z = sin(currentAngle) * radius + centerPoint.z;
+			
+			object.SetPosition(currentPosition);
+						
+			// I update the current angle with the absolute value of the current increment; I always consider the angle positive to simplify computations
+			// in case the rotation is in a loop and also needs to be reversed.
+			// If the transitions are inverted, I decrement
+			if(!mAreTransitionsInverted)
+				currentAngle += abs(increment);
+			else
+				currentAngle -= abs(increment);
+							
+			// If the transitions are inverted, we're NOT looping and the angle reached the starting angle, I end the transition
+			if(mAreTransitionsInverted && !mIsLoopArray[i] && currentAngle <= startingAngle)
+				RemoveTransitionByIndex(i);
+			// If the current angle (which is in radiants, so I need to convert it to degrees) is greater or equal then the total angle distance
+			// it has to rotate to, we're done (almost)
+			else if(currentAngle * RAD_TO_GRAD >= abs(finalAngle - startingAngle))
+			{
+				// If is looping, I simply reset the delta value so that it keeps rotating forever
+				if(mIsLoopArray[i])
+					mAngleDeltaArray[i] = 0;
+				else
+					RemoveTransitionByIndex(i);
+			}
+			// Otherwise, if it didn't reach the end, I update the delta value with the current angle
+			else
+				mAngleDeltaArray[i] = currentAngle;
+		}
 	}
 }
 
@@ -711,6 +792,9 @@ function Animator::InvertTransitions()
 			 	mWaypointsArray[i] = tmp;
 			}
 		}
+		// If the object is involved in a rotation-around-point transition, I simply need to invert its speed, so it goes backward
+		else if(mTransitionTypeArray[i] == 3)
+			mXSpeedArray[i] = -mXSpeedArray[i];
 	}
 }
 
