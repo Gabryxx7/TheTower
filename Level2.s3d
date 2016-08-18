@@ -274,37 +274,39 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
 	
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var cubeMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
 	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomCubes = {};
 	paths = {};
-	
+	var meshes = {};
+	aadd(meshes, CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes));
+	aadd(meshes, CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25));
+	aadd(meshes, CVmNewMesh(VRP_SPHERE, 5, cubeSizes * 0.80, 1));
 	//From leftmost to rightmost		
 	//GREEN
 	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
 	aadd(paths, TilesPath(tileMesh, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
-	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,0]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,0]));
 	
 	//LIGHT BLUE
 	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
 	aadd(paths, TilesPath(tileMesh, [4], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
-	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,1]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,1]));
 	
 	//RED
 	startingTilesPos = elevatorFrontPosition + [0, 0, tilesWidth];
 	aadd(paths, TilesPath(tileMesh, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
-	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,0,0]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,0,0]));
 	
-	//WHITE
+	//WHITE;
 	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
 	aadd(paths, TilesPath(tileMesh, [4], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
-	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,1,1]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,1,1]));
 	
 	//BLUE
 	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
 	aadd(paths, TilesPath(tileMesh, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
-	aadd(randomCubes, RandomMeshes(cubeMesh, randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,0,1]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,0,1]));
 	
 	selectedNums = {};
 	var finalPositions;
@@ -314,7 +316,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var numPosOffset = len(randomCubes)/2;
 	var numberPosition;
 	for(var i = 0; i < len(randomCubes); i++){
-		numberPosition = boxPosition + [(14*cubeSizes)*(numPosOffset--), boxHeight/2, boxThickness];
+		numberPosition = boxPosition + [(13*cubeSizes)*(numPosOffset--), boxHeight/2, boxThickness];
 		for(var j = 0; j < randomMeshNumber; j++){
 			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
 			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
