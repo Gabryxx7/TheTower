@@ -218,12 +218,10 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mLight2.Enable();	
 		
 	mElevator = elevator;
-	mElevator.SetLightsRange(2,2);
-//	mElevator.SetPosition(-50*SCALE_FACTOR, mElevator.GetRoomHeight()/2 + 0.08*SCALE_FACTOR, 200*SCALE_FACTOR);
+	mElevator.SetLightsRange(0,2);
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
-//	mCamera.SetPosition(mElevator.GetPosition());
 	
 	// Values used to move the portals' rooms light around, for a dynamic effect
 	mIncrement = 0.03 * SCALE_FACTOR;
@@ -239,6 +237,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
+	mElevator.SetPosition(mElevator.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2 + mElevator.GetRoomWidth()]);
+	mCamera.SetPosition(mCamera.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2 + mElevator.GetRoomWidth()]);
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
@@ -297,15 +297,13 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesWidth/2+tilesSpacing*2];	
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];
 	
-	startingTilesPos = elevatorFrontPosition + [2*SCALE_FACTOR, 0, 0*SCALE_FACTOR];
-	GeneratePath(redPathObjs, [3,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-	startingTilesPos = elevatorFrontPosition + [4*SCALE_FACTOR, 0, 0*SCALE_FACTOR];
-	GeneratePath(greenPathObjs, [-1,5,-1,2,-2,6,-1,4,-1,3], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-	startingTilesPos = elevatorFrontPosition + [-3*SCALE_FACTOR, 0, 0*SCALE_FACTOR];
-	GeneratePath(bluePathObjs, [-2,3,-1,2,-2,3,-1,1,-2,3,-1,3,-1,3,-2,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-
+	startingTilesPos = elevatorFrontPosition + [0*SCALE_FACTOR, 0, tilesWidth+tilesSpacing];
+	GeneratePath(redPathObjs, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
+	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, tilesSpacing];
+	GeneratePath(greenPathObjs, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
+	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, tilesSpacing];
+	GeneratePath(bluePathObjs, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, tilesThickness, startingTilesPos); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
 //	GeneratePath(pinkPathObjs, [-2,1,-1,6], tileWidth, tileThickness, tilesSpacing, [0,0,0]); //-1=Left Turn   -2 = Right Turn, if n > 0 n = number of tiles in that direction
-
 //	floorObj = GenerateFloorTiles(2.5*SCALE_FACTOR, 0.6*SCALE_FACTOR, 0.4 * SCALE_FACTOR);
 
 	numpadButtonsObj = {};
@@ -366,9 +364,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	}
 	
 	var numbersPositions = {};
-	aadd(numbersPositions, boxPosition + [boxWidth/3, boxHeight/2, boxThickness]);
 	aadd(numbersPositions, boxPosition + [0, boxHeight/2, boxThickness]);
 	aadd(numbersPositions, boxPosition + [-boxWidth/3, boxHeight/2, boxThickness]);
+	aadd(numbersPositions, boxPosition + [boxWidth/3, boxHeight/2, boxThickness]);
 	
 	selectedNums = {};
 	var finalPositions;
