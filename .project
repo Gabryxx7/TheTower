@@ -22,11 +22,11 @@
 				</dictionary>
 				<dictionary>
 					<key>GLUT_COMMAND_LINE_PARAMS</key>
-					<value>-w 1280 -h 720</value>
+					<value>-w 1920 -h 1080</value>
 				</dictionary>
 				<dictionary>
 					<key>GLUT_COMMAND_LINE_PARAMS_ACTIVE</key>
-					<value>1</value>
+					<value>2</value>
 				</dictionary>
 				<dictionary>
 					<key>INCLUDE</key>

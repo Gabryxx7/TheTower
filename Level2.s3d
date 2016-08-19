@@ -85,8 +85,13 @@ class Level2
 	var floorObj;	
 	var provaMeshObj;
 	var numpadObj;
+	var numpadPos;
 	var numpadHolderObj;
-	var selectedNums;
+	var codeNumbers;
+	var typedNumbers;
+	var wrongCodeTime;
+	var wrongCodeInserted;
+	var doorUnlocked;
 	
 	var box;
 	
@@ -98,6 +103,7 @@ class Level2
 	// Private functions
 	DrawAllPortals();
 	DrawPortal(portalFrame, portalRoom);
+	ResetNumpad();
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
 			
 	// Public functions
@@ -248,8 +254,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var buttonsSize = 0.75 * SCALE_FACTOR;
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
 	var buttonsThickness = 0.1 * SCALE_FACTOR;
-	var numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize * 5), mElevatorFinalPosition.y, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsThickness * 2)];
-	numpadObj = Numpad(buttonsSize, buttonsSpacing, buttonsThickness, numpadPos, [0.7,0.7,0.7], [0,0,0], [0,0,0]);	
+	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize * 2), mElevatorFinalPosition.y + 4*buttonsSize, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsThickness * 2)];
+	numpadObj = Numpad("123 456 789 C0*", buttonsSize, buttonsSpacing, buttonsThickness, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
 	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize*5/2, 0, 0], [buttonsSize*5/2, mElevator.GetRoomHeight(), 0], buttonsThickness*1.5));
 	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsThickness);
 	/////////////////////////////////////////////////////////
@@ -308,10 +314,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	aadd(paths, TilesPath(tileMesh, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
 	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,0,1]));
 	
-	selectedNums = {};
+	codeNumbers = {};
 	var finalPositions;
-	var finalPosArray;
-	var objsArray;	
 	var cubeNums = CubeNumbers();
 	var numPosOffset = len(randomCubes)/2;
 	var numberPosition;
@@ -321,9 +325,24 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
 			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
 		}
+		
+		var randNumb;
+		var alreadyPresent = true;
+		while(alreadyPresent){
+			randNumb = Rand(9);
+			alreadyPresent = false;
+			for(var k = 0; k < len(codeNumbers); k++){
+				if(randNumb == codeNumbers[k]){
+					alreadyPresent = true;
+					break;					
+				}	
+			}	
 			
-		aadd(selectedNums, Rand(9));
-		finalPositions = cubeNums.GenerateNumberPositions(selectedNums[i], numberPosition);
+			if(!alreadyPresent){				
+				aadd(codeNumbers, randNumb);	
+			}		
+		}
+		finalPositions = cubeNums.GenerateNumberPositions(codeNumbers[i], numberPosition);
 		
 		var j = 0;
 		while(len(randomCubes[i].GetFinalPos()) < len(randomCubes[i].GetObjs())){	
@@ -335,6 +354,13 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 				j += 1;
 		}		
 	}	
+	
+	output("\n\n\nCodice:  ");
+	outputln(codeNumbers);
+	
+	typedNumbers = {};
+	doorUnlocked = false;
+	wrongCodeInserted = false;
 	/////////////////////////////////////////////////////////
 	
 	pathAnim = false;
@@ -360,6 +386,7 @@ function Level2::Render()
 		case STATUS_ELEVATOR_MOVING:
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
 		{
 			// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
@@ -438,8 +465,15 @@ function Level2::Render()
 		
 		numpadHolderObj.Draw();
 	
-		mToonShader.SetParameter("diffuse", numpadObj.GetButtonColor());
+		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
 		numpadObj.Draw(1,0,0);
+		
+		if(wrongCodeInserted)			
+			mToonShader.SetParameter("diffuse", numpadObj.GetWrongCodeColor());
+		else
+			mToonShader.SetParameter("diffuse", numpadObj.GetPressedButtonColor());
+			
+		numpadObj.Draw(0,1,0);
 		
 		mToonShader.SetParameter("lightsRangeMin", 0);
 		mToonShader.SetParameter("lightsRangeMax", 2);
@@ -684,7 +718,6 @@ function Level2::UpdateLogic(dt)
 			
 			if(!animStarted){
 				var time;
-				var numberArrayObjs;
 				animStarted = true;
 				
 				for(var j = 0; j < len(randomCubes); j++){		
@@ -791,7 +824,82 @@ function Level2::UpdateLogic(dt)
 						}
 					}
 				}
+			}			
+			 
+			if(wrongCodeInserted){
+				wrongCodeTime += dt;
+				if(wrongCodeTime > 0.5){
+					wrongCodeTime = 0;
+					ResetNumpad();
+					wrongCodeInserted = false;					
+				}
 			}
+				
+			var nearNumpadOffset = 8 * SCALE_FACTOR;
+			var pressedKey;
+			if(!doorUnlocked 		&& (mCamera.GetPosition().x > (numpadPos.x - nearNumpadOffset)) && (mCamera.GetPosition().x < (numpadPos.x + nearNumpadOffset)) &&
+			   !wrongCodeInserted 	&& (mCamera.GetPosition().z > (numpadPos.z - nearNumpadOffset)) && (mCamera.GetPosition().z < (numpadPos.z + nearNumpadOffset))){
+				pressedKey = Keyboard();
+				
+				if(pressedKey != ""){
+					if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9){
+						numpadObj.PressButton(pressedKey);	
+						aadd(typedNumbers, val(pressedKey));
+					
+						if(len(typedNumbers) == len(codeNumbers)){
+							var correctNumbers = 0;
+							for(var i = 0; i < len(typedNumbers); i++){
+								if(typedNumbers[i] == codeNumbers[i])
+									correctNumbers++;
+							}
+							
+							if(correctNumbers == len(typedNumbers)){
+								doorUnlocked = true;
+								mLevelStatus = STATUS_LEVEL_ENDING;
+								numpadObj.PressAllButtons();
+							}else{
+								doorUnlocked = false;
+								wrongCodeInserted = true;
+								wrongCodeTime = 0;
+							}
+						}						
+					}
+					else if(pressedKey == "c"){
+						numpadObj.PressButton(pressedKey);	
+						ResetNumpad();
+					}
+				}
+			}
+			else{				
+				Keyboard(); //If I don't call this here, the pressed keys of the keyboard will be held in a queue
+							//and as soon as I approach the numpad the queue will be released
+							//so, in order to process the input and avoid queuing, I call keyboard anyway even when 
+							//I'm far from the numpad
+			}		
+			break;
+		}
+		
+		// Case where the level is ending: the only thing missing is the player inside the elevator
+		case STATUS_LEVEL_ENDING:
+		{
+			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
+			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				// If the player is in, I start the timer to end the level
+				mEnding = true;
+				mEndTimer = GetTime();
+			}
+			
+			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
+//			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+//				mIsLevelCompleted = true;
+			
 			break;
 		}
 	}
@@ -799,6 +907,14 @@ function Level2::UpdateLogic(dt)
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
+}
+
+function Level2::ResetNumpad(){	
+	numpadObj.UnpressAllButtons();	
+			
+	while(len(typedNumbers) > 0){
+		adel(typedNumbers,0);
+	}							
 }
 
 
