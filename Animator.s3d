@@ -327,17 +327,12 @@ function Animator::CreateRotationAroundPointTransition(object, startingPoint, ce
 	
 	// I state that this object is a rotation-around-point
 	aadd(mTransitionTypeArray, 3);
-	
-	
-	// Computing the angular velocity of the rotation, based on the given time (formula taken by wiki); I'm not sure why I have to divide by two, and even though 
-	// I do that the period will be off by a second more or less, no idea why. Good enough
-	var angularVelocity = (360.0 * GRAD_TO_RAD) / (period / 2.0);
-		
+
+	// Radius of the circle	
 	var radius = Modulus(centerPoint - startingPoint);
 	
-	// Speed (tells me wiki) is radius multiplied by the angular velocity
-	var speed = radius * angularVelocity;
-	
+	// Angular velocity; I convert the total degrees of the circle to radiants because the speed will be used to update angles that are in radiants
+	var speed = (360.0 * GRAD_TO_RAD) / period;
 	
 	aadd(mDistanceArray, radius);
 	
@@ -593,6 +588,11 @@ function Animator::UpdateTransitions(dt)
 			var finalAngle = mFinalAngleArray[i];
 			var currentAngle = mAngleDeltaArray[i];
 			var radius = mDistanceArray[i];
+			
+			static var timer;
+			
+			if(currentAngle <= 0.0)
+				timer = GetTime();
 
 			// The increment is set by the speed and the delta time
 			var increment = speed * dt * mScaleFactorArray[i];
@@ -620,6 +620,8 @@ function Animator::UpdateTransitions(dt)
 			// it has to rotate to, we're done (almost)
 			else if(currentAngle * RAD_TO_GRAD >= abs(finalAngle - startingAngle))
 			{
+				outputln(GetTime() - timer);
+				
 				// If is looping, I simply reset the delta value so that it keeps rotating forever
 				if(mIsLoopArray[i])
 					mAngleDeltaArray[i] = 0;

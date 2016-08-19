@@ -176,57 +176,70 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	
 	var pyramidHeight = 3.0 * SCALE_FACTOR;
-	var pyramidMesh1 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
-	var pyramidMesh2 = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0  * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
+	var pyramidMesh = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, pyramidHeight * SCALE_FACTOR);
 	
 	// Need also to scale the mesh itself; if the sizes are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
-	pyramidMesh1.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
-	pyramidMesh2.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+	pyramidMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	
-	pyramidMesh1.ShaderAdd("toonShader.glsl", 0);
-	pyramidMesh1.ShaderActivate(true);
-	pyramidMesh1.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	pyramidMesh1.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.1, 0.1]);
-	pyramidMesh1.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
-	pyramidMesh1.ShaderSetParameter(0, "shininess", 0, 50);
-	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
-	pyramidMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
-	pyramidMesh1.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	pyramidMesh1.ShaderSetParameter(0, "alpha", 0, 1.0);
+	pyramidMesh.ShaderAdd("toonShader.glsl", 0);
+	pyramidMesh.ShaderActivate(true);
+	pyramidMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	pyramidMesh.ShaderSetParameter(0, "diffuse", 0, [0.0, 0.0, 0.8]);
+	pyramidMesh.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
+	pyramidMesh.ShaderSetParameter(0, "shininess", 0, 50);
+	pyramidMesh.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	pyramidMesh.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	pyramidMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	pyramidMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
-	pyramidMesh2.ShaderAdd("toonShader.glsl", 0);
-	pyramidMesh2.ShaderActivate(true);
-	pyramidMesh2.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	pyramidMesh2.ShaderSetParameter(0, "diffuse", 0, [0.1, 0.9, 0.9]);
-	pyramidMesh2.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
-	pyramidMesh2.ShaderSetParameter(0, "shininess", 0, 50);
-	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
-	pyramidMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
-	pyramidMesh2.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	pyramidMesh2.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
-	var pyramidObj1 = CVmObj(pyramidMesh1); 
-	var pyramidObj2 = CVmObj(pyramidMesh2);  
-
-	
+	var pyramidObj1 = CVmObj(pyramidMesh); 
+	var pyramidObj2 = CVmObj(pyramidMesh); 
+	var pyramidObj3 = CVmObj(pyramidMesh); 
+	var pyramidObj4 = CVmObj(pyramidMesh);  
+	var pyramidObj5 = CVmObj(pyramidMesh); 
+	var pyramidObj6 = CVmObj(pyramidMesh);  
+	var pyramidObj7 = CVmObj(pyramidMesh); 
+	var pyramidObj8 = CVmObj(pyramidMesh);  
+		
 	global var pyramidObj = CVmObj();
 	pyramidObj.AddChild(pyramidObj1, 0, 0, 0);
-	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj3, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj4, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj5, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj6, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj7, 0, 0, 0);
+//	pyramidObj.AddChild(pyramidObj8, 0, 0, 0);
+	
+	pyramidObj2.SetPivotPoint(0, pyramidHeight / 3.0, 0);
 	pyramidObj2.Rotate(180, 0, 0, 1);
-	pyramidObj2.Translate(0, pyramidHeight/2.0 + 0.47 * SCALE_FACTOR, 0);
 	
+	pyramidObj3.SetPivotPoint(0, pyramidHeight / 3.0, 0);
+	pyramidObj3.Rotate(90, 0, 0, 1);
 	
+	pyramidObj4.SetPivotPoint(0, pyramidHeight / 3.0, 0);
+	pyramidObj4.Rotate(-90, 0, 0, 1);
 	
-	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomHeight() / 2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
+	pyramidObj5.SetPivotPoint(0, pyramidHeight / 3.0, 0);
+	pyramidObj5.Rotate(90, 1, 0, 0);
+	
+	pyramidObj6.SetPivotPoint(0, pyramidHeight / 3.0, 0);
+	pyramidObj6.Rotate(-90, 1, 0, 0);
+	
+//	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomHeight() / 2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
+	
 	
 	var waypoint0 = pyramidObj.GetPosition();
 	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
 	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0 * SCALE_FACTOR];
 	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
 		
-	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
+//	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
 	mAnimator.CreateRotatingTransition(pyramidObj, 0, 360, [1, 0, 0], 5.0, true, false);
-	
+	mAnimator.CreateRotationAroundPointTransition(pyramidObj, [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 10.0 * SCALE_FACTOR], [0, 0, 0], 7.0, true);
+//	mAnimator.CreateRotationAroundPointTransition(pyramidObj, [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 10.0 * SCALE_FACTOR],  [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 8.0 * SCALE_FACTOR], 3.0, true);
+
 	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
 	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
 	
@@ -266,6 +279,13 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 
 	mAnimator.CreateRotationAroundPointTransition(otherPyramidObj, otherPyramidObj.GetPosition(), otherPyramidObj.GetPosition() - [0, 0, 2.0 * SCALE_FACTOR], 3.0, true);
 	
+//	var buttonsSize = 0.75 * SCALE_FACTOR;
+//	var buttonsSpacing = 0.04 * SCALE_FACTOR;
+//	var buttonsThickness = 0.1 * SCALE_FACTOR;
+////	global var numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize * 2), mElevatorFinalPosition.y + 4*buttonsSize, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsThickness * 2)];
+//	global var numpadObject = Numpad("123 456 789 C0*", buttonsSize, buttonsSpacing, buttonsThickness, [-5 * SCALE_FACTOR, 4 * SCALE_FACTOR, 15 * SCALE_FACTOR], [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
+//		
+////	numpadObject.SetPosition(-5 * SCALE_FACTOR, 4 * SCALE_FACTOR, 15 * SCALE_FACTOR);
 	
 	if(mIsVRon)
 	{
@@ -346,23 +366,7 @@ function Level3::Render()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
- 	
- 	static var increment = 1.0;
- 	
- 	if(Keypressed("K"))
- 	{
- 		increment -= 0.01;
- 		outputln(increment);
- 		otherPyramidObj.SetScale(1.0, increment, 1.0);
-	}
-	
-	if(Keypressed("I"))
- 	{
- 		increment += 0.01;
- 		outputln(increment);
- 		otherPyramidObj.SetScale(1.0, increment, 1.0);
-	}
-	
+ 		
 	switch(mLevelStatus)
 	{
 		case STATUS_ELEVATOR_MOVING:
@@ -376,6 +380,8 @@ function Level3::Render()
 			
 			
 			otherPyramidObj.Draw();
+//			numpadObject.Draw();
+			pyramidObj.Draw();
 			break;
 	}
 	
