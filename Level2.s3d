@@ -12,6 +12,11 @@
 class Level2
 {
 	var mIsVRon;
+	var mControllersArray;
+	
+	var mDebugController;
+	var mDebugControllerHidden;
+	var mDebugKeyHit;
 	
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
@@ -66,9 +71,7 @@ class Level2
 	
 	// "Room" object that represent the elevator
 	var mElevator;
-	var mPortalRoom;
-	var mPortalFrame;
-	var mPortalFrameNormal;
+	var mPitRoom;
 	
 	var pathAnim;
 	
@@ -79,7 +82,6 @@ class Level2
 	var circleCenterRadius;
 	var randomCubes;
 	
-	var mCurrentlyVisiblePortalFrames;
 	
 	var mElevatorFinalPosition;
 	var mElevatorTravelDistance;
@@ -94,8 +96,8 @@ class Level2
 	var numpadHolderObj;
 	var codeNumbers;
 	var typedNumbers;
-	var wrongCodeTime;
-	var wrongCodeInserted;
+	var numpadClearTime;
+	var numpadClearNeeded;
 	var doorUnlocked;
 	
 	var box;
@@ -107,8 +109,6 @@ class Level2
 	var cameraIn;
 		
 	// Private functions
-	DrawAllPortals();
-	DrawPortal(portalFrame, portalRoom);
 	ResetNumpad();
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
 			
@@ -129,7 +129,24 @@ class Level2
  */
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
-	mIsVRon = isVRon;
+	mIsVRon = isVRon;	
+	
+	mControllersArray = {};
+		
+	if(mIsVRon)
+	{
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
+	}
+	else
+	{
+		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
+		mDebugController = ViveController(1);
+		mDebugControllerHidden = false;
+		mDebugKeyHit = false;
+		mDebugController.SetRotation(90, 0, 1, 0);
+		aadd(mControllersArray, mDebugController);
+	}
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -137,18 +154,13 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, false);
-	mPortalRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, true, 0, 0, false);	
-	mPortalRoom.Rotate(-90, 1, 0, 0);	
+	mPitRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, true, 0, 0, false);	
+	mPitRoom.Rotate(-90, 1, 0, 0);	
 	
 	var halfWidth = ROOM_FAR_WALL_WIDTH/2;
 	var halfHeight = ROOM_SIDE_WALL_WIDTH/2;
 	
-	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 0, [-halfWidth, -halfHeight, 0], [halfWidth, halfWidth, 0], 2, 2);
-	mPortalFrame = CVmObj(portalFrameMesh);
-//	mPortalFrame.Translate(0, 0.4, 15);
-	mPortalFrame.Rotate(90, 1, 0, 0);
-	mPortalFrameNormal = [0, 0, 1];
-	mPortalRoom.GetObj().SetPosition(0, -PIT_HEIGHT, 0);
+	mPitRoom.GetObj().SetPosition(0, -PIT_HEIGHT, 0);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -261,7 +273,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
 	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x * 2), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y * 2)];
-	numpadObj = Numpad("123 456 789 C0*", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
+//	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
+	numpadObj = Numpad("1234567890\nqwertyuiop\nasdfghjkl\nzxcvbnm", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
 	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize.x*5/2, 0, 0], [buttonsSize.x*5/2, mElevator.GetRoomHeight(), 0], buttonsSize.y*1.5));
 	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize.x*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsSize.y);
 	/////////////////////////////////////////////////////////
@@ -367,7 +380,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	typedNumbers = {};
 	doorUnlocked = false;
-	wrongCodeInserted = false;
+	numpadClearNeeded = 0;
 	/////////////////////////////////////////////////////////
 	
 	circleCenterRadius = 5*SCALE_FACTOR;
@@ -404,7 +417,7 @@ function Level2::Render()
 		{
 			// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
 //			DrawAllPortals();
-			mPortalRoom.Draw();
+			mPitRoom.Draw();
 			
 			mMainRoom.Draw();
 			
@@ -490,8 +503,10 @@ function Level2::Render()
 		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
 		numpadObj.Draw(1,0,0);
 		
-		if(wrongCodeInserted)			
+		if(numpadClearNeeded == 1)			
 			mToonShader.SetParameter("diffuse", numpadObj.GetWrongCodeColor());
+		else if(numpadClearNeeded == 2)
+			mToonShader.SetParameter("diffuse", [0.8,0.8,0]);
 		else
 			mToonShader.SetParameter("diffuse", numpadObj.GetPressedButtonColor());
 			
@@ -518,149 +533,6 @@ function Level2::Render()
 		mController2.Draw();
 	}
 }
-
-/*
- * This method draws every portal in the scene. This function MUST be called after the opening of a SceneBegin()/SceneEnd() block, 
- * otherwise it won't give out any results
- */
-function Level2::DrawAllPortals()
-{
-	// To render the portal we need the stencil buffer
-	glEnable(GL_STENCIL_TEST);
-
-	// I render the portal
-	DrawPortal(mPortalFrame, mPortalRoom);
-
-
-	// After drawing the portals, the stencil test is no longer needed
-	glDisable(GL_STENCIL_TEST);
-	
-	// Now the portals are drawn, but NOT in the depth buffer. This means that when we'll draw the rest of the scene, the computed depth will be wrong.
-	// To solve this, I re-draw the portal's frame, but without actually applying colors, and I do it while the depth buffer is active and clear, so that
-	// the frames will be put in there and will be taken into account when drawing the rest of the scene.
-	// So, first off, I dsable the color buffer
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	
-	// I enable writing to the depth buffer, enable the depth test and clear the buffer
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	
-	
-	// Now I draw each portal, even the ones that weren't actually visible, because they still need to "occupy space";
-	// I use the silhouette shader so that the outline of the frames will be there
-	mSilhouetteShader.Start();
-		mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
-		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-		mPortalFrame.Draw();
-	mSilhouetteShader.Stop();
-	
-	mPortalFrame.Draw();
-
-	// I enable the color buffer again for the rest of the scene
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-}
-
- /*
-  * Method for drawing a single portal room in a single portal frame.
-  * Note: this method modifyes the currently active SceneBegin/SceneEnd block, meaning that it closes the currently active block and opens a new one without
-  * closing it. So, this function MUST be called after the opening of a SceneBegin() block, and it assures that at the end of the method a block will
-  * be still open for further use (so that outside this function we still have to call SceneEnd())
-  * 
-  * portalFrame: (CVmObj) the frame from which the portal's room will be visible
-  * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
-  */
-function Level2::DrawPortal(portalFrame, portalRoom)
-{
-	// I add a matrix to the opengl stack; I will update the camera's position for the time being, so a copy of the current matrix 
-	// comes in handy when we need to go back to how thing where
-	glPushMatrix();
-	
-	// In order to draw the portal, I first need to draw the frame using the stencil buffer. To do that, I first disable the color, writing to the depht
-	// buffer and the depth buffer itself; they're not needed now
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
-	
-	// I make sure that the stencil test will fail for every pixel drawn (thanks to GL_NEVER)
-	glStencilFunc(GL_NEVER, 1, 0xFF);
-	
-	// I state that when the stencil test fails (so always, because I'm using GL_NEVER), the buffer will replace the current value in the buffer (0 initially)
-	// with the reference value I passed as parameter to glStencilFunc (1 in this case). Basically this means that when I'll draw the portal's frame soon,
-	// the stencil buffer will be filled with 1s for every fragment of the frame and 0s for every fragment outside the frame. This will help us
-	// render the portal's room ONLY where the frame was rendered
-	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-	
-	// I enable writing to the stencil buffer
-	glStencilMask(0xFF);
-	
-	// I empty the stencil buffer
-	glClear(GL_STENCIL_BUFFER_BIT);
-	
-	// I draw the portal frame; now the stencil buffer will contain 1s where the frame was rendered and 0s outside
-	portalFrame.Draw();
-	
-	
-	// In order to draw the portal room, I need translate BACK the world by the opengl offset, and translate it back FORWARD when I'm done with the portal,
-	// otherwise the camera's position will be wrong, and so will the rendering of the portal's room
-	glTranslate(-mOpenglTranslationOffset);
-	
-	
-	// Getting the positions of the frame
-	var framePos = portalFrame.GetPosition();
-	
-	// First I need to place the camera at the end of the portal's room, so I'm going to compute that position
-	var localPoint = [0, 0, portalRoom.GetRoomHeight()];
-	var newCameraPosition = portalRoom.LocalToWorld(localPoint);
-		
-	var translation = newCameraPosition - framePos - mOpenglTranslationOffset;
-	
-	// Now I want to move the first opengl light so that it's in front of the portal and it moves around. The change of position must be done outside theds
-	// SceneBegin/SceneEnd block, just like for the camera, otherwise (in XVR) it doesn't have any effect.
-	mOffset += mIncrement;
-	
-	var newLightPos = newCameraPosition;
-	
-	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
-	newLightPos.x += mOffset;
-	newLightPos.y += sin(mOffset*1);
-	
-	if(mOffset > 7 * SCALE_FACTOR || mOffset < -7 * SCALE_FACTOR)
-		mIncrement = -mIncrement;
-		
-	var oldLightPos = mLight0.GetPosition();
-
-	glTranslate(-translation);
-	glLight(GL_LIGHT0, GL_POSITION, [newLightPos.x, newLightPos.y, newLightPos.z, 1.0]);
-	
-	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	
-	// I disable writing to the stencil buffer, and I make sure that a pixel passes the stencil test ONLY if its value in the buffer is 1. That is,
-	// only the pixels belonging to the previously rendered portal's frame will pass the test, so the portal's room will be rendered there and olny there
-	glStencilMask(0x00);
-	glStencilFunc(GL_EQUAL, 1, 0xFF);
-	
-	// Drawing the actual portal's room where the stencil is 1
-	portalRoom.Draw();
-	
-	// I translate back the world where it was before drawing the portal
-	glTranslate(mOpenglTranslationOffset);
-
-	// I move the light back where it was; I use opengl so that the effect is immediate
-	glLight(GL_LIGHT0, GL_POSITION, [oldLightPos.x, oldLightPos.y, oldLightPos.z, 1.0]);
-
-	// I'm done with this portal, so I pop the matrix from the stack
-	glPopMatrix();
-}
-
-
-
-
-
 
 
 /* ****************************************************** *
@@ -849,26 +721,30 @@ function Level2::UpdateLogic(dt)
 						}
 					}
 				}
-			}			
-			 
-			if(wrongCodeInserted){
-				wrongCodeTime += dt;
-				if(wrongCodeTime > 0.5){
-					wrongCodeTime = 0;
+			}		
+			
+				
+//			numpadObj.PressButtonPhysical();
+			
+			if(numpadClearNeeded > 0){
+				numpadClearTime += dt;
+				if(numpadClearTime > 0.5){
+					numpadClearTime = 0;
 					ResetNumpad();
-					wrongCodeInserted = false;					
+					numpadClearNeeded = 0;					
 				}
 			}
 				
 			var nearNumpadOffset = 8 * SCALE_FACTOR;
 			var pressedKey;
-			if(!doorUnlocked 		&& (mCamera.GetPosition().x > (numpadPos.x - nearNumpadOffset)) && (mCamera.GetPosition().x < (numpadPos.x + nearNumpadOffset)) &&
-			   !wrongCodeInserted 	&& (mCamera.GetPosition().z > (numpadPos.z - nearNumpadOffset)) && (mCamera.GetPosition().z < (numpadPos.z + nearNumpadOffset))){
+			if(!doorUnlocked && (mCamera.GetPosition().x > (numpadPos.x - nearNumpadOffset)) && (mCamera.GetPosition().x < (numpadPos.x + nearNumpadOffset)) &&
+			   numpadClearNeeded == 0 	&& (mCamera.GetPosition().z > (numpadPos.z - nearNumpadOffset)) && (mCamera.GetPosition().z < (numpadPos.z + nearNumpadOffset))){
 				pressedKey = Keyboard();
 				
 				if(pressedKey != ""){
 					if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9){
-						numpadObj.PressButton(pressedKey, true, mAnimator);	
+						numpadObj.PressButton(pressedKey);	
+						numpadObj.AnimateButton(pressedKey, mAnimator);	
 						aadd(typedNumbers, val(pressedKey));
 					
 						if(len(typedNumbers) == len(codeNumbers)){
@@ -892,14 +768,16 @@ function Level2::UpdateLogic(dt)
 								numpadObj.PressAllButtons();
 							}else{
 								doorUnlocked = false;
-								wrongCodeInserted = true;
-								wrongCodeTime = 0;
+								numpadClearNeeded = 1;
+								numpadClearTime = 0;
 							}
 						}						
 					}
 					else if(pressedKey == "c"){
-						numpadObj.PressButton(pressedKey, true, mAnimator);	
-						ResetNumpad();
+						numpadClearNeeded = 2;
+						numpadClearTime = 0;
+						numpadObj.PressButton(pressedKey);	
+						numpadObj.AnimateButton(pressedKey, mAnimator);	
 					}
 				}
 			}
