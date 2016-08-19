@@ -13,6 +13,7 @@ class Level2
 {
 	var mIsVRon;
 	var mControllersArray;
+	var debugVrOn;
 	
 	var mDebugController;
 	var mDebugControllerHidden;
@@ -93,7 +94,6 @@ class Level2
 	var provaMeshObj;
 	var numpadObj;
 	var numpadPos;
-	var numpadHolderObj;
 	var codeNumbers;
 	var typedNumbers;
 	var numpadClearTime;
@@ -130,6 +130,7 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
+	debugVrOn = true;
 	
 	mControllersArray = {};
 		
@@ -138,13 +139,12 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		aadd(mControllersArray, mInputManager.GetController(1));
 		aadd(mControllersArray, mInputManager.GetController(2));
 	}
-	else
+	else if(debugVrOn)
 	{
 		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
 		mDebugController = ViveController(1);
 		mDebugControllerHidden = false;
 		mDebugKeyHit = false;
-		mDebugController.SetRotation(90, 0, 1, 0);
 		aadd(mControllersArray, mDebugController);
 	}
 	
@@ -273,11 +273,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
 	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x * 2), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y * 2)];
-//	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
-	numpadObj = Numpad("1234567890\nqwertyuiop\nasdfghjkl\nzxcvbnm", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
-	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize.x*5/2, 0, 0], [buttonsSize.x*5/2, mElevator.GetRoomHeight(), 0], buttonsSize.y*1.5));
-	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize.x*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsSize.y);
-	/////////////////////////////////////////////////////////
+	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0], [buttonsSize.x*5, mElevator.GetRoomHeight(), buttonsSize.y*1.5]);	
+/////////////////////////////////////////////////////////
 	
 //	///// CONTAINER BOX GENERATION /////
 //	var boxBordersThickness =  0.5*SCALE_FACTOR;
@@ -406,6 +403,35 @@ function Level2::Render()
 	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+ 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
+	if(!mIsVRon)
+	{
+		if(debugVrOn)
+			mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+		
+		// I also check if Y is pressed: this hides/unhides the debug controller
+		if(KeyPressed("Y"))
+		{
+			if(!mDebugKeyHit)
+			{
+				if(mDebugControllerHidden)
+					mDebugController.Unhide();
+				else
+					mDebugController.Hide();
+					
+				mDebugControllerHidden = !mDebugControllerHidden;
+				mDebugKeyHit = true;
+			}
+		}
+		else
+			mDebugKeyHit = false;
+	}
+	
+
+	foreach(var controller in mControllersArray)
+		controller.Draw();
 	
 	switch(mLevelStatus)
 	{
@@ -498,7 +524,7 @@ function Level2::Render()
 		mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
 		mToonShader.SetParameter("alpha", 1.0);
 		
-		numpadHolderObj.Draw();
+		numpadObj.DrawHolder();
 	
 		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
 		numpadObj.Draw(1,0,0);
@@ -721,10 +747,8 @@ function Level2::UpdateLogic(dt)
 						}
 					}
 				}
-			}		
+			}	
 			
-				
-//			numpadObj.PressButtonPhysical();
 			
 			if(numpadClearNeeded > 0){
 				numpadClearTime += dt;
@@ -733,60 +757,72 @@ function Level2::UpdateLogic(dt)
 					ResetNumpad();
 					numpadClearNeeded = 0;					
 				}
+			}				
+			
+			var pressedButton = -1;
+			if(mIsVRon || debugVrOn){
+				if(numpadClearNeeded == 0 && !doorUnlocked){
+					pressedButton = numpadObj.ButtonPressed(mDebugController.GetPosition());
+				}			
 			}
-				
-			var nearNumpadOffset = 8 * SCALE_FACTOR;
-			var pressedKey;
-			if(!doorUnlocked && (mCamera.GetPosition().x > (numpadPos.x - nearNumpadOffset)) && (mCamera.GetPosition().x < (numpadPos.x + nearNumpadOffset)) &&
-			   numpadClearNeeded == 0 	&& (mCamera.GetPosition().z > (numpadPos.z - nearNumpadOffset)) && (mCamera.GetPosition().z < (numpadPos.z + nearNumpadOffset))){
-				pressedKey = Keyboard();
-				
-				if(pressedKey != ""){
-					if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9){
-						numpadObj.PressButton(pressedKey);	
-						numpadObj.AnimateButton(pressedKey, mAnimator);	
-						aadd(typedNumbers, val(pressedKey));
+			else {
+				var nearNumpadOffset = 8 * SCALE_FACTOR;
+				var pressedKey;
+				if(!doorUnlocked && (mCamera.GetPosition().x > (numpadPos.x - nearNumpadOffset)) && (mCamera.GetPosition().x < (numpadPos.x + nearNumpadOffset)) &&
+				   numpadClearNeeded == 0 && (mCamera.GetPosition().z > (numpadPos.z - nearNumpadOffset)) && (mCamera.GetPosition().z < (numpadPos.z + nearNumpadOffset))){
+					pressedKey = Keyboard();
 					
-						if(len(typedNumbers) == len(codeNumbers)){
-							var correctNumbers = 0;
-							for(var i = 0; i < len(typedNumbers); i++){
-								if(typedNumbers[i] == codeNumbers[i])
-									correctNumbers++;
-							}
-							
-							if(correctNumbers == len(typedNumbers)){
-								doorUnlocked = true;
-								
-								var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-								var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-								
-								mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-								mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-								
-								// I switch status
-								mLevelStatus = STATUS_LEVEL_ENDING;
-								numpadObj.PressAllButtons();
-							}else{
-								doorUnlocked = false;
-								numpadClearNeeded = 1;
-								numpadClearTime = 0;
-							}
-						}						
-					}
-					else if(pressedKey == "c"){
-						numpadClearNeeded = 2;
-						numpadClearTime = 0;
-						numpadObj.PressButton(pressedKey);	
-						numpadObj.AnimateButton(pressedKey, mAnimator);	
+					if(pressedKey != ""){
+						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){
+							numpadObj.PressButton(pressedKey);	
+							numpadObj.AnimateButton(pressedKey, mAnimator);		
+							pressedButton = pressedKey;						
+						}
 					}
 				}
+				else{				
+					Keyboard(); //Needed to process the input even when not close to the numpad. Otherwise it will go in a queue and will be processed as soon as I get closer to the numpad
+				}			
 			}
-			else{				
-				Keyboard(); //If I don't call this here, the pressed keys of the keyboard will be held in a queue
-							//and as soon as I approach the numpad the queue will be released
-							//so, in order to process the input and avoid queuing, I call keyboard anyway even when 
-							//I'm far from the numpad
+			
+			if(valtype(pressedButton) != "I"){
+				if(asc(pressedButton) > 47 && asc(pressedButton) <= 48+9){
+					aadd(typedNumbers, val(pressedButton));
+				}
+				else if(pressedButton == "c"){				
+					numpadClearNeeded = 2;
+					numpadClearTime = 0;	
+				}			
 			}
+			
+			//If all the numbers have been typed 		
+			if(len(typedNumbers) == len(codeNumbers)){
+				var correctNumbers = 0;
+				for(var i = 0; i < len(typedNumbers); i++){
+					if(typedNumbers[i] == codeNumbers[i])
+						correctNumbers++;
+				}
+				
+				if(correctNumbers == len(typedNumbers)){
+					doorUnlocked = true;
+					
+					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+					
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+					
+					// I switch status
+					mLevelStatus = STATUS_LEVEL_ENDING;
+					numpadObj.PressAllButtons();
+				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
+					outputln("\nCleared");
+					doorUnlocked = false;
+					numpadClearNeeded = 1;
+					numpadClearTime = 0;
+				}
+			}	
+			
 			
 			var cameraPositon = mCamera.GetPosition();
 			var circlePos = circleCenterRoom.GetPosition();

@@ -3,6 +3,8 @@ class Numpad{
 	var mPressedButtonsObjs;
 	var mUnpressedButtonsObjs;
 	var mTextsObjs;
+	var mHolderObj;
+	var mHolderSizes;
 	var mCharacters;
 	var mUnpressedButtonColor;
 	var mPressedButtonColor;
@@ -12,9 +14,13 @@ class Numpad{
 	var mButtonsWidth;
 	var mOriginalButtonPos;
 	var mOriginalTextPos;
+	var mTextOffset;
 	
 	Draw(drawButtons, drawPressedButtons, drawText);
+	DrawHolder();
 	GetButtonsObjs();
+	GetHolderObj();
+	GetHolderSizes();
 	GetUnpressedButtonsObjs();
 	GetPressedButtonsObjs();
 	GetTextsObjs();
@@ -29,11 +35,11 @@ class Numpad{
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
 	PressAllButtons();
-	PressButtonPhysical(vivePos);
+	ButtonPressed(vivePos);
 };
 
 
-function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor){
+function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor, holderSize){
 	mTextsObjs = {};
 	mButtonsObjs = {};
 	mPressedButtonsObjs = {};
@@ -47,6 +53,17 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	mTextColor = textColor;
 	mButtonsThickness = tilesThickness;
 	mButtonsWidth = tilesSize;
+	mTextOffset = 0.02*SCALE_FACTOR;
+	mHolderSizes = holderSize;
+	mHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z));	
+	mHolderObj.SetPosition(numpadPosition.x+mButtonsWidth, 0, numpadPosition.z-mButtonsThickness);
+	
+	
+	var withHolder = false;
+	if(valtype(holderSize) == "A")
+		withHolder = true;
+		
+	
 	var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
 	var offsetY = mButtonsWidth + spaceSize;
 	var offsetX = mButtonsWidth + spaceSize;
@@ -73,7 +90,7 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 		txtObj = CVmObj();
 		txtObj.LinkToText(txt);
 		txtObj.SetScale(0.1,0.1,0.1);
-		txtObj.SetPosition(buttonPos.x-(0.1*SCALE_FACTOR), buttonPos.y - (1.65*SCALE_FACTOR), buttonPos.z + 0.02*SCALE_FACTOR);
+		txtObj.SetPosition(buttonPos.x-(0.1*SCALE_FACTOR), buttonPos.y - (1.65*SCALE_FACTOR), buttonPos.z + mTextOffset);
 		
 		buttonObj = CVmObj(buttonMesh);
 		buttonObj.SetPosition(buttonPos.x, buttonPos.y - (1.5*SCALE_FACTOR), buttonPos.z);	
@@ -114,8 +131,20 @@ function Numpad::Draw(drawUnpressedButtons, drawPressedButtons, drawText){
 	}
 }
 
+function Numpad::DrawHolder(){
+	mHolderObj.Draw();
+}
+
 function Numpad::GetButtonsObjs(){	
 	return mButtonsObjs;
+}
+
+function Numpad::GetHolderObj(){
+	return mHolderObj;
+}
+
+function Numpad::GetHolderSizes(){
+	return mHolderSizes;
 }
 
 function Numpad::GetButtonObj(buttonChar){	
@@ -167,11 +196,13 @@ function Numpad::AnimateButton(buttonChar, mAnimator){
 	}
 	if(charPos == -1)
 		return false;
+		
 	mAnimator.CreateTransition(mButtonsObjs[charPos], mOriginalButtonPos[charPos], {mOriginalButtonPos[charPos] - [0, 0, mButtonsThickness*0.8], mOriginalButtonPos[charPos]}, 0.25, false);
 	mAnimator.CreateTransition(mTextsObjs[charPos], mOriginalTextPos[charPos], {mOriginalTextPos[charPos] - [0, 0, mButtonsThickness*0.8], mOriginalTextPos[charPos]}, 0.25, false);
 	return true;
 }
 
+//-1 not present, 0 already pressed, 1 was not pressed, now it is pressed
 function Numpad::PressButton(buttonChar){
 	var charPos = -1;
 	//CHeck if char is present in the numpad
@@ -181,7 +212,7 @@ function Numpad::PressButton(buttonChar){
 	}
 	
 	if(charPos == -1)
-		return false;
+		return -1;
 	
 	//If it's present, I should check if it is already pressed
 	var alreadyPressed = false;
@@ -195,17 +226,17 @@ function Numpad::PressButton(buttonChar){
 	if(!alreadyPressed)
 		aadd(mPressedButtonsObjs, mButtonsObjs[charPos]);
 	else 
-		return true; //if it was pressed already then there is nothing to do here
+		return 0; //if it was pressed already then there is nothing to do here
 		
 	//If it was not pressed, I have to remove it from the unpressed buttons
 	for(var i = 0; i < len(mUnpressedButtonsObjs); i++){
 		if(mUnpressedButtonsObjs[i] == mButtonsObjs[charPos]){
 			adel(mUnpressedButtonsObjs, i);	
-			return true;				
+			return 1;				
 		}			
 	}	
 	
-	return true;
+	return 1;
 }
 
 function Numpad::UnpressButton(buttonChar){	
@@ -243,19 +274,28 @@ function Numpad::UnpressButton(buttonChar){
 	return true;
 }
 
-function Numpad::PressButtonPhysical(vivePos){
+function Numpad::ButtonPressed(vivePos){
 	var buttonPos;
 	var maxDepth = mButtonsThickness * 0.8;
-	var offsets = [mButtonsWidth, mButtonsWidth, mButtonsThickness];
+	var offsets = [mButtonsWidth/2, mButtonsWidth/2, mButtonsThickness];
 	for(var i = 0; i < len(mButtonsObjs); i++){
-		buttonPos = mButtonsObjs[i].GetPosition;
+		buttonPos = mOriginalButtonPos[i];
 		if(vivePos.x >= buttonPos.x - offsets.x && vivePos.x <= buttonPos.x + offsets.x
-		&& vivePos.y >= buttonPos.y - offsets.y && vivePos.y <= buttonPos.y + offsets.y
-		&& vivePos.z >= buttonPos.z - offsets.z && vivePos.z <= buttonPos.z + offsets.z){
-			output("\nIS PRESSING ");
-			outputln(mCharacters[i]);
+		&& vivePos.y >= buttonPos.y - offsets.y && vivePos.y <= buttonPos.y + offsets.y){
+			if(vivePos.z >= buttonPos.z - maxDepth && vivePos.z <= buttonPos.z){
+				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, vivePos.z]);
+				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, vivePos.z + mTextOffset]);	
+				if(PressButton(mCharacters[i]) == 1)
+					return mCharacters[i];
+				return -1;
+			}
 		}
-	}
+		else{
+			mButtonsObjs[i].SetPosition(mOriginalButtonPos[i]);
+			mTextsObjs[i].SetPosition(mOriginalTextPos[i]);
+		}
+	}	
+	return -1;
 }
 
 function Numpad::PressAllButtons(){	
