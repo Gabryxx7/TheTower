@@ -75,14 +75,14 @@ class Level2
 	var mPitRoom;
 	
 	var pathAnim;
+	var testo;
 	
 	var paths;
-	var circleCenterRoom;
-	var circleCenterRoomStepped;
-	var circleCenterRoomLeaving;
-	var circleCenterRadius;
+	var musicCircle;
+	var musicCircleStepped;
+	var musicCircleRadius;
+	var musicCirclePosition;
 	var randomCubes;
-	
 	
 	var mElevatorFinalPosition;
 	var mElevatorTravelDistance;
@@ -91,7 +91,6 @@ class Level2
 	var mOpenglTranslationOffset;	
 	
 	var floorObj;	
-	var provaMeshObj;
 	var numpadObj;
 	var numpadPos;
 	var codeNumbers;
@@ -106,7 +105,9 @@ class Level2
 	var mController2;
 	
 	var animStarted;
-	var cameraIn;
+	
+	var timeFromLastSound;
+	var musicPlaying;
 		
 	// Private functions
 	ResetNumpad();
@@ -130,7 +131,7 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mControllersArray = {};
 		
@@ -168,13 +169,30 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mToonShader = CVmShaderProgram("toonShader.glsl");	
 	mAlphaShader = CVmShaderProgram("colorModulatorShader.glsl");	
 	
+//	testo = Text("Chaos cannot exist without order\nWhere order, cannot exist without chaos");
+	testo = CVmObj();
+	var txt = CVmText();
+	txt.Load("Chaos cannot exist without order...");
+	var line = CVmObj();	
+	line.LinkToText(txt);	
+	line.SetRotation(90,0,1,0);
+	testo.AddChild(line,-ROOM_FAR_WALL_WIDTH/2+0.1*SCALE_FACTOR, ROOM_HEIGHT/2-2*SCALE_FACTOR, 30*SCALE_FACTOR);
+	txt = CVmText();
+	txt.Load("Order cannot exist without chaos...");
+	line = CVmObj();
+	line.LinkToText(txt);
+	line.SetRotation(-90,0,1,0);
+	
+	testo.AddChild(line,ROOM_FAR_WALL_WIDTH/2-0.1*SCALE_FACTOR, ROOM_HEIGHT/2-2*SCALE_FACTOR, -30*SCALE_FACTOR);
+	// Adding each text to its portal room
+	testo.SetScale([1, 1, 1]);
+	
 	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
 	}
 }
-
 
  
  function Level2::Init(lights, elevator, openglTranslationOffset)
@@ -243,32 +261,6 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
-	var provaMesh = CvmNewMesh("provaMesh.AAM");
-	if(USE_TOON_SHADER == 2){		
-		provaMesh.ShaderAdd("antishader.glsl", 0);
-		provaMesh.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		provaMesh.ShaderAdd("toonShader.glsl", 0);
-		provaMesh.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		provaMesh.ShaderActivate(false);				
-	}
-	provaMesh.ShaderSetParameter(0, "ambient", 0, [1, 0.5, 0.3]);
-	provaMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1.0, 0.75]);
-	provaMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	provaMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	provaMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-	provaMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-	provaMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	provaMesh.ShaderSetParameter(0, "alpha", 0, 1.0);	
-	provaMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);	
-	provaMeshObj = CVmObj(provaMesh);
-	provaMeshObj.rotate(45,1,1,0);
-	provaMeshObj.SetPosition(15*SCALE_FACTOR, -50*SCALE_FACTOR, -10*SCALE_FACTOR);
-	
-	
 	///// NUMBER PAD GENERATION /////
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
@@ -293,10 +285,10 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesSize.x/2+tilesSpacing*3];	
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
 	
-	var randomMeshesLimits = [ROOM_SIDE_WALL_WIDTH/2, ROOM_HEIGHT, ROOM_FAR_WALL_WIDTH/2];
+	var randomMeshesLimits = [ROOM_SIDE_WALL_WIDTH/2 - 3*SCALE_FACTOR, ROOM_HEIGHT, ROOM_FAR_WALL_WIDTH/2 - 3*SCALE_FACTOR];
 	var randomMeshesPos = [0,-ROOM_HEIGHT/2,-ROOM_FAR_WALL_WIDTH/2];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var randomMeshNumber = 52; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	var randomMeshNumber = 100; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomCubes = {};
 	paths = {};
@@ -305,31 +297,28 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	aadd(meshes, CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25));
 	aadd(meshes, CVmNewMesh(VRP_SPHERE, 10, cubeSizes * 0.80, 1));
 	aadd(meshes, CVmNewMesh(VRP_CYLINDER, 10, cubeSizes * 0.70, cubeSizes,1));
+	
+	var soundsRange = [0,6];
+	
 	//From leftmost to rightmost		
-	//GREEN
 	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [0,1,0]));
+	aadd(paths, TilesPath(tileMesh, [-1,4,-2,5,-1,5,-1,4,-2,4,-2,7,-2,6,-1,4,-1,7,-2,4,-2,6,-1,7,-2,2,-1,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0], soundsRange));	 //GREEN
 	
-	//LIGHT BLUE
 	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [0,1,1]));
+	aadd(paths, TilesPath(tileMesh, [2,-1,1,-2,5,-1,4,-2,14,-2,2,-1,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1], soundsRange));//LIGHT BLUE
 	
-	//RED
-	startingTilesPos = elevatorFrontPosition + [0, 0, tilesSize.x];
-	aadd(paths, TilesPath(tileMesh, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [1,0,0]));
+	startingTilesPos = elevatorFrontPosition + [0, 0, 0];
+	aadd(paths, TilesPath(tileMesh, [10,-1,4,-2,9,-2,4,-1,7,-2,-2,7,-1,4,-2,9,-2,3], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0], soundsRange));//RED
 	
-	//WHITE;
 	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [1,1,1]));
+	aadd(paths, TilesPath(tileMesh, [2,-2,1,-1,5,-2,4,-1,14,-1,2,-2,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1], soundsRange));//WHITE;
 	
-	//BLUE
 	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [0,0,1]));
+	aadd(paths, TilesPath(tileMesh, [-2,4,-1,5,-2,5,-2,4,-1,4,-1,7,-1,6,-2,4,-2,7,-1,4,-1,6,-2,7,-1,2,-2,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1], soundsRange)); //BLUE
+	
+	//Adding as many randomObjects as the number of tilesPaths
+	for(var i = 0; i < len(paths); i++)
+		aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
 	
 	codeNumbers = {};
 	var finalPositions;
@@ -337,7 +326,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var numPosOffset = len(randomCubes)/2;
 	var numberPosition;
 	for(var i = 0; i < len(randomCubes); i++){
-		numberPosition = randomMeshesPos + [(13*cubeSizes)*(numPosOffset--), randomMeshesLimits.y-(5*SCALE_FACTOR), randomMeshesLimits.z*2-(3*SCALE_FACTOR)];
+		numberPosition = randomMeshesPos + [(13*cubeSizes)*(numPosOffset--), randomMeshesLimits.y-(7*SCALE_FACTOR), randomMeshesLimits.z*2-(2*SCALE_FACTOR)];
 		for(var j = 0; j < randomMeshNumber; j++){
 			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
 			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
@@ -380,14 +369,16 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	numpadClearNeeded = 0;
 	/////////////////////////////////////////////////////////
 	
-	circleCenterRadius = 5*SCALE_FACTOR;
-	circleCenterRoom = CVmObj((CVmNewMesh(VRP_CYLINDER, 20, circleCenterRadius,tilesSize.y,1)));
-	circleCenterRoom.SetPosition([0,0,mElevator.GetRoomWidth()/2]);
-	circleCenterRoomStepped = false;
+	musicCircleRadius = 5*SCALE_FACTOR;
+	musicCircle = CVmObj((CVmNewMesh(VRP_CYLINDER, 20, musicCircleRadius, tilesSize.y,1)));
+	musicCirclePosition = [0, -tilesSize.y*2, mElevator.GetRoomWidth()/2];
+	musicCircle.SetPosition(musicCirclePosition);
+	musicCircleStepped = false;
 	
+	timeFromLastSound = 0;
+	musicPlaying = false;
 	pathAnim = false;
 	animStarted = false;
-	cameraIn = false;
 }
 
 
@@ -480,15 +471,15 @@ function Level2::Render()
 							steppedTilesObjs[i].Draw();
 						}	
 						
-						if(circleCenterRoomStepped)
+						if(musicCircleStepped)
 							mSpotShader.SetParameter("outlineColor", [1,1,0]);
 						else
 							mSpotShader.SetParameter("outlineColor", [0.7,0.7,0]);
 						mSpotShader.SetParameter("stepped", true);	
 						mSpotShader.SetParameter("outline", false);
-						circleCenterRoom.Draw();	
+						musicCircle.Draw();	
 						mSpotShader.SetParameter("outline", true);
-						circleCenterRoom.Draw();					
+						musicCircle.Draw();					
 				}
 				
 				var cubesObjs;
@@ -512,7 +503,7 @@ function Level2::Render()
 
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
-	provaMeshObj.Draw();
+	testo.Draw();
 	
 	mToonShader.Start();
 		mToonShader.SetParameter("ambient", [1, 1, 1]);
@@ -645,7 +636,7 @@ function Level2::UpdateLogic(dt)
 						mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 						time = (Rand(13)+ 11) / 5;	
 						cubePos	= randomCubes[j].GetObjs()[i].GetPosition();			
-						mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true);
+						mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
 					}	
 				}
 			}
@@ -680,6 +671,11 @@ function Level2::UpdateLogic(dt)
 							mAnimator.CreateTransition(tilesObjs[i], tilesObjs[i].GetPosition() + [0, -10*SCALE_FACTOR, 0], tilesObjs[i].GetPosition(), 0.25, false);
 							
 						aadd(steppedTilesObjs, tilesObjs[i]);
+						if(timeFromLastSound > 0.25 && MUSICFX_ON){
+							mSoundManager.PlaySound(paths[j].GetNextSoundIndex(), true, 1);
+							timeFromLastSound = 0;
+						}
+
 						adel(tilesObjs, i);
 						i = 0;
 					}
@@ -747,8 +743,7 @@ function Level2::UpdateLogic(dt)
 						}
 					}
 				}
-			}	
-			
+			}				
 			
 			if(numpadClearNeeded > 0){
 				numpadClearTime += dt;
@@ -762,7 +757,8 @@ function Level2::UpdateLogic(dt)
 			var pressedButton = -1;
 			if(mIsVRon || debugVrOn){
 				if(numpadClearNeeded == 0 && !doorUnlocked){
-					pressedButton = numpadObj.ButtonPressed(mDebugController.GetPosition());
+					pressedButton = numpadObj.ButtonPressedByObject(mDebugController.GetPosition());
+//					pressedButton = numpadObj.ButtonPressedByObject(mDebugController.GetPosition(), mInputManager);
 				}			
 			}
 			else {
@@ -816,22 +812,36 @@ function Level2::UpdateLogic(dt)
 					mLevelStatus = STATUS_LEVEL_ENDING;
 					numpadObj.PressAllButtons();
 				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
-					outputln("\nCleared");
+					outputln("\nNumpad Cleared ");
 					doorUnlocked = false;
 					numpadClearNeeded = 1;
 					numpadClearTime = 0;
 				}
-			}	
-			
+			}				
 			
 			var cameraPositon = mCamera.GetPosition();
-			var circlePos = circleCenterRoom.GetPosition();
 			var time = (Rand(10)+ 11) / 5;
 			var objPos;
-			var circle = 30;
-			var distanceFromCircle = sqrt((cameraPositon.x-circlePos.x)*(cameraPositon.x-circlePos.x) + (cameraPositon.z-circlePos.z)*(cameraPositon.z-circlePos.z));
-			if(distanceFromCircle  < circleCenterRadius*circleCenterRadius && !circleCenterRoomStepped){
-				circleCenterRoomStepped = true;
+			var musicRadius = musicCircleRadius*1.7; 
+			var distanceFromCircle = sqrt((cameraPositon.x-musicCirclePosition.x)*(cameraPositon.x-musicCirclePosition.x) + (cameraPositon.z-musicCirclePosition.z)*(cameraPositon.z-musicCirclePosition.z));
+			if(distanceFromCircle  < musicRadius*musicRadius){
+				if(!musicPlaying){
+					musicPlaying = true;
+					mSoundManager.SetMusic("sounds/Deadmau5 Ft Rob Swire - Ghosts n Stuff.mp3", 0, false);
+					mSoundManager.PlayMusic();
+				}		
+				var volume = musicRadius*musicRadius - distanceFromCircle;
+				mSoundManager.SetMusicVolume(volume);
+			}
+			else if(musicPlaying){				
+				musicPlaying = false;
+				mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.7, true);
+				mSoundManager.PlayMusic();
+			}
+			
+			if(distanceFromCircle  < musicCircleRadius*musicCircleRadius && !musicCircleStepped){
+				musicCircleStepped = true;
+				mAnimator.CreateTransition(musicCircle, musicCirclePosition, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], 0.7, false);
 				for(var j = 0; j < len(randomCubes); j++){
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
@@ -842,16 +852,17 @@ function Level2::UpdateLogic(dt)
 							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animat
 							time = (Rand(13)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
-							time = (Rand(6)+ 11) / 5;
-							var pointRadius = Rand(circle)+30;
-							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, [circlePos.x, objPos.y, circlePos.z], time*(circle-pointRadius),  true);
+							time = (Rand(100)+ 50) / 7;
+							var randomSpeed = (Rand(9)+1);
+							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true);
 						}					
 					}
 				}
 			}
 			
-			if(distanceFromCircle > circleCenterRadius*circleCenterRadius && circleCenterRoomStepped){
-				circleCenterRoomStepped = false;
+			if(distanceFromCircle > musicCircleRadius*musicCircleRadius && musicCircleStepped){
+				musicCircleStepped = false;
+				mAnimator.CreateTransition(musicCircle, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], musicCirclePosition, 0.7, false);
 				for(var j = 0; j < len(randomCubes); j++){
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
@@ -863,7 +874,7 @@ function Level2::UpdateLogic(dt)
 							time = (Rand(13)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(9)+ 11) / 5;			
-							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true);
+							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
 						}						
 					}
 				}
@@ -895,7 +906,8 @@ function Level2::UpdateLogic(dt)
 			break;
 		}
 	}
-		
+	
+	timeFromLastSound = (timeFromLastSound > 1) ? timeFromLastSound : timeFromLastSound += dt;
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
@@ -995,7 +1007,6 @@ function Level2::GenerateFloorTiles(tilesSize, spaceSize, tilesThickness)
 	
 	return returnObj;
 }
-
 
 function Level2::SetupOpenglLights()
 {

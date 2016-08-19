@@ -72,7 +72,7 @@ class Animator
 	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	ChangeScaleFactors(newFactor);
 	CreateScalingTransition(object, startingScale, endingScale, time, loop);
-	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop);
+	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness);
 	
 	// Private functions
 	InvertTransitions();
@@ -311,8 +311,9 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 /*
  * This method creates rotation-around-point transitions; the code is pretty much the same as for simple rotation transitions
  */
-function Animator::CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop)
+function Animator::CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness)
 {		
+	randomness = (valtype(randomness) == "") ? false : randomness;
 	RemoveTransitionByObject(object, 3);
 	
 	object.SetPosition(startingPoint);
@@ -333,6 +334,9 @@ function Animator::CreateRotationAroundPointTransition(object, startingPoint, ce
 	
 	// Angular velocity; I convert the total degrees of the circle to radiants because the speed will be used to update angles that are in radiants
 	var speed = (360.0 * GRAD_TO_RAD) / period;
+	
+	if(randomness)
+		speed = radius * (360.0 * GRAD_TO_RAD) / (period / 2.0);;
 	
 	aadd(mDistanceArray, radius);
 	

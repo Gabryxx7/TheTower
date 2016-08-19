@@ -1,5 +1,6 @@
 global var DEBUG_MODE = true;
-global var MUSIC_ON = false;
+global var MUSIC_ON = true;
+global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
 
 #define STATUS_MENU     0

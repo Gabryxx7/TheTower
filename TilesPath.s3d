@@ -4,6 +4,8 @@ class TilesPath{
 	var mPathWalked;
 	var mColor;
 	var mSteppedColor;
+	var mSoundsIndeces;
+	var mCurrentSoundIndex;
 	
 	
 	newTile(mesh, prevTilePos, offsets);
@@ -12,16 +14,23 @@ class TilesPath{
 	HasBeenWalked();
 	GetColor();
 	GetSteppedColor();	
+	GetNextSoundIndex();	
 };
 
 
-function TilesPath::TilesPath(tileMesh, pathVector, tilesWidth, spacing, startingPos, color, steppedColor){	
+function TilesPath::TilesPath(tileMesh, pathVector, tilesWidth, spacing, startingPos, color, steppedColor, soundsRange){	
 	mTilesObjs =  {};
 	mSteppedTilesObjs =  {};
 	mPathWalked = false;
 	mColor = color;
 	mSteppedColor = steppedColor;
-	
+	mSoundsIndeces = {};
+	mCurrentSoundIndex = 0;
+	if(valtype(soundsRange) == "V"){
+		for(var i = soundsRange[0]; i <= soundsRange[1]; i++){
+			aadd(mSoundsIndeces, i);
+		}	
+	}
 	
 	var yOffset = 0;
 	var xOffset = spacing + tilesWidth;
@@ -92,4 +101,9 @@ function TilesPath::GetColor(){
 
 function TilesPath::GetSteppedColor(){
 	return mSteppedColor;
+}
+
+function TilesPath::GetNextSoundIndex(){
+	mCurrentSoundIndex = (mCurrentSoundIndex == len(mSoundsIndeces)) ? 0 : mCurrentSoundIndex; 
+	return mSoundsIndeces[mCurrentSoundIndex++];
 }

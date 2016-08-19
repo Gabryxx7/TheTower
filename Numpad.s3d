@@ -35,7 +35,7 @@ class Numpad{
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
 	PressAllButtons();
-	ButtonPressed(vivePos);
+	ButtonPressedByObject(objPos, pViveObj);
 };
 
 
@@ -274,19 +274,24 @@ function Numpad::UnpressButton(buttonChar){
 	return true;
 }
 
-function Numpad::ButtonPressed(vivePos){
+function Numpad::ButtonPressedByObject(objPos, inputManager){
+	var usingVive = valtype(inputManager) == "" ? false : true;
 	var buttonPos;
 	var maxDepth = mButtonsThickness * 0.8;
 	var offsets = [mButtonsWidth/2, mButtonsWidth/2, mButtonsThickness];
 	for(var i = 0; i < len(mButtonsObjs); i++){
 		buttonPos = mOriginalButtonPos[i];
-		if(vivePos.x >= buttonPos.x - offsets.x && vivePos.x <= buttonPos.x + offsets.x
-		&& vivePos.y >= buttonPos.y - offsets.y && vivePos.y <= buttonPos.y + offsets.y){
-			if(vivePos.z >= buttonPos.z - maxDepth && vivePos.z <= buttonPos.z){
-				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, vivePos.z]);
-				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, vivePos.z + mTextOffset]);	
-				if(PressButton(mCharacters[i]) == 1)
-					return mCharacters[i];
+		if(objPos.x >= buttonPos.x - offsets.x && objPos.x <= buttonPos.x + offsets.x
+		&& objPos.y >= buttonPos.y - offsets.y && objPos.y <= buttonPos.y + offsets.y){
+			if(objPos.z >= buttonPos.z - maxDepth && objPos.z <= buttonPos.z){
+				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, objPos.z]);
+				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, objPos.z + mTextOffset]);	
+				if(PressButton(mCharacters[i]) == 1){
+					if(usingVive){
+						inputManager.VibrateController(1, 100);
+					}
+					return mCharacters[i];					
+				}
 				return -1;
 			}
 		}
