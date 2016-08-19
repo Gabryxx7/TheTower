@@ -493,7 +493,7 @@ function Animator::UpdateTransitions(dt)
 				RemoveTransitionByIndex(i);
 			// If the current angle is greater or equal then the total angle distance it has to rotate to, we're done (almost)
 			else if(currentAngle >= abs(finalAngle - startingAngle))
-			{
+			{				
 				// If the object has to loop and also reverse (i.e. go back from the final angle to the starting angle and repeat), I invert the speed 
 				// value so that it rotates in the opposite direction and reset the delta value so I can check again the angle distance
 				if(mIsLoopArray[i] && mReverseArray[i])
@@ -824,12 +824,13 @@ function Animator::RemoveTransitionByIndex(index)
 	adel(mObjects, index);
 	adel(mStartingPositions, index);
 	adel(mIsLoopArray, index);
+	adel(mTimeArray, index);
 	adel(mDirectionsArray, index);
 	adel(mDistanceArray, index);	
 	adel(mXSpeedArray, index);
 	adel(mYSpeedArray, index);
 	adel(mZSpeedArray, index);
-	adel(mTimeArray, index);
+	
 	adel(mScaleFactorArray, index);
 	
 	adel(mHasWaypointsArray, index);
@@ -840,6 +841,7 @@ function Animator::RemoveTransitionByIndex(index)
 	adel(mFinalAngleArray, index);
 	adel(mAxisArray, index);
 	adel(mAngleDeltaArray, index);
+	adel(mReverseArray, index);
 }
 
 

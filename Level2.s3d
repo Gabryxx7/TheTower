@@ -691,6 +691,8 @@ function Level2::UpdateLogic(dt)
 					for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
 						time = (Rand(13)+ 11) / 5;
 						mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+						
+						// mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], randomCubes[j].GetObjs()[i].GetPosition(), randomCubes[j].GetObjs()[i].GetPosition() - [0,0,-1*SCALE_FACTOR], 3.0,  true);
 					}	
 				}
 			}
