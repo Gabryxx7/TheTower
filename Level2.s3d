@@ -299,7 +299,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var randomMeshesLimits = [ROOM_SIDE_WALL_WIDTH/2, ROOM_HEIGHT, ROOM_FAR_WALL_WIDTH/2];
 	var randomMeshesPos = [0,-ROOM_HEIGHT/2,-ROOM_FAR_WALL_WIDTH/2];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	var randomMeshNumber = 52; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomCubes = {};
 	paths = {};

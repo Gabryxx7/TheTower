@@ -588,11 +588,6 @@ function Animator::UpdateTransitions(dt)
 			var finalAngle = mFinalAngleArray[i];
 			var currentAngle = mAngleDeltaArray[i];
 			var radius = mDistanceArray[i];
-			
-			static var timer;
-			
-			if(currentAngle <= 0.0)
-				timer = GetTime();
 
 			// The increment is set by the speed and the delta time
 			var increment = speed * dt * mScaleFactorArray[i];
@@ -619,9 +614,7 @@ function Animator::UpdateTransitions(dt)
 			// If the current angle (which is in radiants, so I need to convert it to degrees) is greater or equal then the total angle distance
 			// it has to rotate to, we're done (almost)
 			else if(currentAngle * RAD_TO_GRAD >= abs(finalAngle - startingAngle))
-			{
-				outputln(GetTime() - timer);
-				
+			{				
 				// If is looping, I simply reset the delta value so that it keeps rotating forever
 				if(mIsLoopArray[i])
 					mAngleDeltaArray[i] = 0;
