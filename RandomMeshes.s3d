@@ -33,7 +33,7 @@ function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color){
 	var randomDecimal;
 	
 	for(var i = 0; i < amount; i++){
-		randomx = Rand(boxSize.x*2 -offset.x) + boxPosition.x - boxSize.x +offset.x+boxSize.a;
+		randomx = Rand(boxSize.x*2 -offset.x) + boxPosition.x - boxSize.x +offset.x;
 		randomy = Rand(boxSize.y*2)+boxPosition.y;
 		randomz = Rand(boxSize.z*2)+boxPosition.z;
 		randomDecimal = 1 / (Rand(99)+1);

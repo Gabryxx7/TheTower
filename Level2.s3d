@@ -17,6 +17,7 @@ class Level2
 	var mEnding;
 	var mIsLevelCompleted;
 	var mEndTimer;
+	var mTimeToEnd;
 	
 	var mLevelStatus;
 	
@@ -72,6 +73,10 @@ class Level2
 	var pathAnim;
 	
 	var paths;
+	var circleCenterRoom;
+	var circleCenterRoomStepped;
+	var circleCenterRoomLeaving;
+	var circleCenterRadius;
 	var randomCubes;
 	
 	var mCurrentlyVisiblePortalFrames;
@@ -99,6 +104,7 @@ class Level2
 	var mController2;
 	
 	var animStarted;
+	var cameraIn;
 		
 	// Private functions
 	DrawAllPortals();
@@ -206,6 +212,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	mEnding = false;
 	mIsLevelCompleted = false;
+	mTimeToEnd = 2500;
 	
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
@@ -251,34 +258,33 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	
 	///// NUMBER PAD GENERATION /////
-	var buttonsSize = 0.75 * SCALE_FACTOR;
+	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
-	var buttonsThickness = 0.1 * SCALE_FACTOR;
-	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize * 2), mElevatorFinalPosition.y + 4*buttonsSize, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsThickness * 2)];
-	numpadObj = Numpad("123 456 789 C0*", buttonsSize, buttonsSpacing, buttonsThickness, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
-	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize*5/2, 0, 0], [buttonsSize*5/2, mElevator.GetRoomHeight(), 0], buttonsThickness*1.5));
-	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsThickness);
+	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x * 2), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y * 2)];
+	numpadObj = Numpad("123 456 789 C0*", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
+	numpadHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-buttonsSize.x*5/2, 0, 0], [buttonsSize.x*5/2, mElevator.GetRoomHeight(), 0], buttonsSize.y*1.5));
+	numpadHolderObj.SetPosition(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2+(buttonsSize.x*3),mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2,mElevatorFinalPosition.z + mElevator.GetRoomWidth() + buttonsSize.y);
 	/////////////////////////////////////////////////////////
-
 	
-	///// CONTAINER BOX GENERATION /////
-	var boxBordersThickness =  0.5*SCALE_FACTOR;
-	var boxWidth = ROOM_SIDE_WALL_WIDTH/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
-	var boxHeight = ROOM_HEIGHT/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
-	var boxThickness = 10*SCALE_FACTOR;
-	var boxPosition = [0, 0, mMainRoom.GetPosition().z + ROOM_SIDE_WALL_WIDTH - boxThickness*2 - boxBordersThickness - (0.1*SCALE_FACTOR)];
-	box = GlassBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
-	box.SetPosition(boxPosition);
+//	///// CONTAINER BOX GENERATION /////
+//	var boxBordersThickness =  0.5*SCALE_FACTOR;
+//	var boxWidth = ROOM_SIDE_WALL_WIDTH/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
+//	var boxHeight = ROOM_HEIGHT/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
+//	var boxThickness = 10*SCALE_FACTOR;
+//	var boxPosition = [0, 0, mMainRoom.GetPosition().z + ROOM_SIDE_WALL_WIDTH - boxThickness*2 - boxBordersThickness - (0.1*SCALE_FACTOR)];
+//	box = GlassBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
+//	box.SetPosition(boxPosition);
 	/////////////////////////////////////////////////////////
 	
 	///// PATHS + RANDOM MESHES GENERATION /////
-	var tilesWidth = 2.75 * SCALE_FACTOR;
-	var tilesThickness =  0.25 * SCALE_FACTOR;
+	var tilesSize = [2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR]; //width x height
 	var tilesSpacing =  0.25 * SCALE_FACTOR;
-	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesWidth/2, -tilesWidth/2, 0], [tilesWidth/2, tilesWidth/2, 0], tilesThickness);
-	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesWidth/2+tilesSpacing*3];	
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize.x/2, -tilesSize.x/2, 0], [tilesSize.x/2, tilesSize.x/2, 0], tilesSize.y);
+	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesSize.x/2+tilesSpacing*3];	
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
 	
+	var randomMeshesLimits = [ROOM_SIDE_WALL_WIDTH/2, ROOM_HEIGHT, ROOM_FAR_WALL_WIDTH/2];
+	var randomMeshesPos = [0,-ROOM_HEIGHT/2,-ROOM_FAR_WALL_WIDTH/2];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
 	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
@@ -287,32 +293,33 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var meshes = {};
 	aadd(meshes, CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes));
 	aadd(meshes, CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25));
-	aadd(meshes, CVmNewMesh(VRP_SPHERE, 5, cubeSizes * 0.80, 1));
+	aadd(meshes, CVmNewMesh(VRP_SPHERE, 10, cubeSizes * 0.80, 1));
+	aadd(meshes, CVmNewMesh(VRP_CYLINDER, 10, cubeSizes * 0.70, cubeSizes,1));
 	//From leftmost to rightmost		
 	//GREEN
-	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,0]));
+	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [-1,10,-2,2,-2,1,-1,1,-1,1,-2,1,-2,1,-1,1,-1,3,-1,7,-2,1,-2,16,-2,9,-1,2], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [0,1,0]));
 	
 	//LIGHT BLUE
-	startingTilesPos = elevatorFrontPosition + [(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [4], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,1,1]));
+	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [0,1,1]));
 	
 	//RED
-	startingTilesPos = elevatorFrontPosition + [0, 0, tilesWidth];
-	aadd(paths, TilesPath(tileMesh, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesWidth, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,0,0]));
+	startingTilesPos = elevatorFrontPosition + [0, 0, tilesSize.x];
+	aadd(paths, TilesPath(tileMesh, [8,-1,2,-2,2,-1,3,-1,3,-2,3,-2,4,-2,8,-1,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [1,0,0]));
 	
 	//WHITE;
-	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [4], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [1,1,1]));
+	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1]));
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [1,1,1]));
 	
 	//BLUE
-	startingTilesPos = elevatorFrontPosition + [-(tilesWidth+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesWidth, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
-	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, [boxWidth, boxHeight, boxThickness, boxBordersThickness], boxPosition, [0,0,1]));
+	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [-2,5,-2,2,-1,4,-1,3,-2,2,-1,6,-2,4,-1,5,-1,4,-2,2,-1,7,-2,2], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1]));	
+	aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, [0,0,1]));
 	
 	codeNumbers = {};
 	var finalPositions;
@@ -320,7 +327,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var numPosOffset = len(randomCubes)/2;
 	var numberPosition;
 	for(var i = 0; i < len(randomCubes); i++){
-		numberPosition = boxPosition + [(13*cubeSizes)*(numPosOffset--), boxHeight/2, boxThickness];
+		numberPosition = randomMeshesPos + [(13*cubeSizes)*(numPosOffset--), randomMeshesLimits.y-(5*SCALE_FACTOR), randomMeshesLimits.z*2-(3*SCALE_FACTOR)];
 		for(var j = 0; j < randomMeshNumber; j++){
 			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
 			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
@@ -363,8 +370,14 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	wrongCodeInserted = false;
 	/////////////////////////////////////////////////////////
 	
+	circleCenterRadius = 5*SCALE_FACTOR;
+	circleCenterRoom = CVmObj((CVmNewMesh(VRP_CYLINDER, 20, circleCenterRadius,tilesSize.y,1)));
+	circleCenterRoom.SetPosition([0,0,mElevator.GetRoomWidth()/2]);
+	circleCenterRoomStepped = false;
+	
 	pathAnim = false;
 	animStarted = false;
+	cameraIn = false;
 }
 
 
@@ -426,8 +439,17 @@ function Level2::Render()
 							
 							mSpotShader.SetParameter("outline", true);						
 							steppedTilesObjs[i].Draw();
-						}
-							
+						}	
+						
+						if(circleCenterRoomStepped)
+							mSpotShader.SetParameter("outlineColor", [1,1,0]);
+						else
+							mSpotShader.SetParameter("outlineColor", [0.7,0.7,0]);
+						mSpotShader.SetParameter("stepped", true);	
+						mSpotShader.SetParameter("outline", false);
+						circleCenterRoom.Draw();	
+						mSpotShader.SetParameter("outline", true);
+						circleCenterRoom.Draw();					
 				}
 				
 				var cubesObjs;
@@ -475,21 +497,19 @@ function Level2::Render()
 			
 		numpadObj.Draw(0,1,0);
 		
-		mToonShader.SetParameter("lightsRangeMin", 0);
-		mToonShader.SetParameter("lightsRangeMax", 2);
-		mToonShader.SetParameter("diffuse", [1, 1, 1]);
-		box.Draw([0,1,1,1,1,1]);
+//		mToonShader.SetParameter("lightsRangeMin", 0);
+//		mToonShader.SetParameter("lightsRangeMax", 2);
+//		mToonShader.SetParameter("diffuse", [1, 1, 1]);
+//		box.Draw([0,1,1,1,1,1]);
 	mToonShader.Stop();
 			
-	var boxColor = [0.6, 0.6, 1];
-	var boxAlpha = 0.3;
-	mAlphaShader.Start();
-		mAlphaShader.SetParameter("time", 0);
-		mAlphaShader.SetParameter("alpha", boxAlpha);
-		mAlphaShader.SetParameter("startingColor", boxColor);
-		mAlphaShader.SetParameter("finalColor", boxColor);
-		box.Draw([1,0,0,0,0,0], 0);
-	mAlphaShader.Stop();
+//	mAlphaShader.Start();
+//		mAlphaShader.SetParameter("time", 0);
+//		mAlphaShader.SetParameter("alpha", 0.3);
+//		mAlphaShader.SetParameter("startingColor", [0.6, 0.6, 1]);
+//		mAlphaShader.SetParameter("finalColor", [0.6, 0.6, 1]);
+//		box.Draw([1,0,0,0,0,0], 0);
+//	mAlphaShader.Stop();
 	
 	numpadObj.Draw(0,0,1);
 	
@@ -719,13 +739,15 @@ function Level2::UpdateLogic(dt)
 			if(!animStarted){
 				var time;
 				animStarted = true;
+				var cubePos;
 				
 				for(var j = 0; j < len(randomCubes); j++){		
 					for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
 						time = (Rand(13)+ 11) / 5;
 						mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
-						
-						// mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], randomCubes[j].GetObjs()[i].GetPosition(), randomCubes[j].GetObjs()[i].GetPosition() - [0,0,-1*SCALE_FACTOR], 3.0,  true);
+						time = (Rand(13)+ 11) / 5;	
+						cubePos	= randomCubes[j].GetObjs()[i].GetPosition();			
+						mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true);
 					}	
 				}
 			}
@@ -767,7 +789,7 @@ function Level2::UpdateLogic(dt)
 						
 				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
 					if(j == 0){		
-						outputln("\n\nRED PATH WALKED");						
+						outputln("\n\nRED PATH WALKED");				
 					}
 					else if(j == 1){		
 						outputln("\n\nGREEN PATH WALKED");						
@@ -786,18 +808,21 @@ function Level2::UpdateLogic(dt)
 					var objsAnimations = randomCubes[j].GetAnimationsVector();
 					var startAngle = randomCubes[j].GetOriginalAngles();
 					var finalAngle = randomCubes[j].GetFinalAngles();
-					var startPos = randomCubes[j].GetOriginalPos();
 					var finalPos = randomCubes[j].GetFinalPos();
 					var objPos;
-					var checkOffs = 0.15*SCALE_FACTOR; //The position is never perfect
+					var checkOffs = 0.5*SCALE_FACTOR; //The position is never perfect
 					
 					for(var i = 0; i < len(cubesObjs); i++){
 						objPos = cubesObjs[i].GetPosition();
 						time = (Rand(10)+ 11) / 5;
 												
 						if(objsAnimations[i].x == 0){	
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 0);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 1);	//The animation is starting so I remove the rotation animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 2);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
 							objsAnimations[i].x = 1;
-							mAnimator.CreateTransition(cubesObjs[i], [startPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, startPos[i].y, startPos[i].z], time, false);
+							mAnimator.CreateTransition(cubesObjs[i], [objPos.x, objPos.y, objPos.z], [finalPos[i].x, objPos.y, objPos.z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].x, 1,0,0);
 							time = (Rand(10)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
@@ -805,7 +830,7 @@ function Level2::UpdateLogic(dt)
 						
 						if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
 							objsAnimations[i].y = 1;
-							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, startPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, startPos[i].z], time, false);
+							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, objPos.y, objPos.z], [finalPos[i].x, finalPos[i].y, objPos.z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].y, 0,1,0);
 							time = (Rand(10)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
@@ -813,7 +838,7 @@ function Level2::UpdateLogic(dt)
 						
 						if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
 							objsAnimations[i].z = 1;
-							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, finalPos[i].y, startPos[i].z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
+							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, finalPos[i].y, objPos.z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].z, 0,0,1);
 							time = (Rand(10)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
@@ -843,7 +868,7 @@ function Level2::UpdateLogic(dt)
 				
 				if(pressedKey != ""){
 					if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9){
-						numpadObj.PressButton(pressedKey);	
+						numpadObj.PressButton(pressedKey, true, mAnimator);	
 						aadd(typedNumbers, val(pressedKey));
 					
 						if(len(typedNumbers) == len(codeNumbers)){
@@ -855,6 +880,14 @@ function Level2::UpdateLogic(dt)
 							
 							if(correctNumbers == len(typedNumbers)){
 								doorUnlocked = true;
+								
+								var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+								var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+								
+								mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+								mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+								
+								// I switch status
 								mLevelStatus = STATUS_LEVEL_ENDING;
 								numpadObj.PressAllButtons();
 							}else{
@@ -865,7 +898,7 @@ function Level2::UpdateLogic(dt)
 						}						
 					}
 					else if(pressedKey == "c"){
-						numpadObj.PressButton(pressedKey);	
+						numpadObj.PressButton(pressedKey, true, mAnimator);	
 						ResetNumpad();
 					}
 				}
@@ -875,7 +908,52 @@ function Level2::UpdateLogic(dt)
 							//and as soon as I approach the numpad the queue will be released
 							//so, in order to process the input and avoid queuing, I call keyboard anyway even when 
 							//I'm far from the numpad
-			}		
+			}
+			
+			var cameraPositon = mCamera.GetPosition();
+			var circlePos = circleCenterRoom.GetPosition();
+			var time = (Rand(10)+ 11) / 5;
+			var objPos;
+			var circle = 30;
+			var distanceFromCircle = sqrt((cameraPositon.x-circlePos.x)*(cameraPositon.x-circlePos.x) + (cameraPositon.z-circlePos.z)*(cameraPositon.z-circlePos.z));
+			if(distanceFromCircle  < circleCenterRadius*circleCenterRadius && !circleCenterRoomStepped){
+				circleCenterRoomStepped = true;
+				for(var j = 0; j < len(randomCubes); j++){
+					if(!paths[j].HasBeenWalked()){
+						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
+							objPos = randomCubes[j].GetObjs()[i].GetPosition();
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 0);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 1);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 2);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animat
+							time = (Rand(13)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+							time = (Rand(6)+ 11) / 5;
+							var pointRadius = Rand(circle)+30;
+							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, [circlePos.x, objPos.y, circlePos.z], time*(circle-pointRadius),  true);
+						}					
+					}
+				}
+			}
+			
+			if(distanceFromCircle > circleCenterRadius*circleCenterRadius && circleCenterRoomStepped){
+				circleCenterRoomStepped = false;
+				for(var j = 0; j < len(randomCubes); j++){
+					if(!paths[j].HasBeenWalked()){
+						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
+							objPos = randomCubes[j].GetObjs()[i].GetPosition();
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 0);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 1);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 2);	//The animation is starting so I remove the transition animation
+							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animat
+							time = (Rand(13)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+							time = (Rand(9)+ 11) / 5;			
+							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true);
+						}						
+					}
+				}
+			}
 			break;
 		}
 		
@@ -897,8 +975,8 @@ function Level2::UpdateLogic(dt)
 			}
 			
 			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
-//			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
-//				mIsLevelCompleted = true;
+			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+				mIsLevelCompleted = true;
 			
 			break;
 		}
