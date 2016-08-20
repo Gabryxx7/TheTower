@@ -310,8 +310,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesSize.x/2+tilesSpacing*3];	
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
 	
-	var randomMeshesLimits = [ROOM_SIDE_WALL_WIDTH/2 - 3*SCALE_FACTOR, ROOM_HEIGHT, ROOM_FAR_WALL_WIDTH/2 - 3*SCALE_FACTOR];
-	var randomMeshesPos = [0,-ROOM_HEIGHT/2,-ROOM_FAR_WALL_WIDTH/2];
+	var randomMeshesLimits = [ROOM_FAR_WALL_WIDTH/2 - 2*SCALE_FACTOR, ROOM_HEIGHT, ROOM_SIDE_WALL_WIDTH/2 - 1*SCALE_FACTOR];
+	var randomMeshesPos = [0,-ROOM_HEIGHT,-ROOM_SIDE_WALL_WIDTH/2+1*SCALE_FACTOR];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
 	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
