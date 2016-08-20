@@ -280,8 +280,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
-	mElevator.SetPosition(mElevator.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2]);
-	mCamera.SetPosition(mCamera.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2] - mOpenglTranslationOffset);
+	mElevator.SetPosition([mElevator.GetPosition().x, mElevator.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()+0.3*SCALE_FACTOR]);
+	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset);
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
