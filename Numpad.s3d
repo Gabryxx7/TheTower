@@ -3,8 +3,12 @@ class Numpad{
 	var mPressedButtonsObjs;
 	var mUnpressedButtonsObjs;
 	var mTextsObjs;
+	var mScreenTextsObjs;
+	var mCharOnScreen;
 	var mHolderObj;
 	var mHolderSizes;
+	var mScreenObj;
+	var mScreenNumbersObj;
 	var mCharacters;
 	var mUnpressedButtonColor;
 	var mPressedButtonColor;
@@ -18,6 +22,8 @@ class Numpad{
 	
 	Draw(drawButtons, drawPressedButtons, drawText);
 	DrawHolder();
+	DrawScreen();
+	DrawScreenNumbers();
 	GetButtonsObjs();
 	GetHolderObj();
 	GetHolderSizes();
@@ -42,6 +48,9 @@ class Numpad{
 function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor, holderSize){
 	mTextsObjs = {};
 	mButtonsObjs = {};
+	mScreenObj =  CvmObj();
+	mCharOnScreen = {};
+	mScreenTextsObjs = {};
 	mPressedButtonsObjs = {};
 	mUnpressedButtonsObjs = {};
 	mCharacters = {};
@@ -57,8 +66,7 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	mHolderSizes = holderSize;
 	mHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z));	
 	mHolderObj.SetPosition(numpadPosition.x+mButtonsWidth, 0, numpadPosition.z-mButtonsThickness);
-	
-	
+
 	var withHolder = false;
 	if(valtype(holderSize) == "A")
 		withHolder = true;
@@ -77,6 +85,12 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	var cols = 0;
 	for(var i = 0; i < len(buttonsText) ; i++){	
 		if(buttonsText[i] == "\n"){
+			if(cols == 0){
+				mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(rows*mButtonsWidth + (spaceSize*(rows-1)) )/2, -offsetY/2, 0], [(rows*mButtonsWidth + (spaceSize*(rows-1)) )/2, offsetY/2, 0], 2, 2)));
+				mScreenObj.SetPosition(numpadPosition + [offsetX, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+				mScreenNumbersObj = CVmObj();
+				mScreenNumbersObj.SetPosition(numpadPosition + [offsetX, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+			}
 			i++;
 			cols++;
 			rows = 0;	
@@ -86,6 +100,7 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 		txt = CVmText();		
 		txt.Load(upper(buttonsText[i]));
 		txt.SetColor(textColor.r, textColor.g, textColor.b);
+		
 		
 		txtObj = CVmObj();
 		txtObj.LinkToText(txt);
@@ -101,6 +116,16 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 		aadd(mTextsObjs, txtObj);
 		aadd(mButtonsObjs, buttonObj);
 		aadd(mUnpressedButtonsObjs, buttonObj);	
+		
+		
+		var screenTxt = CVmText();		
+		screenTxt.Load(upper(buttonsText[i]));
+		screenTxt.SetColor(textColor.r, textColor.g, textColor.b);
+		
+		var screenTxtObj = CVmObj();
+		screenTxtObj.LinkToText(screenTxt);
+		screenTxtObj.SetScale(0.1,0.1,0.1);
+		aadd(mScreenTextsObjs, screenTxtObj);
 	}	
 }
 
@@ -134,6 +159,15 @@ function Numpad::Draw(drawUnpressedButtons, drawPressedButtons, drawText){
 function Numpad::DrawHolder(){
 	mHolderObj.Draw();
 }
+
+function Numpad::DrawScreen(){
+	mScreenObj.Draw();
+}
+
+function Numpad::DrawScreenNumbers(){
+	mScreenNumbersObj.Draw();
+}
+
 
 function Numpad::GetButtonsObjs(){	
 	return mButtonsObjs;
@@ -223,8 +257,11 @@ function Numpad::PressButton(buttonChar){
 	
 
 	//If it is not already pressed, I add it to the pressed buttons vector
-	if(!alreadyPressed)
+	if(!alreadyPressed){
 		aadd(mPressedButtonsObjs, mButtonsObjs[charPos]);
+		aadd(mCharOnScreen, mScreenTextsObjs[charPos]);
+		mScreenNumbersObj.AddChild(mScreenTextsObjs[charPos], ((len(mPressedButtonsObjs)-3.5)*SCALE_FACTOR)/3, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
+	}
 	else 
 		return 0; //if it was pressed already then there is nothing to do here
 		
@@ -258,8 +295,11 @@ function Numpad::UnpressButton(buttonChar){
 	}
 	
 	//If it is pressed, I add it to the unpressed buttons vector
-	if(!alreadyUnpressed)
+	if(!alreadyUnpressed){
 		aadd(mUnpressedButtonsObjs, mButtonsObjs[charPos]);
+		adel(mCharOnScreen, mScreenTextsObjs[charPos]);
+		mScreenNumbersObj.RemoveChild(mScreenTextsObjs[charPos]);		
+	}
 	else 
 		return true; //if it was pressed already then there is nothing to do here
 		
@@ -319,6 +359,8 @@ function Numpad::PressAllButtons(){
 
 function Numpad::UnpressAllButtons(){	
 	while(len(mPressedButtonsObjs) > 0){
+		mScreenNumbersObj.RemoveChild(mCharOnScreen[0]);
+		adel(mCharOnScreen, 0);
 		adel(mPressedButtonsObjs, 0);		
 	}	
 	

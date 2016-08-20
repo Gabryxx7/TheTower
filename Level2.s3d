@@ -549,6 +549,11 @@ function Level2::Render()
 		mToonShader.SetParameter("alpha", 1.0);
 		
 		numpadObj.DrawHolder();
+		
+		mToonShader.SetParameter("diffuse", [0.7,0.1,0.7]);
+		numpadObj.DrawScreen();
+		mToonShader.SetParameter("diffuse", [0.0,0.0,0.0]);
+		numpadObj.DrawScreenNumbers();
 	
 		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
 		numpadObj.Draw(1,0,0);
