@@ -1007,24 +1007,50 @@ function Level2::GetElevator()
  */
 function Level2::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
 {
-	// I'm stating that there is no intersection
 	var intersectedPlane = -1;
 
+	// Checking intersections with the main room
+	intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 		
-	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
-	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
-	// one is not relevant in this case)
-	if(mIsElevatorPresent)
-		intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
-
-	// If still no interception was found, I check the boundaries of the room
+	// If no valid intersection was found, I check the floor, but since it's not present in the room I check collisions with the plane that has as normal
+	// the one that points up from the ground
 	if(intersectedPlane == -1)
-		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	{
+		normal = [0, 1, 0];
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, [0, 0, 0], normal);
 		
-	// If I'm here, I definitely found a wall
+		// If a in intersection was found, I procede
+		if(contactPoint != Void)
+		{
+			// I need to check if the position found is in the room; since the plane is infinite, the intersection could be anywhere. To make sure that
+			// we check the point correctly, I move the point up a little bit for the check
+			contactPoint.y += 1 * SCALE_FACTOR;
+			
+			// If the point is in the room, it's a valid point
+			if(mMainRoom.IsPointInRoom(contactPoint))
+			{
+				intersectedPlane = 0;
+				contactPoint.y -= 1 * SCALE_FACTOR;
+			}
+		}
+	}
+		
+	// Checking collision with the back wall; like the floor, it's not present in the room object, so I check intersection with the plane that is in that position
+	if(intersectedPlane == -1)
+	{
+		var pos = mElevatorWall.GetPosition();
+		pos.z = -mMainRoom.GetRoomDepth() / 2.0;
+		
+		normal = [0, 0, 1];
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, pos, normal);
+		
+		// If the intersection was found, the point is not valid
+		if(contactPoint != Void)
+			intersectedPlane = 1;
+	}
+		
 	isWall = true;
 	
-	// If the intersection value is 0, a good point was found
 	return intersectedPlane == 0;
 }
 

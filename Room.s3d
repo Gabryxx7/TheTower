@@ -477,39 +477,43 @@ function Room::CheckIntersection(rayOrigin, rayEnd, contactPoint, normal)
 		
 		
 	/* Back wall */
-	planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1 * SCALE_FACTOR];
-	normalTmp = ComputeNormalOfPlanarObject(mBackWallObj);
-	
-	contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
-	
-	if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
+	if(mHasBack)
 	{
-		// Firt I remove the point I added in order to make sure that the plane point was in the room
-		contactPointTmp -= [0, 0, 1 * SCALE_FACTOR];
+		planePoint = mBackWallObj.GetPosition() + GetPosition() + [0, 0, 1 * SCALE_FACTOR];
+		normalTmp = ComputeNormalOfPlanarObject(mBackWallObj);
 		
-		// If there was an intersection before and I found one in the rest of the elevator, I need to check which one "wins", i.e. which one
-		// is closest to the player (in this case the origin of the ray)
-		if(intersectedObject != -1)
+		contactPointTmp = FindIntersectionInPlane(rayOrigin, rayEnd, planePoint, normalTmp);
+		
+		if(contactPointTmp != Void && IsPointInRoom(contactPointTmp))
 		{
-			var previousDistance = Modulus(contactPoint - rayOrigin);
-			var currentDistance = Modulus(contactPointTmp - rayOrigin);
+			// Firt I remove the point I added in order to make sure that the plane point was in the room
+			contactPointTmp -= [0, 0, 1 * SCALE_FACTOR];
 			
-			// If the new distance is lesser, it wins
-			if(currentDistance < previousDistance)
+			// If there was an intersection before and I found one in the rest of the elevator, I need to check which one "wins", i.e. which one
+			// is closest to the player (in this case the origin of the ray)
+			if(intersectedObject != -1)
+			{
+				var previousDistance = Modulus(contactPoint - rayOrigin);
+				var currentDistance = Modulus(contactPointTmp - rayOrigin);
+				
+				// If the new distance is lesser, it wins
+				if(currentDistance < previousDistance)
+				{
+					intersectedObject = 1;
+					contactPoint = contactPointTmp;
+					normal = normalTmp;
+				}
+			}
+			// If before there was no intersection, I update the values with the current ones
+			else
 			{
 				intersectedObject = 1;
 				contactPoint = contactPointTmp;
 				normal = normalTmp;
 			}
 		}
-		// If before there was no intersection, I update the values with the current ones
-		else
-		{
-			intersectedObject = 1;
-			contactPoint = contactPointTmp;
-			normal = normalTmp;
-		}
 	}
+	
 		
 	/* Roof */
 	planePoint = mRoofObj.GetPosition() + GetPosition() + [0, -1 * SCALE_FACTOR, 0];

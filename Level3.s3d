@@ -78,6 +78,12 @@ class Level3
 	
 	var mFrontText;
 	
+	var mStarObjects;
+	
+	// Private functions
+	CreateStarThing();
+	CreateCylinderThing();
+	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
 	Render();
@@ -204,13 +210,13 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 		
 	global var pyramidObj = CVmObj();
 	pyramidObj.AddChild(pyramidObj1, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj3, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj4, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj5, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj6, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj7, 0, 0, 0);
-//	pyramidObj.AddChild(pyramidObj8, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj2, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj3, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj4, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj5, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj6, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj7, 0, 0, 0);
+	pyramidObj.AddChild(pyramidObj8, 0, 0, 0);
 	
 	pyramidObj2.SetPivotPoint(0, pyramidHeight / 3.0, 0);
 	pyramidObj2.Rotate(180, 0, 0, 1);
@@ -230,29 +236,67 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 //	mMainRoom.AddObject(pyramidObj, mMainRoom.GetRoomWidth()/2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomHeight() / 2.0 - 5.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
 	
 	
-	var waypoint0 = pyramidObj.GetPosition();
-	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
-	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0 * SCALE_FACTOR];
-	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
-		
+//	var waypoint0 = pyramidObj.GetPosition();
+//	var waypoint1 = waypoint0 + [-mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
+//	var waypoint2 = waypoint1 + [0, 0, -mMainRoom.GetRoomDepth()/2.0 - 10.0 * SCALE_FACTOR];
+//	var waypoint3 = waypoint2 + [mMainRoom.GetRoomWidth()/2.0 - 10.0 * SCALE_FACTOR, 0, 0];
 //	mAnimator.CreateTransition(pyramidObj, waypoint0, {waypoint1, waypoint2, waypoint3}, 5.0, true);
+	
 	mAnimator.CreateRotatingTransition(pyramidObj, 0, 360, [1, 0, 0], 5.0, true, false);
-	mAnimator.CreateRotationAroundPointTransition(pyramidObj, [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 10.0 * SCALE_FACTOR], [0, 0, 0], 7.0, true);
-//	mAnimator.CreateRotationAroundPointTransition(pyramidObj, [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 10.0 * SCALE_FACTOR],  [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 8.0 * SCALE_FACTOR], 3.0, true);
+	mAnimator.CreateRotationAroundPointTransition(pyramidObj, [0, mMainRoom.GetRoomHeight() / 2.0, mMainRoom.GetRoomDepth() / 2.0 - 20.0 * SCALE_FACTOR], [0, 0, 0], 20.0, true);
 
 	mAnimator.CreateRotatingTransition(pyramidObj1, 0, 360, [0, 1, 0], 10.0, true, false);
 	mAnimator.CreateRotatingTransition(pyramidObj2, 0, -360, [0, 1, 0], 10.0, true, false);
 	
 	var baseSize = 1.0 * SCALE_FACTOR;
-//	global var baseBoxMesh = CVmNewMesh(VRP_BOX, 120, [-baseSize / 2.0, -baseSize / 2.0, 0], [baseSize / 2.0, baseSize / 2.0, 0], baseSize);
-
 	var otherPyramidHeight = 2.0 * SCALE_FACTOR;
 	
-//	global var baseBoxMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
-//	baseBoxMesh.Translate(5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+//	var otherPyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, otherPyramidHeight);
+//	global var otherPyramidObj1 = CVmObj(otherPyramidMesh);
+//	var otherPyramidObj2 = CVmObj(otherPyramidMesh);
+//	var otherPyramidObj3 = CVmObj(otherPyramidMesh);
+//	var otherPyramidObj4 = CVmObj(otherPyramidMesh);
+//	var otherPyramidObj5 = CVmObj(otherPyramidMesh);
+//	var otherPyramidObj6 = CVmObj(otherPyramidMesh);
+//	
+//	otherPyramidObj2.Rotate(90, 0, 0, 1);
+//	otherPyramidObj3.Rotate(180, 0, 0, 1);
+//	otherPyramidObj4.Rotate(270, 0, 0, 1);
+//	otherPyramidObj5.Rotate(90, 1, 0, 0);
+//	otherPyramidObj6.Rotate(-90, 1, 0, 0);
+//	
+//	global var otherPyramidObj = CVmObj();
+//	otherPyramidObj.AddChild(otherPyramidObj1, 0, 0, 0);
+//	otherPyramidObj.AddChild(otherPyramidObj2, 0, -baseSize, 0);
+//	otherPyramidObj.AddChild(otherPyramidObj3, baseSize, -baseSize, 0);
+//	otherPyramidObj.AddChild(otherPyramidObj4, baseSize, 0, 0);
+//	otherPyramidObj.AddChild(otherPyramidObj5, 0, -baseSize, 0);
+//	otherPyramidObj.AddChild(otherPyramidObj6, 0, 0, -baseSize);
+//	
+//	otherPyramidObj.Translate(5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 15 * SCALE_FACTOR);
+//	
+//	mAnimator.CreateScalingTransition(otherPyramidObj, [1.0, 1.0, 1.0], {[1.0, 0.3, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.3], [1.0, 1.0, 1.0], [0.3, 1.0, 1.0]}, 3.0, true);
+//	mAnimator.CreateRotationAroundPointTransition(otherPyramidObj, otherPyramidObj.GetPosition(), otherPyramidObj.GetPosition() - [0, 0, 2.0 * SCALE_FACTOR], 3.0, true);
+	
+	mStarObjects = {};
+	
+	for(var i = 0; i < 10; i++)
+		aadd(mStarObjects, CreateStarThing());
+	
+	if(mIsVRon)
+	{
+		mController1 = mInputManager.GetController(1);
+		mController2 = mInputManager.GetController(2);
+	}
+}
+
+function Level3::CreateStarThing()
+{
+	var baseSize = 1.0 * SCALE_FACTOR;
+	var otherPyramidHeight = 2.0 * SCALE_FACTOR;
 	
 	var otherPyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, otherPyramidHeight);
-	global var otherPyramidObj1 = CVmObj(otherPyramidMesh);
+	var otherPyramidObj1 = CVmObj(otherPyramidMesh);
 	var otherPyramidObj2 = CVmObj(otherPyramidMesh);
 	var otherPyramidObj3 = CVmObj(otherPyramidMesh);
 	var otherPyramidObj4 = CVmObj(otherPyramidMesh);
@@ -265,35 +309,33 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	otherPyramidObj5.Rotate(90, 1, 0, 0);
 	otherPyramidObj6.Rotate(-90, 1, 0, 0);
 	
-	global var otherPyramidObj = CVmObj();
-	otherPyramidObj.AddChild(otherPyramidObj1, 0, 0, 0);
-	otherPyramidObj.AddChild(otherPyramidObj2, 0, -baseSize, 0);
-	otherPyramidObj.AddChild(otherPyramidObj3, baseSize, -baseSize, 0);
-	otherPyramidObj.AddChild(otherPyramidObj4, baseSize, 0, 0);
-	otherPyramidObj.AddChild(otherPyramidObj5, 0, -baseSize, 0);
-	otherPyramidObj.AddChild(otherPyramidObj6, 0, 0, -baseSize);
+	var star = CVmObj();
+	star.AddChild(otherPyramidObj1, 0, 0, 0);
+	star.AddChild(otherPyramidObj2, 0, -baseSize, 0);
+	star.AddChild(otherPyramidObj3, baseSize, -baseSize, 0);
+	star.AddChild(otherPyramidObj4, baseSize, 0, 0);
+	star.AddChild(otherPyramidObj5, 0, -baseSize, 0);
+	star.AddChild(otherPyramidObj6, 0, 0, -baseSize);
 	
-	otherPyramidObj.Translate(5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 15 * SCALE_FACTOR);
+//	star.Translate(5 * SCALE_FACTOR, 5 * SCALE_FACTOR, 15 * SCALE_FACTOR);
 	
-	mAnimator.CreateScalingTransition(otherPyramidObj, [1.0, 1.0, 1.0], {[1.0, 0.3, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.3], [1.0, 1.0, 1.0], [0.3, 1.0, 1.0]}, 3.0, true);
+//	mAnimator.CreateScalingTransition(star, [1.0, 1.0, 1.0], {[1.0, 0.3, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.3], [1.0, 1.0, 1.0], [0.3, 1.0, 1.0]}, 3.0, true);
+//	mAnimator.CreateRotationAroundPointTransition(star, otherPyramidObj.GetPosition(), otherPyramidObj.GetPosition() - [0, 0, 2.0 * SCALE_FACTOR], 3.0, true);
 
-	mAnimator.CreateRotationAroundPointTransition(otherPyramidObj, otherPyramidObj.GetPosition(), otherPyramidObj.GetPosition() - [0, 0, 2.0 * SCALE_FACTOR], 3.0, true);
+	var posX = mMainRoom.GetRoomWidth() / 2.0 + Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR;
+	var posY = mMainRoom.GetRoomHeight() / 2.0 + Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR;
+	var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR;
+	var time = 20.0 + Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0);
+	time = Rand(1) == 1 ? time : -time;
 	
-//	var buttonsSize = 0.75 * SCALE_FACTOR;
-//	var buttonsSpacing = 0.04 * SCALE_FACTOR;
-//	var buttonsThickness = 0.1 * SCALE_FACTOR;
-////	global var numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize * 2), mElevatorFinalPosition.y + 4*buttonsSize, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsThickness * 2)];
-//	global var numpadObject = Numpad("123 456 789 C0*", buttonsSize, buttonsSpacing, buttonsThickness, [-5 * SCALE_FACTOR, 4 * SCALE_FACTOR, 15 * SCALE_FACTOR], [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0]);	
-//		
-////	numpadObject.SetPosition(-5 * SCALE_FACTOR, 4 * SCALE_FACTOR, 15 * SCALE_FACTOR);
-	
-	if(mIsVRon)
-	{
-		mController1 = mInputManager.GetController(1);
-		mController2 = mInputManager.GetController(2);
-	}
+	outputln( [posX, posY, posZ]);
+
+	mAnimator.CreateScalingTransition(star, [1.0, 1.0, 1.0], {[1.0, 0.3, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.3], [1.0, 1.0, 1.0], [0.3, 1.0, 1.0]}, 3.0, true);
+//	mAnimator.CreateRotationAroundPointTransition(star, otherPyramidObj.GetPosition(), otherPyramidObj.GetPosition() - [0, 0, 2.0 * SCALE_FACTOR], 3.0, true);
+	mAnimator.CreateRotationAroundPointTransition(star, [posX, posY, posZ], [0, 0, 0], time, true);
+
+	return star;
 }
-
 
  
  function Level3::Init(lights, elevator, openglTransformOffset)
@@ -379,9 +421,12 @@ function Level3::Render()
 			mFrontText.Draw();
 			
 			
-			otherPyramidObj.Draw();
+//			otherPyramidObj.Draw();
 //			numpadObject.Draw();
 			pyramidObj.Draw();
+			
+			foreach(var star in mStarObjects)
+				star.Draw();
 			break;
 	}
 	
