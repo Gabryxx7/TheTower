@@ -749,7 +749,7 @@ function Level2::UpdateLogic(dt)
 						time = (Rand(10)+ 11) / 5;
 												
 						if(objsAnimations[i].x == 0){	
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
+//							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
 							objsAnimations[i].x = 1;
 							mAnimator.CreateTransition(cubesObjs[i], [objPos.x, objPos.y, objPos.z], [finalPos[i].x, objPos.y, objPos.z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].x, 1,0,0);

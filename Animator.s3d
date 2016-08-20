@@ -121,6 +121,7 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 {
 	// If there is already a transition active for the object, I remove it ("false" indicates a movement transition); if there isn't this doesn't do anything
 	RemoveTransitionByObject(object, 0);
+	RemoveTransitionByObject(object, 3);
 	
 	// For starter, I move the object to the starting position, in case it wasn't there already
 	object.SetPosition(startingPos);
