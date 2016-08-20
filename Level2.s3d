@@ -108,7 +108,7 @@ class Level2
 	var animStarted;
 	
 	var timeFromLastSound;
-	var timeFromLastClick;
+	var timeFromLastAction;
 	var musicPlaying;
 		
 	// Private functions
@@ -409,7 +409,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	musicCircleStepped = false;
 	
 	timeFromLastSound = 0;
-	timeFromLastClick = 0;
+	timeFromLastAction = 0;
 	musicPlaying = false;
 	pathAnim = false;
 	animStarted = false;
@@ -821,9 +821,8 @@ function Level2::UpdateLogic(dt)
 							numpadObj.AnimateButton(pressedButton, mAnimator);	
 						}
 					}
-					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
-						outputln(timeFromLastClick);
-						timeFromLastClick = 0;
+					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastAction > 0.25){
+						timeFromLastAction = 0;
 						pressedButton = numpadObj.PressPointedButton(mCamera, cameraPosition);	
 						numpadObj.AnimateButton(pressedButton, mAnimator);						
 					}
@@ -853,6 +852,7 @@ function Level2::UpdateLogic(dt)
 				
 				if(correctNumbers == len(typedNumbers)){
 					doorUnlocked = true;
+					outputln("Well done mate! (mofo)");
 					
 					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
@@ -864,7 +864,7 @@ function Level2::UpdateLogic(dt)
 					mLevelStatus = STATUS_LEVEL_ENDING;
 					numpadObj.PressAllButtons();
 				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
-					outputln("\nNumpad Cleared ");
+					outputln("Wrong Code!! ");
 					doorUnlocked = false;
 					numpadClearNeeded = 1;
 					numpadClearTime = 0;
@@ -959,7 +959,7 @@ function Level2::UpdateLogic(dt)
 		}
 	}
 	
-	timeFromLastClick = (timeFromLastClick > 1) ? timeFromLastClick : timeFromLastClick += dt;
+	timeFromLastAction = (timeFromLastAction > 1) ? timeFromLastAction : timeFromLastAction += dt;
 	timeFromLastSound = (timeFromLastSound > 1) ? timeFromLastSound : timeFromLastSound += dt;
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
