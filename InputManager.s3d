@@ -2,7 +2,7 @@
 // 1 -> Keyboard
 // 2 -> Gamepad
 // 3 -> HTC Vive
-#define USE_INPUT_MANAGER 1
+#define USE_INPUT_MANAGER 2
 
 #include <KeyboardManager.s3d>
 #include <GamepadManager.s3d>
@@ -42,7 +42,7 @@ class InputManager
 /*
  * Constructor
  */
-function InputManager::InputManager(isVRon, HMD)
+function InputManager::InputManager(isVRon, HMD, joystick)
 {
 	mIsVRon = isVRon;
 	
@@ -50,10 +50,10 @@ function InputManager::InputManager(isVRon, HMD)
 		mManager = ViveManager(HMD);
 	else
 	{
-		if(USE_INPUT_MANAGER == 1)
+		if(!joystick.Enabled)
 			mManager = KeyboardManager();
-		else if(USE_INPUT_MANAGER == 2)
-			mManager = GamepadManager();
+		else
+			mManager = GamepadManager(joystick);
 	}
 }
 

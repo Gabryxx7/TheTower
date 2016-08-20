@@ -42,7 +42,7 @@ class GamepadManager
 	// This variable contains the time when a key was hit; used to determine the pause duration between a keystroke and another
 	var mKeyPressedTime;
 	
-	var joystick;
+	var mJoystick;
 	
 	// Private functions
 	UpdateCameraPosition();
@@ -60,9 +60,9 @@ class GamepadManager
 /*
  * Constructor
  */
-function GamepadManager::GamepadManager()
+function GamepadManager::GamepadManager(joystick)
 {
-	mMoveSpeed = MOVE_SPEED;
+	mMoveSpeed = MOVE_SPEED*SCALE_FACTOR;
 	mRotationX = 0;
 	mRotationY = 0;
 	mCameraUp = [0.0, 1.0,  0.0];
@@ -75,7 +75,7 @@ function GamepadManager::GamepadManager()
 	
 	mKeyPressedTime = 0;
 	
-	joystick = CVmJoystick();
+	mJoystick = joystick;
 	
 	// I don't know why, but I have to remove the cursor both here and in the main file of the project, otherwise it doesn't disappear
 	ShowCursor(false);
@@ -131,13 +131,13 @@ function GamepadManager::UpdateCamera()
 		var deltaV = 0;	
 			
 		if(XBOX_CONTROLLER == 1){
-			deltaU = joystick.u - 0.5;
-			deltaV = joystick.v -0.5;			
+			deltaU = mJoystick.u - 0.5;
+			deltaV = mJoystick.v -0.5;			
 		}		
 		else {
 			deadzone = 0.1;
-			deltaU = joystick.r - 0.5;
-			deltaV = joystick.u -0.5;	
+			deltaU = mJoystick.r - 0.5;
+			deltaV = mJoystick.u -0.5;	
 		}
 		
 		if(deltaV < -deadzone || deltaV > deadzone){
@@ -195,13 +195,15 @@ function GamepadManager::UpdateCameraPosition()
 
 	
 	// If shift is pressed, sprint is activated
-	if(KeyPressed(VK_SHIFT))
-		mMoveSpeed = SPRINT_SPEED;
+	//Left Trigger pressed
+	if(mJoystick.z < 0.2)
+		mMoveSpeed = SPRINT_SPEED*SCALE_FACTOR;
 	else
-		mMoveSpeed = MOVE_SPEED;
+		mMoveSpeed = MOVE_SPEED*SCALE_FACTOR;
 		
 	// If we press space in debug mode, the view goes up
-	if (KeyPressed(VK_SPACE) && mDebugMode)
+	//a pressed
+	if (mJoystick.button1 && mDebugMode)
 	{
 		var cameraPos = mCamera.GetPosition();
 						
@@ -220,8 +222,8 @@ function GamepadManager::UpdateCameraPosition()
 	
 	
 	// Case where we press W
-	var deltaX = joystick.x - 0.5;
-	var deltaY = joystick.y - 0.5;
+	var deltaX = mJoystick.x - 0.5;
+	var deltaY = mJoystick.y - 0.5;
 	var deadzone = 0.1;
 	
 	if(XBOX_CONTROLLER == 0){
@@ -293,12 +295,12 @@ function GamepadManager::SetActiveCamera(camera)
 
 function GamepadManager::IsPressingPrimaryButton()
 {
-	return joystick.button6;
+	return mJoystick.button6;
 }
 
 function GamepadManager::IsPressingSecondaryButton()
 {
-	return joystick.button7;
+	return mJoystick.button7;
 }
 
 function GamepadManager::GetController(controllerIndex)
