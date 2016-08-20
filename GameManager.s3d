@@ -34,7 +34,7 @@ class GameManager
 {
 	// This variable has access to the DLL functions to control the Vive
 	var mHMD;
-	
+	var mJoystick;
 	// Boolean, set to true if the Vive was detected at start; false otherwise
 	var mIsVRon;
 	
@@ -121,6 +121,7 @@ class GameManager
 function GameManager::GameManager(HMD)
 {
 	mHMD = HMD;
+	mJoystick = CVmJoystick();
 	
 	mIsVRon = mHMD.IsVRactive() == 1;
 //	mIsVRon = false;
@@ -132,7 +133,7 @@ function GameManager::GameManager(HMD)
 	
 	mCamera = CameraGetCurrent();
 	
-	mInputManager = InputManager(mIsVRon, mHMD);
+	mInputManager = InputManager(mIsVRon, mHMD, mJoystick);
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
