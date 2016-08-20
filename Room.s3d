@@ -35,6 +35,7 @@ class Room
 	// Boolean that states if the front wall is present
 	var mHasFront;
 	var mHasFloor;
+	var mHasBack;
 	
 	// Corners of the room (these are local coordinates)
 	var mLowerCornerPosition;
@@ -87,7 +88,7 @@ class Room
  * centerInOrigin: (boolean) if true, the room is moved to the center of the coordinate system
  * lightNumber: (integer) the number of the opengl light that has to be used in the cel shader to render the room
  */
-function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsRangeMin, lightsRangeMax, hasFront, hasFloor)
+function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsRangeMin, lightsRangeMax, hasFront, hasFloor, hasBack)
 {
 	mFarWallWidth = farWallWidth;
 	mSideWallWidth = sideWallWidth;
@@ -97,17 +98,9 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mHalfSideWidth = mSideWallWidth / 2.0;
 	mHalfHeight = mRoomHeight / 2.0;
 	
-	if(hasFront == NULL)
-		mHasFront = true;
-	else{
-		mHasFront = hasFront;
-	}
-	
-	if(hasFloor == NULL)
-		mHasFloor = true;
-	else{
-		mHasFloor = hasFloor;
-	}
+	mHasFront = (valtype(hasFront) == "") ? true : hasFront;
+	mHasFloor = (valtype(hasFloor) == "") ? true : hasFloor;
+	mHasBack = (valtype(hasBack) == "") ? true : hasBack;
 	
 	mLightsRangeMin = lightsRangeMin;
 	mLightsRangeMax = lightsRangeMax;
@@ -184,7 +177,6 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mRoofMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 		
 	// Created the meshes, time to create the CVmObjects
-	mBackWallObj = CVmObj(mFarWallMesh);
 	mRoofObj = CVmObj(mRoofMesh);
 	mLeftWallObj = CVmObj(mSideWallMesh);
 	mRightWallObj = CVmObj(mSideWallMesh);
@@ -208,16 +200,19 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mSideWallSilhouetteLineMesh.ForceMaterial(silhouetteMaterial);
 
 	// Adding the silhouettes lines to every wall in the room
-	AddSilhouetteLines(mBackWallObj, 0);
 	AddSilhouetteLines(mLeftWallObj, 1);
 	AddSilhouetteLines(mRightWallObj, 1);
 	AddSilhouetteLines(mRoofObj, 2);
 	
 	// If the room has a front wall I create that too
-	if(mHasFront)
-	{
+	if(mHasFront){
 		mFrontWallObj = CVmObj(mFarWallMesh);
 		AddSilhouetteLines(mFrontWallObj, 0);
+	}
+	
+	if(mHasBack){
+		mBackWallObj = CVmObj(mFarWallMesh);
+		AddSilhouetteLines(mBackWallObj, 0);		
 	}
 		
 	if(mHasFloor){
@@ -236,7 +231,9 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	// Creating the container object. Each wall is translated to ro the right positions, sometimes using little offset so that they're 
 	// NOT completely attached; this way the black contour created using the silhouette shader can be seen. These offset values are a bit random
 	mRoom = CVmObj();
-	mRoom.AddChild(mBackWallObj, 0, 0, 0 * SCALE_FACTOR);
+	if(mHasBack)
+		mRoom.AddChild(mBackWallObj, 0, 0, 0 * SCALE_FACTOR);
+		
 	mRoom.AddChild(mRoofObj, 0, mHalfHeight + 0 * SCALE_FACTOR, mHalfSideWidth);
 	
 	if(mHasFloor)

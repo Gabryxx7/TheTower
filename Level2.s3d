@@ -58,6 +58,7 @@ class Level2
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
+	var mElevatorWall;
 	
 	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
 	// draw the silhouettes for the portals' frames
@@ -154,7 +155,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, false);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, false, false);
 	mPitRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, true, 0, 0, false);	
 	mPitRoom.Rotate(-90, 1, 0, 0);	
 	
@@ -229,6 +230,37 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mElevator = elevator;
 	mElevator.SetLightsRange(0,2);
 	
+	var mElevatorWallMeshes = {};
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-ROOM_FAR_WALL_WIDTH/2, -(ROOM_HEIGHT/2 - mElevator.GetRoomHeight()/2), 0], [ROOM_FAR_WALL_WIDTH/2, +(ROOM_HEIGHT/2 - mElevator.GetRoomHeight()/2), 0], 2, 2));
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-(ROOM_FAR_WALL_WIDTH/2-mElevator.GetRoomWidth()/2)/2, -(mElevator.GetRoomHeight())/2, 0], [(ROOM_FAR_WALL_WIDTH/2-mElevator.GetRoomWidth()/2)/2, +(mElevator.GetRoomHeight())/2, 0], 2, 2));
+	mElevatorWall = CVmObj();
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[0]), 0, (ROOM_HEIGHT/2 + mElevator.GetRoomHeight()/2),-ROOM_SIDE_WALL_WIDTH/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), (ROOM_FAR_WALL_WIDTH/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -ROOM_SIDE_WALL_WIDTH/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), -(ROOM_FAR_WALL_WIDTH/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -ROOM_SIDE_WALL_WIDTH/2);
+	for(var i = 0; i < len(mElevatorWallMeshes); i++){		
+		if(USE_TOON_SHADER == 2){		
+			mElevatorWallMeshes[i].ShaderAdd("antishader.glsl", 0);
+			mElevatorWallMeshes[i].ShaderActivate(true);
+		}
+		else if(USE_TOON_SHADER == 1){
+			mElevatorWallMeshes[i].ShaderAdd("toonShader.glsl", 0);
+			mElevatorWallMeshes[i].ShaderActivate(true);		
+		}
+		else if(USE_TOON_SHADER == 0){
+			mElevatorWallMeshes[i].ShaderActivate(false);				
+		}
+		
+		// Passing the material parameters of the mesh to the shader, and also the light number that has to be used to render the lighting on the mesh
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "shininess", 0, 0);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "lightsRangeMin", 0, 0);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "lightsRangeMax", 0, 2);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+		mElevatorWallMeshes[i].ShaderSetParameter(0, "alpha", 0, 1.0);
+	}
+	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
 	
@@ -247,8 +279,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
-	mElevator.SetPosition(mElevator.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2 + mElevator.GetRoomWidth()]);
-	mCamera.SetPosition(mCamera.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2 + mElevator.GetRoomWidth()]);
+	mElevator.SetPosition(mElevator.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2]);
+	mCamera.SetPosition(mCamera.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2]);
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
@@ -264,8 +296,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	///// NUMBER PAD GENERATION /////
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
-	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x * 2), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y * 2)];
-	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0], [buttonsSize.x*5, mElevator.GetRoomHeight(), buttonsSize.y*1.5]);	
+	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x*1.5), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y*1.4)];
+	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0], [buttonsSize.x*5, mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, buttonsSize.y*1.5]);	
 /////////////////////////////////////////////////////////
 	
 //	///// CONTAINER BOX GENERATION /////
@@ -302,19 +334,19 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	//From leftmost to rightmost		
 	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [-1,4,-2,5,-1,5,-1,4,-2,4,-2,7,-2,6,-1,4,-1,7,-2,4,-2,6,-1,7,-2,2,-1,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0], soundsRange));	 //GREEN
+	aadd(paths, TilesPath(tileMesh, [-1,4,-2,5,-1,5,-1,4,-2,4,-2,8,-2,6,-1,5,-1,7,-2,5,-2,6,-1,7,-2,2,-1,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0], soundsRange));	 //GREEN
 	
 	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [2,-1,1,-2,5,-1,4,-2,14,-2,2,-1,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1], soundsRange));//LIGHT BLUE
+	aadd(paths, TilesPath(tileMesh, [2,-1,1,-2,5,-1,4,-2,17,-2,2,-1,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1], soundsRange));//LIGHT BLUE
 	
 	startingTilesPos = elevatorFrontPosition + [0, 0, 0];
-	aadd(paths, TilesPath(tileMesh, [10,-1,4,-2,9,-2,4,-1,7,-2,-2,7,-1,4,-2,9,-2,3], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0], soundsRange));//RED
+	aadd(paths, TilesPath(tileMesh, [10,-1,4,-2,12,-2,4,-1,7,-2,-2,7,-1,4,-2,12,-2,3], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0], soundsRange));//RED
 	
 	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [2,-2,1,-1,5,-2,4,-1,14,-1,2,-2,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1], soundsRange));//WHITE;
+	aadd(paths, TilesPath(tileMesh, [2,-2,1,-1,5,-2,4,-1,17,-1,2,-2,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1], soundsRange));//WHITE;
 	
 	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [-2,4,-1,5,-2,5,-2,4,-1,4,-1,7,-1,6,-2,4,-2,7,-1,4,-1,6,-2,7,-1,2,-2,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1], soundsRange)); //BLUE
+	aadd(paths, TilesPath(tileMesh, [-2,4,-1,5,-2,5,-2,4,-1,4,-1,8,-1,6,-2,5,-2,7,-1,5,-1,6,-2,7,-1,2,-2,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1], soundsRange)); //BLUE
 	
 	//Adding as many randomObjects as the number of tilesPaths
 	for(var i = 0; i < len(paths); i++)
@@ -371,7 +403,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	musicCircleRadius = 5*SCALE_FACTOR;
 	musicCircle = CVmObj((CVmNewMesh(VRP_CYLINDER, 20, musicCircleRadius, tilesSize.y,1)));
-	musicCirclePosition = [0, -tilesSize.y*2, mElevator.GetRoomWidth()/2];
+	musicCirclePosition = [0, -tilesSize.y*2, 0];
 	musicCircle.SetPosition(musicCirclePosition);
 	musicCircleStepped = false;
 	
@@ -437,6 +469,7 @@ function Level2::Render()
 			mPitRoom.Draw();
 			
 			mMainRoom.Draw();
+			mElevatorWall.Draw();
 			
 			var tilesObjs;
 			var steppedTilesObjs;
