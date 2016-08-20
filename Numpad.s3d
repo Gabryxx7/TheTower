@@ -9,6 +9,8 @@ class Numpad{
 	var mHolderSizes;
 	var mScreenObj;
 	var mScreenNumbersObj;
+	var mScreenTextSize;
+	var mMaxDigitsOnScreen;
 	var mCharacters;
 	var mUnpressedButtonColor;
 	var mPressedButtonColor;
@@ -50,7 +52,7 @@ class Numpad{
 };
 
 
-function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor, holderSize){
+function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor, holderSize, maxDigitsOnScreen){
 	mTimefromLastAction = 0;
 	mNumpadPosition = numpadPosition;
 	mTextsObjs = {};
@@ -73,6 +75,8 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	mHolderSizes = holderSize;
 	mHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z));	
 	mHolderObj.SetPosition(numpadPosition.x+mButtonsWidth, 0, numpadPosition.z-mButtonsThickness);
+	
+	mScreenTextSize = mButtonsWidth * 0.7;
 
 	var withHolder = false;
 	if(valtype(holderSize) == "A")
@@ -93,10 +97,11 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	for(var i = 0; i < len(buttonsText) ; i++){	
 		if(buttonsText[i] == "\n"){
 			if(cols == 0){
-				mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(rows*mButtonsWidth + (spaceSize*(rows-1)) )/2, -offsetY/2, 0], [(rows*mButtonsWidth + (spaceSize*(rows-1)) )/2, offsetY/2, 0], 2, 2)));
-				mScreenObj.SetPosition(numpadPosition + [offsetX, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+				mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : rows+2;
+				mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2)));
+				mScreenObj.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
 				mScreenNumbersObj = CVmObj();
-				mScreenNumbersObj.SetPosition(numpadPosition + [offsetX, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+				mScreenNumbersObj.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);
 			}
 			i++;
 			cols++;
@@ -279,7 +284,7 @@ function Numpad::PressButton(buttonChar){
 	charObj.LinkToText(mScreenTextsMeshes[charPos]);
 	aadd(mCharOnScreen, charObj);
 	charObj.SetScale(0.1,0.1,0.1);
-	mScreenNumbersObj.AddChild(charObj, ((len(mCharOnScreen)-3.5)*SCALE_FACTOR)/3, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
+	mScreenNumbersObj.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
 	
 	//If it is not already pressed, I add it to the pressed buttons vector
 	if(!alreadyPressed){

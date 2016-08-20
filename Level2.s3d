@@ -293,14 +293,6 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mCameraYoffset = mCamera.GetPosition().y - mElevatorFinalPosition.y;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
-	
-	///// NUMBER PAD GENERATION /////
-	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
-	var buttonsSpacing = 0.04 * SCALE_FACTOR;
-	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x*1.5), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y*1.4)];
-	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0], [buttonsSize.x*5, mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, buttonsSize.y*1.5]);	
-/////////////////////////////////////////////////////////
-	
 //	///// CONTAINER BOX GENERATION /////
 //	var boxBordersThickness =  0.5*SCALE_FACTOR;
 //	var boxWidth = ROOM_SIDE_WALL_WIDTH/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
@@ -352,6 +344,14 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	//Adding as many randomObjects as the number of tilesPaths
 	for(var i = 0; i < len(paths); i++)
 		aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
+	
+	///// NUMBER PAD GENERATION /////
+	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
+	var buttonsSpacing = 0.04 * SCALE_FACTOR;
+	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x*1.5), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y*1.4)];
+	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0], [buttonsSize.x*len(paths), mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, buttonsSize.y*1.5], len(paths));	
+/////////////////////////////////////////////////////////
+	
 	
 	codeNumbers = {};
 	var finalPositions;
