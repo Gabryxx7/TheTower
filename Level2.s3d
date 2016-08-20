@@ -108,6 +108,7 @@ class Level2
 	var animStarted;
 	
 	var timeFromLastSound;
+	var timeFromLastClick;
 	var musicPlaying;
 		
 	// Private functions
@@ -408,6 +409,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	musicCircleStepped = false;
 	
 	timeFromLastSound = 0;
+	timeFromLastClick = 0;
 	musicPlaying = false;
 	pathAnim = false;
 	animStarted = false;
@@ -791,15 +793,18 @@ function Level2::UpdateLogic(dt)
 			}				
 			
 			var pressedButton = -1;
+			
+			
+			
 			if(mIsVRon){
 				if(numpadClearNeeded == 0 && !doorUnlocked){
-					pressedButton = numpadObj.ButtonPressedByObject(mControllersArray[0].GetPosition(), mInputManager, 1);
-					pressedButton = numpadObj.ButtonPressedByObject(mControllersArray[1].GetPosition(), mInputManager, 2);
+					pressedButton = numpadObj.PressTouchedButton(mControllersArray[0].GetPosition(), mInputManager, 1);
+					pressedButton = numpadObj.PressTouchedButton(mControllersArray[1].GetPosition(), mInputManager, 2);
 				}			
 			}
 			else if(debugVrOn){
 				if(numpadClearNeeded == 0 && !doorUnlocked){
-					pressedButton = numpadObj.ButtonPressedByObject(mDebugController.GetPosition());
+					pressedButton = numpadObj.PressTouchedButton(mDebugController.GetPosition());
 				}
 			}
 			else {
@@ -810,11 +815,17 @@ function Level2::UpdateLogic(dt)
 					pressedKey = Keyboard();
 					
 					if(pressedKey != ""){
-						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){
-							numpadObj.PressButton(pressedKey);	
-							numpadObj.AnimateButton(pressedKey, mAnimator);		
+						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){	
 							pressedButton = pressedKey;						
+							numpadObj.PressButton(pressedButton);	
+							numpadObj.AnimateButton(pressedButton, mAnimator);	
 						}
+					}
+					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
+						outputln(timeFromLastClick);
+						timeFromLastClick = 0;
+						pressedButton = numpadObj.PressPointedButton(mCamera, cameraPosition);	
+						numpadObj.AnimateButton(pressedButton, mAnimator);						
 					}
 				}
 				else{				
@@ -948,6 +959,7 @@ function Level2::UpdateLogic(dt)
 		}
 	}
 	
+	timeFromLastClick = (timeFromLastClick > 1) ? timeFromLastClick : timeFromLastClick += dt;
 	timeFromLastSound = (timeFromLastSound > 1) ? timeFromLastSound : timeFromLastSound += dt;
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
