@@ -41,7 +41,7 @@ class Numpad{
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
 	PressAllButtons();
-	ButtonPressedByObject(objPos, pViveObj);
+	ButtonPressedByObject(objPos, pViveObj, controllerIndex);
 };
 
 
@@ -314,7 +314,7 @@ function Numpad::UnpressButton(buttonChar){
 	return true;
 }
 
-function Numpad::ButtonPressedByObject(objPos, inputManager){
+function Numpad::ButtonPressedByObject(objPos, inputManager, controllerIndex){
 	var usingVive = valtype(inputManager) == "" ? false : true;
 	var buttonPos;
 	var maxDepth = mButtonsThickness * 0.8;
@@ -328,7 +328,7 @@ function Numpad::ButtonPressedByObject(objPos, inputManager){
 				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, objPos.z + mTextOffset]);	
 				if(PressButton(mCharacters[i]) == 1){
 					if(usingVive){
-						inputManager.VibrateController(1, 100);
+						inputManager.VibrateController(controllerIndex, 100);
 					}
 					return mCharacters[i];					
 				}

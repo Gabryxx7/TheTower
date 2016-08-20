@@ -280,7 +280,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
 	mElevator.SetPosition(mElevator.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2]);
-	mCamera.SetPosition(mCamera.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2]);
+	mCamera.SetPosition(mCamera.GetPosition() +[0,0, -ROOM_SIDE_WALL_WIDTH/2] - mOpenglTranslationOffset);
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
@@ -686,10 +686,8 @@ function Level2::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-//		    	mInputManager.RestoreCameraPosition();
-//			
-			var cameraPos = mCamera.GetPosition();
+			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
 			
 			var stepDistance = pathAnim ? 8*SCALE_FACTOR : 3*SCALE_FACTOR;				
 			var tilePos;
@@ -704,7 +702,7 @@ function Level2::UpdateLogic(dt)
 				
 				for(var i = 0; i < len(tilesObjs); i++){			
 					tilePos = tilesObjs[i].GetPosition();
-					if(cameraPos.x < tilePos.x + stepDistance && cameraPos.x > tilePos.x - stepDistance && cameraPos.z < tilePos.z + stepDistance && cameraPos.z  > tilePos.z - stepDistance){
+					if(cameraPosition.x < tilePos.x + stepDistance && cameraPosition.x > tilePos.x - stepDistance && cameraPosition.z < tilePos.z + stepDistance && cameraPosition.z  > tilePos.z - stepDistance){
 						if(pathAnim)
 							mAnimator.CreateTransition(tilesObjs[i], tilesObjs[i].GetPosition() + [0, -10*SCALE_FACTOR, 0], tilesObjs[i].GetPosition(), 0.25, false);
 							
@@ -793,17 +791,22 @@ function Level2::UpdateLogic(dt)
 			}				
 			
 			var pressedButton = -1;
-			if(mIsVRon || debugVrOn){
+			if(mIsVRon){
+				if(numpadClearNeeded == 0 && !doorUnlocked){
+					pressedButton = numpadObj.ButtonPressedByObject(mControllersArray[0].GetPosition(), mInputManager, 1);
+					pressedButton = numpadObj.ButtonPressedByObject(mControllersArray[1].GetPosition(), mInputManager, 2);
+				}			
+			}
+			else if(debugVrOn){
 				if(numpadClearNeeded == 0 && !doorUnlocked){
 					pressedButton = numpadObj.ButtonPressedByObject(mDebugController.GetPosition());
-//					pressedButton = numpadObj.ButtonPressedByObject(mDebugController.GetPosition(), mInputManager);
-				}			
+				}
 			}
 			else {
 				var nearNumpadOffset = 8 * SCALE_FACTOR;
 				var pressedKey;
-				if(!doorUnlocked && (mCamera.GetPosition().x > (numpadPos.x - nearNumpadOffset)) && (mCamera.GetPosition().x < (numpadPos.x + nearNumpadOffset)) &&
-				   numpadClearNeeded == 0 && (mCamera.GetPosition().z > (numpadPos.z - nearNumpadOffset)) && (mCamera.GetPosition().z < (numpadPos.z + nearNumpadOffset))){
+				if(!doorUnlocked && (cameraPosition.x > (numpadPos.x - nearNumpadOffset)) && (cameraPosition.x < (numpadPos.x + nearNumpadOffset)) &&
+				   numpadClearNeeded == 0 && (cameraPosition.z > (numpadPos.z - nearNumpadOffset)) && (cameraPosition.z < (numpadPos.z + nearNumpadOffset))){
 					pressedKey = Keyboard();
 					
 					if(pressedKey != ""){
@@ -857,11 +860,11 @@ function Level2::UpdateLogic(dt)
 				}
 			}				
 			
-			var cameraPositon = mCamera.GetPosition();
+			
 			var time = (Rand(10)+ 11) / 5;
 			var objPos;
 			var musicRadius = musicCircleRadius*1.7; 
-			var distanceFromCircle = sqrt((cameraPositon.x-musicCirclePosition.x)*(cameraPositon.x-musicCirclePosition.x) + (cameraPositon.z-musicCirclePosition.z)*(cameraPositon.z-musicCirclePosition.z));
+			var distanceFromCircle = sqrt((cameraPosition.x-musicCirclePosition.x)*(cameraPosition.x-musicCirclePosition.x) + (cameraPosition.z-musicCirclePosition.z)*(cameraPosition.z-musicCirclePosition.z));
 			if(distanceFromCircle  < musicRadius*musicRadius){
 				if(!musicPlaying){
 					musicPlaying = true;
