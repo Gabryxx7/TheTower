@@ -2,32 +2,45 @@ class Numpad{
 	var mButtonsObjs;
 	var mPressedButtonsObjs;
 	var mUnpressedButtonsObjs;
+	
 	var mTextsObjs;
-	var mScreenTextsMeshes;
-	var mCharOnScreen;
+	
 	var mHolderObj;
 	var mHolderSizes;
+	
+	var mScreenTextsMeshes;
+	var mCharOnScreen;
 	var mScreenObj;
-	var mScreenNumbersObj;
+	var mScreenTextObjs;
 	var mScreenTextSize;
 	var mMaxDigitsOnScreen;
+	
 	var mCharacters;
+	
 	var mUnpressedButtonColor;
 	var mPressedButtonColor;
 	var mWrongCodeColor;
-	var mTextColor;
+	var mSecondaryColor;
+	var mButtonsTextColor;
+	var mScreenColor;
+	var mScreenTextColor;
+	
 	var mButtonsThickness;
 	var mButtonsWidth;
+	
 	var mOriginalButtonPos;
 	var mOriginalTextPos;
+	
 	var mTextOffset;
+	
 	var mTimefromLastAction;
+	
 	var mNumpadPosition;
 	
 	Draw(drawButtons, drawPressedButtons, drawText);
 	DrawHolder();
 	DrawScreen();
-	DrawScreenNumbers();
+	DrawScreenText();
 	GetButtonsObjs();
 	GetHolderObj();
 	GetHolderSizes();
@@ -37,7 +50,10 @@ class Numpad{
 	GetUnpressedButtonColor();
 	GetPressedButtonColor();
 	GetWrongCodeColor();
-	GetTextColor();
+	GetButtonsTextColor();
+	GetSecondaryColor();
+	GetScreenTextColor();
+	GetScreenColor();
 	GetButtonObj(buttonChar);
 	GetNumpadCharacters();	
 	AnimateButton(buttonChar, mAnimator);
@@ -52,7 +68,7 @@ class Numpad{
 };
 
 
-function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor, holderSize, maxDigitsOnScreen){
+function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, secondaryColor, buttonsTextColor, holderSize, maxDigitsOnScreen, screenColor, screenTextColor){
 	mTimefromLastAction = 0;
 	mNumpadPosition = numpadPosition;
 	mTextsObjs = {};
@@ -68,19 +84,18 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	mPressedButtonColor = pressedButtonColor;
 	mUnpressedButtonColor = unpressedButtonColor;
 	mWrongCodeColor = wrongCodeColor;
-	mTextColor = textColor;
+	mSecondaryColor = secondaryColor;
+	mButtonsTextColor = buttonsTextColor;
 	mButtonsThickness = tilesThickness;
 	mButtonsWidth = tilesSize;
 	mTextOffset = 0.02*SCALE_FACTOR;
 	mHolderSizes = holderSize;
 	mHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z));	
 	mHolderObj.SetPosition(numpadPosition.x+mButtonsWidth, 0, numpadPosition.z-mButtonsThickness);
+	mScreenColor = valtype(screenColor) == "V" ? mScreenColor : [0.35,0.8,0.35];
+	mScreenTextColor = valtype(screenTextColor) == "V" ? mScreenTextColor : [0,0,0];
 	
 	mScreenTextSize = mButtonsWidth * 0.7;
-
-	var withHolder = false;
-	if(valtype(holderSize) == "A")
-		withHolder = true;
 		
 	
 	var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
@@ -100,8 +115,8 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 				mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : rows+2;
 				mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2)));
 				mScreenObj.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
-				mScreenNumbersObj = CVmObj();
-				mScreenNumbersObj.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);
+				mScreenTextObjs = CVmObj();
+				mScreenTextObjs.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);
 			}
 			i++;
 			cols++;
@@ -111,7 +126,7 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 		
 		txt = CVmText();		
 		txt.Load(upper(buttonsText[i]));
-		txt.SetColor(textColor.r, textColor.g, textColor.b);
+		txt.SetColor(mButtonsTextColor.r, mButtonsTextColor.g, mButtonsTextColor.b);
 		
 		
 		txtObj = CVmObj();
@@ -132,7 +147,7 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 		
 		var screenTxt = CVmText();		
 		screenTxt.Load(upper(buttonsText[i]));
-		screenTxt.SetColor(textColor.r, textColor.g, textColor.b);
+		screenTxt.SetColor(mScreenTextColor.r, mScreenTextColor.g, mScreenTextColor.b);
 		aadd(mScreenTextsMeshes, screenTxt);
 	}	
 }
@@ -172,8 +187,8 @@ function Numpad::DrawScreen(){
 	mScreenObj.Draw();
 }
 
-function Numpad::DrawScreenNumbers(){
-	mScreenNumbersObj.Draw();
+function Numpad::DrawScreenText(){
+	mScreenTextObjs.Draw();
 }
 
 
@@ -225,9 +240,22 @@ function Numpad::GetWrongCodeColor(){
 	return mWrongCodeColor;
 }
 
-function Numpad::GetTextColor(){
-	return mTextColor;
+function Numpad::GetButtonsTextColor(){
+	return mButtonsTextColor;
 }
+
+function Numpad::GetSecondaryColor(){
+	return mSecondaryColor;
+}
+
+function Numpad::GetScreenTextColor(){
+	return mScreenTextColor;
+}
+
+function Numpad::GetScreenColor(){
+	return mScreenColor;
+}
+
 
 function Numpad::AnimateButton(buttonChar, mAnimator){	
 	var charPos = -1;
@@ -284,7 +312,7 @@ function Numpad::PressButton(buttonChar){
 	charObj.LinkToText(mScreenTextsMeshes[charPos]);
 	aadd(mCharOnScreen, charObj);
 	charObj.SetScale(0.1,0.1,0.1);
-	mScreenNumbersObj.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
+	mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
 	
 	//If it is not already pressed, I add it to the pressed buttons vector
 	if(!alreadyPressed){
@@ -389,7 +417,7 @@ function Numpad::PressAllButtons(){
 function Numpad::UnpressAllButtons(){		
 	//Remove chars from the screen
 	while(len(mCharOnScreen) > 0){
-		mScreenNumbersObj.RemoveChild(mCharOnScreen[0]);
+		mScreenTextObjs.RemoveChild(mCharOnScreen[0]);
 		adel(mCharOnScreen, 0);		
 	}
 			

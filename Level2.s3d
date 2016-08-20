@@ -349,7 +349,13 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
 	var buttonsSpacing = 0.04 * SCALE_FACTOR;
 	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x*1.5), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y*1.4)];
-	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, [0.7,0.7,0.7], [0,0.8,0.0], [0.8,0.0,0.0], [0,0,0], [buttonsSize.x*len(paths), mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, buttonsSize.y*1.5], len(paths));	
+	var numpadHolderSize = [buttonsSize.x*len(paths), mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, buttonsSize.y*1.5];
+	var unpressedColor = [0.7,0.7,0.7];
+	var pressedColor = [0,0.8,0.0];
+	var wrongColor = [0.8,0.0,0.0];
+	var buttonsTextColor = [0.0,0.0,0.0];
+	var clearingColor = [0.8,0.8,0];
+	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize, len(paths));	
 /////////////////////////////////////////////////////////
 	
 	
@@ -552,10 +558,10 @@ function Level2::Render()
 		
 		numpadObj.DrawHolder();
 		
-		mToonShader.SetParameter("diffuse", [0.7,0.1,0.7]);
+		mToonShader.SetParameter("diffuse", numpadObj.GetScreenColor());
 		numpadObj.DrawScreen();
-		mToonShader.SetParameter("diffuse", [0.0,0.0,0.0]);
-		numpadObj.DrawScreenNumbers();
+		mToonShader.SetParameter("diffuse", numpadObj.GetScreenTextColor());
+		numpadObj.DrawScreenText();
 	
 		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
 		numpadObj.Draw(1,0,0);
@@ -563,7 +569,7 @@ function Level2::Render()
 		if(numpadClearNeeded == 1)			
 			mToonShader.SetParameter("diffuse", numpadObj.GetWrongCodeColor());
 		else if(numpadClearNeeded == 2)
-			mToonShader.SetParameter("diffuse", [0.8,0.8,0]);
+			mToonShader.SetParameter("diffuse", numpadObj.GetSecondaryColor());
 		else
 			mToonShader.SetParameter("diffuse", numpadObj.GetPressedButtonColor());
 			
