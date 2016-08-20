@@ -108,7 +108,7 @@ class Level2
 	var animStarted;
 	
 	var timeFromLastSound;
-	var timeFromLastAction;
+	var timeFromLastClick;
 	var musicPlaying;
 		
 	// Private functions
@@ -321,7 +321,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var randomMeshesLimits = [ROOM_SIDE_WALL_WIDTH/2 - 3*SCALE_FACTOR, ROOM_HEIGHT, ROOM_FAR_WALL_WIDTH/2 - 3*SCALE_FACTOR];
 	var randomMeshesPos = [0,-ROOM_HEIGHT/2,-ROOM_FAR_WALL_WIDTH/2];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var randomMeshNumber = 100; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomCubes = {};
 	paths = {};
@@ -344,7 +344,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	aadd(paths, TilesPath(tileMesh, [10,-1,4,-2,12,-2,4,-1,7,-2,-2,7,-1,4,-2,12,-2,3], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0], soundsRange));//RED
 	
 	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
-	aadd(paths, TilesPath(tileMesh, [2,-2,1,-1,5,-2,4,-1,17,-1,2,-2,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [1,1,1], soundsRange));//WHITE;
+	aadd(paths, TilesPath(tileMesh, [2,-2,1,-1,5,-2,4,-1,17,-1,2,-2,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.65,0.65], [1,1,1], soundsRange));//WHITE;
 	
 	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
 	aadd(paths, TilesPath(tileMesh, [-2,4,-1,5,-2,5,-2,4,-1,4,-1,8,-1,6,-2,5,-2,7,-1,5,-1,6,-2,7,-1,2,-2,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1], soundsRange)); //BLUE
@@ -409,7 +409,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	musicCircleStepped = false;
 	
 	timeFromLastSound = 0;
-	timeFromLastAction = 0;
+	timeFromLastClick = 0;
 	musicPlaying = false;
 	pathAnim = false;
 	animStarted = false;
@@ -749,9 +749,6 @@ function Level2::UpdateLogic(dt)
 						time = (Rand(10)+ 11) / 5;
 												
 						if(objsAnimations[i].x == 0){	
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 0);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 1);	//The animation is starting so I remove the rotation animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 2);	//The animation is starting so I remove the transition animation
 							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
 							objsAnimations[i].x = 1;
 							mAnimator.CreateTransition(cubesObjs[i], [objPos.x, objPos.y, objPos.z], [finalPos[i].x, objPos.y, objPos.z], time, false);
@@ -792,47 +789,48 @@ function Level2::UpdateLogic(dt)
 				}
 			}				
 			
-			var pressedButton = -1;
-			
-			
-			
-			if(mIsVRon){
-				if(numpadClearNeeded == 0 && !doorUnlocked){
-					pressedButton = numpadObj.PressTouchedButton(mControllersArray[0].GetPosition(), mInputManager, 1);
-					pressedButton = numpadObj.PressTouchedButton(mControllersArray[1].GetPosition(), mInputManager, 2);
-				}			
-			}
-			else if(debugVrOn){
-				if(numpadClearNeeded == 0 && !doorUnlocked){
-					pressedButton = numpadObj.PressTouchedButton(mDebugController.GetPosition());
+			var pressedButton = "";
+			//If the player is close to the numpad
+			if(!doorUnlocked && numpadObj.IsCameraInNumpadRange(cameraPosition, 8 * SCALE_FACTOR) && numpadClearNeeded == 0){
+			   	
+			   	
+				if(mIsVRon){
+					if(numpadClearNeeded == 0 && !doorUnlocked){
+						var vrPressedButton1 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[0].GetPosition(), dt, mInputManager, 1);
+						var vrPressedButton2 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[1].GetPosition(), dt, mInputManager, 2);
+						pressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;	
+					}			
 				}
-			}
-			else {
-				var nearNumpadOffset = 8 * SCALE_FACTOR;
-				var pressedKey;
-				if(!doorUnlocked && (cameraPosition.x > (numpadPos.x - nearNumpadOffset)) && (cameraPosition.x < (numpadPos.x + nearNumpadOffset)) &&
-				   numpadClearNeeded == 0 && (cameraPosition.z > (numpadPos.z - nearNumpadOffset)) && (cameraPosition.z < (numpadPos.z + nearNumpadOffset))){
-					pressedKey = Keyboard();
+				else if(debugVrOn){;
+					if(numpadClearNeeded == 0 && !doorUnlocked){
+						var vrPressedButton = numpadObj.PressTouchedButton(mDebugController.GetPosition(), dt);
+						pressedButton = vrPressedButton;
+					}
+				}
+				else {
+					 var pressedKey = Keyboard();
 					
 					if(pressedKey != ""){
 						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){	
-							pressedButton = pressedKey;						
-							numpadObj.PressButton(pressedButton);	
-							numpadObj.AnimateButton(pressedButton, mAnimator);	
+							pressedButton = pressedKey;	
+							numpadObj.PressButton(pressedButton);
+							numpadObj.AnimateButton(pressedButton, mAnimator);				
 						}
 					}
-					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastAction > 0.25){
-						timeFromLastAction = 0;
+					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
+						timeFromLastClick = 0;
 						pressedButton = numpadObj.PressPointedButton(mCamera, cameraPosition);	
-						numpadObj.AnimateButton(pressedButton, mAnimator);						
+						if(pressedButton != "")	
+							numpadObj.AnimateButton(pressedButton, mAnimator);			
 					}
 				}
-				else{				
-					Keyboard(); //Needed to process the input even when not close to the numpad. Otherwise it will go in a queue and will be processed as soon as I get closer to the numpad
-				}			
 			}
+			else{				
+				Keyboard(); //Needed to process the input even when not close to the numpad. Otherwise it will go in a queue and will be processed as soon as I get closer to the numpad
+			}	
 			
-			if(valtype(pressedButton) != "I"){
+			
+			if(pressedButton != ""){
 				if(asc(pressedButton) > 47 && asc(pressedButton) <= 48+9){
 					aadd(typedNumbers, val(pressedButton));
 				}
@@ -870,26 +868,29 @@ function Level2::UpdateLogic(dt)
 					numpadClearTime = 0;
 				}
 			}				
-			
-			
+						
 			var time = (Rand(10)+ 11) / 5;
 			var objPos;
 			var musicRadius = musicCircleRadius*1.7; 
 			var distanceFromCircle = sqrt((cameraPosition.x-musicCirclePosition.x)*(cameraPosition.x-musicCirclePosition.x) + (cameraPosition.z-musicCirclePosition.z)*(cameraPosition.z-musicCirclePosition.z));
+			//Distance from circle, if it is close to circles I switch music starting with volume = 0
 			if(distanceFromCircle  < musicRadius*musicRadius){
 				if(!musicPlaying){
 					musicPlaying = true;
 					mSoundManager.SetMusic("sounds/Deadmau5 Ft Rob Swire - Ghosts n Stuff.mp3", 0, false);
 					mSoundManager.PlayMusic();
-				}		
+				}
 				var volume = musicRadius*musicRadius - distanceFromCircle;
 				mSoundManager.SetMusicVolume(volume);
-			}
-			else if(musicPlaying){				
-				musicPlaying = false;
-				mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.7, true);
-				mSoundManager.PlayMusic();
-			}
+			}else if(distanceFromCircle  < musicRadius*musicRadius*1.5){ //If it's further I'll switch to the calm music with high volume that gets lower when getting closer to the outer circle
+				if(musicPlaying){				
+					musicPlaying = false;
+					mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 1, true);
+					mSoundManager.PlayMusic();	
+				}			
+				var volume = 1-(musicRadius*musicRadius*1.5 - distanceFromCircle);
+				mSoundManager.SetMusicVolume(volume);
+			} 
 			
 			if(distanceFromCircle  < musicCircleRadius*musicCircleRadius && !musicCircleStepped){
 				musicCircleStepped = true;
@@ -898,10 +899,6 @@ function Level2::UpdateLogic(dt)
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
 							objPos = randomCubes[j].GetObjs()[i].GetPosition();
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 0);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 1);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 2);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animat
 							time = (Rand(13)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(100)+ 50) / 7;
@@ -919,10 +916,6 @@ function Level2::UpdateLogic(dt)
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
 							objPos = randomCubes[j].GetObjs()[i].GetPosition();
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 0);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 1);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 2);	//The animation is starting so I remove the transition animation
-							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animat
 							time = (Rand(13)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(9)+ 11) / 5;			
@@ -959,7 +952,7 @@ function Level2::UpdateLogic(dt)
 		}
 	}
 	
-	timeFromLastAction = (timeFromLastAction > 1) ? timeFromLastAction : timeFromLastAction += dt;
+	timeFromLastClick = (timeFromLastClick > 1) ? timeFromLastClick : timeFromLastClick += dt;
 	timeFromLastSound = (timeFromLastSound > 1) ? timeFromLastSound : timeFromLastSound += dt;
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);

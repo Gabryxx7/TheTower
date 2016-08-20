@@ -137,7 +137,7 @@ function GameManager::GameManager(HMD)
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
-	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.5, true);
+	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true);
 	
 	if(MUSIC_ON)
 		mSoundManager.PlayMusic();

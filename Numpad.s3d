@@ -19,6 +19,8 @@ class Numpad{
 	var mOriginalButtonPos;
 	var mOriginalTextPos;
 	var mTextOffset;
+	var mTimefromLastAction;
+	var mNumpadPosition;
 	
 	Draw(drawButtons, drawPressedButtons, drawText);
 	DrawHolder();
@@ -39,14 +41,18 @@ class Numpad{
 	AnimateButton(buttonChar, mAnimator);
 	PressButton(buttonChar);
 	PressPointedButton(mCamera, cameraPosition);
-	PressTouchedButton(objPos, pViveObj, controllerIndex);
+	PressTouchedButton(objPos, dt, pViveObj, controllerIndex);
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
 	PressAllButtons();
+	
+	IsCameraInNumpadRange(cameraPosition, range);
 };
 
 
 function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, textColor, holderSize){
+	mTimefromLastAction = 0;
+	mNumpadPosition = numpadPosition;
 	mTextsObjs = {};
 	mButtonsObjs = {};
 	mScreenTextsMeshes = {};
@@ -246,7 +252,7 @@ function Numpad::PressPointedButton(mCamera, cameraPosition){
 		}	
 	}
 	
-	return -1;
+	return "";
 }
 
 //-1 not present, 0 already pressed, 1 was not pressed, now it is pressed
@@ -328,7 +334,8 @@ function Numpad::UnpressButton(buttonChar){
 	return true;
 }
 
-function Numpad::PressTouchedButton(objPos, inputManager, controllerIndex){
+function Numpad::PressTouchedButton(objPos, dt, inputManager, controllerIndex){
+	mTimefromLastAction += dt;
 	var usingVive = valtype(inputManager) == "" ? false : true;
 	var buttonPos;
 	var maxDepth = mButtonsThickness * 0.8;
@@ -339,14 +346,17 @@ function Numpad::PressTouchedButton(objPos, inputManager, controllerIndex){
 		&& objPos.y >= buttonPos.y - offsets.y && objPos.y <= buttonPos.y + offsets.y){
 			if(objPos.z >= buttonPos.z - maxDepth && objPos.z <= buttonPos.z){
 				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, objPos.z]);
-				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, objPos.z + mTextOffset]);	
-				if(PressButton(mCharacters[i]) == 1){
-					if(usingVive){
-						inputManager.VibrateController(controllerIndex, 100);
+				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, objPos.z + mTextOffset]);
+				if(mTimefromLastAction > 0.4){
+					mTimefromLastAction = 0;
+					if(PressButton(mCharacters[i]) > -1){
+						if(usingVive){
+							inputManager.VibrateController(controllerIndex, 100);
+						}
+						return mCharacters[i];						
 					}
-					return mCharacters[i];					
 				}
-				return -1;
+				return "";
 			}
 		}
 		else{
@@ -354,7 +364,7 @@ function Numpad::PressTouchedButton(objPos, inputManager, controllerIndex){
 			mTextsObjs[i].SetPosition(mOriginalTextPos[i]);
 		}
 	}	
-	return -1;
+	return "";
 }
 
 function Numpad::PressAllButtons(){	
@@ -391,4 +401,10 @@ function Numpad::UnpressAllButtons(){
 	for(var i = 0; i < len(mButtonsObjs); i++){		
 		aadd(mUnpressedButtonsObjs, mButtonsObjs[i]);	
 	}
+}
+
+
+function Numpad::IsCameraInNumpadRange(cameraPosition, range){
+	return (cameraPosition.x > (mNumpadPosition.x - range)) && (cameraPosition.x < (mNumpadPosition.x + range)) &&
+		   (cameraPosition.z > (mNumpadPosition.z - range)) && (cameraPosition.z < (mNumpadPosition.z + range));
 }
