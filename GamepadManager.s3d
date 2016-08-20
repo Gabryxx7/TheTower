@@ -27,6 +27,7 @@ class GamepadManager
 	
 	// Bool that is true when the left button of the mouse is being pressed
 	var mIsPressingMouseL;
+	var mIsPressingMenuButton;
 	
 	// Previous mouse values for X and Y; used to update the camera's orientation
 	var mPreviousX;
@@ -53,6 +54,7 @@ class GamepadManager
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton();
 	IsPressingSecondaryButton();
+	HasPressedMenuButton();
 	GetController(controllerIndex);
 };
 
@@ -74,6 +76,8 @@ function GamepadManager::GamepadManager(joystick)
 	mDebugMode = false;
 	
 	mKeyPressedTime = 0;
+	
+	mIsPressingMenuButton = false;
 	
 	mJoystick = joystick;
 	
@@ -301,6 +305,23 @@ function GamepadManager::IsPressingPrimaryButton()
 function GamepadManager::IsPressingSecondaryButton()
 {
 	return mJoystick.button7;
+}
+
+
+function GamepadManager::HasPressedMenuButton()
+{
+	if(mJoystick.button2)
+	{
+		if(!mIsPressingMenuButton)
+		{
+			mIsPressingMenuButton = true;
+			return true;
+		}
+	}
+	else
+		mIsPressingMenuButton = false;
+		
+	return false;
 }
 
 function GamepadManager::GetController(controllerIndex)

@@ -365,7 +365,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var numPosOffset = len(randomCubes)/2;
 	var numberPosition;
 	for(var i = 0; i < len(randomCubes); i++){
-		numberPosition = randomMeshesPos + [(13*cubeSizes)*(numPosOffset--), randomMeshesLimits.y-(7*SCALE_FACTOR), randomMeshesLimits.z*2-(2*SCALE_FACTOR)];
+		numberPosition = [(13*cubeSizes)*(numPosOffset--), ROOM_HEIGHT/2-3.5*SCALE_FACTOR, ROOM_FAR_WALL_WIDTH/2 - 3*SCALE_FACTOR];
 		for(var j = 0; j < randomMeshNumber; j++){
 			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
 			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
