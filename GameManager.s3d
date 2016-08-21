@@ -10,9 +10,14 @@ global var SCALE_FACTOR = 0.2;
 
 
 #include "Utils.s3d"
+#include "Numpad.s3d"
 #include "ViveController.s3d"
 #include "DrawingsConnector.s3d"
 #include "GlassBox.s3d"
+#include "TilesPath.s3d"
+#include "CubeNumbers.s3d"
+#include "RandomMeshes.s3d"
+#include "MarcelloUtils.s3d"
 #include "Level0.s3d"
 #include "LevelMenu.s3d"
 #include "Level1.s3d"

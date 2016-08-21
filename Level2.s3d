@@ -1,9 +1,4 @@
 //#include <Utils.s3d>
-#include <MarcelloUtils.s3d>
-#include <TilesPath.s3d>
-#include <CubeNumbers.s3d>
-#include <Numpad.s3d>
-#include <RandomMeshes.s3d>
 
 #define PIT_WIDTH 25.0 * SCALE_FACTOR
 #define PIT_HEIGHT 1000.0 * SCALE_FACTOR
