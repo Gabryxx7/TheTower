@@ -77,7 +77,6 @@ function TilesPath::TilesPath(tileMesh, pathVector, tilesWidth, spacing, startin
 
 function TilesPath::newTile(mesh, prevTilePos, offsets){
 	var newObj = CVmObj(mesh);
-	newObj.rotate(90, 1, 0, 0);
 	newObj.SetPosition(prevTilePos.x + offsets.x, prevTilePos.y + offsets.y, prevTilePos.z + offsets.z);	
 	return newObj;
 }

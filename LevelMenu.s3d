@@ -9,6 +9,15 @@ class LevelMenu
 	var menuRoom_BordersThickness ;
 	var mIsVRon;
 	
+	
+	var numberOfLevels;
+	var towerLevelHeight;
+	var towerLevelWidth;
+	var towerConnectionsHeight;
+	var towerConnectionsWidth;
+	var towerLevels;
+	var towerConnectionos;
+	
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
@@ -49,6 +58,9 @@ class LevelMenu
 	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
 	// draw the silhouettes for the portals' frames
 	var mSilhouetteShader;
+	var mSpotShader;
+	var mToonShader;
+	var mAlphaShader;
 		
 	var mOpenglTranslationOffset;
 	
@@ -77,6 +89,10 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 {		
 	mIsVRon = isVRon;
 	
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	mToonShader = CVmShaderProgram("toonShader.glsl");	
+	mAlphaShader = CVmShaderProgram("colorModulatorShader.glsl");	
+	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;	
 		
@@ -89,7 +105,6 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	menuRoom_Height = 19 * SCALE_FACTOR;
 	
 	menuRoom_BordersThickness =  2*SCALE_FACTOR;
-//	menuRoom_BordersThickness =  0.1*SCALE_FACTOR;
 	mMenuRoom = GlassBox(menuRoom_WidthFar, menuRoom_Height, menuRoom_WidthSide,  menuRoom_BordersThickness);
 	mMenuRoom.SetPosition([0,0,-menuRoom_WidthFar/2]);
 	
@@ -107,7 +122,23 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	text1.LinkToText(txt);
 	text1.rotate(-90,0,1,0);
 	// Adding each text to its portal room
-	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));
+	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));	
+	
+	towerLevelHeight = 20*SCALE_FACTOR;
+	towerLevelWidth =  25*SCALE_FACTOR;
+	towerConnectionsHeight = 14 * SCALE_FACTOR;
+	towerConnectionsWidth = 21*SCALE_FACTOR;
+	
+	towerLevels = CVmObj();
+	numberOfLevels = 50;
+	for(var i = 0; i < numberOfLevels; i++){
+		towerLevels.AddChild(CVmObj(CVmNewMesh(VRP_BOX,1, [-towerLevelWidth/2, -towerLevelHeight/2, 0], [towerLevelWidth/2, towerLevelHeight/2, 0], towerLevelWidth)), 0,(towerConnectionsHeight + towerLevelHeight)*i,0);
+		
+		if(i != numberOfLevels-1)
+			towerLevels.AddChild(CVmObj(CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth)), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i, -towerLevelWidth/2 + towerConnectionsWidth/2);
+	}
+	
+	towerLevels.SetPosition(-towerLevelWidth*5, -towerLevelHeight*(numberOfLevels/2), menuRoom_WidthFar/2 - towerConnectionsWidth/2);
 	
 	if(mIsVRon)
 	{
@@ -125,14 +156,14 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
-	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
+	mLight0Position = [-towerLevelWidth*4.8, 0, 0];
+	mLight1Position = [-towerLevelWidth*4.8, 0, 0];
+	mLight2Position = [0, menuRoom_Height/2, 0];
 	
 	var diffuseFactor = 0.05;
-	mLight0Diffuse = [diffuseFactor,diffuseFactor,diffuseFactor];
-	mLight1Diffuse = [diffuseFactor,diffuseFactor,diffuseFactor];
-	mLight2Diffuse = [diffuseFactor,diffuseFactor,diffuseFactor];
+	mLight0Diffuse = [1, 0, 0];
+	mLight1Diffuse = [0, 1, 1];
+	mLight2Diffuse = [1, 1, 1];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -173,17 +204,52 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
  */
 function LevelMenu::Render()
 {	
-	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
-	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
- 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
- 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+//	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
+//	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+// 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+// 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+ 	
+//	glEnable(GL_FOG);
+// 	glFog(GL_FOG_MODE, GL_EXP);
+// 	glFog(GL_FOG_DENSITY, 1);
+// 	glFog(GL_FOG_START, 1);
+// 	glFog(GL_FOG_END, 20);
+// 	glFog(GL_FOG_COLOR, [0,0,1,0.5]);
 	
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
-			mMenuRoom.Draw([1,1,1,0,1,1]);
        		DrawGrid([1,1,1], false, false, true, true, true, true);
        		text1.Draw();
+		
+			mToonShader.Start();
+				mToonShader.SetParameter("ambient", [1, 1, 1]);
+				mToonShader.SetParameter("diffuse", [1, 1, 1]);
+				mToonShader.SetParameter("specular", [1, 1, 1]);
+				mToonShader.SetParameter("shininess", 0);
+				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+				mToonShader.SetParameter("alpha", 1.0);
+				mToonShader.SetParameter("lightsRangeMin", 2);
+				mToonShader.SetParameter("lightsRangeMax", 2);
+				mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,1,1,1]);
+				
+				mToonShader.SetParameter("diffuse", [1, 1, 1]);
+				mToonShader.SetParameter("specular", [1, 1, 1]);
+				mToonShader.SetParameter("shininess", 0);
+				mToonShader.SetParameter("lightsRangeMin", 0);
+				mToonShader.SetParameter("lightsRangeMax", 1);
+	       		towerLevels.Draw();
+			mToonShader.Stop();
+			
+			
+		mAlphaShader.Start();
+			mAlphaShader.SetParameter("time", 0);
+			mAlphaShader.SetParameter("alpha", 0.3);
+			mAlphaShader.SetParameter("startingColor", [0.6, 0.6, 1]);
+			mAlphaShader.SetParameter("finalColor", [0.6, 0.6, 1]);
+			mMenuRoom.Draw([0,0,0,1,0,0], [0,0,0,0,0,0]);
+		mAlphaShader.Stop();
+			
 			break;
 	}
 	
@@ -284,7 +350,7 @@ function LevelMenu::SetupOpenglLights()
 function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor)
 {
    /* let's not mess up current OpenGL status */
-   glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
+//   glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
   
    glLineWidth(4);
    glDisable(GL_LIGHTING);

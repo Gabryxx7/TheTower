@@ -300,14 +300,14 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	///// PATHS + RANDOM MESHES GENERATION /////
 	var tilesSize = [2.75 * SCALE_FACTOR, 0.25 * SCALE_FACTOR]; //width x height
 	var tilesSpacing =  0.25 * SCALE_FACTOR;
-	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize.x/2, -tilesSize.x/2, 0], [tilesSize.x/2, tilesSize.x/2, 0], tilesSize.y);
-	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+tilesSize.x/2+tilesSpacing*3];	
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize.x/2, -tilesSize.y/2, 0], [tilesSize.x/2, tilesSize.y/2, 0], tilesSize.x);
+	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+(tilesSize.x+tilesSpacing*3)];	
 	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
 	
 	var randomMeshesLimits = [ROOM_FAR_WALL_WIDTH/2 - 2*SCALE_FACTOR, ROOM_HEIGHT, ROOM_SIDE_WALL_WIDTH/2 - 1*SCALE_FACTOR];
 	var randomMeshesPos = [0,-ROOM_HEIGHT,-ROOM_SIDE_WALL_WIDTH/2+1*SCALE_FACTOR];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	var randomMeshNumber = 15; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomCubes = {};
 	paths = {};
