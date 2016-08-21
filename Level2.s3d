@@ -2,7 +2,6 @@
 #include <MarcelloUtils.s3d>
 #include <TilesPath.s3d>
 #include <CubeNumbers.s3d>
-#include <GlassBox.s3d>
 #include <Numpad.s3d>
 #include <RandomMeshes.s3d>
 

@@ -23,6 +23,10 @@ class GlassBox{
 //	var mFloorBordersColor;
 	var mFloorPanel;
 //	var mFloorPanelColor;	
+	var mBoxWidth;
+	var mBoxHeight;
+	var mBoxThickness;
+	var mBorderThickness;
 	
 	Draw(panelsBoolean, bordersBoolean);
 	SetPosition(Pos);
@@ -45,95 +49,96 @@ class GlassBox{
 
 //function GlassBox::GlassBox(boxWidth, boxHeight, boxThickness, borderThickness, bordersColors, planesColors){
 function GlassBox::GlassBox(boxWidth, boxHeight, boxThickness, borderThickness){
-	var fixedOffset;	
 	
+	mBoxWidth = boxWidth/2;
+	mBoxHeight = boxHeight/2;
+	mBoxThickness = boxThickness/2;
+	mBorderThickness = borderThickness/2;
+		
 	var frontBackTopBottomMesh;
-	frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
+	frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBoxWidth, -mBorderThickness, 0], [mBoxWidth, mBorderThickness, 0], 2,2 );
 	
 	var frontBackLeftRightMesh;
-	frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
+	frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxHeight, 0], [mBorderThickness, mBoxHeight, 0], 2,2 );
 	
-	var frontBackMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth - borderThickness), -(boxHeight-borderThickness), 0], [+(boxWidth - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
+	var frontBackMesh = CVmNewMesh(VRP_PLANE, 1, [-(mBoxWidth - mBorderThickness*2), -(mBoxHeight-mBorderThickness*2), 0], [+(mBoxWidth - mBorderThickness*2), (mBoxHeight-mBorderThickness*2), 0], 2,2 );
 	
 	var sidesTopBottomMesh;
-	sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -boxThickness, 0], [borderThickness, boxThickness, 0], 2,2 );
+	sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxThickness, 0], [mBorderThickness, mBoxThickness, 0], 2,2 );
 	sidesTopBottomMesh.Rotate(90,0,0,1);
 	sidesTopBottomMesh.Rotate(90,0,1,0);
 	
 	var sidesLeftRightMesh;
-	sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxHeight+borderThickness), 0], [borderThickness, boxHeight+borderThickness, 0], 2,2 );
+	sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxHeight, 0], [mBorderThickness, mBoxHeight, 0], 2,2 );
 	sidesLeftRightMesh.Rotate(90,0,1,0);
 	
-	var sidesMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxThickness-borderThickness), -(boxHeight-borderThickness), 0], [+(boxThickness - borderThickness), (boxHeight-borderThickness), 0], 2,2 );
+	var sidesMesh = CVmNewMesh(VRP_PLANE, 1, [-(mBoxThickness-mBorderThickness*2), -(mBoxHeight-mBorderThickness*2), 0], [+(mBoxThickness - mBorderThickness*2), (mBoxHeight-mBorderThickness*2), 0], 2,2 );
 	sidesMesh.Rotate(90,0,1,0);
 	
 	var roofFloorLeftRightMesh;
-	roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-borderThickness, -(boxThickness+borderThickness), 0], [borderThickness, boxThickness+borderThickness, 0], 2,2 );
+	roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxThickness, 0], [mBorderThickness, mBoxThickness, 0], 2,2 );
 	roofFloorLeftRightMesh.Rotate(90,1,0,0);
 	
 	var roofFloorTopBottomMesh;
-	roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-boxWidth, -borderThickness, 0], [boxWidth, borderThickness, 0], 2,2 );
+	roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBoxWidth, -mBorderThickness, 0], [mBoxWidth, mBorderThickness, 0], 2,2 );
 	roofFloorTopBottomMesh.Rotate(90,1,0,0);	
 	
-	var roofFloorMesh = CVmNewMesh(VRP_PLANE, 1, [-(boxWidth-borderThickness), -(boxThickness-borderThickness), 0], [+(boxWidth - borderThickness), (boxThickness-borderThickness), 0], 2,2 );
+	var roofFloorMesh = CVmNewMesh(VRP_PLANE, 1, [-(mBoxWidth-mBorderThickness*2), -(mBoxThickness-mBorderThickness*2), 0], [+(mBoxWidth - mBorderThickness*2), (mBoxThickness-mBorderThickness*2), 0], 2,2 );
 	roofFloorMesh.Rotate(90,1,0,0);
 	
 	//front
 	mFrontBorders = CVmObj();
 	mFrontPanel = CVmObj();
-	fixedOffset = boxThickness*2+borderThickness;
-	mFrontBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	0, 		  	 		-borderThickness);
-	mFrontBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 	boxHeight*2, 		-borderThickness);
-	mFrontBorders.AddChild(CvmObj(frontBackLeftRightMesh),	boxWidth, 		boxHeight,   		-borderThickness);
-	mFrontBorders.AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		-borderThickness);	
-	mFrontPanel.AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			-borderThickness);
+	mFrontBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 		mBorderThickness, 		  	 		0);
+	mFrontBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 		 		mBoxHeight*2-mBorderThickness, 		0);
+	mFrontBorders.AddChild(CvmObj(frontBackLeftRightMesh),		(mBoxWidth-mBorderThickness), 	mBoxHeight,   						0);
+	mFrontBorders.AddChild(CvmObj(frontBackLeftRightMesh),		-(mBoxWidth-mBorderThickness), 	mBoxHeight,   						0);	
+	mFrontPanel.AddChild(CvmObj(frontBackMesh), 				0, 								mBoxHeight, 						0);
 	
 	//back
 	mBackBorders = CVmObj();
 	mBackPanel = CVmObj();
-	mBackBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			0, 		  	 		fixedOffset);
-	mBackBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 			boxHeight*2, 		fixedOffset);
-	mBackBorders.AddChild(CvmObj(frontBackLeftRightMesh), 	boxWidth, 		boxHeight,   		fixedOffset);
-	mBackBorders.AddChild(CvmObj(frontBackLeftRightMesh),	-boxWidth, 		boxHeight,   		fixedOffset);	
-	mBackPanel.AddChild(CvmObj(frontBackMesh), 			0, 				boxHeight, 			fixedOffset);	
+	mBackBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 				mBorderThickness, 		  	 		mBoxThickness*2);
+	mBackBorders.AddChild(CvmObj(frontBackTopBottomMesh), 		0, 				mBoxHeight*2-mBorderThickness, 		mBoxThickness*2);
+	mBackBorders.AddChild(CvmObj(frontBackLeftRightMesh), 		(mBoxWidth-mBorderThickness), 	mBoxHeight,   						mBoxThickness*2);
+	mBackBorders.AddChild(CvmObj(frontBackLeftRightMesh),		-(mBoxWidth-mBorderThickness), 	mBoxHeight,   						mBoxThickness*2);	
+	mBackPanel.AddChild(CvmObj(frontBackMesh), 					0, 								mBoxHeight, 						mBoxThickness*2);	
 	 
 	//sideLeft
 	mLeftBorders = CVmObj();
 	mLeftPanel = CVmObj();
-	fixedOffset = boxWidth+borderThickness;
-	mLeftBorders.AddChild(CvmObj(sidesTopBottomMesh),   	fixedOffset, 	0, 					boxThickness);
-	mLeftBorders.AddChild(cvmObj(sidesTopBottomMesh),   	fixedOffset, 	boxHeight*2, 		boxThickness);
-	mLeftBorders.AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset, 	boxHeight, 			boxThickness*2);
-	mLeftBorders.AddChild(CvmObj(sidesLeftRightMesh),   	fixedOffset,	boxHeight, 			0);
-	mLeftPanel.AddChild(CvmObj(sidesMesh), 				fixedOffset, 	boxHeight, 			boxThickness);
+	mLeftBorders.AddChild(CvmObj(sidesTopBottomMesh),   		mBoxWidth, 						mBorderThickness, 					mBoxThickness);
+	mLeftBorders.AddChild(cvmObj(sidesTopBottomMesh),   		mBoxWidth, 						mBoxHeight*2-mBorderThickness, 		mBoxThickness);
+	mLeftBorders.AddChild(CvmObj(sidesLeftRightMesh),   		mBoxWidth, 						mBoxHeight, 						mBoxThickness*2-mBorderThickness);
+	mLeftBorders.AddChild(CvmObj(sidesLeftRightMesh),   		mBoxWidth,						mBoxHeight, 						mBorderThickness);
+	mLeftPanel.AddChild(CvmObj(sidesMesh), 						mBoxWidth, 						mBoxHeight, 						mBoxThickness);
 	
 	//sideRight
 	mRightBorders = CVmObj();
 	mRightPanel = CVmObj();
-	mRightBorders.AddChild(CvmObj(sidesTopBottomMesh), 		-fixedOffset, 	0, 					boxThickness);
-	mRightBorders.AddChild(cvmObj(sidesTopBottomMesh), 		-fixedOffset, 	boxHeight*2, 		boxThickness);
-	mRightBorders.AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			boxThickness*2);
-	mRightBorders.AddChild(CvmObj(sidesLeftRightMesh), 		-fixedOffset, 	boxHeight, 			0);
-	mRightPanel.AddChild(CvmObj(sidesMesh), 				-fixedOffset, 	boxHeight, 			boxThickness);
+	mRightBorders.AddChild(CvmObj(sidesTopBottomMesh), 			-mBoxWidth, 					mBorderThickness, 					mBoxThickness);
+	mRightBorders.AddChild(cvmObj(sidesTopBottomMesh), 			-mBoxWidth, 					mBoxHeight*2-mBorderThickness, 		mBoxThickness);
+	mRightBorders.AddChild(CvmObj(sidesLeftRightMesh), 			-mBoxWidth, 					mBoxHeight, 						mBoxThickness*2-mBorderThickness);
+	mRightBorders.AddChild(CvmObj(sidesLeftRightMesh), 			-mBoxWidth, 					mBoxHeight, 						mBorderThickness);
+	mRightPanel.AddChild(CvmObj(sidesMesh), 					-mBoxWidth, 					mBoxHeight, 						mBoxThickness);
 	
 	//roof
 	mRoofBorders = CVmObj();
 	mRoofPanel = CVmObj();
-	fixedOffset = boxHeight*2 + borderThickness;
-	mRoofBorders.AddChild(CvmObj(roofFloorTopBottomMesh),  0,				fixedOffset, 		0);
-	mRoofBorders.AddChild(CvmObj(roofFloorTopBottomMesh),  0, 				fixedOffset, 		boxThickness*2);
-	mRoofBorders.AddChild(CvmObj(roofFloorLeftRightMesh),  boxWidth,		fixedOffset, 		boxThickness);
-	mRoofBorders.AddChild(CvmObj(roofFloorLeftRightMesh), -boxWidth,		fixedOffset, 		boxThickness);
-	mRoofPanel.AddChild(CvmObj(roofFloorMesh), 			0,				fixedOffset, 		boxThickness);
+	mRoofBorders.AddChild(CvmObj(roofFloorTopBottomMesh),  		0,								mBoxHeight*2, 						mBorderThickness);
+	mRoofBorders.AddChild(CvmObj(roofFloorTopBottomMesh),  		0, 								mBoxHeight*2, 						mBoxThickness*2-mBorderThickness);
+	mRoofBorders.AddChild(CvmObj(roofFloorLeftRightMesh), 		mBoxWidth-mBorderThickness,		mBoxHeight*2, 						mBoxThickness);
+	mRoofBorders.AddChild(CvmObj(roofFloorLeftRightMesh), 		-(mBoxWidth-mBorderThickness),	mBoxHeight*2, 						mBoxThickness);
+	mRoofPanel.AddChild(CvmObj(roofFloorMesh), 					0,								mBoxHeight*2, 						mBoxThickness);
 	
 	//floor
 	mFloorBorders = CVmObj();
 	mFloorPanel = CVmObj();
-	mFloorBorders.AddChild(CvmObj(roofFloorTopBottomMesh), 	0,				-borderThickness,	0);
-	mFloorBorders.AddChild(CvmObj(roofFloorTopBottomMesh), 	0, 				-borderThickness, 	boxThickness*2);
-	mFloorBorders.AddChild(CvmObj(roofFloorLeftRightMesh),	boxWidth,		-borderThickness, 	boxThickness);
-	mFloorBorders.AddChild(CvmObj(roofFloorLeftRightMesh),	-boxWidth,		-borderThickness, 	boxThickness);
-	mFloorPanel.AddChild(CvmObj(roofFloorMesh),			0,				-borderThickness, 	boxThickness);
+	mFloorBorders.AddChild(CvmObj(roofFloorTopBottomMesh), 		0,								0,									mBorderThickness);
+	mFloorBorders.AddChild(CvmObj(roofFloorTopBottomMesh), 		0, 								0, 									mBoxThickness*2-mBorderThickness);
+	mFloorBorders.AddChild(CvmObj(roofFloorLeftRightMesh),		mBoxWidth-mBorderThickness,		0, 									mBoxThickness);
+	mFloorBorders.AddChild(CvmObj(roofFloorLeftRightMesh),		-(mBoxWidth-mBorderThickness),	0, 									mBoxThickness);
+	mFloorPanel.AddChild(CvmObj(roofFloorMesh),					0,								0, 									mBoxThickness);
 }
 
 

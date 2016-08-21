@@ -6,6 +6,7 @@ class LevelMenu
 	var menuRoom_WidthFar;
 	var menuRoom_WidthSide;
 	var menuRoom_Height;
+	var menuRoom_BordersThickness ;
 	var mIsVRon;
 	
 	// Booleans that indicate if the level is starting or ending
@@ -56,7 +57,7 @@ class LevelMenu
 	
 	// Private functions
 	FadeToBlackScreen(fadeIn);
-	DrawGrid(color, size);
+	DrawGrid(color);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -86,7 +87,13 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	menuRoom_WidthFar = 45 * SCALE_FACTOR;
 	menuRoom_WidthSide = 45 * SCALE_FACTOR;
 	menuRoom_Height = 19 * SCALE_FACTOR;
-	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 1, 2);
+	
+	menuRoom_BordersThickness =  2*SCALE_FACTOR;
+//	menuRoom_BordersThickness =  0.1*SCALE_FACTOR;
+	mMenuRoom = GlassBox(menuRoom_WidthFar, menuRoom_Height, menuRoom_WidthSide,  menuRoom_BordersThickness);
+	mMenuRoom.SetPosition([0,0,-menuRoom_WidthFar/2]);
+	
+//	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 1, 2);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -174,8 +181,8 @@ function LevelMenu::Render()
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
-			mMenuRoom.Draw();
-       		DrawGrid([1,1,1], menuRoom_WidthFar);
+			mMenuRoom.Draw([1,1,1,0,1,1]);
+       		DrawGrid([1,1,1]);
        		text1.Draw();
 			break;
 	}
@@ -274,7 +281,7 @@ function LevelMenu::SetupOpenglLights()
 }
 
 
-function LevelMenu::DrawGrid(color, size)
+function LevelMenu::DrawGrid(color)
 {
    /* let's not mess up current OpenGL status */
    glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
@@ -282,51 +289,73 @@ function LevelMenu::DrawGrid(color, size)
    glLineWidth(4);
    glDisable(GL_LIGHTING);
    glColor(color);
-   var max = size / 2.0;
+   var max = menuRoom_WidthFar / 2.0;
    var min = -max;    
-   var step = size / 13.0;
-   var offset = (0.01*SCALE_FACTOR);
+   var step = menuRoom_WidthFar / 13.0;
+   var offset = (0.15*SCALE_FACTOR);
    glBegin(GL_LINES);
-   for(var i = 0; i < 3; i++){
-		switch(i){
+   for(var n = 0; n < 3; n++){
+		switch(n){
 			//Roof an floor
 			case 0: {
+				var y = 0;
 				for(var j = 0; j <= menuRoom_Height; j+=menuRoom_Height){
 					for (var i = min; i <= max; i += step)
 	         		{
-		                glVertex(i, j, max);
-		                glVertex(i, j, min);
+	         			if(j == 0)
+	         				y = offset;
+	         			else if( j == menuRoom_Height)
+	         				y = menuRoom_Height-offset;
+	         			else
+	         				y = j;
+	         				
+		                glVertex(i, y, max);
+		                glVertex(i, y, min);
 		               
-		                glVertex(max, j, i);
-		                glVertex(min, j, i);
+		                glVertex(max, y, i);
+		                glVertex(min, y, i);
 	                }	                
                 }
 			 	break;
 			 }
 			//side walls
 			case 1:{
+				var z = 0;
 				for(var j = -1; j < 2; j+=2){
 					for (var i = min; i <= max; i += step)
 	         		{
-		                glVertex(i, max, j*menuRoom_WidthFar/2-(j*offset));
-		                glVertex(i, min, j*menuRoom_WidthFar/2-(j*offset));
+	         			if(j < 0)
+	         				z = offset;
+	         			else if( j > 0)
+	         				z = -offset;
+	         			else
+	         				z = 0;
+		                glVertex(i, max, j*menuRoom_WidthFar/2+z);
+		                glVertex(i, min, j*menuRoom_WidthFar/2+z);
 		               
-		                glVertex(max, i, j*menuRoom_WidthFar/2-(j*offset));
-		                glVertex(min, i, j*menuRoom_WidthFar/2-(j*offset));
+		                glVertex(max, i, j*menuRoom_WidthFar/2+z);
+		                glVertex(min, i, j*menuRoom_WidthFar/2+z);
 	                }
                 }
 			 	break;
 			 }
 			//side walls
 			case 2:{
+				var x = 0;
 				for(var j = -1; j < 0; j+=2){
 					for (var i = min; i <= max; i += step)
 	         		{
-		                glVertex(j*menuRoom_WidthSide/2-(j*offset), max, i);
-		                glVertex(j*menuRoom_WidthSide/2-(j*offset), min, i);
+	         			if(j < 0)
+	         				x = offset;
+	         			else if( j > 0)
+	         				x = -offset;
+	         			else
+	         				x = 0;
+		                glVertex(j*menuRoom_WidthSide/2+x, max, i);
+		                glVertex(j*menuRoom_WidthSide/2+x, min, i);
 		               
-		                glVertex(j*menuRoom_WidthSide/2-(j*offset), i, max);
-		                glVertex(j*menuRoom_WidthSide/2-(j*offset), i, min);
+		                glVertex(j*menuRoom_WidthSide/2+x, i, max);
+		                glVertex(j*menuRoom_WidthSide/2+x, i, min);
 	                }
                 }
 			 	break;
