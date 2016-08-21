@@ -45,33 +45,46 @@ function TilesPath::TilesPath(tileMesh, pathVector, tilesWidth, spacing, startin
 	
 	var direction = [0,0,1,0]; //Defines in which direction the path is going
 	for(var i = 0; i < len(pathVector); i++){	
-		if(pathVector[i] < 0){
-			if(pathVector[i] == -1 && direction.z == 1){
-				direction = [1,0,0,1];
-			}else if(pathVector[i] == -2 && direction.z == 1){
-				direction = [-1,0,0,1];
-			}else if(pathVector[i] == -1 && direction.z == -1){
-				direction = [-1,0,0,1];			
-			}else if(pathVector[i] == -2 && direction.z == -1){
-				direction = [1,0,0,1];
-			}else if(pathVector[i] == -1 && direction.x == 1){
-				direction = [0,0,-1,1];			
-			}else if(pathVector[i] == -2 && direction.x == 1){
-				direction = [0,0,1,1];
-			}else if(pathVector[i] == -1 && direction.x == -1){
-				direction = [0,0,1,1];			
-			}else if(pathVector[i] == -2 && direction.x == -1){
-				direction = [0,0,-1,1];
-			}
-		}		
-		if(direction[3] == 0){
-			for(var j = 0; j < pathVector[i]; j++){
-				tileObj = newTile(tileMesh, tileObj.GetPosition(), [xOffset*direction.x, yOffset*direction.y, zOffset*direction.z]);				
-				aadd(mTilesObjs, tileObj);						
-			}			
-		}	
-		else
-			direction[3] = 0;
+		//If there are two turns in the same direction, than I'm going back on the same path
+		if(i < (len(pathVector)-2) && ((pathVector[i] == -1 && pathVector[i+1] == -1) || (pathVector[i] == -2 && pathVector[i+1] == -2))){
+			direction = -direction;	//I change the direction to the opposite way
+			i+=2;	//I'm going to skip the next peth step (the same turn)
+			//The next step should be going back of some tiles, usually the same amount of the previous step in that direction
+			//So I'm creating a fake tile in the new position, to avoid drawing on the already drawn tiles
+			tileObj = newTile(tileMesh, tileObj.GetPosition(), [xOffset*(pathVector[i])*direction.x, yOffset*direction.y, zOffset*(pathVector[i])*direction.z]);
+		}
+		else{
+			if(pathVector[i] < 0){
+				//If the path is going back in the same place
+				
+				if(pathVector[i] == -1 && direction.z == 1){
+					direction = [1,0,0,1];
+				}else if(pathVector[i] == -2 && direction.z == 1){
+					direction = [-1,0,0,1];
+				}else if(pathVector[i] == -1 && direction.z == -1){
+					direction = [-1,0,0,1];			
+				}else if(pathVector[i] == -2 && direction.z == -1){
+					direction = [1,0,0,1];
+				}else if(pathVector[i] == -1 && direction.x == 1){
+					direction = [0,0,-1,1];			
+				}else if(pathVector[i] == -2 && direction.x == 1){
+					direction = [0,0,1,1];
+				}else if(pathVector[i] == -1 && direction.x == -1){
+					direction = [0,0,1,1];			
+				}else if(pathVector[i] == -2 && direction.x == -1){
+					direction = [0,0,-1,1];
+				}
+			}	
+				
+			if(direction[3] == 0){
+				for(var j = 0; j < pathVector[i]; j++){
+					tileObj = newTile(tileMesh, tileObj.GetPosition(), [xOffset*direction.x, yOffset*direction.y, zOffset*direction.z]);				
+					aadd(mTilesObjs, tileObj);						
+				}			
+			}	
+			else
+				direction[3] = 0;				
+		}
 	}	
 }
 

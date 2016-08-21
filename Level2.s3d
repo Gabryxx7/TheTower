@@ -307,7 +307,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var randomMeshesLimits = [ROOM_FAR_WALL_WIDTH/2 - 2*SCALE_FACTOR, ROOM_HEIGHT, ROOM_SIDE_WALL_WIDTH/2 - 1*SCALE_FACTOR];
 	var randomMeshesPos = [0,-ROOM_HEIGHT,-ROOM_SIDE_WALL_WIDTH/2+1*SCALE_FACTOR];
 	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var randomMeshNumber = 15; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	var randomMeshNumber = 150; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomCubes = {};
 	paths = {};
@@ -721,21 +721,26 @@ function Level2::UpdateLogic(dt)
 				}
 						
 				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
+					randomCubes[j].StartAnimation();
+					outputln("RED ANIMATION STARTED");
 					if(j == 0){		
-						outputln("\n\nRED PATH WALKED");				
+						outputln("\nRED PATH COMPLETED");
+						outputln("RED ANIMATION STARTED");				
 					}
 					else if(j == 1){		
-						outputln("\n\nGREEN PATH WALKED");						
+						outputln("\nGREEN PATH COMPLETED");	
+						outputln("nGREEN ANIMATION STARTED");					
 					}
 					else if(j == 2){		
-						outputln("\n\nBLUE PATH WALKED");					
+						outputln("\nBLUE PATH COMPLETED");	
+						outputln("nBLUE ANIMATION STARTED");				
 					}
 				}
 				
 				//Workaround for the mAnimator diagonal transition bug
 				//I'll start first the animation on the x axis, then the one on the Y axis and in the end the one on the z axis
 				//so that the movement are computed correctly for every direction
-				if(paths[j].HasBeenWalked() && j < len(randomCubes)){	
+				if(paths[j].HasBeenWalked() && j < len(randomCubes) && randomCubes[j].IsAnimating()){	
 					var time;
 					var cubesObjs = randomCubes[j].GetObjs();
 					var objsAnimations = randomCubes[j].GetAnimationsVector();
@@ -744,6 +749,7 @@ function Level2::UpdateLogic(dt)
 					var finalPos = randomCubes[j].GetFinalPos();
 					var objPos;
 					var checkOffs = 0.5*SCALE_FACTOR; //The position is never perfect
+					var completedAnimations = 0;
 					
 					for(var i = 0; i < len(cubesObjs); i++){
 						objPos = cubesObjs[i].GetPosition();
@@ -775,7 +781,21 @@ function Level2::UpdateLogic(dt)
 						}
 						
 						if(objPos.z < finalPos[i].z + checkOffs && objPos.z > finalPos[i].z - checkOffs && objsAnimations[i].z == 1){
-							//Do something when animations are completed						
+							completedAnimations++;
+						}
+					}
+					
+					
+					if(completedAnimations == len(cubesObjs)){
+						randomCubes[j].StopAnimation();						
+						if(j == 0){		
+							outputln("RED ANIMATION COMPLETED");				
+						}
+						else if(j == 1){
+							outputln("nGREEN ANIMATION COMPLETED");					
+						}
+						else if(j == 2){
+							outputln("\nBLUE ANIMATION COMPLETED");				
 						}
 					}
 				}
