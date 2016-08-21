@@ -36,9 +36,10 @@ class Numpad{
 	var mTimefromLastAction;
 	
 	var mNumpadPosition;
-	
-	Draw(drawButtons, drawPressedButtons, drawText);
 	DrawHolder();
+	DrawUnPressedButtons();
+	DrawPressedButtons();
+	DrawButtonsText();
 	DrawScreen();
 	DrawScreenText();
 	GetButtonsObjs();
@@ -62,8 +63,7 @@ class Numpad{
 	PressTouchedButton(objPos, dt, pViveObj, controllerIndex);
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
-	PressAllButtons();
-	
+	PressAllButtons();	
 	IsCameraInNumpadRange(cameraPosition, range);
 };
 
@@ -109,15 +109,12 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 	var num = 9;
 	var rows = 0;
 	var cols = 0;
+	var maxRowLength = -1;
 	for(var i = 0; i < len(buttonsText) ; i++){	
-		if(buttonsText[i] == "\n"){
-			if(cols == 0){
-				mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : rows+2;
-				mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2)));
-				mScreenObj.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
-				mScreenTextObjs = CVmObj();
-				mScreenTextObjs.SetPosition(numpadPosition + [offsetX*(rows-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);
-			}
+		if(buttonsText[i] == "\n"){			
+			if(rows > maxRowLength)
+				maxRowLength = rows;
+				
 			i++;
 			cols++;
 			rows = 0;	
@@ -149,34 +146,33 @@ function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpa
 		screenTxt.Load(upper(buttonsText[i]));
 		screenTxt.SetColor(mScreenTextColor.r, mScreenTextColor.g, mScreenTextColor.b);
 		aadd(mScreenTextsMeshes, screenTxt);
-	}	
+	}
+	
+	if(maxRowLength < 0)
+		maxRowLength = rows;
+		
+	outputln(maxRowLength);
+	mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : maxRowLength+2;
+	mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2)));
+	mScreenObj.SetPosition(numpadPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+	mScreenTextObjs = CVmObj();
+	mScreenTextObjs.SetPosition(numpadPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);	
 }
 
 
-function Numpad::Draw(drawUnpressedButtons, drawPressedButtons, drawText){
-	if(valtype(drawUnpressedButtons) == "")
-		drawUnpressedButtons = 1;		
-	
-	if(valtype(drawText) == "")
-		drawText = 1;
-		
-	if(valtype(drawPressedButtons) == "")
-		drawPressedButtons = 0;
-		
-	if(drawUnpressedButtons == 1){
-		for(var i = 0; i < len(mUnpressedButtonsObjs); i++)
-			mUnpressedButtonsObjs[i].Draw();			
-	}
-	
-	if(drawPressedButtons == 1){
-		for(var i = 0; i < len(mPressedButtonsObjs); i++)
-			mPressedButtonsObjs[i].Draw();			
-	}
-	
-	if(drawText == 1){
-		for(var i = 0; i < len(mTextsObjs); i++)
-			mTextsObjs[i].Draw();				
-	}
+function Numpad::DrawUnPressedButtons(){	
+	for(var i = 0; i < len(mUnpressedButtonsObjs); i++)
+		mUnpressedButtonsObjs[i].Draw();
+}
+
+function Numpad::DrawPressedButtons(){
+	for(var i = 0; i < len(mPressedButtonsObjs); i++)
+		mPressedButtonsObjs[i].Draw();	
+}
+
+function Numpad::DrawButtonsText(){	
+	for(var i = 0; i < len(mTextsObjs); i++)
+		mTextsObjs[i].Draw();		
 }
 
 function Numpad::DrawHolder(){

@@ -356,6 +356,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var buttonsTextColor = [0.0,0.0,0.0];
 	var clearingColor = [0.8,0.8,0];
 	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize, len(paths));	
+//	numpadObj = Numpad("abcdefghi ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize);	
 /////////////////////////////////////////////////////////
 	
 	
@@ -564,16 +565,16 @@ function Level2::Render()
 		numpadObj.DrawScreenText();
 	
 		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
-		numpadObj.Draw(1,0,0);
+		numpadObj.DrawUnpressedButtons();
 		
 		if(numpadClearNeeded == 1)			
 			mToonShader.SetParameter("diffuse", numpadObj.GetWrongCodeColor());
 		else if(numpadClearNeeded == 2)
 			mToonShader.SetParameter("diffuse", numpadObj.GetSecondaryColor());
 		else
-			mToonShader.SetParameter("diffuse", numpadObj.GetPressedButtonColor());
-			
-		numpadObj.Draw(0,1,0);
+			mToonShader.SetParameter("diffuse", numpadObj.GetPressedButtonColor());			
+		
+		numpadObj.DrawPressedButtons();
 		
 //		mToonShader.SetParameter("lightsRangeMin", 0);
 //		mToonShader.SetParameter("lightsRangeMax", 2);
@@ -589,7 +590,7 @@ function Level2::Render()
 //		box.Draw([1,0,0,0,0,0], 0);
 //	mAlphaShader.Stop();
 	
-	numpadObj.Draw(0,0,1);
+	numpadObj.DrawButtonsText();
 	
 	if(mIsVRon){
 		mController1.Draw();
