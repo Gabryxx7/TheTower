@@ -812,8 +812,7 @@ function Level2::UpdateLogic(dt)
 			
 			var pressedButton = "";
 			//If the player is close to the numpad
-			if(!doorUnlocked && numpadObj.IsCameraInNumpadRange(cameraPosition, 8 * SCALE_FACTOR) && numpadClearNeeded == 0){
-			   	
+			if(!doorUnlocked && numpadObj.IsCameraInNumpadRange(cameraPosition, 8 * SCALE_FACTOR) && numpadClearNeeded == 0){			   	
 			   	
 				if(mIsVRon){
 					if(numpadClearNeeded == 0 && !doorUnlocked){
@@ -924,7 +923,14 @@ function Level2::UpdateLogic(dt)
 							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(100)+ 50) / 7;
 							var randomSpeed = (Rand(9)+1);
-							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true);
+							var rotationRadius = 10*SCALE_FACTOR;
+							var startingPosx = objPos.x;
+							var startingPosz = objPos.z;
+							if(Modulus(objPos - [musicCirclePosition.x, objPos.y, musicCirclePosition.z]) > ROOM_SIDE_WALL_WIDTH/2-5*SCALE_FACTOR){
+								startingPosx = objPos.x > 0 ? objPos.x - rotationRadius : objPos.x + rotationRadius;
+								startingPosz = objPos.z > 0 ? objPos.z - rotationRadius : objPos.z + rotationRadius;								
+							}
+							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], [startingPosx, objPos.y, startingPosz], [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true);
 						}					
 					}
 				}
