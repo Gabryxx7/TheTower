@@ -13,6 +13,9 @@ class Clock
 	var mClockSphereRadius;
 	var mClockSphereThickness;
 	
+	var mMinutesArrowMesh;
+	var mHoursArrowMesh;
+	
 	var mMinutesArrowObj;
 	var mHoursArrowObj;
 	var mClockObj;
@@ -25,6 +28,8 @@ class Clock
 	
 	// Increment value of the hour arrow when the minute's arrow is manually moved
 	var mHourArrowRotationIncrement;
+	
+	var mSilhouetteShader;
 	
 	
 	// Public functions
@@ -57,35 +62,35 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	mClockSphereThickness = 0.02 * SCALE_FACTOR;
 	
 	// Creating the mesh for the arrow and setting the pivot for the rotation in t
-	var minutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
+	mMinutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
 	
-	minutesArrowMesh.ShaderAdd("toonShader.glsl", 0);
-	minutesArrowMesh.ShaderActivate(true);
-	minutesArrowMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	minutesArrowMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
-	minutesArrowMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	minutesArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	minutesArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	minutesArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	minutesArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	minutesArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	mMinutesArrowMesh.ShaderAdd("toonShader.glsl", 0);
+	mMinutesArrowMesh.ShaderActivate(true);
+	mMinutesArrowMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	mMinutesArrowMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
+	mMinutesArrowMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
+	mMinutesArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
+	mMinutesArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mMinutesArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mMinutesArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	mMinutesArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
-	mMinutesArrowObj = CVmObj(minutesArrowMesh);
+	mMinutesArrowObj = CVmObj(mMinutesArrowMesh);
 	
-	var hoursArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mHoursArrowHeight, mArrowsDepth]); 
+	mHoursArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mHoursArrowHeight, mArrowsDepth]); 
 	
-	hoursArrowMesh.ShaderAdd("toonShader.glsl", 0);
-	hoursArrowMesh.ShaderActivate(true);
-	hoursArrowMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	hoursArrowMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
-	hoursArrowMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	hoursArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	hoursArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	hoursArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	hoursArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	hoursArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	mHoursArrowMesh.ShaderAdd("toonShader.glsl", 0);
+	mHoursArrowMesh.ShaderActivate(true);
+	mHoursArrowMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	mHoursArrowMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
+	mHoursArrowMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
+	mHoursArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
+	mHoursArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
+	mHoursArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
+	mHoursArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	mHoursArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
-	mHoursArrowObj = CVmObj(hoursArrowMesh);
+	mHoursArrowObj = CVmObj(mHoursArrowMesh);
 	
 	
 //	var clockMesh = CVmNewMesh(VRP_SPHERE, mClockSphereSegments, mClockSphereRadius, 1);  	
@@ -93,21 +98,9 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	var clockMesh = CVmNewMesh(VRP_CIRCLE, mClockSphereSegments, mClockSphereRadius, 1);  
 	clockMesh.Rotate(-90, 1, 0, 0);	
 	clockMesh.Rotate(180, 0, 0, 1);	
-//	clockMesh.Rotate(90, 1, 0, 0);	
 	
-//	clockMesh.ShaderAdd("toonShader.glsl", 0);
-//	clockMesh.ShaderActivate(true);
-//	clockMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-//	clockMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
-//	clockMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-//	clockMesh.ShaderSetParameter(0, "shininess", 0, 0);
-//	clockMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-//	clockMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-//	clockMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-
 	var mat = CVmMaterial();
 	mat.SetTexture(CVmTexture ("clock_face.png"));
-//	mat.diffuse = [1.0, 0.0 ,0.0];
 	clockMesh.ForceMaterial(mat);
 	
 	mClockObj = CVmObj(clockMesh);
@@ -117,6 +110,8 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 
 	mMinutesArrowAngle = 0;
 	mArrowDirection = 0;
+	
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	
 	// This value is not perfect, meaning that if the minute arrow move "1 hour", the hour arrow won't necessarily move 1 hour. I found a value that seemed good
 	// enough; the exact value is irrelevant, since when the minute arrow gets moved for example by a click somewhere in the clock, the minute arrow will
@@ -190,7 +185,10 @@ function Clock::UpdateMinutesArrow(raycastStart, raycastEnd)
 		// I compute the angle using the Atan2 function, and convert the radiant angle to degrees; I shift the result by 90 degrees, since the arrow starts
 		// in the upright position instead of "at 3 o'clock".
 		// Note: the Atan2 function returns an angle between -180 and 180 degrees. Setting the rotation directly using this angle works fine
-		var angle = Atan2(dy, dx) * RAD_TO_GRAD - 90;
+		// NOTE: I'm inverting the sign of the angle because the clock that is being used with this function is turned by 180 degrees around the y axis,
+		// so the angles result inverted. An improvement would be saving the rotation of the clock when SetRotation() is used and adjust the angle using that,
+		// but since I'm lazy and this is the only why I'm using the clock, I leave the minus here
+		var angle = -(Atan2(dy, dx) * RAD_TO_GRAD - 90);
 		
 
 		// Changing the angle with the one found; I'm rotating on the Z axis, so if the clock is facing down or up for example there will be problems		
@@ -247,6 +245,25 @@ function Clock::GetHoursArrowObj()
 
 function Clock::Draw()
 {
+//	glCullFace(GL_FRONT);
+//	
+//	mMinutesArrowMesh.ShaderActivate(false);
+//	mHoursArrowMesh.ShaderActivate(false);
+//	
+//	mSilhouetteShader.Start();
+//    	// Setting its parameter; the offset tells the shader how the size of the mesh has to increase
+//    	mSilhouetteShader.SetParameter("offset", 0.05 * SCALE_FACTOR);
+//    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+//    	
+//    	// Drawing the silhouette of the room and of any objects in it
+//		mClockObj.Draw();
+//	mSilhouetteShader.Stop();
+//	
+//	glCullFace(GL_BACK);
+//	
+//	mMinutesArrowMesh.ShaderActivate(true);
+//	mHoursArrowMesh.ShaderActivate(true);
+	
 	mClockObj.Draw();
 }
 

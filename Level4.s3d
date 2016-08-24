@@ -212,8 +212,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	{
 		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
 		mDebugController = ViveController(1);
-		global var controllerHidden = false;
-		global var keyhit = false;
+		mDebugControllerHidden = false;
+		mDebugKeyhit = false;
 		mDebugController.SetRotation(90, 0, 1, 0);
 
 		aadd(mControllersArray, mDebugController);

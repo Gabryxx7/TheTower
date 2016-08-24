@@ -30,14 +30,19 @@ class Text
 	
 	// Scale of the font. It works on top of the SCALE_FACTOR constant
 	var mFontScale;
+	
+	var mColor;
 
 	// Public functions
 	LoadString(string);
 	SetPosition(position);
 	GetPosition();
 	GetWidthOfLine(lineNumber);
+	GetFontHeight();
 	SetScale(scale);
 	GetObj();
+	GetRotationMatrix();
+	SetRotationMatrix(rotationMatrix);
 	Rotate(angle, x, y, z);
 	RotateABS(angle, x, y, z);
 	SetRotation(angle, x, y, z);
@@ -45,19 +50,28 @@ class Text
 	Draw();
 	Hide();
 	Unhide();
+	RemoveCharFromText(character);
+	GetLine(lineNumber);
 };
 
 /*
  * Constructor
+ * 
+ * string: (string) the text string
+ * scale: optional parameter (float) the scale of the text (1 is default)
+ * color: optional parameter (vector) the color of the text (black is default)
  */
-function Text::Text(string, scale)
+function Text::Text(string, scale, color)
 {
 	mString = string;
 	mFontScale = scale != Void ? scale : 1.0;
 	mStringList = {};
 	mStringObjList = {};
+	mColor = color != Void ? color : [0, 0, 0];
+		
 	mStringWidthMultiplier = 0.085  * SCALE_FACTOR * mFontScale; // The multiplier was found by trial and error
 	mStringHeight = 0.5  * SCALE_FACTOR * mFontScale; // The height was found by trial and error
+	
 	mTextContainerObj = CVmObj();
 	
 	// I obtain the substrings by using the Split function with "\n" as separator
@@ -70,7 +84,7 @@ function Text::Text(string, scale)
 		var txt = CVmText();
 		txt.Load(mSubstrings[i]);
 		txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
-		txt.SetColor(0, 0, 0);
+		txt.SetColor(mColor);
 						
 		var txtObj = CVmObj();
 		txtObj.LinkToText(txt);
@@ -92,7 +106,7 @@ function Text::Text(string, scale)
 		var txt = CVmText();
 		txt.Load("");
 		txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
-		txt.SetColor(0, 0, 0);
+		txt.SetColor(mColor);
 		var txtObj = CVmObj();
 		txtObj.LinkToText(txt);
 		aadd(mStringList, txt);
@@ -113,8 +127,8 @@ function Text::LoadString(string)
 	mString = string;
 	
 	// I divide the new string in substrings as before
-	var substrings = Split(string, "\n");
-	var n = len(substrings);
+	mSubstrings = Split(string, "\n");
+	var n = len(mSubstrings);
 	
 	// It might be that there are more substrings than before, or viceversa. First, I find the min between them and fill the first "min" 
 	// objects with the new substrings
@@ -122,9 +136,9 @@ function Text::LoadString(string)
 	
 	for(var i = 0; i < min; i++)
 	{
-		mStringList[i].Load(substrings[i]);
+		mStringList[i].Load(mSubstrings[i]);
 		
-		var stringWidth = len(substrings[i]) * mStringWidthMultiplier;
+		var stringWidth = len(mSubstrings[i]) * mStringWidthMultiplier;
 		
 		mStringObjList[i].SetPosition(-stringWidth, -(i * mStringHeight), 0);
 		
@@ -140,9 +154,9 @@ function Text::LoadString(string)
 		for(var i = mNumberOfSubstrings; i < n; i++)
 		{			
 			var txt = CVmText();
-			txt.Load(substrings[i]);
+			txt.Load(mSubstrings[i]);
 			txt.SetScale(0.5  * SCALE_FACTOR * mFontScale, 0.5  * SCALE_FACTOR * mFontScale);
-			txt.SetColor(0, 0, 0);
+			txt.SetColor(mColor);
 						
 			var txtObj = CVmObj();
 			txtObj.LinkToText(txt);
@@ -150,7 +164,7 @@ function Text::LoadString(string)
 			aadd(mStringList, txt);
 			aadd(mStringObjList, txtObj);
 			
-			var stringWidth = len(substrings[i]) * mStringWidthMultiplier;
+			var stringWidth = len(mSubstrings[i]) * mStringWidthMultiplier;
 			
 			mTextContainerObj.AddChild(txtObj, -stringWidth, -(i * mStringHeight), 0);
 		}
@@ -180,6 +194,16 @@ function Text::LoadString(string)
 function Text::GetObj()
 {
 	return mTextContainerObj;
+}
+
+function Text::GetRotationMatrix()
+{
+	return mTextContainerObj.GetRotationMatrix();
+}
+
+function Text::SetRotationMatrix(rotationMatrix)
+{
+	mTextContainerObj.SetRotationMatrix(rotationMatrix);
 }
 
 /////// The methods below just call the homonymous CVmObj's methods \\\\\\\
@@ -219,6 +243,11 @@ function Text::GetWidthOfLine(lineNumber)
 	return len(mSubstrings[lineNumber]) * mStringWidthMultiplier;
 }
 
+function Text::GetFontHeight()
+{
+	return mStringHeight;
+}
+
 function Text::Draw()
 {
 	mTextContainerObj.Draw();
@@ -232,5 +261,22 @@ function Text::Hide()
 function Text::Unhide()
 {
 	mTextContainerObj.Unhide();
+}
+
+function Text::RemoveCharFromText(character)
+{	
+	var substrings = Split(mString, character);
+	
+	mString = "";
+	
+	for(var i = 0; i < len(substrings); i++)
+		mString += substrings[i];
+	
+	LoadString(mString);
+}
+
+function Text::GetLine(lineNumber)
+{	
+	return mSubstrings[lineNumber];
 }
 

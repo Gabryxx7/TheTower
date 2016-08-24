@@ -1,4 +1,10 @@
 
+#define NORMAL_TRANSITION 0
+#define ROTATING_TRANSITION 1
+#define SCALING_TRANSITION 2
+#define ROTATION_AROUND_POINT_TRANSITION 3
+#define COLOR_TRANSITION 4
+
 /*
  * This class handles simple transitions and rotations of CVmObj objects.
  * To use the class, the user must create a Animator object; then by calling its method he can create transitions and rotations of any CVmObject. The
@@ -19,7 +25,8 @@ class Animator
 	var mObjects;                  
 	
 	// List of starting positions for every transition. For rotations, it contains the starting angle   
-	var mStartingPositions;           
+	var mStartingPositions; 
+	var mEndPositions;
 	
 	// For every object added to the class, this array contains a boolean that states whether the object's transition/rotation is looping or not
 	var mIsLoopArray;
@@ -65,6 +72,7 @@ class Animator
 	// Boolean used to indicate whether the waypoints of transitions are inverted or not
 	var mAreTransitionsInverted;
 	
+	
 	// Public functions
 	CreateTransition(object, startingPos, endingPos, time, loop);
 	RemoveTransitionByObject(object, isRotating);
@@ -72,7 +80,8 @@ class Animator
 	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	ChangeScaleFactors(newFactor);
 	CreateScalingTransition(object, startingScale, endingScale, time, loop);
-	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness);
+	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise);
+	CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop);
 	
 	// Private functions
 	InvertTransitions();
@@ -85,6 +94,7 @@ function Animator::Animator()
 {
 	mObjects = {};
 	mStartingPositions = {};
+	mEndPositions = {};
 	mIsLoopArray = {};
 	mTimeArray = {};
 	mScaleFactorArray = {};
@@ -120,8 +130,8 @@ function Animator::Animator()
 function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 {
 	// If there is already a transition active for the object, I remove it ("false" indicates a movement transition); if there isn't this doesn't do anything
-	RemoveTransitionByObject(object, 0);
-	RemoveTransitionByObject(object, 3);
+	RemoveTransitionByObject(object, NORMAL_TRANSITION);
+	RemoveTransitionByObject(object, ROTATION_AROUND_POINT_TRANSITION);
 	
 	// For starter, I move the object to the starting position, in case it wasn't there already
 	object.SetPosition(startingPos);
@@ -132,6 +142,8 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 	aadd(mIsLoopArray, loop);
 	aadd(mTimeArray, time);
 	aadd(mScaleFactorArray, 1.0);
+	
+	aadd(mTransitionTypeArray, NORMAL_TRANSITION);
 	
 	var endPoint = endingPos;
 	
@@ -167,9 +179,19 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 		aadd(mWaypointsCounterArray, 0);
 	}
 	
+	aadd(mEndPositions, endPoint);
+	
+	var vec = endPoint - startingPos;
+	
 	// Computing the distance (which is the length of the difference of the 2 vectors) and the direction it has to move to
-	var distance = Modulus(endPoint - startingPos);
-	var direction = Norm(endPoint - startingPos);
+	var distance = Modulus(vec);
+	
+	var direction;
+	
+	if(vec.x == 0 && vec.y == 0 && vec.z == 0)
+	 	direction = [0, 0, 0];
+ 	else
+ 		direction = Norm(vec);
 	
 	aadd(mDistanceArray, distance);	
 	aadd(mDirectionsArray, direction);
@@ -184,12 +206,11 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 	aadd(mXSpeedArray, xSpeed);
 	aadd(mYSpeedArray, ySpeed);
 	aadd(mZSpeedArray, zSpeed);
-
+	
 	
 	// Since this is a transition, the arrays regarding rotation are filled with random things since they won't be used. I fill them anyway in order
 	// to have a 1:1 ratio between transitions and rotations array, so that I can reuse the same arrays for the things that are common between
 	// transitions and rotations
-	aadd(mTransitionTypeArray, 0);
 	aadd(mAxisArray, 0);
 	aadd(mFinalAngleArray, 0);
 	aadd(mAngleDeltaArray, 0);
@@ -209,19 +230,20 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse)
 {		
 	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
-	RemoveTransitionByObject(object, 1);
+	RemoveTransitionByObject(object, ROTATING_TRANSITION);
 	
 	// First off, I'm setting the starting rotation
 //	object.SetRotation(startingAngle, axis);
 	
 	aadd(mObjects, object);
 	aadd(mStartingPositions, startingAngle);
+	aadd(mEndPositions, finalAngle);
 	aadd(mIsLoopArray, loop);
 	aadd(mTimeArray, time);
 	aadd(mScaleFactorArray, 1.0);
 	
 	// I state that this object has a rotation
-	aadd(mTransitionTypeArray, 1);
+	aadd(mTransitionTypeArray, ROTATING_TRANSITION);
 	
 	// Computing the speed of the rotation, based on the given time
 	var speed = (finalAngle - startingAngle) / (time);
@@ -251,7 +273,7 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
  */
 function Animator::CreateScalingTransition(object, startingScale, endingScale, time, loop)
 {		
-	RemoveTransitionByObject(object, 2);
+	RemoveTransitionByObject(object, SCALING_TRANSITION);
 	
 	// First off, I'm setting the starting scale
 	object.SetScale(startingScale);
@@ -263,7 +285,7 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 	aadd(mScaleFactorArray, 1.0);
 	
 	// I state that this object is scaling
-	aadd(mTransitionTypeArray, 2);
+	aadd(mTransitionTypeArray, SCALING_TRANSITION);
 	
 	var endScale = endingScale;
 	
@@ -286,6 +308,8 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 		aadd(mWaypointsArray, endingScale);
 		aadd(mWaypointsCounterArray, 0);
 	}
+	
+	aadd(mEndPositions, endScale);
 	
 	var distance = Modulus(endScale - startingScale);
 
@@ -312,15 +336,17 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 /*
  * This method creates rotation-around-point transitions; the code is pretty much the same as for simple rotation transitions
  */
-function Animator::CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness)
+function Animator::CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise)
 {		
 	randomness = (valtype(randomness) == "") ? false : randomness;
-	RemoveTransitionByObject(object, 3);
+	
+	RemoveTransitionByObject(object, ROTATION_AROUND_POINT_TRANSITION);
 	
 	object.SetPosition(startingPoint);
 	
 	aadd(mObjects, object);
 	aadd(mStartingPositions, centerPoint);
+	aadd(mEndPositions, 360);
 	aadd(mIsLoopArray, loop);
 	aadd(mTimeArray, period);
 	aadd(mScaleFactorArray, 1.0);
@@ -328,7 +354,7 @@ function Animator::CreateRotationAroundPointTransition(object, startingPoint, ce
 	aadd(mAxisArray, 0.0);  // This is actually the starting angle of the rotation; it's always 0; I don't want to create another array just for this
 	
 	// I state that this object is a rotation-around-point
-	aadd(mTransitionTypeArray, 3);
+	aadd(mTransitionTypeArray, ROTATION_AROUND_POINT_TRANSITION);
 
 	// Radius of the circle	
 	var radius = Modulus(centerPoint - startingPoint);
@@ -337,7 +363,11 @@ function Animator::CreateRotationAroundPointTransition(object, startingPoint, ce
 	var speed = (360.0 * GRAD_TO_RAD) / period;
 	
 	if(randomness)
-		speed = radius * (360.0 * GRAD_TO_RAD) / (period / 2.0);;
+		speed = radius * (360.0 * GRAD_TO_RAD) / (period / 2.0);
+		
+		
+	if(clockwise != Void && !clockwise)
+		speed = -speed;
 	
 	aadd(mDistanceArray, radius);
 	
@@ -359,6 +389,53 @@ function Animator::CreateRotationAroundPointTransition(object, startingPoint, ce
 }
 
 /*
+ * This method creates a color transition for meshes that have the toon shader (it's assumed that they have it already).
+ * The transition works pretty much like the scaling transition for example, except that there are not waypoints here
+ */
+function Animator::CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop)
+{
+	RemoveTransitionByObject(mesh, COLOR_TRANSITION);
+	
+	// First off, I'm setting the starting color
+	mesh.ShaderSetParameter(0, "diffuse", 0, startingColor);
+	
+	aadd(mObjects, mesh);
+	aadd(mStartingPositions, startingColor);
+	aadd(mEndPositions, endingColor);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, time);
+	aadd(mScaleFactorArray, 1.0);
+	
+	// I state that this object has a color transition
+	aadd(mTransitionTypeArray, COLOR_TRANSITION);
+	
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, startingColor);
+	aadd(mWaypointsCounterArray, 0);
+	
+//	var distance = Modulus(endingColor - startingColor);
+
+	aadd(mDistanceArray, endingColor);	
+	
+	var xSpeed = ((endingColor.x - startingColor.x) / time);
+	var ySpeed = ((endingColor.y - startingColor.y) / time);
+	var zSpeed = ((endingColor.z - startingColor.z) / time);
+	
+	aadd(mXSpeedArray, xSpeed);
+	aadd(mYSpeedArray, ySpeed);
+	aadd(mZSpeedArray, zSpeed);
+
+	
+	// Arrays not used; filled with useless stuff
+	aadd(mDirectionsArray, 0);
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+}
+
+
+/*
  * This method as to be called by the caller in its "update" function, so that the objects' positions will be constantly updated
  * 
  * dt: (float) the delta time, i.e. the time from the last frame to the current frame
@@ -371,7 +448,7 @@ function Animator::UpdateTransitions(dt)
 		var object = mObjects[i];
 		
 		// Case where this object is a transition object and NOT a rotation one
-		if(mTransitionTypeArray[i] == 0)
+		if(mTransitionTypeArray[i] == NORMAL_TRANSITION)
 		{
 			// Getting some useful information from the arrays
 			var currentPosition = object.GetPosition();
@@ -406,14 +483,21 @@ function Animator::UpdateTransitions(dt)
 					// Checking if there is still at least one waypoints to travel to
 					else if(mWaypointsCounterArray[i] < len(waypoints))
 					{
-						
 						// In that case I take the new waypoint and I set as new starting position the current one
 						var endpoint = waypoints[mWaypointsCounterArray[i]];
 						mStartingPositions[i] = currentPosition;
 						
+						var vec = endPoint - currentPosition;
+	
 						// I compute the new distance and direction
-						distance = Modulus(endpoint - currentPosition);
-						direction = Norm(endpoint - currentPosition);
+						var distance = Modulus(vec);
+						
+						var direction;
+						
+						if(vec.x == 0 && vec.y == 0 && vec.z == 0)
+						 	direction = [0, 0, 0];
+					 	else
+					 		direction = Norm(vec);
 										
 						// I modify the previous distance and direction in the given arrays with the new ones
 						mDistanceArray[i] = distance;
@@ -423,14 +507,12 @@ function Animator::UpdateTransitions(dt)
 						xSpeed = abs((currentPosition.x - endpoint.x) / mTimeArray[i]);
 						ySpeed = abs((currentPosition.y - endpoint.y) / mTimeArray[i]);
 						zSpeed = abs((currentPosition.z - endpoint.z) / mTimeArray[i]);
-												
+						
+																		
 						mXSpeedArray[i] = xSpeed;
 						mYSpeedArray[i] = ySpeed;
 						mZSpeedArray[i] = zSpeed;
 						
-						// If this object has also to loop, I increment the waypoint counter with the modulo, so that when it reaches the last waypoint it 
-						// starts again from the starting position (which was put as element 0 in the array "waypoints" when the rotation transition was created);
-						// otherwise I simply update the waypoint counter
 
 						// Now I have to change the counter to point to the transition I will have to visit after the current one (i.e., if I have waypoints
 						// X, Y and Z and I'm moving from X to Y, the counter will point to Z); this changes whether waypoints are reversed or not; in that 
@@ -465,7 +547,7 @@ function Animator::UpdateTransitions(dt)
 			}
 		}
 		// If the object has not a transition but a rotation, it's a bit different
-		else if(mTransitionTypeArray[i] == 1)
+		else if(mTransitionTypeArray[i] == ROTATING_TRANSITION)
 		{
 			// Taking some useful stuff
 			var speed = mXSpeedArray[i];
@@ -513,11 +595,12 @@ function Animator::UpdateTransitions(dt)
 				mAngleDeltaArray[i] = currentAngle;
 		}
 		// Case where we have a scaling transition
-		else if(mTransitionTypeArray[i] == 2)
+		else if(mTransitionTypeArray[i] == SCALING_TRANSITION)
 		{
 			// Getting some useful information from the arrays
 			var currentScale = object.GetScale();
 			var startingScale = mStartingPositions[i];
+			var endScale = mEndPositions[i];
 			var distance = mDistanceArray[i];
 			var xSpeed = mXSpeedArray[i];
 			var ySpeed = mYSpeedArray[i];
@@ -528,9 +611,10 @@ function Animator::UpdateTransitions(dt)
 			currentScale.z += dt * zSpeed * mScaleFactorArray[i];
 			
 			object.SetScale(currentScale);
-	
-			if(Modulus(startingScale - currentScale) >= distance)
+			if(Modulus(currentScale - startingScale ) >= Modulus(startingScale - endScale))
 			{
+				object.SetScale(endScale);
+				
 				if(mHasWaypointsArray[i])
 				{
 					var waypoints = mWaypointsArray[i];
@@ -541,6 +625,7 @@ function Animator::UpdateTransitions(dt)
 					{
 						var endpoint = waypoints[mWaypointsCounterArray[i]];
 						mStartingPositions[i] = currentScale;
+						mEndPositions[i] = endpoint;
 						
 						distance = Modulus(currentScale - endpoint);
 										
@@ -576,7 +661,8 @@ function Animator::UpdateTransitions(dt)
 					mYSpeedArray[i] = -mYSpeedArray[i];
 					mZSpeedArray[i] = -mZSpeedArray[i];
 				 	mWaypointsArray[i] = mStartingPositions[i];
-				 	mStartingPositions[i] = currentScale;
+				 	mEndPositions[i] = mStartingPositions[i];
+					mStartingPositions[i] = endScale;
 				}
 				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
 				else
@@ -584,7 +670,7 @@ function Animator::UpdateTransitions(dt)
 			}
 		}
 		// Case where the transition has type rotation-around-point; code is very similar to the case of simple rotations
-		else if(mTransitionTypeArray[i] == 3)
+		else if(mTransitionTypeArray[i] == ROTATION_AROUND_POINT_TRANSITION)
 		{
 			// Taking some useful stuff
 			var speed = mXSpeedArray[i];
@@ -594,9 +680,6 @@ function Animator::UpdateTransitions(dt)
 			var currentAngle = mAngleDeltaArray[i];
 			var radius = mDistanceArray[i];
 
-			// The increment is set by the speed and the delta time
-			var increment = speed * dt * mScaleFactorArray[i];
-			
 			var currentPosition = object.GetPosition();
 			
 			// I update the position as if the object was a point moving around in a circle with z as the y and x as the x
@@ -604,21 +687,19 @@ function Animator::UpdateTransitions(dt)
 			currentPosition.z = sin(currentAngle) * radius + centerPoint.z;
 			
 			object.SetPosition(currentPosition);
+			
+			// The increment is set by the speed and the delta time
+			var increment = speed * dt * mScaleFactorArray[i];
 						
-			// I update the current angle with the absolute value of the current increment; I always consider the angle positive to simplify computations
-			// in case the rotation is in a loop and also needs to be reversed.
-			// If the transitions are inverted, I decrement
-			if(!mAreTransitionsInverted)
-				currentAngle += abs(increment);
-			else
-				currentAngle -= abs(increment);
+			// I update the current angle with the value of the current increment
+			currentAngle += increment;
 							
 			// If the transitions are inverted, we're NOT looping and the angle reached the starting angle, I end the transition
 			if(mAreTransitionsInverted && !mIsLoopArray[i] && currentAngle <= startingAngle)
 				RemoveTransitionByIndex(i);
 			// If the current angle (which is in radiants, so I need to convert it to degrees) is greater or equal then the total angle distance
 			// it has to rotate to, we're done (almost)
-			else if(currentAngle * RAD_TO_GRAD >= abs(finalAngle - startingAngle))
+			else if(abs(currentAngle) * RAD_TO_GRAD >= abs(finalAngle - startingAngle))
 			{				
 				// If is looping, I simply reset the delta value so that it keeps rotating forever
 				if(mIsLoopArray[i])
@@ -629,6 +710,46 @@ function Animator::UpdateTransitions(dt)
 			// Otherwise, if it didn't reach the end, I update the delta value with the current angle
 			else
 				mAngleDeltaArray[i] = currentAngle;
+		}
+		// Case where we have a color transition; in this case the "object" is actually a mesh
+		else if(mTransitionTypeArray[i] == COLOR_TRANSITION)
+		{
+			// I get the current color, which is saved in the waypoint array to save space (since in this type of transition there are no waypoints);
+			// I could get the current color from the shader, but the XVR method to do so doesn't work	
+			var currentColor = mWaypointsArray[i];
+			
+			// Getting some useful information from the arrays
+			var startingColor = mStartingPositions[i];
+			var endingColor = mDistanceArray[i];
+			var xSpeed = mXSpeedArray[i];
+			var ySpeed = mYSpeedArray[i];
+			var zSpeed = mZSpeedArray[i];
+			
+			currentColor.x += dt * xSpeed * mScaleFactorArray[i];
+			currentColor.y += dt * ySpeed * mScaleFactorArray[i];
+			currentColor.z += dt * zSpeed * mScaleFactorArray[i];
+			
+			// Saving the current color
+			mWaypointsArray[i] = currentColor;
+			
+			object.ShaderSetParameter(0, "diffuse", 0, currentColor);
+	
+			if(Modulus(startingColor - currentColor) >= Modulus(endingColor - startingColor))
+			{				
+				object.ShaderSetParameter(0, "diffuse", 0, endingColor);
+				
+				if(mIsLoopArray[i])
+			    {
+				 	mXSpeedArray[i] = -mXSpeedArray[i];
+					mYSpeedArray[i] = -mYSpeedArray[i];
+					mZSpeedArray[i] = -mZSpeedArray[i];
+				 	mWaypointsArray[i] = endingColor;
+				 	mStartingPositions[i] = endingColor;
+				 	mDistanceArray[i] = startingColor;
+				}
+				else
+					RemoveTransitionByIndex(i);
+			}
 		}
 	}
 }
@@ -662,7 +783,7 @@ function Animator::InvertTransitions()
 	for(var i = 0; i < len(mObjects); i++)
 	{
 		// If it's a moving transition
-		if(mTransitionTypeArray[i] == 0)
+		if(mTransitionTypeArray[i] == NORMAL_TRANSITION)
 		{
 			// If it has waypoints we need to change the current waypoint's starting poisition with the ending position, and invert the directions;
 			// i.e., if we're moving from A to B with direction 1, we need to use as new starting position B and ending position A, with direction -1.
@@ -725,9 +846,9 @@ function Animator::InvertTransitions()
 			}
 		}
 		// If the object is involved in a rotation transition, I simply need to invert its speed, so it goes backward
-		else if(mTransitionTypeArray[i] == 1)
+		else if(mTransitionTypeArray[i] == ROTATING_TRANSITION)
 			mXSpeedArray[i] = -mXSpeedArray[i];
-		else if(mTransitionTypeArray[i] == 2)
+		else if(mTransitionTypeArray[i] == SCALING_TRANSITION)
 		{
 			if(mHasWaypointsArray[i])
 			{		
@@ -771,7 +892,6 @@ function Animator::InvertTransitions()
 				mWaypointsCounterArray[i] = newWaypointsCounter;
 	
 				// Inverting the direction, so that the object goes back where it came from
-//				mDirectionsArray[i] = -mDirectionsArray[i];
 				mXSpeedArray[i] = -mXSpeedArray[i];
 				mYSpeedArray[i] = -mYSpeedArray[i];
 				mZSpeedArray[i] = -mZSpeedArray[i];
@@ -780,7 +900,6 @@ function Animator::InvertTransitions()
 			else
 			{
 				// I invert the direction
-//				mDirectionsArray[i] = -mDirectionsArray[i];
 				mXSpeedArray[i] = -mXSpeedArray[i];
 				mYSpeedArray[i] = -mYSpeedArray[i];
 				mZSpeedArray[i] = -mZSpeedArray[i];
@@ -788,13 +907,26 @@ function Animator::InvertTransitions()
 				// I swap the starting position with the ending position (which is held in the mWaypointsArray to save space), so we can check 
 				// in the update method if the object reached the end of the transition or not
 				var tmp = mStartingPositions[i];
+				mEndPositions[i] = mStartingPositions[i];
 			 	mStartingPositions[i] = mWaypointsArray[i];
 			 	mWaypointsArray[i] = tmp;
 			}
 		}
 		// If the object is involved in a rotation-around-point transition, I simply need to invert its speed, so it goes backward
-		else if(mTransitionTypeArray[i] == 3)
+		else if(mTransitionTypeArray[i] == ROTATION_AROUND_POINT_TRANSITION)
 			mXSpeedArray[i] = -mXSpeedArray[i];
+		// If it's a color transition, I do the same as with scaling transitions, except that in this case there are no waypoints
+		else if(mTransitionTypeArray[i] == COLOR_TRANSITION)
+		{
+			// I invert the direction
+			mXSpeedArray[i] = -mXSpeedArray[i];
+			mYSpeedArray[i] = -mYSpeedArray[i];
+			mZSpeedArray[i] = -mZSpeedArray[i];
+				
+			var tmp = mStartingPositions[i];
+		 	mStartingPositions[i] = mWaypointsArray[i];
+		 	mWaypointsArray[i] = tmp;
+		}
 	}
 }
 
@@ -823,6 +955,7 @@ function Animator::RemoveTransitionByIndex(index)
 {
 	adel(mObjects, index);
 	adel(mStartingPositions, index);
+	adel(mEndPositions, index);
 	adel(mIsLoopArray, index);
 	adel(mTimeArray, index);
 	adel(mDirectionsArray, index);

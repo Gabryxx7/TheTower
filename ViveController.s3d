@@ -20,6 +20,8 @@ class ViveController
 	
 	var mIsVisible;
 	
+	var mBorderShader;
+	
 	// Public functions
 	Draw();
 	GetObj();
@@ -42,6 +44,7 @@ class ViveController
 	GetWidth();
 	GetHeight();
 	GetDepth();
+	IsCollidingBBox(object);
 };
 
 
@@ -68,6 +71,8 @@ function ViveController::ViveController(controllerIndex)
 	mIsActionAvailable = false;
 	
 	mIsVisible = true;
+	
+	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.8, 0.8, 0.0, 1.0); }", true);
 }
 
 /*
@@ -76,28 +81,24 @@ function ViveController::ViveController(controllerIndex)
  */
 function ViveController::Draw()
 {
-	glEnable(GL_CULL_FACE);
-    glCullFace (GL_FRONT);
-    
-    glDepthMask(GL_TRUE); 
-    glEnable(GL_DEPTH_TEST); 
-
 	if(mIsActionAvailable)
 	{
-	    mSilhouetteShader.Start();
-	    	mSilhouetteShader.SetParameter("offset", 0.05  * SCALE_FACTOR);
-	    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 1.0]);
-	    	
-			mViveController.Draw();
-		mSilhouetteShader.Stop();
-	}
-
+    	glCullFace (GL_FRONT);
+    	
+		mViveController.SetScale(1.03 , 1.03, 1.03);
 	
-	glCullFace (GL_BACK); 
+		mBorderShader.Start();		
+			mViveController.Draw();
+		mBorderShader.Stop();
+	
+		// Now I draw the front faces
+		glCullFace (GL_BACK);
+		
+		// Reactivate the shader and reset the scale
+		mViveController.SetScale(1.0, 1.0, 1.0);
+	}
 	
 	mViveController.Draw();
-	
-	glDisable(GL_CULL_FACE); 
 }
 
 function ViveController::GetObj()
@@ -206,3 +207,7 @@ function ViveController::GetDepth()
 	return mDepth;
 }
 
+function ViveController::IsCollidingBBox(object)
+{
+	return mViveController.IsCollidingBBox(object);
+}

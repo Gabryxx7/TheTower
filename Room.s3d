@@ -77,16 +77,21 @@ class Room
 	Hide();
 	Unhide();
 	CheckIntersection(rayOrigin, rayEnd, contactPoint, normal);
+	GetChildren();
 };
 
 /*
  * Constructor
  * 
  * farWallWidth: (float) width of the front and back wall
+ * sideWallWidth: (float) depth of the room
  * height: (float) height of the room
- * hasFront: (boolean) true if there is a front wall, false otherwise
  * centerInOrigin: (boolean) if true, the room is moved to the center of the coordinate system
- * lightNumber: (integer) the number of the opengl light that has to be used in the cel shader to render the room
+ * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the room
+ * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the room
+ * hasFront: (boolean) true if there is a front wall, false otherwise
+ * hasFloor: (boolean) true if there is the floor, false otherwise
+ * hasBack: (boolean) true if there is a back wall, false otherwise
  */
 function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsRangeMin, lightsRangeMax, hasFront, hasFloor, hasBack)
 {
@@ -270,7 +275,7 @@ function Room::Draw()
 	// In order to draw the silhouette of a object, I need to first draw a black, bigger version of it (or any color you want for the outline) by culling 
 	// the front faces, so that only the back faces gets drawn. This way I can draw later the same object (the normal version) by culling the back faces instead,
 	// so that it looks like to be over the black mesh. So first, I state that I want to cull the front faces; only the back faces will be drawn
-    glCullFace (GL_FRONT);
+    glCullFace(GL_FRONT);
     
     // Enabling writes to Z-buffer and the depth test, in case these weren't active
     glDepthMask(GL_TRUE); 
@@ -289,7 +294,7 @@ function Room::Draw()
 			child.GetMesh().ShaderActivate(false);
 	}
    
-   // Starting the silhouette shader
+    // Starting the silhouette shader
     mSilhouetteShader.Start();
     	// Setting its parameter; the offset tells the shader how the size of the mesh has to increase
     	mSilhouetteShader.SetParameter("offset", 0.05 * SCALE_FACTOR);
@@ -300,7 +305,7 @@ function Room::Draw()
 	mSilhouetteShader.Stop();
 	
 	// Now I enable back faces culling, since I'm ready to draw the normal version of the room
-	glCullFace (GL_BACK); 
+	glCullFace(GL_BACK); 
 	
 	// I reactivate the shaders of any mesh in the room
 	mFarWallMesh.ShaderActivate(true);
@@ -762,4 +767,9 @@ function Room::Hide()
 function Room::Unhide()
 {
 	return mRoom.Unhide();
+}
+
+function Room::GetChildren()
+{
+	return mChildren;
 }

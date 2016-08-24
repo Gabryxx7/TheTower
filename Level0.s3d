@@ -16,7 +16,6 @@
 
 #include <Room.s3d>
 #include <EventTrigger.s3d>
-#include <Text.s3d>
 #include <Animator.s3d>
 #include <SoundManager.s3d>
 #include <Elevator.s3d>
