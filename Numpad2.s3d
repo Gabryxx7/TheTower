@@ -131,8 +131,6 @@ function Numpad2::Numpad2(codeLength, animator, lightsRangeMin, lightsRangeMax)
 		}
 	}
 	
-	outputln(mCodeArray);
-	
 	// Initially the code is not found
 	mCorrectCodeFound = false;
 	
@@ -163,7 +161,7 @@ function Numpad2::Numpad2(codeLength, animator, lightsRangeMin, lightsRangeMax)
 	
 	// Mesh for the screen, to which I add the toon shader using the function from the "Utils" file
 	var screenMesh = CVmNewMesh(VRP_PLANE, 1, [-mScreenWidth / 2.0, -mScreenHeight / 2.0, 0], [mScreenWidth / 2.0, mScreenHeight / 2.0, 0], 2, 2);
-	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], [0.2, 0.2, 0.2], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], [0.2, 0.2, 0.2], 25, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	// Screen object, to which I add the silhouette lines using the function from the "Utils" file
 	mScreenObject = CVmObj(screenMesh);
@@ -379,7 +377,7 @@ function Numpad2::PressSelectedButton()
 {	
 	// I only procede if the code was NOT found yet and if there actually is a button being hovered, and finally if it's passed enough time from the last press
 	if(!mCorrectCodeFound && mCurrentHoveredButton != Void && GetTime() - mDelayTimer > mDelayBetweenKeystrokes)
-	{
+	{	
 		// Saving the time of this new press
 		mDelayTimer = GetTime();
 		
@@ -438,7 +436,7 @@ function Numpad2::PressSelectedButton()
 				if(len(mPressedButtons) == len(mCodeArray))
 					CheckCode();
 			}
-			
+						
 			// Creating the animation to press the button
 			mAnimator.CreateTransition(mCurrentHoveredButton, buttonPos, {buttonPos - [0, 0, mButtonsThickness * 0.8], buttonPos}, 0.25, false);
 		}

@@ -29,6 +29,9 @@ class Clock
 	// Increment value of the hour arrow when the minute's arrow is manually moved
 	var mHourArrowRotationIncrement;
 	
+	// Distance range that the player has to be in in order to use the clock
+	var mCloseEnoughRange;
+	
 	var mSilhouetteShader;
 	
 	
@@ -48,6 +51,7 @@ class Clock
 	IsColliding(raycastStart, raycastEnd, contactPoint);
 	UpdateMinutesArrow(raycastStart, raycastEnd);
 	GetArrowDirection();
+	CheckRange(position);
 };
 
 function Clock::Clock(lightsRangeMin, lightsRangeMax)
@@ -112,6 +116,9 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	mArrowDirection = 0;
 	
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	
+	// Range for the player that wants to use the clock
+	mCloseEnoughRange = 2.0 * SCALE_FACTOR;
 	
 	// This value is not perfect, meaning that if the minute arrow move "1 hour", the hour arrow won't necessarily move 1 hour. I found a value that seemed good
 	// enough; the exact value is irrelevant, since when the minute arrow gets moved for example by a click somewhere in the clock, the minute arrow will
@@ -302,4 +309,20 @@ function Clock::LocalToWorld(point)
 function Clock::GetObj()
 {
 	return mClockObj;
+}
+
+/*
+ * This method checks if the position is in the correct range
+ * 
+ * return: true if it is, false otherwise
+ */
+function Clock::CheckRange(position)
+{
+	var clockPosition = GetPosition();
+	
+	var isInRange = (position.x > (clockPosition.x - mCloseEnoughRange)) && (position.x < (clockPosition.x + mCloseEnoughRange)) &&
+					(position.y > (clockPosition.y - mCloseEnoughRange)) && (position.y < (clockPosition.y + mCloseEnoughRange)) &&
+			   		(position.z > (clockPosition.z - mCloseEnoughRange)) && (position.z < (clockPosition.z + mCloseEnoughRange));
+			   		
+	return isInRange;
 }

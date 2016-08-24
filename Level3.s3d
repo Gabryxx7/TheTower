@@ -12,26 +12,23 @@ class Level3
 {
 	var mIsVRon;
 	
-	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
 	var mEndTimer;
 	
 	var mLevelStatus;
 	
-	// Manager for user inputs
 	var mInputManager;
 	
-	// "Animator" object; used to create transitions and rotations for the objects
+	// Animator objects; I use 2 Animator: one that can be modified to simulate time manipulation, and another one which is invariant from the time, so that 
+	// I can animate some objects (such as the numpad) without having to worry about the direction of time 
 	var mAnimator;
+	var mInvariantAnimator;
 	
-	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
 	var mSoundManager;
 	
-	// Active camera
 	var mCamera;
 	
-	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
 	var mLight0;
 	var mLight1;
 	var mLight2;
@@ -40,19 +37,12 @@ class Level3
 	var mLight1Position;
 	var mLight2Position;
 	
+	var mOpenglTranslationOffset;
 	
-	// "Room" object that contains the whole room
 	var mMainRoom;
 	
-	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
-	// draw the silhouettes for the portals' frames
 	var mSilhouetteShader;
 	
-	// Booleans that indicate whether the elevator has appeared and if it's already open or not
-	var mIsElevatorPresent;
-	var mIsElevatorOpen;
-	
-	// "Room" object that represent the elevator
 	var mElevator;
 	
 	var mElevatorFinalPosition;
@@ -60,40 +50,50 @@ class Level3
 	var mElevatorTravelTime;
 	var mCameraYoffset;
 	
+	var mControllersArray;
+
 	
+	// Boolean; true if the clock is being used to change the time, false otherwise
 	var mIsUsingClock;
 	
+	// Clock object; used to change the direction of time
 	var mMainClock;
+	
+	// Direction of time; can have 3 values: 1 -> time goes forward; 0 -> time stops; -1 -> time goes backward
 	var mTimeDirection;
 	
-	
+	// Array of clocks for the walls, and number of rows and clocks per row
 	var mClocks;
 	var mNumberOfClocks;
 	var mNumberOfClockRows;
 	
-	var mOpenglTranslationOffset;
-	
+	// Texts object and text behind the elevator (this one isn't in the array because I need a direct reference to make it fade away at the end of the level)
 	var mTexts;
 	var mBackText;
 	
+	// Array of star objects and their meshes, that fly in the sky
 	var mStarObjects;
 	var mStarObjectsMeshes;
 	
+	// Array of cone objects and their meshes, that fly in the sky
 	var mConeObjects;
 	var mConeObjectsMeshes;
 	
+	// EventTrigger objects placed in the level; when the player steps on one of them the time changes
 	var mLeftEventTrigger;
 	var mRightEventTrigger1;
 	var mRightEventTrigger2;
 	
+	// The position of the camera in the last iteration of OnTimer; used for an event trigger
 	var mPreviousCameraPosition;
 	
+	// Portal frame for the mirror
 	var mPortalFrame;
 	
-	var mControllersArray;
-
+	// Glass wall at the back of the room
 	var mGlassWall;
 	
+	// Arrays to handle the number objects that show the keycode 
 	var mNumbersObjectArray;
 	var mNumbersCubesObjectArray;
 	var mNumbersListArray;
@@ -101,14 +101,21 @@ class Level3
 	var mDelayBetweenNumberChange;
 	var mFinalNumberFoundArray;
 	
+	// Boolean; true if the player discovered the final number objects
 	var mFinalNumbersFound;
 	
+	// Numpad2 object
 	var mNumpad;
+	
+	// References to the controller behing hovered near something in a certain moment
+	var mControllerBeingHoveredInNumpad;
+	var mControllerBeingHoveredInClock;
 	
 	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
 	var mDebugController;
 	var mDebugControllerHidden;
 	var mDebugKeyHit;
+	
 	
 	// Private functions
 	CreateStarThing();
@@ -142,6 +149,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 		
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
+	mInvariantAnimator = Animator();
 	
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, false);
@@ -184,6 +192,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	aadd(mTexts, leftText);
 	aadd(mTexts, rightText);
 	
+	// Text behind the elevator
 	mBackText = Text("Look back to find what you need", 1.0);
 	mBackText.SetRotation(180, 0, 1, 0);
 		
@@ -343,7 +352,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	var codeLength = 3;
 	
 	// Creating the numpad
-	mNumpad = Numpad2(codeLength, mAnimator, 1, 2);
+	mNumpad = Numpad2(codeLength, mInvariantAnimator, 1, 2);
 	mNumpad.SetRotation(180, 0, 1, 0);
 	
 	// Getting the generated code from the numpad
@@ -654,8 +663,8 @@ function Level3::CreateConeThing()
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
-	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
 
 	// Initially the player is not using the clock object
 	mIsUsingClock = false;
@@ -1100,8 +1109,8 @@ function Level3::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-		    	mInputManager.RestoreCameraPosition();
+//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
 
 			// I check if the player is in one of the event triggers at the sides of the room; the first one is the one on the left
 			if(mLeftEventTrigger.IsPointInside(cameraPosition))
@@ -1165,6 +1174,18 @@ function Level3::UpdateLogic(dt)
 					// If time is going backward and there are at least 2 elements in the list of numbers...
 					else if(mTimeDirection == -1 && len(numbersList) > 1)
 					{
+						// If there are too many numbers in the list, I keep only the first ones, otherwise the player needs to go back
+						// in time for a while
+						var tooManyNumbers = 7;
+						
+						// I eliminate all the last numbers
+						if(len(numbersList) > tooManyNumbers)
+						{
+							for(var j = len(numbersList) - 1; j >= tooManyNumbers - 1; j--)
+								adel(numbersList, j);
+						}
+
+						
 						// I get the previous from last number
 						var lastNumberIndex = len(numbersList) - 2;
 						number = numbersList[lastNumberIndex];
@@ -1177,7 +1198,7 @@ function Level3::UpdateLogic(dt)
 						{
 							// I remove the current scaling transition and create a new one (without loop) to form the last number
 							mAnimator.RemoveTransitionByObject(numberObject, SCALING_TRANSITION);
-							mAnimator.CreateScalingTransition(numberObject, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0, false);
+							mInvariantAnimator.CreateScalingTransition(numberObject, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0, false);
 							
 							// I save the fact that this number object has finished its job
 							mFinalNumberFoundArray[i] = true;
@@ -1211,76 +1232,124 @@ function Level3::UpdateLogic(dt)
 			}
 			
 			
-			
-			if(mNumpad.SelectClosestButtonToPosition(mDebugController.GetPosition()))
+			// For each controller, I need to check if it's close to the numpad, and in that case if the user pressed the trigger
+			for(var i = 0; i < len(mControllersArray); i++)
 			{
-				mDebugController.SetActionAvailable(true);
+				var controller = mControllersArray[i];
 				
-				if(mInputManager.IsPressingPrimaryButton())
+				// If there is no controller currently being hovered in the numpad, or this is that controller, I check if the controller is close to the numpad, and
+				// in that case the numpad will find the closest button being hovered.
+				// At most 1 controller can hover at time; if one is being hovered, the other one has to wait that the hovered one goes out of range first
+				if((mControllerBeingHoveredInNumpad == Void || controller == mControllerBeingHoveredInNumpad) && mNumpad.SelectClosestButtonToPosition(controller.GetPosition()))
 				{
-					mNumpad.PressSelectedButton(mAnimator);
+					// If this is the first time that the controller goes in the range of the numpad, I set that there is an action available
+					// and that this controller is the one being hovered
+					if(mControllerBeingHoveredInNumpad == Void)
+					{
+						controller.SetActionAvailable(true);
+						mControllerBeingHoveredInNumpad = controller;
+					}
+											
+					// If the user has pressed the trigger, I press the button currently hovered
+					if(mInputManager.IsPressingPrimaryButton(mControllerBeingHoveredInNumpad.GetIndex()))
+						mNumpad.PressSelectedButton();
+				}
+				// If the controller wasn't in range and this controller was the one currently hovering, I set that it's not anymore
+				else if(controller == mControllerBeingHoveredInNumpad)
+				{
+					controller.SetActionAvailable(false);
+					mControllerBeingHoveredInNumpad = Void;
 				}
 			}
-			else
-				mDebugController.SetActionAvailable(false);
 			
-			var finalNoumbersFound = true;
 			
-			for(var i = 0; i < len(mFinalNumberFoundArray) && finalNoumbersFound; i++)
-				finalNoumbersFound = mFinalNumberFoundArray[i];
-			
-				 
-			// I check if the user has clicked with the mouse or whatever; if that is the case I need to check "where" he clicked    	
-	    	if(!finalNoumbersFound && mInputManager.IsPressingPrimaryButton())
-	    	{
-	    		// I get the ray that starts from the camera and goes until the end of the rendering plane. Basically I take a ray in the direction
-	    		// the user is facing. It doesn't really matter where the ray ends, it's the starting point and its direction that really count.
-	    		// But to be safe I make sure that the ray ends "at the end of time"
-	    		var raycastOrigin = cameraPosition;
-	    		var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
-	    		
-	    		// I check if the clock was selected
-	    		var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mMainClock);
-	    		
-	    		// If the clock wasn't being used and there actually is a contact point on the clock, I state that the player is using it
-	    		if(!mIsUsingClock && contactPoint != Void)
-	    			mIsUsingClock = true;
-	    		
-	    		// If the player is using the clock...
-	    		if(mIsUsingClock)
-    			{    				
-    				// I update the clock's arrow with regards on the direction of the previously computed ray
-					mMainClock.UpdateMinutesArrow(raycastOrigin, raycastEnd);
-					
-					// I get the resulting direction that the arrow moved to (1: clockwise, -1: counter-clockwise, 0: didn't move)
-					var timeDirection = mMainClock.GetArrowDirection();
-					
-					// If the direction found is different from the current direction, and the direction found wasn't 0 (in that case the arrow is still)...
-					if(mTimeDirection != timeDirection && timeDirection != 0)
+			// Now I check again the controllers to see if one is using the clock. I could check this in the previous for loop, but to make the code
+			// cleaner I decided to use another for; since the controllers are just 2 it's not a big deal in terms of performance.
+			// Checking if a controller is near the clock and it's using it is very similar to the case of the numpad
+			for(var i = 0; i < len(mControllersArray); i++)
+			{
+				var controller = mControllersArray[i];
+				
+				if((mControllerBeingHoveredInClock == Void || controller == mControllerBeingHoveredInClock) && mMainClock.CheckRange(controller.GetPosition()))
+				{
+					if(mControllerBeingHoveredInClock == Void)
 					{
-						// ...I invert the active transitions; ALL of them. I also save the new time direction
-						mAnimator.InvertTransitions();
-						mTimeDirection = timeDirection;
+						controller.SetActionAvailable(true);
+						mControllerBeingHoveredInClock = controller;
 					}
+											
+					// If the user has pressed the trigger, I need to activate the clock
+					if(mInputManager.IsPressingPrimaryButton(mControllerBeingHoveredInClock.GetIndex()))
+					{
+						// I need to find the angle of rotation for the clock's arrow. To do that, I need to find the intersection between
+						// the position of the controller and the plane where the clocks lays. To do that, I need to find the normal of the clock, 
+						// and I do that using a function from the "Utils" file. The normal returned will point in the wrong direction though: I need the normal
+						// that points towards the front face of the clock, so I invert the sign (this way if we're behind the clock it won't trigger)
+						var clockNormal = - ComputeNormalOfPlanarObject(mMainClock);
+						
+						// Now I create a ray that starts from the controller's position and goes to infinite across the direction defined by the normal
+						var raycastOrigin = mControllerBeingHoveredInClock.GetPosition();
+	    				var raycastEnd = raycastOrigin + clockNormal * mCamera.GetZFar();
+	    					    				
+	    				// Now I can find the intersection, using a function from the "Utils" file
+						var contactPoint = FindIntersectionInPlane(raycastOrigin, raycastEnd, mMainClock.GetPosition(), clockNormal);
+			    		
+			    		// If the clock wasn't being used and there actually is a contact point on the plane, I state that the player is using the clock
+			    		if(!mIsUsingClock && contactPoint != Void)
+			    			mIsUsingClock = true;
+			    		
+			    		// If the player is using the clock...
+			    		if(mIsUsingClock)
+		    			{    				
+		    				// I update the clock's arrow with regards on the direction of the previously computed ray
+							mMainClock.UpdateMinutesArrow(raycastOrigin, raycastEnd);
+							
+							// I get the resulting direction that the arrow moved to (1: clockwise, -1: counter-clockwise, 0: didn't move)
+							var timeDirection = mMainClock.GetArrowDirection();
+							
+							// If the direction found is different from the current direction, and the direction found wasn't 0 (in that case the arrow is still)...
+							if(mTimeDirection != timeDirection && timeDirection != 0)
+							{
+								// ...I invert the active transitions; ALL of them. I also save the new time direction
+								mAnimator.InvertTransitions();
+								mTimeDirection = timeDirection;
+							}
+							
+							// I change the scale factor of the objects, to speed them up. I always take the positive value of the direction.
+							// Note that when the arrow is still, timeDirection will be 0, so in that case the scale factor becomes 0 and the object stay still
+							mAnimator.ChangeScaleFactors(abs(timeDirection) * TIME_CLOCK_VELOCITY_MULTIPLIER);
+		    			}
+			    	}
+			    	// If there are no clicks...
+			    	else
+			    	{
+			    		// The player was using the clock, now he isn't anymore
+			    		if(mIsUsingClock)
+			    		{
+				    		mIsUsingClock = false;
+			    		
+				    		// If the player is not using the clock anymore I also set the speed of the objects back to normal.
+				    		// Note: I don't invert the direction to make it go as default: the objects keep going in the direction they were going
+				    		mAnimator.ChangeScaleFactors(1);
+			    		}
+		    		}
 					
-					// I change the scale factor of the objects, to speed them up. I always take the positive value of the direction.
-					// Note that when the arrow is still, timeDirection will be 0, so in that case the scale factor becomes 0 and the object stay still
-					mAnimator.ChangeScaleFactors(abs(timeDirection) * TIME_CLOCK_VELOCITY_MULTIPLIER);
-    			}
-	    	}
-	    	// If there are no clicks...
-	    	else
-	    	{
-	    		// The player was using the clock, now he isn't anymore
-	    		if(mIsUsingClock)
-	    		{
-		    		mIsUsingClock = false;
-	    		
-		    		// If the player is not using the clock anymore I also set the speed of the objects back to normal.
-		    		// Note: I don't invert the direction to make it go as default: the objects keep going in the direction they were going
-		    		mAnimator.ChangeScaleFactors(1);
-	    		}
-    		}
+				}
+				// If the controller wasn't in range and this controller was the one currently hovering, I set that it's not anymore
+				else if(controller == mControllerBeingHoveredInClock)
+				{
+					controller.SetActionAvailable(false);
+					mControllerBeingHoveredInClock = Void;
+					
+					// Also, if the player was using the clock while he moved out of range, now he isn't anymore
+		    		if(mIsUsingClock)
+		    		{
+			    		mIsUsingClock = false;
+		    		
+			    		mAnimator.ChangeScaleFactors(1);
+		    		}
+				}
+			}
 	    		
 			break;
 		}
@@ -1291,6 +1360,7 @@ function Level3::UpdateLogic(dt)
 		
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
+	mInvariantAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
 }
 

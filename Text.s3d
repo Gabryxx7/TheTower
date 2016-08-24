@@ -179,14 +179,6 @@ function Text::LoadString(string)
 	}
 }
 
-//function Text::SetScale(scale)
-//{
-//	mFontScale = scale;
-//	
-//	// I reload the string so that the scale takes effect
-//	LoadString(mString);
-//}
-
 /*
  * In order to use this class with some pre-built XVR methods, I need to pass the container CVmObj of the text from time to time, 
  * so I need a method that gets it
@@ -263,8 +255,13 @@ function Text::Unhide()
 	mTextContainerObj.Unhide();
 }
 
+/*
+ * This method removes EVERY occurence of the character passed as parameter from the string currently in the Text object
+ */
 function Text::RemoveCharFromText(character)
 {	
+	// I can't simply iterate over the letters in the string and replace with "" because in XVR the "" character is not allowed apparently.
+	// The only way I found to remove a character is to split the string in substrings using that delemiter and then reatach the result substrings together
 	var substrings = Split(mString, character);
 	
 	mString = "";

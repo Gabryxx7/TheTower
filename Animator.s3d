@@ -453,6 +453,7 @@ function Animator::UpdateTransitions(dt)
 			// Getting some useful information from the arrays
 			var currentPosition = object.GetPosition();
 			var startingPosition = mStartingPositions[i];
+			var endPosition = mEndPositions[i];
 			var distance = mDistanceArray[i];
 			var direction = mDirectionsArray[i];
 			var xSpeed = mXSpeedArray[i];
@@ -469,8 +470,10 @@ function Animator::UpdateTransitions(dt)
 			object.SetPosition(currentPosition);
 	
 			// Now I compute the distance traveled from the starting position to the current one; if it's greater or equal than the total distance, I'm done
-			if(Modulus(startingPosition - currentPosition) >= distance)
+			if(Modulus(startingPosition - currentPosition) >= Modulus(startingPosition - endPosition))
 			{
+				object.SetPosition(endPosition);
+								
 				// Actually, if the objects has waypoints, I'm not done since there might be more waypoints to travel to
 				if(mHasWaypointsArray[i])
 				{
@@ -486,6 +489,7 @@ function Animator::UpdateTransitions(dt)
 						// In that case I take the new waypoint and I set as new starting position the current one
 						var endpoint = waypoints[mWaypointsCounterArray[i]];
 						mStartingPositions[i] = currentPosition;
+						mEndPositions[i] = endpoint;
 						
 						var vec = endPoint - currentPosition;
 	
@@ -539,6 +543,7 @@ function Animator::UpdateTransitions(dt)
 			    {
 				 	mDirectionsArray[i] = -mDirectionsArray[i];
 				 	mWaypointsArray[i] = mStartingPositions[i];
+				 	mEndPositions[i] = mStartingPositions[i];
 				 	mStartingPositions[i] = currentPosition;
 				}
 				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
@@ -611,7 +616,8 @@ function Animator::UpdateTransitions(dt)
 			currentScale.z += dt * zSpeed * mScaleFactorArray[i];
 			
 			object.SetScale(currentScale);
-			if(Modulus(currentScale - startingScale ) >= Modulus(startingScale - endScale))
+			
+			if(Modulus(currentScale - startingScale) >= Modulus(startingScale - endScale))
 			{
 				object.SetScale(endScale);
 				
@@ -623,17 +629,17 @@ function Animator::UpdateTransitions(dt)
 						RemoveTransitionByIndex(i);
 					else if(mWaypointsCounterArray[i] < len(waypoints))
 					{
-						var endpoint = waypoints[mWaypointsCounterArray[i]];
+						var newEndScale = waypoints[mWaypointsCounterArray[i]];
 						mStartingPositions[i] = currentScale;
-						mEndPositions[i] = endpoint;
+						mEndPositions[i] = newEndScale;
 						
-						distance = Modulus(currentScale - endpoint);
+						distance = Modulus(endScale - newEndScale);
 										
 						mDistanceArray[i] = distance;
 						
-						xSpeed = (endpoint.x - currentScale.x) / mTimeArray[i];
-						ySpeed = (endpoint.y - currentScale.y) / mTimeArray[i];
-						zSpeed = (endpoint.z - currentScale.z) / mTimeArray[i];
+						xSpeed = (newEndScale.x - endScale.x) / mTimeArray[i];
+						ySpeed = (newEndScale.y - endScale.y) / mTimeArray[i];
+						zSpeed = (newEndScale.z - endScale.z) / mTimeArray[i];
 												
 						mXSpeedArray[i] = xSpeed;
 						mYSpeedArray[i] = ySpeed;
@@ -744,8 +750,8 @@ function Animator::UpdateTransitions(dt)
 					mYSpeedArray[i] = -mYSpeedArray[i];
 					mZSpeedArray[i] = -mZSpeedArray[i];
 				 	mWaypointsArray[i] = endingColor;
-				 	mStartingPositions[i] = endingColor;
 				 	mDistanceArray[i] = startingColor;
+				 	mStartingPositions[i] = endingColor;
 				}
 				else
 					RemoveTransitionByIndex(i);
@@ -805,6 +811,9 @@ function Animator::InvertTransitions()
 				else 
 					newStartingPosCounter = (mWaypointsCounterArray[i] + 1) % len(waypoints);
 					
+				// Setting the new ending position
+				mEndPositions[i] = mStartingPositions[i];
+					
 				// Setting the new starting position from the counter we found
 				mStartingPositions[i] = waypoints[newStartingPosCounter];
 				
@@ -841,6 +850,7 @@ function Animator::InvertTransitions()
 				// I swap the starting position with the ending position (which is held in the mWaypointsArray to save space), so we can check 
 				// in the update method if the object reached the end of the transition or not
 				var tmp = mStartingPositions[i];
+				mEndPositions[i] = mStartingPositions[i];
 			 	mStartingPositions[i] = mWaypointsArray[i];
 			 	mWaypointsArray[i] = tmp;
 			}
@@ -867,6 +877,9 @@ function Animator::InvertTransitions()
 				else 
 					newStartingPosCounter = (mWaypointsCounterArray[i] + 1) % len(waypoints);
 					
+				// Setting the new ending scale
+				mEndPositions[i] = mStartingPositions[i];
+				
 				// Setting the new starting position from the counter we found
 				mStartingPositions[i] = waypoints[newStartingPosCounter];
 				
@@ -924,6 +937,7 @@ function Animator::InvertTransitions()
 			mZSpeedArray[i] = -mZSpeedArray[i];
 				
 			var tmp = mStartingPositions[i];
+		 	mDistanceArray[i] = mStartingPositions[i];
 		 	mStartingPositions[i] = mWaypointsArray[i];
 		 	mWaypointsArray[i] = tmp;
 		}

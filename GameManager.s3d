@@ -73,6 +73,7 @@ class GameManager
 	var mLevel1;
 	var mLevel2;
 	var mLevel3;
+	var mLevel4;
 	
 	/* In order to use the teleporting feature along with the HTC Vive, when a user teleports to a destination we need to change the camera's position 
 	 * in opengl fashon, meaning NOT using the SetPosition() of XVR. This is because the HTC Vive is powered by OpenVR, which works in its own way, and 
@@ -197,9 +198,10 @@ function GameManager::GameManager(HMD)
 		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
-		mCurrentLevelNumber = 1;
+		mCurrentLevelNumber = 3;
 		
 		mLevel2 = Level2(mIsVRon, mInputManager, mSoundManager);
+		mLevel3 = Level3(mIsVRon, mInputManager, mSoundManager);
 		
 		mFadingIn = false;
 		mFadingOut = false;
@@ -215,6 +217,7 @@ function GameManager::GameManager(HMD)
 		
 		mLevel1 = Level1(mIsVRon, mInputManager, mSoundManager);
 		mLevel2 = Level2(mIsVRon, mInputManager, mSoundManager);
+		mLevel3 = Level3(mIsVRon, mInputManager, mSoundManager);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -512,8 +515,8 @@ function GameManager::UpdateLogic(dt)
 					
 					case 2:
 					{
-//						mCurrentLevel = mLevel3;
-//						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+						mCurrentLevel = mLevel3;
+						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 						break;
 					}
 				}
