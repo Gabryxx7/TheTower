@@ -32,6 +32,8 @@ class Text
 	var mFontScale;
 	
 	var mColor;
+	
+	var mIsVisible;
 
 	// Public functions
 	LoadString(string);
@@ -39,7 +41,7 @@ class Text
 	GetPosition();
 	GetWidthOfLine(lineNumber);
 	GetFontHeight();
-	SetScale(scale);
+	GetScale();
 	GetObj();
 	GetRotationMatrix();
 	SetRotationMatrix(rotationMatrix);
@@ -50,6 +52,7 @@ class Text
 	Draw();
 	Hide();
 	Unhide();
+	IsVisible();
 	RemoveCharFromText(character);
 	GetLine(lineNumber);
 };
@@ -98,6 +101,8 @@ function Text::Text(string, scale, color)
 		// Adding the new object as child of the main container, positioning it so that it stays in the center and each new object stays below the previous
 		mTextContainerObj.AddChild(txtObj, -stringWidth, -(i * mStringHeight), 0);
 	}
+	
+	mIsVisible = true;
 	
 	// Tmp for a bug that doesn't show any strings added to mTextContainerObj after the creation, even though they are put as children 
 	// of mTextContainerObj. As a workaround I'm manually creating 5 more CVmObjects that are empty at the beginning
@@ -240,6 +245,11 @@ function Text::GetFontHeight()
 	return mStringHeight;
 }
 
+function Text::GetScale()
+{
+	return mTextContainerObj.GetScale();
+}
+
 function Text::Draw()
 {
 	mTextContainerObj.Draw();
@@ -247,12 +257,19 @@ function Text::Draw()
 
 function Text::Hide()
 {
+	mIsVisible = true;
 	mTextContainerObj.Hide();
 }
 
 function Text::Unhide()
 {
+	mIsVisible = false;
 	mTextContainerObj.Unhide();
+}
+
+function Text::IsVisible()
+{
+	return mIsVisible;
 }
 
 /*

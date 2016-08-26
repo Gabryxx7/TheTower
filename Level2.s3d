@@ -905,7 +905,7 @@ function Level2::UpdateLogic(dt)
 			}else if(distanceFromCircle  < musicRadius*musicRadius*1.5){ //If it's further I'll switch to the calm music with high volume that gets lower when getting closer to the outer circle
 				if(musicPlaying){				
 					musicPlaying = false;
-					mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 1, true);
+					mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 1, true, 1.0);
 					mSoundManager.PlayMusic();	
 				}			
 				var volume = 1-(musicRadius*musicRadius*1.5 - distanceFromCircle);

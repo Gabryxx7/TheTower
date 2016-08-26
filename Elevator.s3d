@@ -30,6 +30,8 @@ class Elevator
 	var mLeftDoorOpenPosition;
 	var mRightDoorOpenPosition;
 	
+	var mIsVisible;
+	
 	
 	// Public functions
 	Draw();
@@ -47,6 +49,8 @@ class Elevator
 	GetRoomWidth();
 	GetRoomDepth();
 	GetRoomHeight();
+	GetScale();
+	SetScale(x, y, z);
 	SetLightsRange(min, max);
 	GetLightsRange();
 	LocalToWorld(point);
@@ -56,6 +60,7 @@ class Elevator
 	Translate(x, y, z);
 	Hide();
 	Unhide();
+	IsVisible();
 	CheckIntersection(rayOrigin, rayEnd, contactPoint, normal);
 };
 
@@ -141,6 +146,8 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	// Computing the world coordinates of the bounding box
 	mLowerCornerWorld = mElevatorRoom.LocalToWorld(mLowerCornerPosition);
     mUpperCornerWorld = mElevatorRoom.LocalToWorld(mUpperCornerPosition);
+    
+    mIsVisible = true;
 }
 
 function Elevator::Draw()
@@ -307,6 +314,16 @@ function Elevator::GetRoomHeight()
 	return mElevatorRoom.GetRoomHeight();
 }
 
+function Elevator::GetScale()
+{
+	return mElevatorRoom.GetScale();
+}
+
+function Elevator::SetScale(x, y, z)
+{
+	mElevatorRoom.SetScale(x, y, z);
+}
+
 function Elevator::SetLightsRange(min ,max)
 {
 	mElevatorRoom.SetLightsRange(min, max);
@@ -345,10 +362,17 @@ function Elevator::LocalToWorld(point)
 
 function Elevator::Hide()
 {
-	return mElevatorRoom.Hide();
+	mIsVisible = false;
+	mElevatorRoom.Hide();
 }
 
 function Elevator::Unhide()
 {
-	return mElevatorRoom.Unhide();
+	mIsVisible = true;
+	mElevatorRoom.Unhide();
+}
+
+function Elevator::IsVisible()
+{
+	return mIsVisible;
 }

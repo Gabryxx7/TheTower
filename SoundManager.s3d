@@ -25,12 +25,22 @@ class SoundManager
 	// Ending volume for the fading effect; only used if the music is actually fading
 	var mFadingEndingVolume;
 	
+	// Boolean that is true if there is an
+	var mMusicTransitionOn;
+	
+	// If there is an active transitino going on, these variables contain the information regarding the new music
+	var mNewMusicName;
+	var mNewMusicVolume;
+	var mNewMusicFadeIn;
+	var mNewMusicTimeFadeIn;
+	
 	// Public functions for sounds
 	AddSound(filename, id, volume);
 	PlaySound(id, resetFirst, volume);
 
 	// Public functions for music
-	SetMusic(name, volume, fadeIn);
+	SetMusic(name, volume, fadeIn, fadeInTime);
+	FadeOutAndSetMusic(timeFadeOut, newMusicName, newMusicVolume, newMusicFadeIn, newMusicTimeFadeIn);
 	PlayMusic();
 	StopMusic();
 	PauseMusic();
@@ -52,8 +62,14 @@ function SoundManager::SoundManager()
 	mMusic = CVmMMMp3();
 	mIsFadingIn = false;
 	mIsFadingOut = false;
+	mMusicTransitionOn = false;
 	mFadingStep = 0;
 	mMusicVolume = 0;
+	
+	mNewMusicName = "";
+	mNewMusicVolume = 0;
+	mNewMusicFadeIn = false;
+	mNewMusicTimeFadeIn = 0;
 }
 
 /*
@@ -115,20 +131,45 @@ function SoundManager::PlaySound(id, resetFirst, volume)
  * 
  * name: (string) the filename
  * volume: (float) starting volume
- * fadeIn: (boolean) if true, the music is fade in from volume 0 to the passed volume value, in a fixed time
+ * fadeIn: optional (boolean) if true, the music is fade in from volume 0 to the passed volume value, in a fixed time
+ * fadeInTime: optional (float) time for the fade in; if "fadeIn" is false it's ignored
  * 
  */
-function SoundManager::SetMusic(name, volume, fadeIn)
+function SoundManager::SetMusic(name, volume, fadeIn, fadeInTime)
 {
 	mMusic.Load(name);
-
-	if(fadeIn)
+	
+	if(fadeIn != Void && fadeIn)
 	{
 		mMusic.SetVolume(0);
-		FadeInMusic(7, volume);
+		FadeInMusic(fadeInTime, volume);
 	}
 	else
 		mMusic.SetVolume(volume);
+}
+
+/*
+ * Method that creates a music transition from the current one to a new one, fading out smoothly the current one before making the change.
+ * 
+ * timeFadeOut: time to fade out the current music
+ * newMusicName: (string) the new filename
+ * newMusicVolume: (float) starting volume
+ * newMusicFadeIn: optional (boolean) if true, the music is fade in from volume 0 to the passed volume value, in a fixed time
+ * newMusicTimeFadeIn: optional (float) time for the fade in; if "fadeIn" is false it's ignored
+ */
+function SoundManager::FadeOutAndSetMusic(timeFadeOut, newMusicName, newMusicVolume, newMusicFadeIn, newMusicTimeFadeIn)
+{
+	// I state that there is an active transition
+	mMusicTransitionOn = true;
+	
+	// I save the parameters
+	mNewMusicName = newMusicName;
+	mNewMusicVolume = newMusicVolume;
+	mNewMusicFadeIn = newMusicFadeIn;
+	mNewMusicTimeFadeIn = newMusicTimeFadeIn;
+	
+	// I fade out the current music
+	FadeOutMusic(timeFadeOut, 0.0);
 }
 
 /*
@@ -171,13 +212,23 @@ function SoundManager::UpdateMusic(dt)
 	{
 		// I'm setting the new volume taking into account the step and the dt increment to make it smooth as requested
 		SetMusicVolume(mMusicVolume + mFadingStep * dt);
-
+		
 		// Check to see if the volume as reached the desidered level; in that case I state that the music is no longer fading, so when
 		// this method will be called it will do nothing
 		if((mIsFadingIn && mMusicVolume >= mFadingEndingVolume) || (mIsFadingOut && mMusicVolume <= mFadingEndingVolume))
 		{
 			mIsFadingIn = false;
 			mIsFadingOut = false;
+			
+			// If there is an active music transition, I set the new music
+			if(mMusicTransitionOn)
+			{
+				mMusicTransitionOn = false;
+				
+				// Setting the music and playing it (because it doesn't do so automatically)
+				SetMusic(mNewMusicName, mNewMusicVolume, mNewMusicFadeIn, mNewMusicTimeFadeIn);
+				PlayMusic();
+			}
 		}
 	}	
 }

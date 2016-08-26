@@ -67,6 +67,8 @@ class Room
 	GetRoomWidth();
 	GetRoomDepth();
 	GetRoomHeight();
+	GetScale();
+	SetScale(x, y, z);
 	SetLightsRange(min, max);
 	GetLightsRange();
 	LocalToWorld(point);
@@ -703,6 +705,16 @@ function Room::GetRoomDepth()
 function Room::GetRoomHeight()
 {
 	return mRoomHeight;
+}
+
+function Room::GetScale()
+{
+	return mRoom.GetScale();
+}
+
+function Room::SetScale(x, y, z)
+{
+	mRoom.SetScale(x, y, z);
 }
 
 function Room::SetLightsRange(min, max)

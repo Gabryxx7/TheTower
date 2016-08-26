@@ -34,10 +34,15 @@ class Clock
 	
 	var mSilhouetteShader;
 	
+	var mIsVisible;
 	
 	// Public functions
 	Draw();
 	GetObj();
+	GetScale();
+	Hide();
+	Unhide();
+	IsVisible();
 	SetLightsRange(min, max);
 	GetLightsRange();
 	GetMinutesArrowObj();
@@ -119,6 +124,8 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	
 	// Range for the player that wants to use the clock
 	mCloseEnoughRange = 2.0 * SCALE_FACTOR;
+	
+	mIsVisible = true;
 	
 	// This value is not perfect, meaning that if the minute arrow move "1 hour", the hour arrow won't necessarily move 1 hour. I found a value that seemed good
 	// enough; the exact value is irrelevant, since when the minute arrow gets moved for example by a click somewhere in the clock, the minute arrow will
@@ -309,6 +316,27 @@ function Clock::LocalToWorld(point)
 function Clock::GetObj()
 {
 	return mClockObj;
+}
+
+function Clock::GetScale()
+{
+	return mClockObj.GetScale();
+}
+function Clock::Hide()
+{
+	mIsVisible = false;
+	mClockObj.Hide();
+}
+
+function Clock::Unhide()
+{
+	mIsVisible = true;
+	mClockObj.Unhide();
+}
+
+function Clock::IsVisible()
+{
+	return mIsVisible;
 }
 
 /*

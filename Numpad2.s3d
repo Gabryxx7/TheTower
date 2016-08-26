@@ -75,13 +75,14 @@ class Numpad2
 	GetPosition();
 	SetRotationMatrix(matrix);
 	GetRotationMatrix();
+	GetScale();
 	Rotate(angle, x, y, z);
 	SetRotation(angle, x, y, z);
 	LocalToWorld(point);
 	Hide();
 	Unhide();
-	SetScale(x, y, z);
 	IsVisible();
+	SetScale(x, y, z);
 	IsCollidingBBox(object);
 	PressSelectedButton();
 	SelectClosestButtonToPosition(position);
@@ -548,6 +549,10 @@ function Numpad2::GetRotationMatrix()
 	return mNumpadObject.GetRotationMatrix();
 }
 
+function Numpad2::GetScale()
+{
+	return mNumpadObject.GetScale();
+}
 
 function Numpad2::Rotate(angle, x, y, z)
 {
@@ -566,24 +571,24 @@ function Numpad2::LocalToWorld(point)
 
 function Numpad2::Hide()
 {
-	mNumpadObject.Hide();
 	mIsVisible = false;
+	mNumpadObject.Hide();
 }
 
 function Numpad2::Unhide()
 {
-	mNumpadObject.Unhide();
 	mIsVisible = true;
-}
-
-function Numpad2::SetScale(x, y, z)
-{
-	return mNumpadObject.SetScale(x, y, z);
+	mNumpadObject.Unhide();
 }
 
 function Numpad2::IsVisible()
 {
 	return mIsVisible;
+}
+
+function Numpad2::SetScale(x, y, z)
+{
+	return mNumpadObject.SetScale(x, y, z);
 }
 
 function Numpad2::GetChildren()

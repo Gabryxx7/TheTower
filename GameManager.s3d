@@ -1,10 +1,11 @@
 global var DEBUG_MODE = true;
-global var MUSIC_ON = false;
+global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
 
 #define STATUS_MENU     0
 #define STATUS_INGAME   1
+#define STATUS_ENDGAME   2
 
 #define USE_TOON_SHADER 1
 
@@ -43,6 +44,7 @@ class GameManager
 	// This variable has access to the DLL functions to control the Vive
 	var mHMD;
 	var mJoystick;
+	
 	// Boolean, set to true if the Vive was detected at start; false otherwise
 	var mIsVRon;
 	
@@ -60,6 +62,10 @@ class GameManager
 	var mInputManager;
 	var mSoundManager;
 	
+	var mEnding;
+	var mEndTimer;
+	var mTimeToEnd;
+	
 	// Booleans that indicate if the screen is fading to black or not
 	var mFadingIn;
 	var mFadingOut;
@@ -70,10 +76,7 @@ class GameManager
 	
 	var mLights;
 	
-	var mLevel1;
-	var mLevel2;
-	var mLevel3;
-	var mLevel4;
+	var mLevels;
 	
 	/* In order to use the teleporting feature along with the HTC Vive, when a user teleports to a destination we need to change the camera's position 
 	 * in opengl fashon, meaning NOT using the SetPosition() of XVR. This is because the HTC Vive is powered by OpenVR, which works in its own way, and 
@@ -133,7 +136,6 @@ function GameManager::GameManager(HMD)
 	mJoystick = CVmJoystick();
 	
 	mIsVRon = mHMD.IsVRactive() == 1;
-//	mIsVRon = false;
 		
 	mGameStatus = STATUS_INGAME;
 		
@@ -146,7 +148,7 @@ function GameManager::GameManager(HMD)
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
-	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true);
+	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true, 7.0);
 	
 	if(MUSIC_ON)
 		mSoundManager.PlayMusic();
@@ -183,6 +185,12 @@ function GameManager::GameManager(HMD)
 	aadd(mLights, light2);
 	
 	mOpenglTranslationOffset = [0, 0, 0]; 
+	
+	
+	mTimeToEnd = 7000;
+	mEnding = false;
+	
+	mLevels = {};
 
 	if(DEBUG_MODE)
 	{
@@ -195,14 +203,18 @@ function GameManager::GameManager(HMD)
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
 				
-		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 		
-		mCurrentLevelNumber = 3;
+		mCurrentLevelNumber = 4;
 		
-		mLevel2 = Level2(mIsVRon, mInputManager, mSoundManager);
-		mLevel3 = Level3(mIsVRon, mInputManager, mSoundManager);
+//		aadd(mLevels, "placeholder");
+//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
+		mFadeToBlackAlpha = 1;
 		mFadingIn = false;
 		mFadingOut = false;
 	}
@@ -215,9 +227,11 @@ function GameManager::GameManager(HMD)
 		
 		mElevator = mCurrentLevel.GetElevator();
 		
-		mLevel1 = Level1(mIsVRon, mInputManager, mSoundManager);
-		mLevel2 = Level2(mIsVRon, mInputManager, mSoundManager);
-		mLevel3 = Level3(mIsVRon, mInputManager, mSoundManager);
+		aadd(mLevels, "placeholder");
+		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -256,6 +270,7 @@ function GameManager::Render()
 		case STATUS_MENU:
 	//		mMenu.Render();
 			break;
+		case STATUS_ENDGAME:
 		case STATUS_INGAME:{
 				
 			mCurrentLevel.SetupOpenglLights();
@@ -383,7 +398,7 @@ function GameManager::XVRRendering(){
 	else if(mFadingOut)
 	{
 		FadeToBlackScreen(false);
-		mFadingOut = mFadeToBlackAlpha < 1.0;
+//		mFadingOut = mFadeToBlackAlpha < 1.0; // For now I let the screen go black indefinitely
 	}
 }
 
@@ -397,6 +412,11 @@ function GameManager::UpdateLogic(dt)
 		case STATUS_MENU:
 		
 			break;
+		case STATUS_ENDGAME:
+			// If the game is ending and has passed enough time, I quit the application. The problem is that the Quit() function doesn't work.
+			// Note that I keep updating the current level's logic and I render it, because in the meantime the screen is fading to black
+//			if(GetTime() - mEndTimer > mTimeToEnd)
+//				Quit();
 		case STATUS_INGAME:	
 		{
 			// The first thing we have to do is to update the logic of the current level
@@ -497,32 +517,23 @@ function GameManager::UpdateLogic(dt)
 			
 			if(mCurrentLevel.IsLevelCompleted())
 			{				
-				switch(mCurrentLevelNumber)
+				if(mCurrentLevelNumber + 1 < len(mLevels))
 				{
-					case 0:
+					mCurrentLevel = mLevels[mCurrentLevelNumber + 1];
+					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+					mCurrentLevelNumber++;
+				}
+				else
+				{
+					if(!mEnding)
 					{
-						mCurrentLevel = mLevel1;
-						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
-						break;
-					}
-					
-					case 1:
-					{
-						mCurrentLevel = mLevel2;
-						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
-						break;
-					}
-					
-					case 2:
-					{
-						mCurrentLevel = mLevel3;
-						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
-						break;
+						mFadingOut = true;
+						mFadeToBlackAlpha = 0;
+						mGameStatus = STATUS_ENDGAME;
+						mEndTimer = GetTime();
+						mEnding = true;
 					}
 				}
-				
-				mCurrentLevelNumber++;
-				
 			}
 			
 			break;

@@ -2,10 +2,15 @@
 #define STATUS_ELEVATOR_MOVING 0
 #define STATUS_ELEVATOR_ARRIVED 1
 #define STATUS_LEVEL_STARTED 2
-#define STATUS_LEVEL_ENDING 3
+
+// The multiplier used to speedup the objects when the player uses the clock
+#define TIME_CLOCK_VELOCITY_MULTIPLIER 3.0
+
+#include <Clock.s3d>
 
 /*
- * This level is strictly related to Level1; most of the things were copied and pasted. Comments will be on the parts that are different
+ * This is the level with the clocks.
+ * It's also the last level of the game
  */
 class Level4
 {
@@ -19,7 +24,12 @@ class Level4
 	var mLevelStatus;
 	
 	var mInputManager;
+	
+	// Animator objects; I use 2 Animator: one that can be modified to simulate time manipulation, and another one which is invariant from the time, so that 
+	// I can animate some objects (such as the numpad) without having to worry about the direction of time 
 	var mAnimator;
+	var mInvariantAnimator;
+	
 	var mSoundManager;
 	
 	var mCamera;
@@ -27,11 +37,17 @@ class Level4
 	var mLight0;
 	var mLight1;
 	var mLight2;
+	
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
 	
+	var mOpenglTranslationOffset;
+	
 	var mMainRoom;
+	
+	var mSilhouetteShader;
+	
 	var mElevator;
 	
 	var mElevatorFinalPosition;
@@ -39,64 +55,118 @@ class Level4
 	var mElevatorTravelTime;
 	var mCameraYoffset;
 	
-	var mOpenglTranslationOffset;
-	
-	// Array containing the Vive controllers (ViveController objects), if VR is on; also, array containing duplicates and the currently 
-	// visible controllers (among real ones and duplicates)
 	var mControllersArray;
-	var mControllersDuplicateArray;
-	var mCurrentlyVisibleControllersArray;
-	
-	var mIsDrawing;
-	var mDrawingShader;
-	var mLinesTimeVariable;
-	var mPreviousPoint;
-	var mKeepEveryLine;
 
-	var mDrawingsArray;
-	var mDrawingsAlphaArray;
-	var mIsDrawingConnectedArray;
 	
-	var mControllerBeingUsedIndex;
-	var mControllersInLightArray;
-	var mIsControllerInLight;
+	// Boolean; true if the clock is being used to change the time, false otherwise
+	var mIsUsingClock;
 	
-	var mConnectors;
-	var mConnectorsGroups;
+	// Clock object; used to change the direction of time
+	var mMainClock;
 	
-	// This variable contains the index of the currently active group among the ones in the mConnectorsGroups array 
-	var mCurrentActiveGroup;
+	// Direction of time; can have 3 values: 1 -> time goes forward; 0 -> time stops; -1 -> time goes backward
+	var mTimeDirection;
 	
-	var mStartingConnectorsArray;
-	var mStartingActiveConnector;
-	var mGoodStartingPoint;
-	var mCurrentActiveConnector;
+	// Array of clocks for the walls, and number of rows and clocks per row
+	var mClocks;
+	var mNumberOfClocks;
+	var mNumberOfClockRows;
 	
-	var mConnectorsGroupLinkedCounter;
+	// Texts object and text behind the elevator (this one isn't in the array because I need a direct reference to make it fade away at the end of the level)
+	var mTexts;
+	var mBackText;
 	
-	// Text objects used in the level
-	var mFrontText;
-	var mBackText; 
-	var mLeftText; 
+	// Array of star objects and their meshes, that fly in the sky
+	var mStarObjects;
+	var mStarObjectsMeshes;
 	
+	// Array of cone objects and their meshes, that fly in the sky
+	var mConeObjects;
+	var mConeObjectsMeshes;
 	
-	// This float holds the value that is the threshold used to fade things out from one side or the other of the level
-	var mDistanceToZaxisThreshold;
+	// EventTrigger objects placed in the level; when the player steps on one of them the time changes
+	var mLeftEventTrigger;
+	var mRightEventTrigger1;
+	var mRightEventTrigger2;
 	
-	// Previous alpha value for the connectors; used to make them disappear/appear when you walk to/away from them
-	var mPreviousAlpha;
-			
-	// This boolean is true if the left side of the room is being mirrored, or false if it's the opposite side being mirrored
-	var mMirrorSideIsLeft;
-		
+	// The position of the camera in the last iteration of OnTimer; used for an event trigger
+	var mPreviousCameraPosition;
+	
+	// Portal frame for the mirror
+	var mPortalFrame;
+	
+	// Glass wall at the back of the room
+	var mGlassWall;
+	
+	// Arrays to handle the number objects that show the keycode 
+	var mNumbersObjectArray;
+	var mNumbersCubesObjectArray;
+	var mNumbersListArray;
+	var mChangedNumberTime;
+	var mDelayBetweenNumberChange;
+	var mFinalNumberFoundArray;
+	
+	// Boolean; true if the player discovered the final number objects
+	var mFinalNumbersFound;
+	
+	// Numpad2 object
+	var mNumpad;
+	
+	// References to the controller behing hovered near something in a certain moment
+	var mControllerBeingHoveredInNumpad;
+	var mControllerBeingHoveredInClock;
+	
 	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
 	var mDebugController;
 	var mDebugControllerHidden;
 	var mDebugKeyHit;
 	
+	
+	
+	// Tower object and its height
+	var mTower;
+	var mTowerHeight;
+	
+	// Boolean that is true if the animation for the end of the game has started
+	var mPortalAnimationStarted;
+	
+	// When the animation for the end of the game has started, these variables are modified so that the portal's camera gets moved for the animation
+	var mPortalTranslateOffset;
+	var mPortalRotateOffset;
+	
+	// At certain moments in the ending animation, the portal's camera will move away from the tower and closer to it; these variable holds the direction
+	// of the movement (either -1, away from the tower, or 1, closer to the tower) and the distance crossed across the given direction
+	var mPortalTranslateZDirection;
+	var mDistanceCrossed;
+	
+	// This variable holds the increment to apply to the y of the portal's camera in order to make the descent of the tower
+	var mPortalTranslateYincrement;
+	
+	// These variables hold the time when the music for the final animation started, the list of keypoints in the music (i.e. moments where the 
+	// animation has to do something different; they're in milliseconds) and the current keypoint we're at in the animation
+	var mMusicStartTime;
+	var mMusicKeypointsTimes;
+	var mCurrentKeypoint;
+
+	// In the final animation the light0 will start moving; these variables hold its current angle, the radius of the rotation and its speed
+	var mLight0RotationAngle;
+	var mLight0RotationRadius;
+	var mLight0RotationSpeed;
+	
+	// Billboard for the light0, used only in the final animation
+	var mLight0Billboard;
+	
+	// "The Tower" text object, displayed at the base of the tower in the final animation
+	var mTheTowerText;
+	
+	
 	// Private functions
-	CheckActiveConnector();
-	HandleDrawings();
+	CreateStarThing();
+	CreateConeThing();
+	DrawPortal();
+	DrawRoom();
+	InvertObjectsPosition();
+	InvertObject(object);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -108,6 +178,10 @@ class Level4
 	SetupOpenglLights();
 };
 
+
+/*
+ * Constructor. Takes as parameter the input manager of the application
+ */
 function Level4::Level4(isVRon, inputManager, soundManager)
 {		
 	mIsVRon = isVRon;
@@ -115,80 +189,322 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
-	mEnding = false;
-	mIsLevelCompleted = false;
-	mTimeToEnd = 2500;
 		
-	mIsDrawing = false;
-	mGoodStartingPoint = false;
-		
+	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
+	mInvariantAnimator = Animator();
 	
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
+	// Creating the main room
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, false);
 	
-	
-	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
-	mLinesTimeVariable = 0;
-	
-	var offsetFromFarWall = mMainRoom.GetRoomDepth()/2 - 20.0 * SCALE_FACTOR;
-	var offset = 20 * SCALE_FACTOR;
-	
-	// The first 2 connectors that appear
-	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
-	connector1.SetPosition([-offset, 0.05, -offsetFromFarWall]);
-	connector1.Rotate(15, 0, 1, 0);
-	
-	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
-	connector2.SetPosition([offset, 0.05, -offsetFromFarWall]);
-	connector2.Rotate(203, 0, 1, 0);
-	
-	// This is group 1: the connectors in front of the elevator
-	connector1.SetLinkedConnector(connector2);
-	connector2.SetLinkedConnector(connector1);
-	
-	// The second group of connectors
-	var connector3 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector3.SetPosition([-offset, 0.05, offsetFromFarWall]);
-	connector3.Rotate(15, 0, 1, 0);
-	
-	var connector4 = DrawingsConnector([0.0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offset, 0.05, offsetFromFarWall]);
-	connector4.Rotate(203, 0, 1, 0);
-	
-	connector4.SetLinkedConnector(connector3);
-    connector3.SetLinkedConnector(connector4);
-    
-    // Initially these connectors are hidden
-    connector3.Hide();
-    connector4.Hide();
-
-	mConnectors = {};
-	
-	aadd(mConnectors, connector1);
-	aadd(mConnectors, connector2);
-	aadd(mConnectors, connector3);
-	aadd(mConnectors, connector4);
-	
-	mConnectorsGroups = {};
-	
-	aadd(mConnectorsGroups, {connector1, connector2});
-	aadd(mConnectorsGroups, {connector3, connector4});
-	
-	mConnectorsGroupLinkedCounter = 0;
-	mCurrentActiveGroup = 0;
-	
-	// Initially the mirror side is the left one
-	mMirrorSideIsLeft = true;
-	
-	mIsControllerInLight = false;
-	mControllersInLightArray = {false, false};
-	
-	mControllerBeingUsedIndex = 0;
-	
-	mControllersArray = {};
-	mControllersDuplicateArray = {};
-	mCurrentlyVisibleControllersArray = {};
+	// Instantiating the silhouette shader, to draw outlines
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 		
+
+	mMainClock = Clock(1, 2);
+	mMainClock.Translate(0, 5 * SCALE_FACTOR, -20 * SCALE_FACTOR);
+	mMainClock.Rotate(180, 0, 1, 0);
+	
+	// Initially the time runs forward
+	mTimeDirection = 1;
+	
+		
+	// Creating texts object for the scene
+	var frontText = Text("Time is relative", 2.0);
+	frontText.Rotate(180, 0, 1, 0);
+	var frontTextPos = [2.0 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2.0 - 0.1 * SCALE_FACTOR];
+	var frontTextBoundingBox = [frontTextPos.x - frontText.GetWidthOfLine(0) * 2.0, frontTextPos.y - 2.5 * SCALE_FACTOR, frontTextPos.x + frontText.GetWidthOfLine(0) * 2.0, frontTextPos.y + 2.5 * SCALE_FACTOR];
+	frontText.SetPosition(frontTextPos);
+	
+	// Creating texts object for the scene
+	var leftText = Text("Sometimes it seems to follow you as you go", 2.0);
+	leftText.Rotate(-90, 0, 1, 0);
+	var leftTextPos = [mMainRoom.GetRoomWidth()/2.0 - 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR];
+	var leftTextBoundingBox = [leftTextPos.z - leftText.GetWidthOfLine(0) * 2.0, leftTextPos.y - 2.5 * SCALE_FACTOR, leftTextPos.z + leftText.GetWidthOfLine(0) * 2.0, leftTextPos.y + 2.5 * SCALE_FACTOR];
+	leftText.SetPosition(leftTextPos);
+	
+	// Creating texts object for the scene
+	var rightText = Text("At times it seems to slow down or speed up", 2.0);
+	rightText.Rotate(90, 0, 1, 0);
+	var rightTextPos = [-mMainRoom.GetRoomWidth()/2.0 + 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR];
+	var rightTextBoundingBox = [rightTextPos.z - rightText.GetWidthOfLine(0) * 2.0, rightTextPos.y - 2.5 * SCALE_FACTOR, rightTextPos.z + rightText.GetWidthOfLine(0) * 2.0, rightTextPos.y + 2.5 * SCALE_FACTOR];
+	rightText.SetPosition(rightTextPos);
+	
+	mTexts = {};
+	aadd(mTexts, frontText);
+	aadd(mTexts, leftText);
+	aadd(mTexts, rightText);
+	
+	// Text behind the elevator
+	mBackText = Text("Look back to find what you need", 1.0);
+	mBackText.SetRotation(180, 0, 1, 0);
+		
+	// Number of clocks per row and number of clocks rows for each wall
+	mNumberOfClocks = 8;
+	mNumberOfClockRows = 6;
+	mClocks = {};
+	
+	// Computing the step distance in between each clock and the step in terms of height in between them
+	var step = mMainRoom.GetRoomWidth() / mNumberOfClocks;
+	var heightStep = mMainRoom.GetRoomHeight() / mNumberOfClockRows;
+	
+	// Creating every clock in the wall. There is no way to create a function that adds the clocks to a given wall, because of the different
+	// sizes and positions and rotations of the walls (i.e. we move across the x axis or the z axis? There are problems like that to handle).
+	// So to make things easier, I almost copy and paste the code for each wall, adding a clock to each wall whenever a clock is created
+	for(var i = 0; i < mNumberOfClockRows; i++)
+	{
+		for(var j = 0; j < mNumberOfClocks; j++)
+		{
+			// Clock for the front wall
+			var newClockFront = Clock(1, 2);
+			
+			// Positioning in the clocks in the wall, taking into account the total width available, the number of clocks and so on in order to spread them evenly
+			var x = (mMainRoom.GetRoomWidth()/2.0 - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			var z = mMainRoom.GetRoomDepth() - 0.3 * SCALE_FACTOR;
+			
+			aadd(mClocks, newClockFront);
+			
+			var position = [x, y, z];
+			
+			// If this given clocks is on top of the text for the wall, I don't add the clock to the wall (badly written code)
+			if(position.x >= frontTextBoundingBox[0] && position.x <= frontTextBoundingBox[2]
+			&& position.y >= frontTextBoundingBox[1] - mMainRoom.GetRoomHeight()/ 2.0 && position.y <= frontTextBoundingBox[3] - mMainRoom.GetRoomHeight()/ 2.0)
+			{
+				continue;
+			}
+				
+		
+			// I move a little bit randomly the clock up or down and left or right
+			position.x += Rand(1) == 0 ? Rand(8) / 30.0 * SCALE_FACTOR : -Rand(8) / 30.0 * SCALE_FACTOR;
+			position.y += Rand(1) == 0 ? Rand(2) / 2.0 * SCALE_FACTOR : -Rand(2) / 2.0 * SCALE_FACTOR;
+			
+			// If the position is below the floor (taking into account that position.y is in the object's coordinate system so I have to add the half-height of
+			// the room, minus the height of the circle) I re-increment the y
+			while(position.y + mMainRoom.GetRoomHeight()/ 2.0 - 1 * SCALE_FACTOR <= 0)
+				position.y += Rand(9)/5.0 * SCALE_FACTOR;
+									
+			// I create the rotations for the minutes and hours arrows for the clock, with a pseudo-random time
+			mAnimator.CreateRotatingTransition(newClockFront.GetMinutesArrowObj(), 0, (360), [0, 0, 1], 7.0 + Rand(30) / 5.0, true, false);
+			mAnimator.CreateRotatingTransition(newClockFront.GetHoursArrowObj(), 0, (360), [0, 0, 1], 70.0 + Rand(30) / 5.0, true, false);
+			
+			mMainRoom.AddObject(newClockFront.GetObj(), position.x, position.y, position.z);
+			
+			
+			// Creating clock for the left wall; same procedure as above
+			var newClockLeft = Clock(1, 2);
+			newClockLeft.Rotate(90, 0, 1, 0); // This time I rotate the clock too
+			
+			x = (mMainRoom.GetRoomWidth()/2.0 - 0.3 * SCALE_FACTOR);
+			y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			z = (mMainRoom.GetRoomDepth() - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomDepth()/2.0 - (step/2.0)*(i % 2);
+			
+			aadd(mClocks, newClockLeft);
+			
+			position = [x, y, z];
+			
+			if(position.z - mMainRoom.GetRoomDepth() / 2.0 >= leftTextBoundingBox[0] && position.z - mMainRoom.GetRoomDepth() / 2.0 <= leftTextBoundingBox[2]
+			&& position.y >= leftTextBoundingBox[1] - mMainRoom.GetRoomHeight()/ 2.0 && position.y <= leftTextBoundingBox[3] - mMainRoom.GetRoomHeight()/ 2.0)
+			{
+				continue;
+			}
+				
+		
+			position.z += Rand(1) == 0 ? Rand(8)/30.0 * SCALE_FACTOR : -Rand(8)/30.0 * SCALE_FACTOR;
+			position.y += Rand(1) == 0 ? Rand(2)/2.0 * SCALE_FACTOR : -Rand(2)/2.0 * SCALE_FACTOR;
+			
+			while(position.y + mMainRoom.GetRoomHeight()/ 2.0 - 1 * SCALE_FACTOR <= 0)
+				position.y += Rand(9)/5.0 * SCALE_FACTOR;
+									
+			mAnimator.CreateRotatingTransition(newClockLeft.GetMinutesArrowObj(), 0, (360), [0, 0, 1], 7.0 + Rand(30) / 5.0, true, false);
+			mAnimator.CreateRotatingTransition(newClockLeft.GetHoursArrowObj(), 0, (360), [0, 0, 1], 70.0 + Rand(30) / 5.0, true, false);
+			
+			mMainRoom.AddObject(newClockLeft.GetObj(), position.x, position.y, position.z);
+			
+			
+			// Creating clock for the right wall; same procedure as above
+			var newClockRight = Clock(1, 2);
+			newClockRight.Rotate(-90, 0, 1, 0);
+			
+			x = -mMainRoom.GetRoomWidth()/2.0 + 0.3 * SCALE_FACTOR;
+			y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			z = (mMainRoom.GetRoomDepth() - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomDepth()/2.0 - (step/2.0)*(i % 2);
+			
+			aadd(mClocks, newClockRight);
+			
+			position = [x, y, z];
+			
+			if(position.z - mMainRoom.GetRoomDepth() / 2.0 >= leftTextBoundingBox[0] && position.z - mMainRoom.GetRoomDepth() / 2.0 <= leftTextBoundingBox[2]
+			&& position.y >= leftTextBoundingBox[1] - mMainRoom.GetRoomHeight()/ 2.0 && position.y <= leftTextBoundingBox[3] - mMainRoom.GetRoomHeight()/ 2.0)
+			{
+				continue;
+			}
+		
+			position.z += Rand(1) == 0 ? Rand(8)/30.0 * SCALE_FACTOR : -Rand(8)/30.0 * SCALE_FACTOR;
+			position.y += Rand(1) == 0 ? Rand(2)/2.0 * SCALE_FACTOR : -Rand(2)/2.0 * SCALE_FACTOR;
+			
+			// If the position is below the floor (taking into account that position.y is in the object's coordinate system so I have to add the half-height of
+			// the room, minus the height of the circle) I re-increment the y
+			while(position.y + mMainRoom.GetRoomHeight()/ 2.0 - 1 * SCALE_FACTOR <= 0)
+				position.y += Rand(9)/5.0 * SCALE_FACTOR;
+									
+			mAnimator.CreateRotatingTransition(newClockRight.GetMinutesArrowObj(), 0, (360), [0, 0, 1], 7.0 + Rand(30) / 5.0, true, false);
+			mAnimator.CreateRotatingTransition(newClockRight.GetHoursArrowObj(), 0, (360), [0, 0, 1], 70.0 + Rand(30) / 5.0, true, false);
+			
+			mMainRoom.AddObject(newClockRight.GetObj(), position.x, position.y, position.z);
+		}
+	}
+
+	mStarObjects = {};
+	mStarObjectsMeshes = {};
+	
+	// Creating random star things
+	for(var i = 0; i < 30; i++)
+		aadd(mStarObjects, CreateStarThing());
+		
+	mConeObjects = {};
+	mConeObjectsMeshes = {};
+	
+	// Creating random cone things
+	for(var i = 0; i < 25; i++)
+		aadd(mConeObjects, CreateConeThing());
+		
+		
+	// Creating the event triggers for creating the time-changing effects
+	var eventTriggerWidth = mMainRoom.GetRoomDepth() / 2.0;
+	var eventTriggersOffset = mMainRoom.GetRoomWidth() / 3.3;
+	var leftEventTriggerDepth = mMainRoom.GetRoomDepth() / 2.5;
+	var rightEventTriggerDepth = leftEventTriggerDepth / 2.0;
+
+	mLeftEventTrigger = EventTrigger(eventTriggerWidth,leftEventTriggerDepth, 0);
+	mLeftEventTrigger.Translate(eventTriggersOffset, 0, 0);
+	
+	mRightEventTrigger1 = EventTrigger(eventTriggerWidth, rightEventTriggerDepth, 0);
+	mRightEventTrigger1.Translate(-eventTriggersOffset, 0, -(rightEventTriggerDepth / 2.0));
+	
+	mRightEventTrigger2 = EventTrigger(eventTriggerWidth, rightEventTriggerDepth, 0);
+	mRightEventTrigger2.Translate(-eventTriggersOffset, 0,  rightEventTriggerDepth / 2.0);
+	
+	
+	// Portal frame for the mirror portal; it's as big as the wall and I put it in the back of the room
+	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-mMainRoom.GetRoomWidth() / 2.0, -mMainRoom.GetRoomHeight() / 2.0, 0], [mMainRoom.GetRoomWidth() / 2.0, mMainRoom.GetRoomHeight() / 2.0, 0], 2, 2);
+	mPortalFrame = CVmObj(portalFrameMesh);
+	mPortalFrame.Translate(0, mMainRoom.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 + 0.1 * SCALE_FACTOR);
+	
+	// Variables used to handle the ending animation, done entirely with opengl functions and with the portal, of course
+	mPortalTranslateOffset = [0.0, 0.0, 0.0];
+	mPortalRotateOffset = 0;
+	mPortalTranslateZDirection = -1;
+	mDistanceCrossed = 0;
+	mPortalAnimationStarted = false;
+	
+	
+	// Glass wall to create a "mirror-like" surface; it's as big as the wall and I put it in the back of the room
+	mGlassWall = CreateGlassWall(mMainRoom.GetRoomWidth(), mMainRoom.GetRoomHeight(), 0.2 * SCALE_FACTOR, 2, 2);
+	mGlassWall.Rotate(180, 0, 1, 0);
+	mGlassWall.Translate(0, mMainRoom.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 + 0.13 * SCALE_FACTOR);
+	
+	
+	// Now I create the keypad and the number objects. This is the length of the code for the keypad
+	var codeLength = 3;
+	
+	// Creating the numpad
+	mNumpad = Numpad2(codeLength, mInvariantAnimator, 1, 2);
+	mNumpad.SetRotation(180, 0, 1, 0);
+	
+	// Getting the generated code from the numpad
+	var numpadCode = mNumpad.GetCodeArray();
+	
+	// Max numbers of cubes needed to form a number (the "8", it's the number that needs the most cubes)
+	var maxCubesPerNumber = 52;
+	
+	// Size for the cubes
+	var cubeSizes = 0.80 * SCALE_FACTOR;
+	
+	// Arrays to handle the number objects and their chaning numbers
+	mNumbersObjectArray = {};
+	mNumbersCubesObjectArray = {};
+	mNumbersListArray = {};
+	mChangedNumberTime = {};
+	mFinalNumberFoundArray = {};
+	
+	// Time delay between a change from one number to the other; needed to prevent rapid changes in the numbers due to the player using the clock (mostly)
+	mDelayBetweenNumberChange = 300;
+	
+	// Initially the player didn't find the final numbers (i.e. the actual code)
+	mFinalNumbersFound = false;
+	
+	// Number objects' position, and x offset between each other
+	var numbersPosition = [0, 6.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
+	var numbersPositionOffset = 10.0 * SCALE_FACTOR;
+	
+	// Total from in the x axis that the objects occupy
+	var totalSpace = numbersPositionOffset * codeLength;
+		
+	// Now I create each object
+	for(var i = 0; i < codeLength; i++)
+	{
+		// Container; holds the cubes object
+		var numbersContainer = CVmObj();
+		aadd(mNumbersObjectArray, numbersContainer);
+		
+		// Cubes array; each object has a different array
+		var cubesArray = {};
+		aadd(mNumbersCubesObjectArray, cubesArray);
+		
+		// Initially I set that the time passed from the last change is 0 (i.e. no change yet)
+		aadd(mChangedNumberTime, 0);
+		
+		// Adding the code number as the first number in the list of each object
+		aadd(mNumbersListArray, { numpadCode[i] });
+		
+		// For each object I set that initially the final number was not found
+		aadd(mFinalNumberFoundArray, false);
+		
+		// Generating the positions for the given number for each cube; I use an offset in the y axis so that the center of the container 
+		// seems to be in the center of the number (pretty much)
+		var cubesPositions = GenerateNumberPositions(numpadCode[i], [0 * SCALE_FACTOR, -numbersPosition.y, 0 * SCALE_FACTOR]);
+		
+		// Color for the cubes, chosen randomly
+		var colorMesh = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		
+		// Cube mesh; I add the toon shader to it
+		var cubeMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes / 2.0, -cubeSizes / 2.0, 0], [cubeSizes / 2.0, cubeSizes / 2.0, 0], cubeSizes);
+		AddToonShaderToMesh(cubeMesh, [0.4, 0.4, 0.4], colorMesh, [0.2, 0.2, 0.2], 50, 1, 2, SCALE_FACTOR, 1.0);
+		
+		var length = len(cubesPositions);
+		
+		// Now I set the position of each cube. Note that there might be more cubes than needed for this given number, 
+		// so I will hide those unusued (the ones in the end)
+		for(var j = 0; j < maxCubesPerNumber; j++)
+		{
+			var object = CVmObj(cubeMesh);
+			aadd(cubesArray, object);
+			
+			// If this cube needs to be used, I add it as child of the container; otherwise, I add it but hide it
+			if(j < length)
+				numbersContainer.AddChild(object, cubesPositions[j].x, cubesPositions[j].y, cubesPositions[j].z);
+			else
+			{
+				numbersContainer.AddChild(object, 0, 0, 0);
+				object.Hide();
+			}
+		}
+		
+		// I compute the position so that the first number in the code is on the left
+		numbersPosition.x = (numbersPositionOffset - totalSpace) + numbersPositionOffset * (i+1);
+		
+		// Setting the position of the number object
+		numbersContainer.SetPosition(numbersPosition);
+		
+		// Creating the scaling transition
+		mAnimator.CreateScalingTransition(numbersContainer, [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 2.0, true);
+	}
+	
+	
+	// I need to get the Vive controllers now
+	mControllersArray = {};
+	
 	if(mIsVRon)
 	{
 		var controller1 = mInputManager.GetController(1);
@@ -196,17 +512,6 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		
 		aadd(mControllersArray, controller1);
 		aadd(mControllersArray, controller2);
-		
-		aadd(mCurrentlyVisibleControllersArray, controller1);
-		aadd(mCurrentlyVisibleControllersArray, controller2);
-		
-		// I create the duplicates of the controllers so that I can move them around in the mirrored side
-		var controllerDuplicate1 = ViveController(1);
-		var controllersDuplicate2 = ViveController(2);
-		
-		// Initially these controllers are the visible ones
-		aadd(mControllersDuplicateArray, controllerDuplicate1);
-		aadd(mControllersDuplicateArray, controllersDuplicate2);
 	}
 	else
 	{
@@ -215,41 +520,235 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		mDebugControllerHidden = false;
 		mDebugKeyhit = false;
 		mDebugController.SetRotation(90, 0, 1, 0);
-
+		
 		aadd(mControllersArray, mDebugController);
-		aadd(mCurrentlyVisibleControllersArray, mDebugController);
-		
-		// I need to create the second controller too so that I don't have differentiate the rest of the code when VR is on or off, but I hide it
-		var controllerDuplicate2 = ViveController(2);
-		controllerDuplicate2.Hide();
-		
-		var controllerDuplicate1 = ViveController(1);
-		aadd(mControllersDuplicateArray, controllerDuplicate1);
-		aadd(mControllersDuplicateArray, controllerDuplicate2);
 	}
 	
+	// Now I create the tower, using the same procedure as for the Menu, but with different sizes
+	var towerLevelHeight = mMainRoom.GetRoomHeight();
+	var towerLevelWidth =  mMainRoom.GetRoomWidth();
+	var towerLevelDepth =  mMainRoom.GetRoomDepth();
+	var towerConnectionsHeight = towerLevelHeight / 1.5;
+	var towerConnectionsWidth = towerLevelWidth / 1.5;
 	
-	mDrawingsArray = {};
-	mDrawingsAlphaArray = {};
-	mIsDrawingConnectedArray = {};
-	mStartingConnectorsArray = {};
+	mTower = CVmObj();
 	
-	mKeepEveryLine = false;
+	// The number of levels was chosen so that the resulting animation's speed was sufficiently fast
+	var numberOfLevels = 60;
 	
-	mDistanceToZaxisThreshold = 10.0 * SCALE_FACTOR;
-	mPreviousAlpha = 0;
+	for(var i = 0; i < numberOfLevels; i++)
+	{
+		var connectionMesh = CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2.0, -towerConnectionsHeight/2.0, 0], [towerConnectionsWidth/2.0, towerConnectionsHeight/2, 0], towerConnectionsWidth);
+		var levelMesh = CVmNewMesh(VRP_BOX,1, [-towerLevelWidth/2.0, -towerLevelHeight/2.0, 0], [towerLevelWidth/2.0, towerLevelHeight/2.0, 0], towerLevelDepth);
+		
+		// Adding the toon shader to the boxes
+		AddToonShaderToMesh(connectionMesh, [0.4, 0.4, 0.4], [0.8, 0.8, 0.8], [0.2, 0.2, 0.2], 50, 0, 0, SCALE_FACTOR, 1.0);
+		AddToonShaderToMesh(levelMesh, [0.4, 0.4, 0.4], [0.8, 0.8, 0.8], [0.2, 0.2, 0.2], 50, 0, 0, SCALE_FACTOR, 1.0);
+		
+		mTower.AddChild(CVmObj(connectionMesh), 0, (towerConnectionsHeight/2.0 + towerLevelHeight/2.0) + (towerConnectionsHeight + towerLevelHeight)*i, -towerLevelWidth/2.0 + towerConnectionsWidth/2.0);
+		mTower.AddChild(CVmObj(levelMesh), 0, (towerConnectionsHeight + towerLevelHeight)*i,0);
+	}
 	
-	// Creating texts object for the scene
-	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
-	mFrontText.Rotate(180, 0, 1, 0);
+	// Computing the total height
+	mTowerHeight = numberOfLevels * (towerLevelHeight + towerConnectionsHeight);
+	
+	// Setting the tower position to be right below the main room
+	var roomPos = mMainRoom.GetPosition();
+	mTower.SetPosition(roomPos.x, roomPos.y - mTowerHeight - 0.01 * SCALE_FACTOR, roomPos.z + towerLevelDepth);
+	
+	
+	// These are the list of keypoints in the song for the final animation. The values are seconds in the song multiplied by 1000 to save them as milliseconds
+	mMusicKeypointsTimes = {0, 20.7 * 1000, 36.0 * 1000, 51 * 1000, 61 * 1000, 64.6 * 1000, 70.1 * 1000, 92.5 * 1000, 100.0 * 1000};
+	mCurrentKeypoint = 0;
+	
+	// The increment for the portal's camera y during the animation is given by the total length of the music (107 seconds), minus the time it takes
+	// for the animation to start the descent (minus a few seconds to make the animation a bit faster)
+	mPortalTranslateYincrement = mTowerHeight / (107.0 - 28.0);  
+		
+	// Initial angle and speed increment for the light0 during the final animation
+	mLight0RotationAngle = 0;
+	mLight0RotationSpeed = 70;
 
-	mBackText = Text(" If you need to connect things together but can't\nreach them, maybe you don't really need to", 1.0);
-	mBackText.Rotate(180, 0, 1, 0);
+	// Creating the billboard for the light0, for the final animation. I don't use the CVmBillboard() class because it doesn't work when using the stencil
+	// buffer, and I have no idea why (I couldn't render it in the portal in any way). So I decided to create my own billboard, which is basically
+	// a plane mesh with a texture, that turns to face the player at each frame
+	var billboardSizeHalved = (5.0 * SCALE_FACTOR) / 2.0;
+	var billboardMesh = CVmNewMesh(VRP_PLANE, 1, [-billboardSizeHalved, -billboardSizeHalved, 0], [billboardSizeHalved, billboardSizeHalved, 0], 2, 2);
 	
-	mLeftText = Text("Not all connections need to be made physically", 2.0);
-	mLeftText.Rotate(270, 0, 1, 0);
+	// Setting the texture and making it a bit transparent and with a red/yellow tonality
+	var billboardMaterial = CVmMaterial();
+	billboardMaterial.SetTexture(CVmTexture("light.png"));
+	billboardMaterial.diffuse = [1.0, 0.5, 0.0];
+	billboardMaterial.transparency = 0.5;
+	
+	billboardMesh.ForceMaterial(billboardMaterial);
+	
+	// Creating the billboard object
+	mLight0Billboard = CVmObj(billboardMesh);
+	
+	
+	// Text to be put in the base of the tower. I don't use the Text() class since I want it to be white, and I've no idea why but in the Text() 
+	// class the color of the texts doesn't work
+	var txt = CVmText();
+	txt.Load("THE TOWER");
+	txt.SetScale(8.0  * SCALE_FACTOR, 8.0  * SCALE_FACTOR);
+	txt.SetColor(1, 1, 1);
+					
+	mTheTowerText = CVmObj();
+	mTheTowerText.LinkToText(txt);
+	mTheTowerText.SetRotation(180, 0, 1, 0);
 }
 
+/*
+ * This is an auxiliary method that creates star-like objects
+ */
+function Level4::CreateStarThing()
+{
+	var baseSize = 0.3 * SCALE_FACTOR + (Rand(4) / 10.0) * SCALE_FACTOR;
+	var pyramidHeight = 1.0 * SCALE_FACTOR + (Rand(8) / 10.0) * SCALE_FACTOR;
+	
+	var pyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
+	
+	var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	
+	
+	pyramidMesh.ShaderAdd("toonShader.glsl", 0);
+	pyramidMesh.ShaderActivate(true);
+	pyramidMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	pyramidMesh.ShaderSetParameter(0, "diffuse", 0, color1);
+	pyramidMesh.ShaderSetParameter(0, "specular", 0, [0.4, 0.4, 0.4]);
+	pyramidMesh.ShaderSetParameter(0, "shininess", 0, 50);
+	pyramidMesh.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	pyramidMesh.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	pyramidMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	pyramidMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	
+	aadd(mStarObjectsMeshes, pyramidMesh);
+	
+	var pyramidObj1 = CVmObj(pyramidMesh);
+	var pyramidObj2 = CVmObj(pyramidMesh);
+	var pyramidObj3 = CVmObj(pyramidMesh);
+	var pyramidObj4 = CVmObj(pyramidMesh);
+	var pyramidObj5 = CVmObj(pyramidMesh);
+	var pyramidObj6 = CVmObj(pyramidMesh);
+	
+	pyramidObj2.Rotate(90, 0, 0, 1);
+	pyramidObj3.Rotate(180, 0, 0, 1);
+	pyramidObj4.Rotate(270, 0, 0, 1);
+	pyramidObj5.Rotate(90, 1, 0, 0);
+	pyramidObj6.Rotate(-90, 1, 0, 0);
+	
+	var star = CVmObj();
+	star.AddChild(pyramidObj1, 0, 0, 0);
+	star.AddChild(pyramidObj2, 0, -baseSize, 0);
+	star.AddChild(pyramidObj3, baseSize, -baseSize, 0);
+	star.AddChild(pyramidObj4, baseSize, 0, 0);
+	star.AddChild(pyramidObj5, 0, -baseSize, 0);
+	star.AddChild(pyramidObj6, 0, 0, -baseSize);
+	
+	// I create a random starting position for the rotation-around-point transition. I make it so every object has slightly different positions.
+	// The x pos is determined by the radius of the circle (which I know to be posZ since I simply rotate around the origin) and by the cos of a random angle
+	var posY = mMainRoom.GetRoomHeight() / 2.0 + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
+	var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
+	var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
+	
+	// The period of the rotation-around-point. Since I'm using the "random" option in the transition, the speed of the objects depend also on the radius.
+	// Since the radius is pretty big (half the depth of the room pretty much), the objects tend to go very fast. So, I use a very high period, while I normally
+	// would use something like 20 seconds as base to obtain almost the same velocity
+	var time = 140.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+	
+	// I create a random rotation axis for the rotating transition
+	var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+			
+	// I randomly choose if the object has to move clockwise along the circle or anticlockwise
+	var clockwise = Rand(1) == 1;
+
+	// Creating the transitions
+	mAnimator.CreateScalingTransition(star, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+	mAnimator.CreateRotatingTransition(star, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	mAnimator.CreateRotationAroundPointTransition(star, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
+	mAnimator.CreateToonShaderColorTransition(pyramidMesh, color1, color2, 3.5, true);
+
+	return star;
+}
+
+/*
+ * This is an auxiliary method that creates cone-thing objects; works just like CreateStarThing()
+ */
+function Level4::CreateConeThing()
+{
+	var coneHeight = 3.0 * SCALE_FACTOR;
+	var coneMesh = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, coneHeight * SCALE_FACTOR);
+	
+	// Need also to scale the mesh itself; if the sizes are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
+	coneMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+	
+	var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	
+	coneMesh.ShaderAdd("toonShader.glsl", 0);
+	coneMesh.ShaderActivate(true);
+	coneMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
+	coneMesh.ShaderSetParameter(0, "diffuse", 0, color1);
+	coneMesh.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
+	coneMesh.ShaderSetParameter(0, "shininess", 0, 50);
+	coneMesh.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
+	coneMesh.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
+	coneMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	coneMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	
+	aadd(mConeObjectsMeshes, coneMesh);
+	
+	var coneObj1 = CVmObj(coneMesh); 
+	var coneObj2 = CVmObj(coneMesh); 
+	var coneObj3 = CVmObj(coneMesh); 
+	var coneObj4 = CVmObj(coneMesh);  
+	var coneObj5 = CVmObj(coneMesh); 
+	var coneObj6 = CVmObj(coneMesh);  
+	var coneObj7 = CVmObj(coneMesh); 
+	var coneObj8 = CVmObj(coneMesh);  
+		
+	global var coneContainerObj = CVmObj();
+	coneContainerObj.AddChild(coneObj1, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj2, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj3, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj4, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj5, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj6, 0, 0, 0);
+	
+	coneObj2.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj2.Rotate(180, 0, 0, 1);
+	
+	coneObj3.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj3.Rotate(90, 0, 0, 1);
+	
+	coneObj4.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj4.Rotate(-90, 0, 0, 1);
+	
+	coneObj5.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj5.Rotate(90, 1, 0, 0);
+	
+	coneObj6.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj6.Rotate(-90, 1, 0, 0);
+
+	var posY = mMainRoom.GetRoomHeight() / 2.0 + 5.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
+	var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
+	var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
+	
+	var time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+	
+	var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+			
+	var clockwise = Rand(1) == 1;
+
+	mAnimator.CreateScalingTransition(coneContainerObj, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+	mAnimator.CreateRotatingTransition(coneContainerObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	mAnimator.CreateRotationAroundPointTransition(coneContainerObj, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
+	mAnimator.CreateToonShaderColorTransition(coneMesh, color1, color2, 3.5, true);
+	
+	return coneContainerObj;
+}
 
  
  function Level4::Init(lights, elevator, openglTransformOffset)
@@ -261,7 +760,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
 	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
+	mLight2Position = [0, 10.0 * SCALE_FACTOR, -30.0 * SCALE_FACTOR];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -283,25 +782,29 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mElevator.SetLightsRange(0,0);
 	
 	mCamera = mInputManager.GetActiveCamera();
+
+	mEnding = false;
+	mIsLevelCompleted = false;
+	mTimeToEnd = 2500;
 	
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
-	
+
 	mElevatorFinalPosition = mElevator.GetPosition();
-	
+		
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
-	
 	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
-	// I move the room a bit so that the elevator is completely in the center of the room
-	mMainRoom.Translate(-mElevator.GetRoomDepth() / 2.0 + 3.0 * SCALE_FACTOR, 0, -mElevator.GetRoomWidth() / 2.0);
-	
-	// I set now the position of a text that needed to know where the elevator was
-	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0]);
-	mBackText.SetPosition(mElevatorFinalPosition + [0.1 * SCALE_FACTOR, 1 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
-	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0]);
+
+	// Initially the player is not using the clock object
+	mIsUsingClock = false;
+
+	// Setting the position of the numpad and the text above it; I need to do it here since I need to know the position of the elevator
+	mNumpad.SetPosition(mElevatorFinalPosition + [0.0 * SCALE_FACTOR, 0.0 * SCALE_FACTOR, -0.2 * SCALE_FACTOR]);
+	mBackText.SetPosition(mElevatorFinalPosition + [0.3 * SCALE_FACTOR, 3.0 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
+	mTheTowerText.SetPosition([18.0 * SCALE_FACTOR, -mTowerHeight + mMainRoom.GetRoomHeight() / 1.85, -mMainRoom.GetRoomDepth() / 2.0 - 0.1 * SCALE_FACTOR]);
 }
 
 
@@ -309,99 +812,344 @@ function Level4::Level4(isVRon, inputManager, soundManager)
  * **************** RENDER METHODS ********************** *
  * ****************************************************** */
 
-
 /*
  * Render method
  */
 function Level4::Render()
 {	
+	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
- 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
-	
-	mElevator.Draw();
-
-	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
-	for(var i = 0; i < len(mControllersArray); i++)
-	{
-		mControllersArray[i].Draw();
-		mControllersDuplicateArray[i].Draw();
-	}
-	
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+ 		
 	switch(mLevelStatus)
 	{
 		case STATUS_ELEVATOR_MOVING:
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
-		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
 		{
-			mMainRoom.Draw();
+			DrawPortal();
+			DrawRoom();
 
-			glLineWidth(5);
+			// Drawing the glass wall; I don't put this in the DrawRoom() function, since otherwise it would be redrawn in the portal, which is not what I want
+			mGlassWall.Draw();
 			
-			mDrawingShader.Start();	
-				mDrawingShader.SetParameter("time", mLinesTimeVariable);
-
-				for(var i = 0; i < len(mDrawingsArray); i++)
-				{
-					var vertexArray = mDrawingsArray[i];
-
-					if(mIsDrawingConnectedArray[i])
-					{
-						var startingConnector = mStartingConnectorsArray[i];
-						var linkedConnector = startingConnector.GetLinkedConnector();
-						
-						mDrawingShader.SetParameter("lineIsConnected", true);
-						mDrawingShader.SetParameter("startColor", startingConnector.GetDefaultLightColor());
-						mDrawingShader.SetParameter("finalColor", linkedConnector.GetDefaultLightColor());
-						mDrawingShader.SetParameter("startPoint", startingConnector.GetPosition());
-						mDrawingShader.SetParameter("endPoint", linkedConnector.GetPosition());
-					}
-					else
-					{
-						var alpha = mDrawingsAlphaArray[i];
-						mDrawingShader.SetParameter("alpha", alpha);
-						mDrawingShader.SetParameter("lineIsConnected", false);
-					}
-					
-					for(var i = 0; i < len(vertexArray); i += 2)
-					{
-						var point0 = vertexArray[i];
-						var point1 = vertexArray[i+1];
-						
-						glBegin(GL_LINES);
-							glVertex(point0);
-							glVertex(point1);		
-						glEnd();
-					}
-				}
-			mDrawingShader.Stop();
-			
-			mLinesTimeVariable += 0.01;
-			
-			
-			// Drawing the texts
-			mFrontText.Draw();
-			mBackText.Draw();
-			mLeftText.Draw();
-			
-			foreach(var connector in mConnectors)
-			{
-				connector.UpdateTimeVariable();
-				connector.Draw();
-			}
-			
-			glDepthMask(GL_FALSE); 
-			
-			foreach(var connector in mConnectors)
-				connector.DrawLightCone(false);
-			
-			glDepthMask(GL_TRUE); 
-
+//			glLight(GL_LIGHT0, GL_POSITION, [0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 - mElevator.GetRoomDepth() * 2.0, 1.0]); 
+//			
+//			mElevator.SetPosition([0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 - mElevator.GetRoomDepth()]);
+//			mTheTowerText.SetPosition([18.0 * SCALE_FACTOR, -mTowerHeight + mMainRoom.GetRoomHeight() / 1.85, -mMainRoom.GetRoomDepth() / 2.0 - 0.1 * SCALE_FACTOR]);
+//			mTheTowerText.Draw();
+//			mTower.Draw();
+	
 			break;
 		}
+		case STATUS_LEVEL_ENDING:
+		{
+			DrawPortal();
+			DrawRoom();
+
+			// Drawing the glass wall; I don't put this in the DrawRoom() function, since otherwise it would be redrawn in the portal, which is not what I want
+			mGlassWall.Draw();
+		}
 	}
+	
+	// The elevator is always present, so it's always drawn
+	mElevator.Draw();
+	
+	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
+	foreach(var controller in mControllersArray)
+		controller.Draw();
+}
+
+/*
+ * This method draws every object that needs to be drawn in the status STATUS_LEVEL_STARTED
+ */
+function Level4::DrawRoom()
+{
+	mMainRoom.Draw();
+	mMainClock.Draw();
+	
+	// Drawing the text objects
+	foreach(var text in mTexts)
+		text.Draw();
+		
+	mBackText.Draw();
+		
+	mNumpad.Draw();
+	
+	glCullFace(GL_FRONT);
+	
+	// Drawing the silhouettes of the objects (so deactivating their current shader first)
+	mSilhouetteShader.Start();
+    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
+    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+    	
+    	
+    	for(var i = 0; i < len(mStarObjects); i++)
+		{
+			mStarObjectsMeshes[i].ShaderActivate(false);
+			mStarObjects[i].Draw();
+		}
+		
+		for(var i = 0; i < len(mConeObjects); i++)
+		{
+			mConeObjectsMeshes[i].ShaderActivate(false);
+			mConeObjects[i].Draw();
+		}
+	mSilhouetteShader.Stop();
+	
+	glCullFace(GL_BACK);
+	
+	// Drawing the "normal state" of the objects
+	for(var i = 0; i < len(mStarObjects); i++)
+	{
+		mStarObjectsMeshes[i].ShaderActivate(true);
+		mStarObjects[i].Draw();
+	}
+	
+	for(var i = 0; i < len(mConeObjects); i++)
+	{
+		mConeObjectsMeshes[i].ShaderActivate(true);
+		mConeObjects[i].Draw();
+	}
+}
+
+/*
+ * This method draws the "mirror" portal in the room. Works just like the portals in Level0, excepts for a few changes (which will be 
+ * the only things commented in the code)
+ */
+function Level4::DrawPortal()
+{
+	glEnable(GL_STENCIL_TEST);
+	
+	glPushMatrix();
+	
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	
+	glStencilFunc(GL_NEVER, 1, 0xFF);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	glStencilMask(0xFF);
+	
+	glClear(GL_STENCIL_BUFFER_BIT);
+	
+	mPortalFrame.Draw();
+
+	// First translation, to take into account possible teleportation
+	glTranslate(-mOpenglTranslationOffset);
+	
+	var framePos = mPortalFrame.GetPosition();
+	
+	// I could simply find the position by using the position of the glass wall, but I prefer to do it like I did in Level0, 
+	// i.e. by finding the position relative to the room
+	var localPoint = [0, 0, mMainRoom.GetRoomDepth() + 0.1 * SCALE_FACTOR];
+	var newCameraPosition = mMainRoom.LocalToWorld(localPoint);
+
+	var translation = newCameraPosition - framePos - mOpenglTranslationOffset;
+		
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glStencilMask(0x00);
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	
+	// Now here's the important part. I need to translate the world and rotate it, and the order of operations is important; the first one that is done is
+	// actually the last (the rotation), so after rotating I translate the world away by the "translation" amount.
+	// Note that the rotation messes up every objects in XVR, since it basically also rotates their coordinate system: if for example the x axis of
+	// a object was pointing to the right, now it will point to the left; same thing for the z axis (while the y axis stays unchanged). This means
+	// that if a object has a position in the x axis that is for example 5.0, not it will look like it's in -5.0, because XVR in the Draw() function
+	// of the objects basically translates the object along the x axis by 5.0, but since now the x axis points in the opposite way, 
+	// it will translate it backwards. For this reason before drawing the room I have to reposition every object (including their rotations, since
+	// the objects will rotate backward too).
+	// NOTE: I add another translation offset that is derived from the final animation; during the level it's always [0.0, 0.0, 0.0], it varys
+	// only when the ending animation is taking place. Same goes for the rotation angle
+	glTranslate(-translation + mPortalTranslateOffset);
+	glRotate(180 + mPortalRotateOffset, 0, 1, 0);
+	
+	// After translating and rotating the camera I need to reposition the light of the scene. Note that the position is a translation from the 
+	// current position, so, since I've already translated the camera, I don't need to add anything else to the default positions
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+ 	
+	
+	// Before drawing the room objects, like I said above, I need to invert the objects positions; in particular, the z position is already inverted
+	// by the rotation (and that is what I want, so no need to invert the z), the y is unchanged (as I want), while the x needs inverting.
+	// So, if a object has position in x 5.0, I change it to -5.0, draw the object, and reset the position to 5.0. So, I need to change their position
+	// just in time to draw them and then switch to their original position
+	InvertObjectsPosition();
+	
+	// Draw the objects in the room (the ones in the status STATUS_LEVEL_STARTED)
+	DrawRoom();
+	
+	// Now I need to draw the objects that are always present, such as the elevator and the Vive controllers
+	mElevator.Draw();
+	
+	glCullFace(GL_FRONT);
+	
+	// Drawing the silhouettes of the objects (so deactivating their current shader first)
+	mSilhouetteShader.Start();
+    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
+    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+    	    	
+    	foreach(var cubeArray in mNumbersCubesObjectArray)
+		{
+			foreach(var cubeObj in cubeArray)
+				cubeObj.GetMesh().ShaderActivate(false);
+		}
+    	
+    	for(var i = 0; i < len(mNumbersObjectArray); i++)
+			mNumbersObjectArray[i].Draw();
+	mSilhouetteShader.Stop();
+	
+	glCullFace(GL_BACK);
+	
+	foreach(var cubeArray in mNumbersCubesObjectArray)
+	{
+		foreach(var cubeObj in cubeArray)
+			cubeObj.GetMesh().ShaderActivate(true);
+	}
+	
+	// Drawing the "normal state" of the objects
+	for(var i = 0; i < len(mNumbersObjectArray); i++)
+		mNumbersObjectArray[i].Draw();
+	
+
+	// I only draw a controller if it's not colliding with the glass wall and if it's z coordinate is bigger than the glass wall's (basically, only if
+	// the controller is in front of the glass wall; since the glass wall has a negative z I need to check if the controller's is greater in order to
+	// check if it's in the front); I also check this besides the collision with the bounding box in the case where the controller is completely behind
+	// the glass wall (so in this case is not colliding)
+	foreach(var controller in mControllersArray)
+	{		
+		if(!controller.IsCollidingBBox(mGlassWall) && controller.GetPosition().z >= mGlassWall.GetPosition().z)
+			controller.Draw();
+	}
+	
+	// If the status of the level is "ending", I render other things too, that are only present at this stage. In particular the tower and the light's billboard
+	if(mLevelSTATUS == STATUS_LEVEL_ENDING)
+	{	
+		// Drawing the tower and the text at its base
+		mTower.Draw();
+		mTheTowerText.Draw();
+
+		// Now I need to draw the billboard; to achieve a transparent effect, I use another blend function; so, to save the current state of the blend 
+		// function I push the color attribute and pop it when I'm done rendering the billboard
+		glPushAttrib(GL_COLOR_BUFFER_BIT);
+		
+		// New blend function and a yellow-ish color for the light, which is semi-visible
+	    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+		glColor(1.0, 1.0, 0.3, 0.8);
+		
+		// I draw the light with no shading, only the color I just set; this is to avoid color changes depending on the lights
+	    mLight0Billboard.Draw(VR_NO_SHADING);
+	    
+		glPopAttrib(GL_COLOR_BUFFER_BIT);
+	}
+		
+	// Now that I drew every object, I invert once again their position
+	InvertObjectsPosition();
+	
+	// Now I can pop the opengl matrix. This de facto undos every translation and rotations done before with the opengl functions
+	glPopMatrix();
+	
+	glDisable(GL_STENCIL_TEST);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	// I draw the portal frame once again, but only in the depth buffer
+	mPortalFrame.Draw();
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	
+	// I reposition the lights where they were originally
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+}
+
+
+/*
+ * This method inverts the positions (and rotations) of every object that needs to be inverted in the mirror portal
+ */
+function Level4::InvertObjectsPosition()
+{
+	foreach(var controller in mControllersArray)
+		InvertObject(controller);
+	
+	foreach(var text in mTexts)
+		InvertObject(text);
+	
+	foreach(var starObject in mStarObjects)
+		InvertObject(starObject);
+	
+	foreach(var coneObject in mConeObjects)
+		InvertObject(coneObject);
+		
+	// I also invert any "official" child of the room (so also the clocks in the walls)
+	foreach(var childObject in mMainRoom.GetChildren())
+		InvertObject(childObject);
+		
+	foreach(var numberObject in mNumbersObjectArray)
+		InvertObject(numberObject);
+		
+	foreach(var childObject in mNumpad.GetChildren())
+		InvertObject(childObject);
+		
+	InvertObject(mNumpad);
+}
+
+
+/*
+ * This method inverts the poisition and rotation of a single object 
+ */
+function Level4::InvertObject(object)
+{
+	// First of all, I invert the x, and only the x (since the y is unchanged and I ned the z inverted). Note that this totally depends on the position
+	// of the glass wall, and in particular to the rotation done with the opengl function
+	var pos = object.GetPosition();
+	pos.x = -pos.x;
+	object.SetPosition(pos);
+	
+	// Now the tricky part: inverting the rotation of the object. Since the x and z axis are inverted, the rotations applied to an object are also inverted
+	// (i.e. if I rotate by 5 around the x axis, I will rotate in the opposite direction). So, to invert the rotations along these axis I need to first
+	// obtain the value of the rotations of an object. I need to study its rotation matrix
+	var rotationMatrix = object.GetRotationMatrix();
+				    
+    // In XVR there are a couple of functions that convert to/from rotation matrix to/from quaternions and euler vectors. The first I thing I did was try them
+    // to obtain the euler vector of the rotation of the object, but it was kinda buggy (for example, if I kept rotating an object around the z axis,
+    // at some point it would say that the angle of rotation around the x and y axis were 180 or -180, no idea why), and also the range of angles wasn't
+    // good for inverting a rotation (the range was from -90 to 90, while I need -180 to 180).
+    // So, I looked up how to find the euler angles simply by looking at the rotation matrix, and it turns out that there are some formulas (which
+    // are actually intuitive if you think about it), found here: http://stackoverflow.com/questions/15022630/how-to-calculate-the-angle-from-roational-matrix
+    // So, I obtain the angle or rotation of the object around each axis
+    var rotx = Atan2(rotationMatrix[9], rotationMatrix[10]) * RAD_TO_GRAD;
+    var roty = Atan2(rotationMatrix[8], sqrt(rotationMatrix[9] * rotationMatrix[9] + rotationMatrix[10] * rotationMatrix[10])) * RAD_TO_GRAD;
+    var rotz = Atan2(rotationMatrix[4], rotationMatrix[0]) * RAD_TO_GRAD;
+	    						
+	// Since I need to create a mirror effect, the rotation around the z axis is actually already good. I invert the other 2 axis though
+	rotx = -rotx;
+	roty = -roty;
+	
+	// Now I need to set the rotation using this euler vector; there is no direct way to do so in XVR, so I need to convert it the euler vector to a quaternion,
+	// then the quaternion to a 3x3 rotation matrix, and then the 3x3 rotation matrix to a 4x4 rotation matrix that can be passed to an object. Thanks XVR.
+	var quaternion = EulerToQuaternion([rotx, roty, rotz]);
+	var newRotationMatrix3 = QuaternionToMatrix3(quaternion);
+	
+	var newRotationMatrix4 = [ newRotationMatrix3[0], newRotationMatrix3[1], newRotationMatrix3[2], 0,
+				   			   newRotationMatrix3[3], newRotationMatrix3[4], newRotationMatrix3[5], 0, 
+				    		   newRotationMatrix3[6], newRotationMatrix3[7], newRotationMatrix3[8], 0, 
+				    		            0, 					   0,					  0,			1];
+	
+	// Finally setting the new rotation matrix
+	object.SetRotationMatrix(newRotationMatrix4);
 }
 
 
@@ -416,11 +1164,12 @@ function Level4::Render()
  */
 function Level4::UpdateLogic(dt)
 {
+	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
-	
+
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon)
 	{
@@ -442,53 +1191,61 @@ function Level4::UpdateLogic(dt)
 		else
 			mDebugKeyHit = false;
 		
-		static var rotX = 0;
-		static var rotY = 0;
-		static var rotZ = 0;
+		static var rotX2 = 0;
+		static var rotY2 = 0;
+		static var rotZ2 = 0;
 			
 		if(KeyPressed("J"))
-			rotX += 1;
+			rotX2 += 1;
 		
 		if(KeyPressed("L"))
-			rotX -= 1;
+			rotX2 -= 1;
 			
 		if(KeyPressed("I"))
-			rotY += 1;
+			rotY2 += 1;
 		
 		if(KeyPressed("K"))
-			rotY -= 1;
+			rotY2 -= 1;
 			
 		if(KeyPressed("U"))
-			rotZ += 1;
+			rotZ2 += 1;
 		
 		if(KeyPressed("O"))
-			rotZ -= 1;
+			rotZ2 -= 1;
 		
 		mDebugController.SetRotation(0, 1, 0, 0);
-		mDebugController.Rotate(rotY, 1, 0, 0);
-		mDebugController.Rotate(rotX, 0, 1, 0);
-		mDebugController.Rotate(rotZ, 0, 0, 1);
+		mDebugController.Rotate(rotY2, 1, 0, 0);
+		mDebugController.Rotate(rotX2, 0, 1, 0);
+		mDebugController.Rotate(rotZ2, 0, 0, 1);
 	}
 	
 	switch(mLevelStatus)
 	{
+		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
+		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
-
-			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0 && mElevator.GetLightsRange().y < 1)
+	
+			// I check if the elevator is halfway through the transtition; if this is the case, I change its lights range for the rendering (but only
+			// if I didn't do so already)
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2 && mElevator.GetLightsRange().y < 1)
 				 mElevator.SetLightsRange(1,2);
 			
+			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
 			cameraPosition.y = mCameraYoffset + elevatorPos.y;
 	   	    
+			// To make the shaking camera effect, I randomly move the x and y axis with random values
 		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
 		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
 			
+			// I set the new (shaken and at level with the elevator) position
 			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
 			
+			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
@@ -502,8 +1259,11 @@ function Level4::UpdateLogic(dt)
 	
 			break;
 		}		
+		// This is the case where the elevator arrived, BUT the player is still inside
 		case STATUS_ELEVATOR_ARRIVED:
 		{
+			// I check if the player goes out from the elevator. Note: I'm not checking that he exits from the doors; he can pass through walls right now.
+			// If the player comes out, I close the doors and change status
 			if(!mElevator.IsPointInElevator(cameraPosition))
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
@@ -520,361 +1280,641 @@ function Level4::UpdateLogic(dt)
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
 		{
-//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-//		    	mInputManager.RestoreCameraPosition();
-		    	
-	    	// Now I have to change the position of the duplicates controller so that they mirror the real ones
-	    	for(var i = 0; i < len(mControllersArray); i++)
-    		{
-    			var controller = mControllersArray[i];
-    			var controllerDuplicate = mControllersDuplicateArray[i];
-	
-				/*
-				  This code below is to rotate the duplicate so that it mirrors exactly the real controllers; it's not being used anymore but
-				  I leave it here because it took me a while to figure it out and it might be useful in the future
-				
-				var matrix3 = [ rotationMatrix[0], rotationMatrix[1], rotationMatrix[2],
-							    rotationMatrix[4], rotationMatrix[5], rotationMatrix[6], 
-							    rotationMatrix[8], rotationMatrix[9], rotationMatrix[10] ];
-							    
-			    var quaternion = Matrix3ToQuaternion(matrix3);
-				var euler = QuaternionToEuler(quaternion);
-				    			
-    			mControllersDuplicateArray[i].SetRotationMatrix(rotationMatrix);
+			// I make sure that the player stay's inside the room and outside of the elevator
+			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
 
-				var angle = 180 - euler[1] * 2.0;
-				
-				mControllersDuplicateArray[i].Rotate(angle, 0, 1, 0);
-				*/
-
-    			var controllerPos = controller.GetPosition();
-    			
-    			// The z coordinate where the side ends is 0. Depending on what is the mirror side, in order to check if the controller has changed side
-    			// I need to check if its z coordinate is positive or negative
-    			var isNotInMirrorSide = mMirrorSideIsLeft ? controllerPos.z >= 0 : controllerPos.z <= 0;
-				    			
-    			// If the real controller is NOT in the mirror side and it was visible, I need to hide it and show the duplicate    	
-		    	if(isNotInMirrorSide && controller.IsVisible())
-    			{
-    				controller.Hide();
-    				controllerDuplicate.Unhide();
-    				
-    				// I set that the duplicate is visible now
-    				mCurrentlyVisibleControllersArray[i] = controllerDuplicate;
-    			}
-    			// If the real controller is in the mirror side and wasn't visible before, I unhide it
-    			else if(!isNotInMirrorSide && !controller.IsVisible())
-    			{
-    				controller.Unhide();
-    				controllerDuplicate.Hide();
-    				mCurrentlyVisibleControllersArray[i] = controller;
-    			}
-    			
-    			// If the duplicate controller is visible, I change its position to mirror the real one
-    			if(controllerDuplicate.IsVisible())
-    			{
-    				// I set the rotation matrix
-	    			var rotationMatrix = controller.GetRotationMatrix();
-	    			controllerDuplicate.SetRotationMatrix(rotationMatrix);
-	    			
-	    			// I only need to change the z coordinates of the real controller's position so that it has the opposite sign
-					controllerPos.z = -controllerPos.z;
-	    			controllerDuplicate.SetPosition(controllerPos);
-    			}
-    		}
-		    
-		    // Now I have to check if the player is near the threshold around the z = 0 axis, and in that case change the alpha of the connectors accordingly.
-		    // Depending on which is the side that works as a mirror, I take the z position of the camera
-    		var distanceFromZaxis = mMirrorSideIsLeft ? cameraPosition.z : -cameraPosition.z;
-    			
-			// I compute the alpha value. Basically to compute it I normalize the current distance with the threshold distance
-    		var alphaValue = distanceFromZaxis / mDistanceToZaxisThreshold;
-    		
-    		// I make sure that the range is always between 0 and 1
-    		if(alphaValue >= 1.0)
-    			alphaValue = 1.0;
-			else if(alphaValue <= 0)
-				alphaValue = 0.0;
-				    		
-    		// Now depending on the alpha value I need to hide/unhide or modify the alpha of the connectors in the currently active group
-			foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
-    		{
-    			// If the player crossed the axis and before the alpha wasn't zero then it's the first time he's crossing, so I hide the connector
-				if(alphaValue <= 0 && mPreviousAlpha > 0)
-					connector.Hide();
-				// Same thing but going to the other side
-				else if(alphaValue > 0 && mPreviousAlpha <= 0)
-					connector.Unhide();
-
-				// If the connector is visible, I change its alpha value
-				if(!connector.IsHidden())
-    				connector.SetAlpha(alphaValue);
-    		}
-    		
-    		// Now I can update the previous alpha value
-			mPreviousAlpha = alphaValue;
-    		
-	    	// Now I can handle the connectors and the drawings
-			CheckActiveConnector();
-    		HandleDrawings();
-			
-			// Now I have to check if the current active group has been connected. The check is a little bit different than the one in Level1, since I need
-			// to check only 1 group at the time; a difference is that I don't remove groups from the array, even if they're all connected
-			var currentConnectors = mConnectorsGroups[mCurrentActiveGroup];
-			var allConnected = true;
-			
-			for(var i = 0; i < len(currentConnectors) && allConnected; i++)
-				allConnected = currentConnectors[i].IsConnected();
-							
-			// If every connector in the group is connected, I switch to the next one which is currently the last group
-			if(allConnected)
+			// I check if the player is in one of the event triggers at the sides of the room; the first one is the one on the left
+			if(mLeftEventTrigger.IsPointInside(cameraPosition))
 			{
-				mSoundManager.PlaySound(mConnectorsGroupLinkedCounter, true, 1);
-				mConnectorsGroupLinkedCounter++;
+				// I need to find how much the player moved from the previous position; I only care about x and z axis, not y
+				var camPos = [cameraPosition.x, cameraPosition.z];
+				var prevCamPos = [mPreviousCameraPosition.x, mPreviousCameraPosition.z];
 				
-				// I update the counter and reset the alpha value, used to hide/unhide the connectors
-				mCurrentActiveGroup++;
-				mPreviousAlpha = 0;
+				var difference = Modulus(camPos - prevCamPos);
 				
-				// I change the text behind the elevator
-				mBackText.LoadString("When connections are created,\nthe world around you might change");
-				
-				// I set that the side that is mirrored is the opposite one now
-				mMirrorSideIsLeft = !mMirrorSideIsLeft;
+				// If the difference is greater than a threshold (totally random-chosen, need to see how it behaves with the Vive) I change the speed
+				// of the objects by an amount relative to how much he moved; otherwise, I simply stop all animations
+				if(difference > 0.08 * SCALE_FACTOR)
+					mAnimator.ChangeScaleFactors(1.0 * difference * 30.0);
+				else
+					mAnimator.ChangeScaleFactors(0.0);
 			}
+			// These 2 are the ones on the right; they just change the speed of the animations
+			else if(mRightEventTrigger1.IsPointInside(cameraPosition))
+				mAnimator.ChangeScaleFactors(2.3);
+			else if(mRightEventTrigger2.IsPointInside(cameraPosition))
+				mAnimator.ChangeScaleFactors(0.2);
+			// If the player is outside of the event triggers, I simply reset the scale factor
+			else
+				mAnimator.ChangeScaleFactors(1.0);
+				
 			
-			// I check if every connector has been connected
-			if(len(mConnectorsGroups) == mConnectorsGroupLinkedCounter)
+			// Now I check the number objects to see if their scale has reached 0; in that case I change the number they're displaying, but only 
+			// if the player didn't already find the final numbers (i.e. the number objects are not scaling anymore)
+			for(var i = 0; i < len(mNumbersObjectArray) && !mFinalNumbersFound; i++)
 			{
-				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-				
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-				
-				mLevelStatus = STATUS_LEVEL_ENDING;
-				
-				// Now I have to unhide the controllers and hide the duplicate ones
-				for(var i = 0; i < len(mControllersArray); i++)
+				// Getting the number object, the cubes that are contained in it, the scale of the object and the list of past numbers
+				var numberObject = mNumbersObjectArray[i];
+				var cubeObjects = mNumbersCubesObjectArray[i];
+				var scale = numberObject.GetScale();
+				var numbersList = mNumbersListArray[i];
+
+				// If the scale is small enough (I don't look for 0 to avoid problems with floating point computations), and it's been a while since
+				// the last change of the number (I need this to avoid changing multiple times the number while the scale is below the threshold),
+				// and if I this number object hasn't reached its final number
+				if(scale.x <= 0.01 && scale.y <= 0.01 && scale.z <= 0.01 && GetTime() - mChangedNumberTime[i] > mDelayBetweenNumberChange && !mFinalNumberFoundArray[i])
 				{
-					mControllersArray[i].Unhide();
-					mControllersDuplicateArray[i].Hide();
+					var number;
+					
+					// If time is going forward...
+					if(mTimeDirection == 1)
+					{
+						// I get the previous number
+						var previousNumber = numbersList[len(numbersList) - 1];
+						
+						// I create a new number randomly until it's different from the previous one
+						do
+						{
+							number = Rand(9);
+						}
+						while(previousNumber == number);
+							
+						// I add the number to the list
+						aadd(numbersList, number);
+					}
+					// If time is going backward and there are at least 2 elements in the list of numbers...
+					else if(mTimeDirection == -1 && len(numbersList) > 1)
+					{
+						// If there are too many numbers in the list, I keep only the first ones, otherwise the player needs to go back
+						// in time for a while
+						var tooManyNumbers = 7;
+						
+						// I eliminate all the last numbers
+						if(len(numbersList) > tooManyNumbers)
+						{
+							for(var j = len(numbersList) - 1; j >= tooManyNumbers - 1; j--)
+								adel(numbersList, j);
+						}
+
+						
+						// I get the previous from last number
+						var lastNumberIndex = len(numbersList) - 2;
+						number = numbersList[lastNumberIndex];
+						
+						// I remove the last number in the array
+						adel(numbersList, lastNumberIndex + 1);
+						
+						// If now the array has only one element, I reached the last number, so this will be the last transition
+						if(len(numbersList) == 1)
+						{
+							// I remove the current scaling transition and create a new one (without loop) to form the last number
+							mAnimator.RemoveTransitionByObject(numberObject, SCALING_TRANSITION);
+							mInvariantAnimator.CreateScalingTransition(numberObject, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0, false);
+							
+							// I save the fact that this number object has finished its job
+							mFinalNumberFoundArray[i] = true;
+							
+							// Now I need to check if also the other number objects have finished. Initially I assume that it's true
+							mFinalNumbersFound = true;
+										
+							// I iterate until I find a false value
+							for(var i = 0; i < len(mFinalNumberFoundArray) && mFinalNumbersFound; i++)
+								mFinalNumbersFound = mFinalNumberFoundArray[i];
+						}
+					}
+					
+					// Computing the new positions for the cubes, using an y offset to force the cubes to be put around the center of the number object
+					var newPositions = GenerateNumberPositions(number, [0 * SCALE_FACTOR, -numberObject.GetPosition().y, 0 * SCALE_FACTOR]);
+								
+					// I set the new positions and unhide each element, in case it was hidden (because maybe the previous number had less cubes)		
+					for(var i = 0; i < len(newPositions); i++)
+					{
+						cubeObjects[i].Unhide();
+						cubeObjects[i].SetPosition(newPositions[i]);
+					}
+					
+					// I hide the last cubes (if there are any), since for this number they're not needed
+					for(var i = len(newPositions); i < len(cubeObjects); i++)
+						cubeObjects[i].Hide();
+					
+					// I save the moment that this number has changed, so not to change it again too early
+					mChangedNumberTime[i] = GetTime();
 				}
 			}
 			
-			break;
-		}
-		// Case where the level is ending: the only thing missing is the player inside the elevator
-		case STATUS_LEVEL_ENDING:
-		{
-			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
-			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+			
+			// For each controller, I need to check if it's close to the numpad, and in that case if the user pressed the trigger
+			for(var i = 0; i < len(mControllersArray); i++)
 			{
-				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
-								
-				// If the player is in, I start the timer to end the level
-				mEnding = true;
-				mEndTimer = GetTime();
+				var controller = mControllersArray[i];
+				
+				// If there is no controller currently being hovered in the numpad, or this is that controller, I check if the controller is close to the numpad, and
+				// in that case the numpad will find the closest button being hovered.
+				// At most 1 controller can hover at time; if one is being hovered, the other one has to wait that the hovered one goes out of range first
+				if((mControllerBeingHoveredInNumpad == Void || controller == mControllerBeingHoveredInNumpad) && mNumpad.SelectClosestButtonToPosition(controller.GetPosition()))
+				{
+					// If this is the first time that the controller goes in the range of the numpad, I set that there is an action available
+					// and that this controller is the one being hovered
+					if(mControllerBeingHoveredInNumpad == Void)
+					{
+						controller.SetActionAvailable(true);
+						mControllerBeingHoveredInNumpad = controller;
+					}
+											
+					// If the user has pressed the trigger, I press the button currently hovered
+					if(mInputManager.IsPressingPrimaryButton(mControllerBeingHoveredInNumpad.GetIndex()))
+					{
+						mNumpad.PressSelectedButton();
+						mInputManager.VibrateController(mControllerBeingHoveredInNumpad.GetIndex());
+					}
+				}
+				// If the controller wasn't in range and this controller was the one currently hovering, I set that it's not anymore
+				else if(controller == mControllerBeingHoveredInNumpad)
+				{
+					controller.SetActionAvailable(false);
+					mControllerBeingHoveredInNumpad = Void;
+				}
 			}
 			
-			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
-			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
-				mIsLevelCompleted = true;
+			
+			// Now I check again the controllers to see if one is using the clock. I could check this in the previous for loop, but to make the code
+			// cleaner I decided to use another for; since the controllers are just 2 it's not a big deal in terms of performance.
+			// Checking if a controller is near the clock and it's using it is very similar to the case of the numpad
+			for(var i = 0; i < len(mControllersArray); i++)
+			{
+				var controller = mControllersArray[i];
+				
+				if((mControllerBeingHoveredInClock == Void || controller == mControllerBeingHoveredInClock) && mMainClock.CheckRange(controller.GetPosition()))
+				{
+					if(mControllerBeingHoveredInClock == Void)
+					{
+						controller.SetActionAvailable(true);
+						mControllerBeingHoveredInClock = controller;
+					}
+											
+					// If the user has pressed the trigger, I need to activate the clock
+					if(mInputManager.IsPressingPrimaryButton(mControllerBeingHoveredInClock.GetIndex()))
+					{
+						// I need to find the angle of rotation for the clock's arrow. To do that, I need to find the intersection between
+						// the position of the controller and the plane where the clocks lays. To do that, I need to find the normal of the clock, 
+						// and I do that using a function from the "Utils" file. The normal returned will point in the wrong direction though: I need the normal
+						// that points towards the front face of the clock, so I invert the sign (this way if we're behind the clock it won't trigger)
+						var clockNormal = - ComputeNormalOfPlanarObject(mMainClock);
+						
+						// Now I create a ray that starts from the controller's position and goes to infinite across the direction defined by the normal
+						var raycastOrigin = mControllerBeingHoveredInClock.GetPosition();
+	    				var raycastEnd = raycastOrigin + clockNormal * mCamera.GetZFar();
+	    					    				
+	    				// Now I can find the intersection, using a function from the "Utils" file
+						var contactPoint = FindIntersectionInPlane(raycastOrigin, raycastEnd, mMainClock.GetPosition(), clockNormal);
+			    		
+			    		// If the clock wasn't being used and there actually is a contact point on the plane, I state that the player is using the clock;
+			    		// I also vibrate the controller
+			    		if(!mIsUsingClock && contactPoint != Void)
+			    		{
+		    				mIsUsingClock = true;
+			    			mInputManager.VibrateController(mControllerBeingHoveredInClock.GetIndex());
+			    		}
+			    		// If the player is using the clock...
+			    		if(mIsUsingClock)
+		    			{    				
+		    				// I update the clock's arrow with regards on the direction of the previously computed ray
+							mMainClock.UpdateMinutesArrow(raycastOrigin, raycastEnd);
+							
+							// I get the resulting direction that the arrow moved to (1: clockwise, -1: counter-clockwise, 0: didn't move)
+							var timeDirection = mMainClock.GetArrowDirection();
+							
+							// If the direction found is different from the current direction, and the direction found wasn't 0 (in that case the arrow is still)...
+							if(mTimeDirection != timeDirection && timeDirection != 0)
+							{
+								// ...I invert the active transitions; ALL of them. I also save the new time direction
+								mAnimator.InvertTransitions();
+								mTimeDirection = timeDirection;
+							}
+							
+							// I change the scale factor of the objects, to speed them up. I always take the positive value of the direction.
+							// Note that when the arrow is still, timeDirection will be 0, so in that case the scale factor becomes 0 and the object stay still
+							mAnimator.ChangeScaleFactors(abs(timeDirection) * TIME_CLOCK_VELOCITY_MULTIPLIER);
+		    			}
+			    	}
+			    	// If there are no clicks...
+			    	else
+			    	{
+			    		// The player was using the clock, now he isn't anymore
+			    		if(mIsUsingClock)
+			    		{
+				    		mIsUsingClock = false;
+			    		
+				    		// If the player is not using the clock anymore I also set the speed of the objects back to normal.
+				    		// Note: I don't invert the direction to make it go as default: the objects keep going in the direction they were going
+				    		mAnimator.ChangeScaleFactors(1);
+			    		}
+		    		}
+					
+				}
+				// If the controller wasn't in range and this controller was the one currently hovering, I set that it's not anymore
+				else if(controller == mControllerBeingHoveredInClock)
+				{
+					controller.SetActionAvailable(false);
+					mControllerBeingHoveredInClock = Void;
+					
+					// Also, if the player was using the clock while he moved out of range, now he isn't anymore
+		    		if(mIsUsingClock)
+		    		{
+			    		mIsUsingClock = false;
+		    		
+			    		mAnimator.ChangeScaleFactors(1);
+		    		}
+				}
+			}
+			
+			// If the code of the numpad was found, I procede into the last part of the level (also, for debug purposes, if the user presses M)
+			if(mNumpad.IsCorrectCodeBeenFound() || KeyPressed("M"))
+			{
+				// Declare that the level is ending
+				mLevelStatus = STATUS_LEVEL_ENDING;
+				
+				// I fade out rapidly the music
+				mSoundManager.FadeOutMusic(1.5, 0.0);
+				
+				// I set that each controller has no action available (this is in case it was so when the keypad was inserted; 
+				// if I don't turn the action off it will remain on forever)
+				foreach(var controller in mControllersArray)
+					controller.SetActionAvailable(false);
+					
+				// I create a scaling animation for the elevator, the numpad, the clock and the text, to make them disappear (not very good looking though)
+				mInvariantAnimator.CreateScalingTransition(mElevator.GetObj(), [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);
+				mInvariantAnimator.CreateScalingTransition(mNumpad.GetObj(), [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
+				mInvariantAnimator.CreateScalingTransition(mBackText.GetObj(), [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
+				mInvariantAnimator.CreateScalingTransition(mMainClock.GetObj(), [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
+				
+				// Scaling animation also for the number objects
+				foreach(var numberObject in mNumbersObjectArray)
+					mInvariantAnimator.CreateScalingTransition(numberObject, [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
+			}
 			
 			break;
 		}
+		// Case where we're almost at the end of the level
+		case STATUS_LEVEL_ENDING:
+		{
+			// I check if the numpad is still visible (remember, there is a scaling transition) and check if the scale reached 0; if that is so, I hide these objects
+			if(mNumpad.IsVisible() && mNumpad.GetScale().x <= 0)
+			{	
+				mNumpad.Hide();
+				mBackText.Hide();
+				mMainClock.Hide();
+				
+				foreach(var numberObject in mNumbersObjectArray)
+					numberObject.Hide();
+					
+				// I don't hide the elevator, since I also show it at the end of the tower. So I move it there, in a way that is basically behind the tower
+				// (this is why I also rotate it). I change the lights range since for the final animation I'm using Light0. I also reset the scale to default
+				mElevator.SetPosition([0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 - mElevator.GetRoomDepth() + 10 * SCALE_FACTOR]);
+				mElevator.Rotate(180, 0, 1, 0);
+				mElevator.SetLightsRange(0, 0);
+				mElevator.SetScale(1.0, 1.0, 1.0);
+			}
+				
+			// Now, before starting the final animation, I have to check if the user is looking at the glass wall in order to start it
+			if(!mPortalAnimationStarted)
+			{
+				// Creating the ray that goes along the direction the player's is looking at
+				var rayOrigin = cameraPosition;
+				var rayEnd = rayOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+				
+				// To check if the user is looking at the glass wall, I do the same as I do in the method IsPointedPositionValid(); it's explained there
+				var normal = [0, 0, 1];
+				var contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, mGlassWall.GetPosition(), normal);
+				
+				if(contactPoint != Void)
+				{
+					contactPoint.z += 1 * SCALE_FACTOR;
+					
+					// If the point is in the room, it's a valid point
+					if(mMainRoom.IsPointInRoom(contactPoint))
+					{
+						// I state that the animation has to start
+						mPortalAnimationStarted = true;
+						
+						// If the music hasn't reached volume 0 yet, I create a more rapid fade out effect and transition to the new music (without fade in);
+						// otherwise, I simply set the new music
+						if(mSoundManager.GetMusicVolume() > 0)
+							mSoundManager.FadeOutAndSetMusic(0.2, "sounds/Interstellar - First Step.mp3", 0.95, false);
+						else
+							mSoundManager.SetMusic("sounds/Interstellar - First Step.mp3", 0.95, false);
+							
+						// I start the music again
+						mSoundManager.PlayMusic();
+						
+						// I move the light0 (which is the one involved in the animation) so that is outside of the main room, at the same level as the camera
+						mLight0Position = [0, cameraPosition.y, mGlassWall.GetPosition().z - 65.0 * SCALE_FACTOR];
+						
+						// The light will be rotating around the center, so the z coordinate is its radius
+						mLight0RotationRadius = mLight0Position.z;
+						
+						// I move the billboard where the light is
+						mLight0Billboard.SetPosition(mLight0Position);
+	
+						// I save the moment that the music started; this is essential in order to know at which keypoint in the song we are
+						mMusicStartTime = GetTime();
+					}
+				}
+			}
+			// If the animation has started, here we execute it. The code to execute it si VERY poorly written, since it's very dependant on the song
+			// and it would be essential a way to pass lambda functions of the like to execute something when a given keypoint has been reached.
+			// To sum up, the code for the animation is very repetitive, with computation of constants repeated at each so that I didn't need to create
+			// other class variables (and this impacts performance with useless computations)... but it works, and since it's very hard (or impossible?)
+			// to write elegant code for this kind of animation, I leave it like this
+			else
+			{				
+				// I need to know at which keypoint in the song I am. I need to find it only if there is a next one, otherwise I keep the current one saved	
+				if(mCurrentKeypoint + 1 < len(mMusicKeypointsTimes))
+				{
+					// I get the next keypoint
+					var nextKeypointTime = mMusicKeypointsTimes[mCurrentKeypoint + 1];
+					
+					// If the current time of the song has surpassed the next keypoint, then I increment the current keypoint index to the new one
+					if(GetTime() - nextKeypointTime > mMusicStartTime)
+						mCurrentKeypoint++;
+				}
+				
+				// Now, depending on which keypoint is active now, I do different things. This is HIGHLY dependend on the song, there is no way
+				// to make something general, so the code is very ugly, repetitive and with pseudo-magic numbers
+				switch(mCurrentKeypoint)
+				{
+					// First keypoint: the room has to "move away"
+					case 0:
+					{
+						// I want the room (or actually the portal's camera) to move away by 90.0 in the z axis in the time that goes between the start
+						// of the song and the next keypoint. So, I compute the increment using the formula "v = s / t". Even though this increment is constant,
+						// I always compute it because I didn't want to create another class variable just for this, there are too many already and
+						// the code is very confusing (also, note that I divide the keypoint time by 1000.0; that's because the time was saved as milliseconds)
+						var zIncrement = (90.0 * SCALE_FACTOR) / (mMusicKeypointsTimes[mCurrentKeypoint + 1] / 1000.0);
+						
+						// I apply the increment using the delta time
+						mPortalTranslateOffset.z -= zIncrement * dt;
+						break;
+					}
+					// At this point the view goes down
+					case 1:
+					{						
+						// The y offset was already computed, because it depends on the height of the tower. Note: I increment the y and not decrease it
+						// since with the glTranslate() used to move the camera in the portal the translation "pushes" the things in the opposite way
+						mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+						
+						// I also move the light with the camera; I subtract the cameraPosition.y so that the light always stays at the same level as the camera.
+						// I also set the position of the billboard to follow the light
+						mLight0Position.y = cameraPosition.y - mPortalTranslateOffset.y;
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						break;
+					}
+					// At this point the light starts rotating
+					case 2:
+					{						
+						// I update the camera's position
+						mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+						
+						// I compute the increment in the light's rotation, using the given constant speed (I take the modulo so that it doesn't go too high)
+						mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+												
+						// I compute the new position. The x and z coordinates are computed as in the Animator class for the rotation-around-point transitions,
+						// while the y keeps following the offset down
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+											
+						// Updating the position and setting the new position for the billboard	
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						break;
+					}
+					// At this point the portal's camera starts rotating clockwise too. Now the code starts to really repeat itself, so I will only comment where needed
+					case 3:
+					{
+						mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+												
+						mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+												
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						// I need to compute the rotation angle for the portal's camera. In this case I want the camera to rotate 360 degrees in the time
+						// that goes from the current music's keypoint to the next one. Even though the increment is constant, to avoid creating class
+						// variables to save it I always compute (also because it changes at every case of the switch basically)
+						var timeDifference = mMusicKeypointsTimes[mCurrentKeypoint + 1] / 1000 - mMusicKeypointsTimes[mCurrentKeypoint] / 1000;
+						var rotationIncrement = 360.0 / timeDifference;
+						
+						// Incrementing the rotation
+						mPortalRotateOffset += rotationIncrement * dt;
+						
+						break;
+					}
+					// Exact same as above, but the camera's rotation is smaller, to make it look like it's slowing down
+					case 4:
+					{
+						mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+						
+						mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+												
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						// I rotate of 180 degrees in this time frame
+						var timeDifference = mMusicKeypointsTimes[mCurrentKeypoint + 1] / 1000 - mMusicKeypointsTimes[mCurrentKeypoint] / 1000;
+						var rotationIncrement = 180.0 / timeDifference;
+						
+						mPortalRotateOffset += rotationIncrement * dt;
+						
+						break;
+					}
+					// Same as above, but the rotation gets even slower
+					case 5:
+					{
+						mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+						
+						mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+												
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						var timeDifference = mMusicKeypointsTimes[mCurrentKeypoint + 1] / 1000 - mMusicKeypointsTimes[mCurrentKeypoint] / 1000;
+						var rotationIncrement = 120.0 / timeDifference;
+						
+						mPortalRotateOffset += rotationIncrement * dt;
+						
+						break;
+					}
+					// Now the music is increasing, so the camera's rotation becomes fast again and goes in the opposite direction.
+					// Also, the camera starts to move away and then closer to the tower, in a loop
+					case 6:
+					{
+						mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+						
+						mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+												
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						// Now the camera's rotates 720 degrees in the time frame
+						var timeDifference = mMusicKeypointsTimes[mCurrentKeypoint + 1] / 1000 - mMusicKeypointsTimes[mCurrentKeypoint] / 1000;
+						var rotationIncrement = 720.0 / timeDifference;
+						
+						// I rotate in the opposite direction now, so I need to decrement
+						mPortalRotateOffset -= rotationIncrement * dt;
+						
+						// Now I have to move away the camera from the tower, or closer to it. To do it, I use a variable that holds the current distance
+						// crossed in the z axis: if it's greater than the given threshold, which is set to 80 (so we move away by 80 in the z axis, or
+						// move closer by 80), then I invert the direction in order to move in the opposite way (if -1 we move away, if 1 we move closer)
+						if(mDistanceCrossed >= 80 * SCALE_FACTOR)
+						{
+							// I invert the direction and reset the distance covered
+							mPortalTranslateZDirection = -mPortalTranslateZDirection;
+							mDistanceCrossed = 0.0;
+						}
+						
+						// I want the animation to coincide with the peaks in the song, which at this point of the song repeat every 3.75 seconds.
+						// So, since I want to to move by 80 in this time frame, I compute the increment and apply it in the given direction
+						var zIncrement = ((80.0 * SCALE_FACTOR)/ 3.75) * dt;
+						mPortalTranslateOffset.z += mPortalTranslateZDirection * zIncrement;
+						
+						// I also update the distance crossed, so that I can find out when I reached the destination, in order to invert the route
+						mDistanceCrossed += zIncrement;
+						
+						break;
+					}
+					// At this point we're almost at the end: the music is slowing down in volume, so I slow down the camera's rotation, and also
+					// check if the portal's translate offset y reached the final destination, and in that case I stop the descent
+					case 7:
+					{
+						// Very slow rotation. I chose 60 not by chance, but because summing up the previous rotations I know that if I rotate now by 60 degrees
+						// I make the portal camera's stop right behind the tower, where the elevator and the text await
+						var timeDifference = mMusicKeypointsTimes[mCurrentKeypoint + 1] / 1000 - mMusicKeypointsTimes[mCurrentKeypoint] / 1000;
+						var rotationIncrement = 60.0 / timeDifference;
+						
+						mPortalRotateOffset += rotationIncrement * dt;
+						
+						// I only update the portal's y translate if we didn't reach the end, which is not exactly the height of the tower but
+						// a bit less in order to stop the camera at the right level and not too low
+						if(mPortalTranslateOffset.y <= mTowerHeight - mMainRoom.GetRoomHeight() / 2.0)
+						{
+							mPortalTranslateOffset.y += mPortalTranslateYincrement * dt;
+							
+							// If the camera's didn't reach the end yet, I also keep moving in the z axis but less
+							if(mDistanceCrossed >= 40 * SCALE_FACTOR)
+							{
+								mPortalTranslateZDirection = -mPortalTranslateZDirection;
+								mDistanceCrossed = 0.0;
+							}
+								
+							var zIncrement = ((40.0 * SCALE_FACTOR)/ 3.9) * dt;
+							mPortalTranslateOffset.z += mPortalTranslateZDirection * zIncrement;
+							
+							mDistanceCrossed += zIncrement;
+						}
+						
+						mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+												
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						
+						// Now I open the elevator's doors. I do it here because there is a bug I don't understand: if I open the elevator right before that
+						// the ending animations start (so before this "switch" basically), it does so, but when I reach this part of the code the doors
+						// are back closed. No idea why, since I don't open nor close the doors in between. So, the only easy solution is to set the door open
+						// before later on, but before that the elevator can be seen (otherwise they would pop open in an instant). I do it here, but
+						// the bad thing is that it will keep opening them again at again; it's not really a big deal, since it's just setting the position,
+						// but the code is ugly like this.
+						// Note: same goes for the scale
+						mElevator.GetLeftDoor().SetPosition(mElevator.GetLeftDoorOpenPosition());
+						mElevator.GetRightDoor().SetPosition(mElevator.GetRightDoorOpenPosition());
+						mElevator.SetScale(1.0, 1.0, 1.0);
+
+						break;
+					}
+					// We're at the end: the camera is still, the light's is the only thing moving but here I'll make it stop at a certain angle.
+					// This case starts the ending of the level
+					case 8:
+					{
+						// This is the final angle for the light
+						var light0FinalAngle = -350;
+						
+						// Indipendently from where the angle is, I increase the angle if we're not there yet or decrease it. Very bad code, but I'm getting lazy
+						if(mLight0RotationAngle > light0FinalAngle)
+							mLight0RotationAngle = (mLight0RotationAngle - mLight0RotationSpeed * dt) % 360;
+						if(mLight0RotationAngle < light0FinalAngle)
+							mLight0RotationAngle = (mLight0RotationAngle + mLight0RotationSpeed * dt) % 360;
+						if(mLight0RotationAngle == light0FinalAngle)
+							mLight0RotationAngle = light0FinalAngle;
+												
+		 				var x = sin(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						var y = cameraPosition.y - mPortalTranslateOffset.y;
+						var z = cos(mLight0RotationAngle * GRAD_TO_RAD) * mLight0RotationRadius;
+						
+						mLight0Position = [x, y, z];
+						mLight0Billboard.SetPosition(mLight0Position);
+						
+						// I set that the game is ending, and start the timer to actually end it
+						if(!mEnding)
+						{
+							mEnding = true;
+							mEndTimer = GetTime();
+						}
+						
+						// If the game is ending and the timer has reached the final time, and the level was not set as completed yet, it's time to
+						if(mEnding && GetTime() - mEndTimer > mTimeToEnd && !mIsLevelCompleted)
+						{
+							mIsLevelCompleted = true;
+							
+							// I close the elevator's doors
+							mInvariantAnimator.CreateTransition(mElevator.GetLeftDoor(), mElevator.GetLeftDoorOpenPosition(), mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+							mInvariantAnimator.CreateTransition(mElevator.GetRightDoor(), mElevator.GetRightDoorOpenPosition(), mElevator.GetRightDoorClosedPosition(), 2.0, false);
+						}
+					}
+				}
+			}
+			
+			// Note: I consider the light object as a billboard, even though it isn't. To actually be a billboard, it should rotate to always
+			// face the camera. To compute the angle (only on the y axis), I consider the vector that connects the position of the billboard with the camera
+			// and use the Atan2 function do termine the angle. It kinda works, but with the portal and the fact that the animation with the glRotate() 
+			// messes up the coordinate systems of the objects, during the animations the object rotates in the wrong way. I didn't investigate much,
+			// since simply leaving the rotation fixxed looks kinda good in this case; I leave the code for future reference
+//			var billboardPos = mLight0Billboard.GetPosition();
+//			var angle = Atan2(cameraPosition.x - billboardPos.x, cameraPosition.z - billboardPos.z) * RAD_TO_GRAD;
+//			mLight0Billboard.SetRotation(angle, 0, 1, 0);
+		}
 	}
+	
+	// Updating the "previous" camera position to the current one, for the next iteration
+	mPreviousCameraPosition = cameraPosition;
 		
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
+	mInvariantAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
-}
-
-/*
- * This method works the same as the one in Level1, except for the array of connectors used for the check
- */
-function Level4::CheckActiveConnector()
-{
-	// I check only the connectors in the currently active group
-	foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
-	{
-		// I have to check if any of the available controllers (the visible ones) is going inside or outside of a connector
-		foreach(var controller in mCurrentlyVisibleControllersArray)
-		{
-			var controllerIndex = controller.GetIndex();
-			var controllerAlreadyInLight = mControllersInLightArray[controllerIndex - 1];
-			
-			var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(controller.GetObj()) && !controllerAlreadyInLight;
-			
-			if(connector.HasConnectionsAvailable() && isControllerInside || mIsDrawing && isControllerInside && connector.HasLinksAvailable())
-			{
-				mControllersInLightArray[controllerIndex - 1] = true;
-				
-				if(!mIsControllerInLight)
-				{
-					connector.UpdateColor();
-					mIsControllerInLight = true;
-					mCurrentActiveConnector = connector;
-				}
-			}
-			else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(controller.GetObj()))
-			{
-				mControllersInLightArray[controllerIndex - 1] = false;
-				
-				var noControllersLeftInLight = !mControllersInLightArray[0] && !mControllersInLightArray[1];
-
-				if(noControllersLeftInLight)
-				{
-					if(mCurrentActiveConnector != mStartingActiveConnector)
-						connector.ResetLightColor();
-						
-					mIsControllerInLight = false;
-					mCurrentActiveConnector = Void;
-				}
-			}
-		}
-	}
-}
-
-/*
- * This method works the same as the one in Level1, except for the array of controllers used to check the points
- */
-function Level4::HandleDrawings()
-{
-	// Now I check if the player is drawing; I first check if he pressed a button
-	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
-	var usingController2 = mInputManager.IsPressingPrimaryButton(2);
-	
-	var firstTimeUsingController = (usingController1 || usingController2) && mControllerBeingUsedIndex == 0;
-	var wasUsingController1 = (usingController1 && mControllerBeingUsedIndex == 1);
-	var wasUsingController2 = (usingController2 && mControllerBeingUsedIndex == 2);
-		 
-	if(firstTimeUsingController || wasUsingController1 || wasUsingController2)
-	{				
-		if(firstTimeUsingController)
-		{
-			mControllerBeingUsedIndex = usingController1 ? 1 : 2;
-			mIsDrawing = true;
-			
-			// I get the first point in the drawing; I obtain the controller in the array that holds the currently visible controllers
-			mPreviousPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetPosition();
-				
-			var vertexArray = {};
-			
-			aadd(mDrawingsArray, vertexArray);
-			aadd(mDrawingsAlphaArray, 1.0);
-						
-			// Now I have to check if the controller's index is the same as one of the controllers that is currently inside a connector (if there is any);
-			// so, the first thing I need to do is get the index of this controller (from the array of the currently visible ones)
-			var controllerIndex = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetIndex();
-				
-			var controllerWasInsideLight = mControllersInLightArray[controllerIndex - 1];
-			
-			if(mCurrentActiveConnector != Void && controllerWasInsideLight)
-			{	    				
-				aadd(mIsDrawingConnectedArray, true);
-				
-				mGoodStartingPoint = true;
-				mStartingActiveConnector = mCurrentActiveConnector;
-				aadd(mStartingConnectorsArray, mCurrentActiveConnector);
-			}
-			else
-			{
-				aadd(mIsDrawingConnectedArray, false);
-				aadd(mStartingConnectorsArray, Void);
-			}
-		}
-		else
-		{
-			var currentPoint;
-
-			currentPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetPosition();
-					
-			var vertexArray = mDrawingsArray[len(mDrawingsArray) - 1];
-			
-			aadd(vertexArray, mPreviousPoint);
-			aadd(vertexArray, currentPoint);
-			
-			mPreviousPoint = currentPoint;
-		}
-	}
-	// Case where the user is not drawing
-	else
-	{
-		// If the user was drawing until now, I need to check where he stopped
-		if(mControllerBeingUsedIndex != 0)
-		{
-			var isControllerInLight = mControllersInLightArray[mControllerBeingUsedIndex - 1];
-			
-			if(mCurrentActiveConnector != Void && !mCurrentActiveConnector.IsConnected() && mGoodStartingPoint && isControllerInLight)
-			{
-				if(mStartingActiveConnector.GetLinkedConnector() == mCurrentActiveConnector)
-				{
-					mStartingActiveConnector.ConnectionFound(true);
-					mCurrentActiveConnector.ConnectionFound(false);
-					
-					var linkedConnector = mCurrentActiveConnector.GetLinkedConnector();
-					
-					if(linkedConnector != Void && linkedConnector == mStartingActiveConnector)
-					{
-						mStartingActiveConnector.ConnectionFound(false);
-						mCurrentActiveConnector.ConnectionFound(true);
-					}
-					
-					mStartingActiveConnector = Void;
-					mCurrentActiveConnector = Void;
-					mIsControllerInLight = false;
-					mControllersInLightArray[0] = false;
-					mControllersInLightArray[1] = false;
-				}
-				else
-				{
-					mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
-					mStartingActiveConnector.ResetLightColor();
-					mStartingActiveConnector = Void;
-				}
-			}	
-			else
-			{    					
-				if(mStartingActiveConnector != Void)
-				{
-					mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
-					mStartingActiveConnector.ResetLightColor();
-					mStartingActiveConnector = Void;
-				}
-			}
-				
-			mGoodStartingPoint = false;
-			mControllerBeingUsedIndex = 0;
-			mIsDrawing = false;
-		}
-	}
-	
-
-	if(mInputManager.HasPressedMenuButton(1) || mInputManager.HasPressedMenuButton(2))
-		mKeepEveryLine = !mKeepEveryLine;
-	
-	var startingPoint = mIsDrawing ? len(mDrawingsAlphaArray) - 2 : len(mDrawingsAlphaArray) - 1;
-		
-	for(var i = startingPoint; i >= 0; i--)
-	{
-		if(!mIsDrawingConnectedArray[i] && !mKeepEveryLine)
-		{
-			if(mDrawingsAlphaArray[i] > -1.0)
-				mDrawingsAlphaArray[i] -= 0.01;
-			else
-			{
-				adel(mDrawingsArray, i);
-				adel(mDrawingsAlphaArray, i);
-				adel(mIsDrawingConnectedArray, i);
-				adel(mStartingConnectorsArray, i);
-			}
-		}
-	}
 }
 
 
@@ -896,6 +1936,28 @@ function Level4::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 	if(intersectedPlane == -1)
 		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 		
+	// If no valid intersection was found, I check the glass wall; since it's a basically planar, I consider it as a plane
+	if(intersectedPlane == -1)
+	{
+		normal = [0, 0, 1];
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, mGlassWall.GetPosition(), normal);
+		
+		// If a in intersection was found, I procede
+		if(contactPoint != Void)
+		{
+			// I need to check if the position found is in the room; since the plane is infinite, the intersection could be anywhere. To make sure that
+			// we check the point correctly, I move the point up a little bit for the check
+			contactPoint.z += 1 * SCALE_FACTOR;
+			
+			// If the point is in the room, it's a valid point
+			if(mMainRoom.IsPointInRoom(contactPoint))
+			{
+				intersectedPlane = -1;
+				contactPoint.z -= 1 * SCALE_FACTOR;
+			}
+		}
+	}
+		
 	isWall = true;
 	
 	return intersectedPlane == 0;
@@ -910,11 +1972,17 @@ function Level4::IsLevelCompleted()
 	return mIsLevelCompleted;
 }
 
+/*
+ * This method updates the opengl offset used for teleporting
+ */
 function Level4::SetOpenglTransformOffset(openglTransformOffset)
 {
 	mOpenglTranslationOffset = openglTransformOffset;
 }
 
+/*
+ * This method setups of the opengl lights, used for rendering the Vive parts
+ */
 function Level4::SetupOpenglLights()
 {
 	glEnable(GL_LIGHT0);
@@ -925,8 +1993,9 @@ function Level4::SetupOpenglLights()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
- 	
+	
 	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
 	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
+
