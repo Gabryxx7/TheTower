@@ -116,6 +116,8 @@ class Level4
 	var mControllerBeingHoveredInNumpad;
 	var mControllerBeingHoveredInClock;
 	
+	var mMaskObj;
+	
 	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
 	var mDebugController;
 	var mDebugControllerHidden;
@@ -597,6 +599,11 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mTheTowerText = CVmObj();
 	mTheTowerText.LinkToText(txt);
 	mTheTowerText.SetRotation(180, 0, 1, 0);
+	
+	// Mask object, for the mirror; it's very big, so I scale it down
+	var maskMesh = CVmNewMesh("GuyFawkesMask.aam");
+	maskMesh.Scale(SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR);
+	mMaskObj = CVmObj(maskMesh);
 }
 
 /*
@@ -827,6 +834,7 @@ function Level4::Render()
 		case STATUS_ELEVATOR_MOVING:
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
 		{
 			DrawPortal();
@@ -834,23 +842,9 @@ function Level4::Render()
 
 			// Drawing the glass wall; I don't put this in the DrawRoom() function, since otherwise it would be redrawn in the portal, which is not what I want
 			mGlassWall.Draw();
-			
-//			glLight(GL_LIGHT0, GL_POSITION, [0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 - mElevator.GetRoomDepth() * 2.0, 1.0]); 
-//			
-//			mElevator.SetPosition([0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 - mElevator.GetRoomDepth()]);
-//			mTheTowerText.SetPosition([18.0 * SCALE_FACTOR, -mTowerHeight + mMainRoom.GetRoomHeight() / 1.85, -mMainRoom.GetRoomDepth() / 2.0 - 0.1 * SCALE_FACTOR]);
-//			mTheTowerText.Draw();
-//			mTower.Draw();
+
 	
 			break;
-		}
-		case STATUS_LEVEL_ENDING:
-		{
-			DrawPortal();
-			DrawRoom();
-
-			// Drawing the glass wall; I don't put this in the DrawRoom() function, since otherwise it would be redrawn in the portal, which is not what I want
-			mGlassWall.Draw();
 		}
 	}
 	
@@ -1017,7 +1011,9 @@ function Level4::DrawPortal()
 	// Drawing the "normal state" of the objects
 	for(var i = 0; i < len(mNumbersObjectArray); i++)
 		mNumbersObjectArray[i].Draw();
-	
+		
+	// Drawing the mask object
+	mMaskObj.Draw();
 
 	// I only draw a controller if it's not colliding with the glass wall and if it's z coordinate is bigger than the glass wall's (basically, only if
 	// the controller is in front of the glass wall; since the glass wall has a negative z I need to check if the controller's is greater in order to
@@ -1104,6 +1100,34 @@ function Level4::InvertObjectsPosition()
 		InvertObject(childObject);
 		
 	InvertObject(mNumpad);
+	
+	
+	// Here is an exception: the mask object has a weird rotation mechanism, and basically the inversion of the matrix doesn't work like other objects, not sure why.
+	// So, I basically copy the code in InvertObject() here, changing the inversion of the angles only
+	var pos = mMaskObj.GetPosition();
+	pos.x = -pos.x;
+	mMaskObj.SetPosition(pos);
+	
+	var rotationMatrix = mMaskObj.GetRotationMatrix();
+	
+	var rotx = Atan2(rotationMatrix[9], rotationMatrix[10]) * RAD_TO_GRAD;
+    var roty = Atan2(rotationMatrix[8], sqrt(rotationMatrix[9] * rotationMatrix[9] + rotationMatrix[10] * rotationMatrix[10])) * RAD_TO_GRAD;
+    var rotz = Atan2(rotationMatrix[4], rotationMatrix[0]) * RAD_TO_GRAD;
+	    						
+//	rotx = -rotx;
+//	roty = -roty;
+	rotz = -rotz;
+	
+	var quaternion = EulerToQuaternion([rotx, roty, rotz]);
+	var newRotationMatrix3 = QuaternionToMatrix3(quaternion);
+	
+	var newRotationMatrix4 = [ newRotationMatrix3[0], newRotationMatrix3[1], newRotationMatrix3[2], 0,
+				   			   newRotationMatrix3[3], newRotationMatrix3[4], newRotationMatrix3[5], 0, 
+				    		   newRotationMatrix3[6], newRotationMatrix3[7], newRotationMatrix3[8], 0, 
+				    		            0, 					   0,					  0,			1];
+	
+	// Finally setting the new rotation matrix
+	mMaskObj.SetRotationMatrix(newRotationMatrix4);
 }
 
 
@@ -1169,6 +1193,11 @@ function Level4::UpdateLogic(dt)
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	
+	
+	mMaskObj.SetPosition(cameraPosition);
+	mMaskObj.SetRotationMatrix(mCamera.GetRotationMatrix());
+	mMaskObj.Rotate(180, 0, 1, 0);
 
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon)
@@ -1426,7 +1455,7 @@ function Level4::UpdateLogic(dt)
 					if(mInputManager.IsPressingPrimaryButton(mControllerBeingHoveredInNumpad.GetIndex()))
 					{
 						mNumpad.PressSelectedButton();
-						mInputManager.VibrateController(mControllerBeingHoveredInNumpad.GetIndex());
+						mInputManager.VibrateController(mControllerBeingHoveredInNumpad.GetIndex(), 500);
 					}
 				}
 				// If the controller wasn't in range and this controller was the one currently hovering, I set that it's not anymore
@@ -1474,7 +1503,7 @@ function Level4::UpdateLogic(dt)
 			    		if(!mIsUsingClock && contactPoint != Void)
 			    		{
 		    				mIsUsingClock = true;
-			    			mInputManager.VibrateController(mControllerBeingHoveredInClock.GetIndex());
+			    			mInputManager.VibrateController(mControllerBeingHoveredInClock.GetIndex(), 500);
 			    		}
 			    		// If the player is using the clock...
 			    		if(mIsUsingClock)

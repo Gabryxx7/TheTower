@@ -100,6 +100,13 @@ class GameManager
 	// Shader used to render the position circle
 	var mPositionCircleShader;
 	
+	// Objects that represent the play area rectangle (that is displayed as a box to create a cool shading effect). The play area is defined by the Vive's lighthouse
+	// system and it's basically the area that the player can move in safely
+	var mPlayAreaRec;
+	var mPlayAreaBox;
+	var mPlayAreaBoxHeight;
+	var mPlayAreaBoxShader;
+	
 	// Boolean that indicates if the current position of the circle is a valid position for teleportation
 	var mIsPositionValid;
 	
@@ -116,6 +123,7 @@ class GameManager
 	// This boolean indicates whether the user is currently pressing the secondary button for teleportation
 	var mIsPressingSecondaryButton;
 	
+	// Index of the controller being used for the teleportation
 	var mControllerBeingUsedIndex;
 
 
@@ -250,14 +258,26 @@ function GameManager::GameManager(HMD)
 	mIsWall = false;
 	mIsPressingSecondaryButton = false;
 	
+	// Initially, no controller is being used
+	mControllerBeingUsedIndex = 0;
+	
 	// Shaders used to render the dashed line and the circle for the teleportation feature
 	mDashedLineShader = CVmShaderProgram("dashedLineShader.glsl");
 	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
+	mPlayAreaBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
 	
 	// Offset used for the teleportation feature rendering
 	mDashedLinesOffset = 0;
 	
-	mControllerBeingUsedIndex = 0;
+	// Getting the play area size for the Vive; if the Vive isn't on, a default size is chosen. This method returns a vector containing with and depth of the area
+	mPlayAreaRec = mInputManager.GetPlayAreaSize();
+	
+	// Height of the play area box
+	mPlayAreaBoxHeight = 4.0 * SCALE_FACTOR;
+	
+	// Creating the play area box
+	var playAreaBoxMesh = CVmNewMesh(VRP_BOX, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaBoxHeight/2.0, -mPlayAreaRec.y / 2.0], [mPlayAreaRec.x/2.0, mPlayAreaBoxHeight/2, mPlayAreaRec.y / 2.0]);
+	mPlayAreaBox = CVmObj(playAreaBoxMesh);
 }
 
 /*
@@ -277,6 +297,8 @@ function GameManager::Render()
 				
 				
 			SceneBegin(mCamera);
+			
+			outputln(mCamera.GetPosition());
 			
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -376,6 +398,26 @@ function GameManager::XVRRendering(){
 
 				mPositionCircleObj.Draw();
 			mPositionCircleShader.Stop();
+			
+			// If the position is valid I also draw the play area box
+			if(mIsPositionValid)
+			{
+				mPlayAreaBoxShader.Start();
+					mPlayAreaBoxShader.SetParameter("color", color);
+					mPlayAreaBoxShader.SetParameter("width", mPlayAreaRec.x);
+					mPlayAreaBoxShader.SetParameter("depth", mPlayAreaRec.y);
+					mPlayAreaBoxShader.SetParameter("height", mPlayAreaBoxHeight);
+					mPlayAreaBoxShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
+					
+					// In order to render the box correctly with the shader, I have to render first the back faces and then the front faces.
+					// If I only draw the front faces, some fragments will have transparency, but behind there wouldn't be anything since the back
+					// faces wouldn't be drawn. By drawing them first, I can assure that the transparencies of the fragments will be consistent
+					glCullFace(GL_FRONT);
+					mPlayAreaBox.Draw();
+					glCullFace(GL_BACK);
+					mPlayAreaBox.Draw();
+				mPlayAreaBoxShader.Stop();
+			}
 		}
 		
 		// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift
@@ -386,7 +428,7 @@ function GameManager::XVRRendering(){
 		mDashedLinesOffset = 0;
 	
 	
-	// Drawing the crosshair and everything that levelis 2D after I'm finished with the 3D stuff
+	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
 	if(!mIsVRon)
 		DrawCrosshair();
 	
@@ -490,6 +532,12 @@ function GameManager::UpdateLogic(dt)
 					// Finally I set the position of the circle, subtracting the direction vector so that the circle is not really on the plane but a bit
 					// closer to the user (to avoid Z fighting with the intersected plane)
 					mPositionCircleObj.SetPosition(contactPoint - mCamera.GetDirection() * SCALE_FACTOR);
+					
+					// I also position the play area box in that point, lifting it a bit so that it's completely above the ground (remember, the box
+					// has the origin in its center). I then translate the box, moving it so that it shows where the player is in the world with respect
+					// to the play area; where the player is can be seen directly by looking at the position of the camera
+					mPlayAreaBox.SetPosition(contactPoint + [0, mPlayAreaBoxHeight / 2.0 + 0.02 * SCALE_FACTOR, 0]);
+					mPlayAreaBox.Translate(-mCamera.GetPosition().x, 0, -mCamera.GetPosition().z);
 				}
 			}
 			// If the user isn't pressing the button...
@@ -536,6 +584,12 @@ function GameManager::UpdateLogic(dt)
 				}
 			}
 			
+			// Debug checks to stop/resume the music
+			if(Keypressed("V"))
+				mSoundManager.PauseMusic();
+			if(Keypressed("B"))
+				mSoundManager.PlayMusic();
+				
 			break;
 		}
 			

@@ -21,8 +21,9 @@ class ViveManager
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
 	HasPressedMenuButton(controllerIndex);
-	VibrateController(controllerIndex);
+	VibrateController(controllerIndex, microseconds);
 	GetController(controllerIndex);
+	GetPlayAreaSize();
 };
 
 
@@ -113,9 +114,9 @@ function ViveManager::HasPressedMenuButton(controllerIndex)
 	return false;
 }
 
-function ViveManager::VibrateController(controllerIndex)
+function ViveManager::VibrateController(controllerIndex, microseconds)
 {
-	return mHMD.VibrateController(controllerIndex, 500);
+	return mHMD.VibrateController(controllerIndex, microseconds);
 }
 
 function ViveManager::GetController(controllerIndex)
@@ -124,4 +125,9 @@ function ViveManager::GetController(controllerIndex)
 		return mController1;
 	else if(controllerIndex == 2)
 		return mController2;
+}
+
+function ViveManager::GetPlayAreaSize()
+{
+	return mHMD.GetPlayAreaSize();
 }

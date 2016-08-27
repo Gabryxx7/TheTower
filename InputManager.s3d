@@ -35,7 +35,8 @@ class InputManager
 	IsPressingSecondaryButton(controllerIndex);
 	GetController(controllerIndex);
 	HasPressedMenuButton(controllerIndex);
-	VibrateController(controllerIndex);
+	VibrateController(controllerIndex, microseconds);
+	GetPlayAreaSize();
 };
 
 
@@ -124,8 +125,22 @@ function InputManager::GetController(controllerIndex)
 /*
  * This method is meaningful only if the Vive is connected; otherwise it does nothing
  */
-function InputManager::VibrateController(controllerIndex)
+function InputManager::VibrateController(controllerIndex, microseconds)
 {
 	if(mIsVRon)
-		mManager.VibrateController(controllerIndex);
+		mManager.VibrateController(controllerIndex, microseconds);
+}
+
+/*
+ * This method is meaningful only if the Vive is connected; otherwise it does nothing.
+ * It returns the playable area for the player (defined by the Vive's lighthouse system), in meters.
+ * 
+ * return: vector[2]: the x is the width, the y is the depth of the play area
+ */
+function InputManager::GetPlayAreaSize()
+{
+	if(mIsVRon)
+		return mManager.GetPlayAreaSize();
+	else
+		return [4.0, 4.0];
 }
