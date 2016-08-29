@@ -106,7 +106,7 @@ function SoundManager::PlaySound(id, resetFirst, volume)
 	// I find the sound with the given id (a map or an associative array would be best, but in XVR there is none)
 	for(var i = 0; i < len(mIdList) && !found; i++)
 	{
-		if(mIdList[i] == id)
+		if(valtype(mIdList[i]) == valtype(id) && mIdList[i] == id)
 		{
 			found = true;
 			

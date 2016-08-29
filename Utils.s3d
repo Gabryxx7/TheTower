@@ -178,6 +178,108 @@ function AddToonShaderToMesh(mesh, ambient, diffuse, specular, shininess, lights
 }
 
 /*
+ * This is an auxiliary function that creates cone-thing objects, used in Level0 and Level4
+ * 
+ * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the object
+ * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the object
+ * baseSize: optional (float) the base size of the object; if not defined, a random one will be chosen
+ * pyramidHeight: optional (float) height of a single pyramid in the object; if not defined, a random one will be chosen
+ * color: optional (vector[3]) the color of the object; if not defined, a random one will be chosen
+ */
+function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight, color)
+{
+	if(baseSize == Void)
+		baseSize = 0.3 * SCALE_FACTOR + (Rand(4) / 10.0) * SCALE_FACTOR;
+		
+	if(pyramidHeight == Void)
+		pyramidHeight = 1.0 * SCALE_FACTOR + (Rand(8) / 10.0) * SCALE_FACTOR;
+	
+	var pyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
+	
+	if(color == Void)
+		color = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	
+	AddToonShaderToMesh(pyramidMesh, [0.04, 0.04, 0.04], color, [0.4, 0.4, 0.4], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	
+	var star = CVmObj(pyramidMesh);
+	var pyramidObj2 = CVmObj(pyramidMesh);
+	var pyramidObj3 = CVmObj(pyramidMesh);
+	var pyramidObj4 = CVmObj(pyramidMesh);
+	var pyramidObj5 = CVmObj(pyramidMesh);
+	var pyramidObj6 = CVmObj(pyramidMesh);
+	
+	pyramidObj2.Rotate(90, 0, 0, 1);
+	pyramidObj3.Rotate(180, 0, 0, 1);
+	pyramidObj4.Rotate(270, 0, 0, 1);
+	pyramidObj5.Rotate(90, 1, 0, 0);
+	pyramidObj6.Rotate(-90, 1, 0, 0);
+	
+	star.AddChild(pyramidObj2, 0, -baseSize, 0);
+	star.AddChild(pyramidObj3, baseSize, -baseSize, 0);
+	star.AddChild(pyramidObj4, baseSize, 0, 0);
+	star.AddChild(pyramidObj5, 0, -baseSize, 0);
+	star.AddChild(pyramidObj6, 0, 0, -baseSize);
+
+	return star;
+}
+
+/*
+ * This is an auxiliary function that creates cone-thing objects, used in Level0 and Level4; works just like CreateStarThing()
+ * 
+ * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the object
+ * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the object
+ * coneHeight: optional (float) height of a single cone in the object; if not defined, a random one will be chosen
+ * color: optional (vector[3]) the color of the object; if not defined, a random one will be chosen
+ */
+function CreateConeThing(lightsRangeMin, lightsRangeMax, coneHeight, color)
+{
+	if(coneHeight == Void)
+		coneHeight = Rand(1) == 0 ? 3.0 * SCALE_FACTOR - (Rand(10) / 10.0) * SCALE_FACTOR : 3.0 * SCALE_FACTOR + (Rand(10) / 10.0) * SCALE_FACTOR;
+		
+	var coneMesh = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, coneHeight * SCALE_FACTOR);
+	
+	// Need also to scale the mesh itself; if the sizes are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
+	coneMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+	
+	if(color == Void)
+		color = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		
+	AddToonShaderToMesh(coneMesh, [0.04, 0.04, 0.04], color, [0.4, 0.4, 0.4], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	
+	var coneContainerObj = CVmObj(coneMesh); 
+	var coneObj2 = CVmObj(coneMesh); 
+	var coneObj3 = CVmObj(coneMesh); 
+	var coneObj4 = CVmObj(coneMesh);  
+	var coneObj5 = CVmObj(coneMesh); 
+	var coneObj6 = CVmObj(coneMesh);  
+	var coneObj7 = CVmObj(coneMesh); 
+	var coneObj8 = CVmObj(coneMesh);  
+		
+	coneContainerObj.AddChild(coneObj2, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj3, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj4, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj5, 0, 0, 0);
+	coneContainerObj.AddChild(coneObj6, 0, 0, 0);
+	
+	coneObj2.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj2.Rotate(180, 0, 0, 1);
+	
+	coneObj3.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj3.Rotate(90, 0, 0, 1);
+	
+	coneObj4.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj4.Rotate(-90, 0, 0, 1);
+	
+	coneObj5.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj5.Rotate(90, 1, 0, 0);
+	
+	coneObj6.SetPivotPoint(0, coneHeight / 3.0, 0);
+	coneObj6.Rotate(-90, 1, 0, 0);
+	
+	return coneContainerObj;
+}
+
+/*
  * Ausilairy function that adds silhouette lines to planar object (potentially cubic)
  * 
  * object: (CVmObj) object to which the lines will be added
@@ -186,19 +288,27 @@ function AddToonShaderToMesh(mesh, ambient, diffuse, specular, shininess, lights
  * height: (float) height of the object
  * zOffset: optional (float) the offset used for the z axis to position the lines; used in case the object is almost planar (like a cube), to add lines to a face
  */
-function AddSilhouetteLinesToPlanarObject(object, silhouetteThickness, width, height, zOffset)
+function AddSilhouetteLinesToPlanarObject(object, silhouetteThickness, width, height, xOffset, yOffset, zOffset)
 {
 	var halfWidth = width / 2.0;
 	var halfHeight = height / 2.0;
 	
+	if(xOffset == Void)
+		xOffset = 0;
+		
+	if(yOffset == Void)
+		yOffset = 0;
+		
 	if(zOffset == Void)
 		zOffset = 0;
 	
 	// Mesh for the silhouette lines used in the borders
 	var silhouetteLineHalfWidth = silhouetteThickness / 2.0;
 	
-	var silhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight, 0], [silhouetteLineHalfWidth, halfHeight, 0], 2, 2);
-	var silhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth, 0], [silhouetteLineHalfWidth, halfWidth, 0], 2, 2);
+	var innerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight, 0], [silhouetteLineHalfWidth, halfHeight, 0], 2, 2);
+	var innerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth, 0], [silhouetteLineHalfWidth, halfWidth, 0], 2, 2);
+	var outerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight, 0], [silhouetteLineHalfWidth, halfHeight, 0], 2, 2);
+	var outerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth, 0], [silhouetteLineHalfWidth, halfWidth, 0], 2, 2);
 	
 	// Black material for the lines
 	var silhouetteMaterial = CVmMaterial();
@@ -206,22 +316,36 @@ function AddSilhouetteLinesToPlanarObject(object, silhouetteThickness, width, he
 	silhouetteMaterial.ambient = [0, 0, 0];
 	silhouetteMaterial.specular = [0, 0, 0];
 	
-	silhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
-	silhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
+	innerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
+	innerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
+	outerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
+	outerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
 
-	var silhouetteLeft = CVmObj(silhouetteVerticalLine);
-	var silhouetteRight = CVmObj(silhouetteVerticalLine);
-	var silhouetteTop = CVmObj(silhouetteHorizzontalLine);
-	var silhouetteBottom = CVmObj(silhouetteHorizzontalLine);
+	var innerSilhouetteLeft = CVmObj(innerSilhouetteVerticalLine);
+	var innerSilhouetteRight = CVmObj(innerSilhouetteVerticalLine);
+	var innerSilhouetteTop = CVmObj(innerSilhouetteHorizzontalLine);
+	var innerSilhouetteBottom = CVmObj(innerSilhouetteHorizzontalLine);
 	
-	silhouetteTop.Rotate(90, 0, 0, 1);
-	silhouetteBottom.Rotate(90, 0, 0, 1);
+	var outerSilhouetteLeft = CVmObj(outerSilhouetteVerticalLine);
+	var outerSilhouetteRight = CVmObj(outerSilhouetteVerticalLine);
+	var outerSilhouetteTop = CVmObj(outerSilhouetteHorizzontalLine);
+	var outerSilhouetteBottom = CVmObj(outerSilhouetteHorizzontalLine);
+	
+	innerSilhouetteTop.Rotate(90, 0, 0, 1);
+	innerSilhouetteBottom.Rotate(90, 0, 0, 1);
+	outerSilhouetteTop.Rotate(90, 0, 0, 1);
+	outerSilhouetteBottom.Rotate(90, 0, 0, 1);
 	
 	// Adding the silhouette lines to the object; I use a very small z value to move the lines as close as possible to the object without having Z-fighting
-	object.AddChild(silhouetteLeft, halfWidth, 0, 0.001 * SCALE_FACTOR + zOffset);
-	object.AddChild(silhouetteRight, -halfWidth, 0, 0.001 * SCALE_FACTOR + zOffset);
-	object.AddChild(silhouetteTop, 0, halfHeight - silhouetteLineHalfWidth, 0.001 * SCALE_FACTOR + zOffset);
-	object.AddChild(silhouetteBottom, 0, -halfHeight + silhouetteLineHalfWidth, 0.001 * SCALE_FACTOR + zOffset);
+	object.AddChild(innerSilhouetteLeft, halfWidth - silhouetteLineHalfWidth + xOffset, yOffset, -0.0005 * SCALE_FACTOR + zOffset);
+	object.AddChild(innerSilhouetteRight, -halfWidth + silhouetteLineHalfWidth + xOffset, yOffset, -0.0005 * SCALE_FACTOR + zOffset);
+	object.AddChild(innerSilhouetteTop, xOffset, halfHeight - silhouetteLineHalfWidth + yOffset, -0.0005 * SCALE_FACTOR + zOffset);
+	object.AddChild(innerSilhouetteBottom, xOffset, -halfHeight + silhouetteLineHalfWidth + yOffset, -0.0005 * SCALE_FACTOR + zOffset);
+	
+	object.AddChild(outerSilhouetteLeft, halfWidth - silhouetteLineHalfWidth + xOffset, yOffset, 0.0005 * SCALE_FACTOR + zOffset);
+	object.AddChild(outerSilhouetteRight, -halfWidth + silhouetteLineHalfWidth + xOffset, yOffset, 0.0005 * SCALE_FACTOR + zOffset);
+	object.AddChild(outerSilhouetteTop, xOffset, halfHeight - silhouetteLineHalfWidth + yOffset, 0.0005 * SCALE_FACTOR + zOffset);
+	object.AddChild(outerSilhouetteBottom, xOffset, -halfHeight + silhouetteLineHalfWidth + yOffset, 0.0005 * SCALE_FACTOR + zOffset);
 }
 
 /*
@@ -233,11 +357,14 @@ function AddSilhouetteLinesToPlanarObject(object, silhouetteThickness, width, he
  * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the glass wall
  * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the glass wall
  */
-function CreateGlassWall(wallWidth, wallHeight, borderThickness, lightsRangeMin, lightsRangeMax)
+function CreateGlassWall(wallWidth, wallHeight, borderThickness, lightsRangeMin, lightsRangeMax, glassAlpha)
 {
 	var halfWidth = wallWidth / 2.0;
 	var halfHeight = wallHeight / 2.0;
 	var halfThickness = borderThickness / 2.0;
+	
+	if(glassAlpha == Void)
+		glassAlpha = 0.5;
 	
 	// The glass mesh is smaller than the wall, because it takes into account the borders
 	var glassMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth + borderThickness, -halfHeight + borderThickness, 0], [halfWidth - borderThickness, halfHeight - borderThickness, 0], 2, 2);
@@ -259,10 +386,12 @@ function CreateGlassWall(wallWidth, wallHeight, borderThickness, lightsRangeMin,
 	// Mesh for the silhouette lines used in the borders
 	var silhouetteLineHalfWidth = 0.02 * SCALE_FACTOR;
 	
+	// I add the silhouettes from either side of the plane
 	var innerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight + borderThickness, 0], [silhouetteLineHalfWidth, halfHeight - borderThickness, 0], 2, 2);
 	var innerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth + borderThickness, 0], [silhouetteLineHalfWidth, halfWidth - borderThickness, 0], 2, 2);
-//	var outerSilhouetteLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, 0, 0], [silhouetteLineHalfWidth, mRoomHeight, 0], 2, 2);
-	
+	var outerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight, 0], [silhouetteLineHalfWidth, halfHeight, 0], 2, 2);
+	var outerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth, 0], [silhouetteLineHalfWidth, halfWidth, 0], 2, 2);
+
 	// Black material for the lines
 	var silhouetteMaterial = CVmMaterial();
 	silhouetteMaterial.diffuse = [0, 0, 0];
@@ -271,14 +400,23 @@ function CreateGlassWall(wallWidth, wallHeight, borderThickness, lightsRangeMin,
 	
 	innerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
 	innerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
+	outerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
+	outerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
 
 	var innerSilhouetteLeft = CVmObj(innerSilhouetteVerticalLine);
 	var innerSilhouetteRight = CVmObj(innerSilhouetteVerticalLine);
 	var innerSilhouetteTop = CVmObj(innerSilhouetteHorizzontalLine);
 	var innerSilhouetteBottom = CVmObj(innerSilhouetteHorizzontalLine);
 	
+	var outerSilhouetteLeft = CVmObj(outerSilhouetteVerticalLine);
+	var outerSilhouetteRight = CVmObj(outerSilhouetteVerticalLine);
+	var outerSilhouetteTop = CVmObj(outerSilhouetteHorizzontalLine);
+	var outerSilhouetteBottom = CVmObj(outerSilhouetteHorizzontalLine);
+	
 	innerSilhouetteTop.Rotate(90, 0, 0, 1);
 	innerSilhouetteBottom.Rotate(90, 0, 0, 1);
+	outerSilhouetteTop.Rotate(90, 0, 0, 1);
+	outerSilhouetteBottom.Rotate(90, 0, 0, 1);
 	
 	AddToonShaderToMesh(verticalBorderMesh, [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	AddToonShaderToMesh(horizzontalBorderMesh, [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
@@ -289,11 +427,17 @@ function CreateGlassWall(wallWidth, wallHeight, borderThickness, lightsRangeMin,
 	glassWallObj.AddChild(topBorderObj, 0, halfHeight - halfThickness, 0);
 	glassWallObj.AddChild(bottomBorderObj, 0, -halfHeight + halfThickness, 0);
 	
-	// Adding the silhouette lines to the wall where the borders are
-	glassWallObj.AddChild(innerSilhouetteLeft, halfWidth - borderThickness, 0, -0.03 * SCALE_FACTOR);
-	glassWallObj.AddChild(innerSilhouetteRight, -halfWidth + borderThickness, 0, -0.03 * SCALE_FACTOR);
-	glassWallObj.AddChild(innerSilhouetteTop, 0, halfHeight - borderThickness - silhouetteLineHalfWidth, -0.03 * SCALE_FACTOR);
-	glassWallObj.AddChild(innerSilhouetteBottom, 0, -halfHeight + borderThickness + silhouetteLineHalfWidth, -0.03 * SCALE_FACTOR);
+	// Adding the silhouette lines to the wall where the borders are, using a very low z offset to avoid Z fighting but at the same time making
+	// it look like they're attached to the wall
+	glassWallObj.AddChild(innerSilhouetteLeft, halfWidth - borderThickness, 0, -0.003 * SCALE_FACTOR);
+	glassWallObj.AddChild(innerSilhouetteRight, -halfWidth + borderThickness, 0, -0.003 * SCALE_FACTOR);
+	glassWallObj.AddChild(innerSilhouetteTop, 0, halfHeight - borderThickness - silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	glassWallObj.AddChild(innerSilhouetteBottom, 0, -halfHeight + borderThickness + silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	
+	glassWallObj.AddChild(outerSilhouetteLeft, halfWidth, 0, -0.003 * SCALE_FACTOR);
+	glassWallObj.AddChild(outerSilhouetteRight, -halfWidth, 0, -0.003 * SCALE_FACTOR);
+	glassWallObj.AddChild(outerSilhouetteTop, 0, halfHeight - silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	glassWallObj.AddChild(outerSilhouetteBottom, 0, -halfHeight + silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
 	
 	return glassWallObj;
 }

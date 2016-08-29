@@ -1,4 +1,4 @@
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -192,8 +192,8 @@ function GameManager::GameManager(HMD)
 	aadd(mLights, light1);
 	aadd(mLights, light2);
 	
+//	mOpenglTranslationOffset = [0, 0, -20 * SCALE_FACTOR]; 
 	mOpenglTranslationOffset = [0, 0, 0]; 
-	
 	
 	mTimeToEnd = 7000;
 	mEnding = false;
@@ -209,7 +209,7 @@ function GameManager::GameManager(HMD)
 		mElevator.Unhide();
 		
 		// Sposto la camera in modo che sia dentro l'ascensore
-		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -4.0 * SCALE_FACTOR);
+		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 				
 		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
@@ -228,7 +228,6 @@ function GameManager::GameManager(HMD)
 	}
 	else 
 	{
-	
 		// The current level takes as parameter the input manager, which is shared among every level
 		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights);
 		mCurrentLevelNumber = 0;
@@ -237,9 +236,9 @@ function GameManager::GameManager(HMD)
 		
 		aadd(mLevels, "placeholder");
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -298,7 +297,6 @@ function GameManager::Render()
 				
 			SceneBegin(mCamera);
 			
-			outputln(mCamera.GetPosition());
 			
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -393,7 +391,7 @@ function GameManager::XVRRendering(){
 				mPositionCircleShader.SetParameter("radius", mPositionCircleRadius * 2.0);
 				mPositionCircleShader.SetParameter("innerCircleTickness", 0.06 * SCALE_FACTOR);
 				mPositionCircleShader.SetParameter("outerCircleTickness", 0.16 * SCALE_FACTOR);
-				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 100.0); // The offset needs to be higher, otherwise the lines move slowly
+				mPositionCircleShader.SetParameter("offset", mDashedLinesOffset * 300.0); // The offset needs to be higher, otherwise the lines move slowly
 				mPositionCircleShader.SetParameter("ticksNumber", 15.0);
 
 				mPositionCircleObj.Draw();
@@ -421,7 +419,7 @@ function GameManager::XVRRendering(){
 		}
 		
 		// I increment the offset used for the rendering of the ray and the circle, so that in the next frame the ticks position will shift
-		mDashedLinesOffset += 0.01;
+		mDashedLinesOffset += 0.01 * SCALE_FACTOR;
 	}
 	// If we don't have to draw the ray, I reset its offset, so that it doesn't increment too much in the course of the game
 	else

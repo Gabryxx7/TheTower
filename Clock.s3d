@@ -70,40 +70,21 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	mClockSphereRadius = 1 * SCALE_FACTOR;
 	mClockSphereThickness = 0.02 * SCALE_FACTOR;
 	
-	// Creating the mesh for the arrow and setting the pivot for the rotation in t
+	// Creating the mesh for the arrow and adding the toon shader to it
 	mMinutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
-	
-	mMinutesArrowMesh.ShaderAdd("toonShader.glsl", 0);
-	mMinutesArrowMesh.ShaderActivate(true);
-	mMinutesArrowMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	mMinutesArrowMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
-	mMinutesArrowMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	mMinutesArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	mMinutesArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mMinutesArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mMinutesArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mMinutesArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	AddToonShaderToMesh(mMinutesArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	mMinutesArrowObj = CVmObj(mMinutesArrowMesh);
 	
 	mHoursArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mHoursArrowHeight, mArrowsDepth]); 
-	
-	mHoursArrowMesh.ShaderAdd("toonShader.glsl", 0);
-	mHoursArrowMesh.ShaderActivate(true);
-	mHoursArrowMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	mHoursArrowMesh.ShaderSetParameter(0, "diffuse", 0, [0.9, 0.9, 0.9]);
-	mHoursArrowMesh.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	mHoursArrowMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	mHoursArrowMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mHoursArrowMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mHoursArrowMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mHoursArrowMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	AddToonShaderToMesh(mHoursArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	mHoursArrowObj = CVmObj(mHoursArrowMesh);
 	
+//	AddSilhouetteLinesToPlanarObject(mMinutesArrowObj, 0.0025 * SCALE_FACTOR, mArrowsWidth, mMinutesArrowHeight, mArrowsWidth / 2.0, mMinutesArrowHeight / 2.0);
+//	AddSilhouetteLinesToPlanarObject(mHoursArrowObj, 0.0025 * SCALE_FACTOR, mArrowsWidth, mHoursArrowHeight, mArrowsWidth / 2.0, mHoursArrowHeight / 2.0);
 	
-//	var clockMesh = CVmNewMesh(VRP_SPHERE, mClockSphereSegments, mClockSphereRadius, 1);  	
-//	clockMesh.Scale(1, 1, mClockSphereThickness);
+	
 	var clockMesh = CVmNewMesh(VRP_CIRCLE, mClockSphereSegments, mClockSphereRadius, 1);  
 	clockMesh.Rotate(-90, 1, 0, 0);	
 	clockMesh.Rotate(180, 0, 0, 1);	

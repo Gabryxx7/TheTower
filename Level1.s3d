@@ -319,7 +319,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
+	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
 	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
 	
@@ -340,6 +340,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 		
 	mElevator = elevator;
+//	mElevator.SetPosition([0, mElevator.GetRoomHeight() + 0.08 * SCALE_FACTOR, -mElevator.GetRoomDepth() + 0.185 * SCALE_FACTOR]);
 	mElevator.SetLightsRange(0,0);
 	
 	// Retrieving the input manager and setting the initial camera's position
@@ -351,6 +352,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	// The final position of the elevator (after the animation is complete) is the current one
 	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	mLight0Position = mLight0Position - [0, -mElevatorTravelDistance, 0];
+	mLight0.SetPosition(mLight0Position);
 	
 	// Creating the animation for the elevator	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);

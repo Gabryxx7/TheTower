@@ -76,13 +76,10 @@ class Level4
 	var mTexts;
 	var mBackText;
 	
-	// Array of star objects and their meshes, that fly in the sky
+	// Array of star objects and cone objects, that fly in the sky
 	var mStarObjects;
-	var mStarObjectsMeshes;
-	
-	// Array of cone objects and their meshes, that fly in the sky
 	var mConeObjects;
-	var mConeObjectsMeshes;
+	
 	
 	// EventTrigger objects placed in the level; when the player steps on one of them the time changes
 	var mLeftEventTrigger;
@@ -163,8 +160,6 @@ class Level4
 	
 	
 	// Private functions
-	CreateStarThing();
-	CreateConeThing();
 	DrawPortal();
 	DrawRoom();
 	InvertObjectsPosition();
@@ -358,18 +353,70 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	}
 
 	mStarObjects = {};
-	mStarObjectsMeshes = {};
 	
 	// Creating random star things
 	for(var i = 0; i < 30; i++)
-		aadd(mStarObjects, CreateStarThing());
+	{
+		// To create the star object I use a function from the "Utils" file
+		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+		
+		// Creating 2 random colors to change over time
+		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		
+		// I create a random starting position for the rotation-around-point transition. I make it so every object has slightly different positions.
+		// The x pos is determined by the radius of the circle (which I know to be posZ since I simply rotate around the origin) and by the cos of a random angle
+		var posY = mMainRoom.GetRoomHeight() / 2.0 + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
+		var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
+		var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
+		
+		// The period of the rotation-around-point. Since I'm using the "random" option in the transition, the speed of the objects depend also on the radius.
+		// Since the radius is pretty big (half the depth of the room pretty much), the objects tend to go very fast. So, I use a very high period, while I normally
+		// would use something like 20 seconds as base to obtain almost the same velocity
+		var time = 140.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+		
+		// I create a random rotation axis for the rotating transition
+		var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+				
+		// I randomly choose if the object has to move clockwise along the circle or anticlockwise
+		var clockwise = Rand(1) == 1;
+	
+		// Creating the transitions
+		mAnimator.CreateScalingTransition(starObj, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+		mAnimator.CreateRotationAroundPointTransition(starObj, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
+		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
+		
+		aadd(mStarObjects, starObj);
+	}
 		
 	mConeObjects = {};
-	mConeObjectsMeshes = {};
 	
-	// Creating random cone things
+	// Creating random cone things; the procedure is the same as for the star objects
 	for(var i = 0; i < 25; i++)
-		aadd(mConeObjects, CreateConeThing());
+	{
+		var coneThing = CreateConeThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+		
+		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		
+		var posY = mMainRoom.GetRoomHeight() / 2.0 + 5.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
+		var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
+		var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
+		
+		var time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+		
+		var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+				
+		var clockwise = Rand(1) == 1;
+	
+		mAnimator.CreateScalingTransition(coneThing, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+		mAnimator.CreateRotatingTransition(coneThing, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+		mAnimator.CreateRotationAroundPointTransition(coneThing, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
+		mAnimator.CreateToonShaderColorTransition(coneThing.GetMesh(), color1, color2, 3.5, true);
+		
+		aadd(mConeObjects, coneThing);
+	}
 		
 		
 	// Creating the event triggers for creating the time-changing effects
@@ -411,7 +458,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	var codeLength = 3;
 	
 	// Creating the numpad
-	mNumpad = Numpad2(codeLength, mInvariantAnimator, 1, 2);
+	mNumpad = Numpad2(codeLength, mInvariantAnimator, mSoundManager, 1, 2);
 	mNumpad.SetRotation(180, 0, 1, 0);
 	
 	// Getting the generated code from the numpad
@@ -606,157 +653,6 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mMaskObj = CVmObj(maskMesh);
 }
 
-/*
- * This is an auxiliary method that creates star-like objects
- */
-function Level4::CreateStarThing()
-{
-	var baseSize = 0.3 * SCALE_FACTOR + (Rand(4) / 10.0) * SCALE_FACTOR;
-	var pyramidHeight = 1.0 * SCALE_FACTOR + (Rand(8) / 10.0) * SCALE_FACTOR;
-	
-	var pyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
-	
-	var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	
-	
-	pyramidMesh.ShaderAdd("toonShader.glsl", 0);
-	pyramidMesh.ShaderActivate(true);
-	pyramidMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	pyramidMesh.ShaderSetParameter(0, "diffuse", 0, color1);
-	pyramidMesh.ShaderSetParameter(0, "specular", 0, [0.4, 0.4, 0.4]);
-	pyramidMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	pyramidMesh.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
-	pyramidMesh.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
-	pyramidMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	pyramidMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	aadd(mStarObjectsMeshes, pyramidMesh);
-	
-	var pyramidObj1 = CVmObj(pyramidMesh);
-	var pyramidObj2 = CVmObj(pyramidMesh);
-	var pyramidObj3 = CVmObj(pyramidMesh);
-	var pyramidObj4 = CVmObj(pyramidMesh);
-	var pyramidObj5 = CVmObj(pyramidMesh);
-	var pyramidObj6 = CVmObj(pyramidMesh);
-	
-	pyramidObj2.Rotate(90, 0, 0, 1);
-	pyramidObj3.Rotate(180, 0, 0, 1);
-	pyramidObj4.Rotate(270, 0, 0, 1);
-	pyramidObj5.Rotate(90, 1, 0, 0);
-	pyramidObj6.Rotate(-90, 1, 0, 0);
-	
-	var star = CVmObj();
-	star.AddChild(pyramidObj1, 0, 0, 0);
-	star.AddChild(pyramidObj2, 0, -baseSize, 0);
-	star.AddChild(pyramidObj3, baseSize, -baseSize, 0);
-	star.AddChild(pyramidObj4, baseSize, 0, 0);
-	star.AddChild(pyramidObj5, 0, -baseSize, 0);
-	star.AddChild(pyramidObj6, 0, 0, -baseSize);
-	
-	// I create a random starting position for the rotation-around-point transition. I make it so every object has slightly different positions.
-	// The x pos is determined by the radius of the circle (which I know to be posZ since I simply rotate around the origin) and by the cos of a random angle
-	var posY = mMainRoom.GetRoomHeight() / 2.0 + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
-	var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
-	var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
-	
-	// The period of the rotation-around-point. Since I'm using the "random" option in the transition, the speed of the objects depend also on the radius.
-	// Since the radius is pretty big (half the depth of the room pretty much), the objects tend to go very fast. So, I use a very high period, while I normally
-	// would use something like 20 seconds as base to obtain almost the same velocity
-	var time = 140.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
-	
-	// I create a random rotation axis for the rotating transition
-	var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-			
-	// I randomly choose if the object has to move clockwise along the circle or anticlockwise
-	var clockwise = Rand(1) == 1;
-
-	// Creating the transitions
-	mAnimator.CreateScalingTransition(star, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
-	mAnimator.CreateRotatingTransition(star, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-	mAnimator.CreateRotationAroundPointTransition(star, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
-	mAnimator.CreateToonShaderColorTransition(pyramidMesh, color1, color2, 3.5, true);
-
-	return star;
-}
-
-/*
- * This is an auxiliary method that creates cone-thing objects; works just like CreateStarThing()
- */
-function Level4::CreateConeThing()
-{
-	var coneHeight = 3.0 * SCALE_FACTOR;
-	var coneMesh = CVmNewMesh(VRP_POLYGONAL_PYRAMID, 120, 2.0 * SCALE_FACTOR, coneHeight * SCALE_FACTOR);
-	
-	// Need also to scale the mesh itself; if the sizes are too small, the mesh will be created with a fixxed size, so to overcome this I scale it manually
-	coneMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
-	
-	var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	
-	coneMesh.ShaderAdd("toonShader.glsl", 0);
-	coneMesh.ShaderActivate(true);
-	coneMesh.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	coneMesh.ShaderSetParameter(0, "diffuse", 0, color1);
-	coneMesh.ShaderSetParameter(0, "specular", 0, [5.0, 3.0, 3.0]);
-	coneMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	coneMesh.ShaderSetParameter(0, "lightsRangeMin", 0, mMainRoom.GetLightsRange().x);
-	coneMesh.ShaderSetParameter(0, "lightsRangeMax", 0, mMainRoom.GetLightsRange().y);
-	coneMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	coneMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	aadd(mConeObjectsMeshes, coneMesh);
-	
-	var coneObj1 = CVmObj(coneMesh); 
-	var coneObj2 = CVmObj(coneMesh); 
-	var coneObj3 = CVmObj(coneMesh); 
-	var coneObj4 = CVmObj(coneMesh);  
-	var coneObj5 = CVmObj(coneMesh); 
-	var coneObj6 = CVmObj(coneMesh);  
-	var coneObj7 = CVmObj(coneMesh); 
-	var coneObj8 = CVmObj(coneMesh);  
-		
-	global var coneContainerObj = CVmObj();
-	coneContainerObj.AddChild(coneObj1, 0, 0, 0);
-	coneContainerObj.AddChild(coneObj2, 0, 0, 0);
-	coneContainerObj.AddChild(coneObj3, 0, 0, 0);
-	coneContainerObj.AddChild(coneObj4, 0, 0, 0);
-	coneContainerObj.AddChild(coneObj5, 0, 0, 0);
-	coneContainerObj.AddChild(coneObj6, 0, 0, 0);
-	
-	coneObj2.SetPivotPoint(0, coneHeight / 3.0, 0);
-	coneObj2.Rotate(180, 0, 0, 1);
-	
-	coneObj3.SetPivotPoint(0, coneHeight / 3.0, 0);
-	coneObj3.Rotate(90, 0, 0, 1);
-	
-	coneObj4.SetPivotPoint(0, coneHeight / 3.0, 0);
-	coneObj4.Rotate(-90, 0, 0, 1);
-	
-	coneObj5.SetPivotPoint(0, coneHeight / 3.0, 0);
-	coneObj5.Rotate(90, 1, 0, 0);
-	
-	coneObj6.SetPivotPoint(0, coneHeight / 3.0, 0);
-	coneObj6.Rotate(-90, 1, 0, 0);
-
-	var posY = mMainRoom.GetRoomHeight() / 2.0 + 5.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
-	var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
-	var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
-	
-	var time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
-	
-	var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-			
-	var clockwise = Rand(1) == 1;
-
-	mAnimator.CreateScalingTransition(coneContainerObj, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
-	mAnimator.CreateRotatingTransition(coneContainerObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-	mAnimator.CreateRotationAroundPointTransition(coneContainerObj, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
-	mAnimator.CreateToonShaderColorTransition(coneMesh, color1, color2, 3.5, true);
-	
-	return coneContainerObj;
-}
-
  
  function Level4::Init(lights, elevator, openglTransformOffset)
 {	
@@ -882,13 +778,13 @@ function Level4::DrawRoom()
     	
     	for(var i = 0; i < len(mStarObjects); i++)
 		{
-			mStarObjectsMeshes[i].ShaderActivate(false);
+			mStarObjects[i].GetMesh().ShaderActivate(false);
 			mStarObjects[i].Draw();
 		}
 		
 		for(var i = 0; i < len(mConeObjects); i++)
 		{
-			mConeObjectsMeshes[i].ShaderActivate(false);
+			mConeObjects[i].GetMesh().ShaderActivate(false);
 			mConeObjects[i].Draw();
 		}
 	mSilhouetteShader.Stop();
@@ -898,13 +794,13 @@ function Level4::DrawRoom()
 	// Drawing the "normal state" of the objects
 	for(var i = 0; i < len(mStarObjects); i++)
 	{
-		mStarObjectsMeshes[i].ShaderActivate(true);
+		mStarObjects[i].GetMesh().ShaderActivate(true);
 		mStarObjects[i].Draw();
 	}
 	
 	for(var i = 0; i < len(mConeObjects); i++)
 	{
-		mConeObjectsMeshes[i].ShaderActivate(true);
+		mConeObjects[i].GetMesh().ShaderActivate(true);
 		mConeObjects[i].Draw();
 	}
 }

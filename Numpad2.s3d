@@ -61,8 +61,9 @@ class Numpad2
 	// Boolean that is true if the keypad is visible, false otherwise
 	var mIsVisible;
 	
-	// Animator object passed from the Level class; used to animate the buttons
+	// Animator and SoundManagers object passed from the Level class; used to animate the buttons
 	var mAnimator;
+	var mSoundManager;
 	
 	// This array contains every child of the numpad object; I need to have a reference of the children so I can invert them to create the mirror effect
 	var mChildren;
@@ -102,10 +103,15 @@ class Numpad2
  * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the numpad
  * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the numpad
  */
-function Numpad2::Numpad2(codeLength, animator, lightsRangeMin, lightsRangeMax)
+function Numpad2::Numpad2(codeLength, animator, soundManager, lightsRangeMin, lightsRangeMax)
 {
-	// Reference to the animator object from the Level class that uses the Numpad
+	// Reference to the Animator and SoundManager object from the Level class that uses the Numpad
 	mAnimator = animator;
+	mSoundManager = soundManager;
+	
+	mSoundManager.AddSound("sounds/numpadBeep.wav", "numpadBeep");
+	mSoundManager.AddSound("sounds/numpadCorrectCode.wav", "numpadCorrectCode");
+	mSoundManager.AddSound("sounds/numpadWrongCode.wav", "numpadWrongCode");
 	
 	mChildren = {};
 		
@@ -384,7 +390,14 @@ function Numpad2::PressSelectedButton()
 		
 		// If the user presses the "C" button, I unpress every button
 		if(mCurrentHoveredNumber == "C")
+		{
+			// Add the button to the pressed one, so that it will be animated
+			aadd(mPressedButtons, mCurrentHoveredButton);
+			aadd(mPressedNumbers, val(mCurrentHoveredNumber));
+			
 			UnpressAllButtons(false);
+			mSoundManager.PlaySound("numpadWrongCode", true, 0.85);
+		}
 		// If the user pressed a button other than the empty one, I procede
 		else if(mCurrentHoveredNumber != " ")
 		{
@@ -413,6 +426,8 @@ function Numpad2::PressSelectedButton()
 				// removing the button from the "pressed buttons" list
 				adel(mPressedButtons, index - 1);
 				adel(mPressedNumbers, index - 1);
+				
+				mSoundManager.PlaySound("numpadBeep", true, 0.85);
 			}
 			// If the button was not pressed, now it is
 			else
@@ -435,7 +450,14 @@ function Numpad2::PressSelectedButton()
 				
 				// Now I check if the player has pressed enough buttons to enter the code. If that is so, I check if the code is correct
 				if(len(mPressedButtons) == len(mCodeArray))
-					CheckCode();
+				{
+					if(CheckCode())
+						mSoundManager.PlaySound("numpadCorrectCode", true, 0.85);
+					else
+						mSoundManager.PlaySound("numpadWrongCode", true, 0.85);
+				}
+				else
+					mSoundManager.PlaySound("numpadBeep", true, 0.85);
 			}
 						
 			// Creating the animation to press the button
@@ -504,6 +526,8 @@ function Numpad2::CheckCode()
 	// If the code was wrong, I unpress every button
 	else
 		UnpressAllButtons(true);
+		
+	return mCorrectCodeFound;
 }
 
 /*

@@ -65,6 +65,8 @@ class Level0
 	var mPortalRooms;
 	var mPortalFrames;
 	var mPortalFramesNormals;
+	var mPortalFramesGlassWalls;
+	var mPortalRoomsLightColor;
 	
 	// This array contains the reference to the currently visible portal's frames
 	var mCurrentlyVisiblePortalFrames;
@@ -121,7 +123,7 @@ class Level0
 	
 	// Private functions
 	DrawAllPortals();
-	DrawPortal(portalFrame, portalRoom);
+	DrawPortal(portalFrame, portalRoom, lightColor);
 	FadeToBlackScreen(fadeIn);
 	
 	// Public functions
@@ -156,23 +158,34 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
-	mCamera.SetPosition([0, 6.0 * SCALE_FACTOR, 35.0 * SCALE_FACTOR]);
+	mCamera.SetPosition([0, 6.0 * SCALE_FACTOR, 3.0 * SCALE_FACTOR]);
 	
+		
+	// In order to not have the frames cube in the center of the origin (where the player with the Vive on will likely start), 
+	// I translate the room and everything else by this amount, because I'm too lazy to redo the positions of the objects
+//	var translateFactor = [0, 0, -20 * SCALE_FACTOR];
+	var translateFactor = [0, 0, 0];
 	
-	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight1Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
+	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
+	mLight1Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
+	mLight2Position = [10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + translateFactor;
 	
-	// Setting up the lights of the scene. They're both positional lights
+	// Setting up the lights of the scene. They're both positional lights and this one is used for the portals
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(1, 1, 1);
 	mLight0.Enable();	
 	
-	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
 	mLight1.SetDiffuse(1, 1, 1);
 	mLight1.Enable();	
+		
+	// This light is for the elevator
+	mLight2 = lights[2];
+	mLight2.SetPosition(mLight2Position);
+	mLight2.SetDiffuse(1, 1, 1);
+	mLight2.Enable();
 	
 	// The current event triggered is nothing, while the next one is the first event trigger in the array
 	mEventTriggers = {};
@@ -202,9 +215,10 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	aadd(mPortalTextStrings, "That's ok,\n as long as you keep in mind your goal");                 // 3
 	aadd(mPortalTextStrings, "And keep going until\n you accomplish it");                           // 4
 	
-	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 1);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2);
+	
+	mMainRoom.Translate(translateFactor.x, translateFactor.y, translateFactor.z);
 
 	// 	Creating the portal rooms
 	var portalRoom1 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
@@ -247,8 +261,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	var halfHeight = PORTAL_ROOM_HEIGHT/2.0;
 	
 	// Creating the mesh for the frames; it's the same for every portal room, since they all have the same size
-//	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfHeight, 0], 2, 2);
-	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth - 0.05 * SCALE_FACTOR, -halfHeight, 0], [halfWidth + 0.05 * SCALE_FACTOR, halfHeight, 0], 2, 2);
+	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfHeight, 0], 2, 2);
 	
 	// Linking the frame objects to the mesh
 	var portalFrameObj1 = CVmObj(portalFrameMesh);
@@ -256,16 +269,17 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	var portalFrameObj3 = CVmObj(portalFrameMesh);
 	var portalFrameObj4 = CVmObj(portalFrameMesh);
 	
-	// Moving the frames so that they form a sort of cube; i take into account the fact that they have silhouettes, so in order to show that 
-	// I don't attach them together, but leave some pixels in between (chosen semi-randomly)
-//	portalFrameObj1.Translate(0, halfHeight + 0.3 * SCALE_FACTOR, 0 * SCALE_FACTOR);
-//	portalFrameObj2.Translate(halfWidth - 0.05 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth);
-//	portalFrameObj3.Translate(0.05 * SCALE_FACTOR - 0.10 * SCALE_FACTOR, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth*2 + 0.05 * SCALE_FACTOR);
-//	portalFrameObj4.Translate(-halfWidth, halfHeight + 0.3 * SCALE_FACTOR, -halfWidth + 0.05 * SCALE_FACTOR);
-	portalFrameObj1.Translate(0, halfHeight, 0.09 * SCALE_FACTOR);
-	portalFrameObj2.Translate(halfWidth + 0.05 * SCALE_FACTOR, halfHeight, -halfWidth + 0.09 * SCALE_FACTOR);
-	portalFrameObj3.Translate(0, halfHeight, -halfWidth*2 + 0.09 * SCALE_FACTOR);
-	portalFrameObj4.Translate(-halfWidth - 0.05 * SCALE_FACTOR, halfHeight, -halfWidth + 0.09 * SCALE_FACTOR);
+	// Moving the frames so that they form a sort of cube
+	portalFrameObj1.Translate(0, halfHeight, 0);
+	portalFrameObj2.Translate(halfWidth, halfHeight, -halfWidth);
+	portalFrameObj3.Translate(0, halfHeight, -halfWidth * 2.0);
+	portalFrameObj4.Translate(-halfWidth, halfHeight, -halfWidth);
+		
+	// Translate the frames again to move away from the origin
+	portalFrameObj1.Translate(translateFactor.x, translateFactor.y, translateFactor.z);
+	portalFrameObj2.Translate(translateFactor.x, translateFactor.y, translateFactor.z);
+	portalFrameObj3.Translate(translateFactor.x, translateFactor.y, translateFactor.z);
+	portalFrameObj4.Translate(translateFactor.x, translateFactor.y, translateFactor.z);
 	
 	// Rotating the frames, so that each one reflects its portal's room orientation
 	portalFrameObj2.Rotate(90, 0, 1, 0);
@@ -284,9 +298,26 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	mPortalsBoxLowerCorner = portalFrameObj1.GetPosition() - [halfWidth, halfHeight, 0];
 	mPortalsBoxUpperCorner = portalFrameObj3.GetPosition() + [halfWidth, halfHeight, 0];
 	
+	var glassWall1 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+	var glassWall2 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+	var glassWall3 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+	var glassWall4 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+	
+	glassWall1.Rotate(180, 0, 1, 0);
+	glassWall2.Rotate(-90, 0, 1, 0);
+	glassWall3.Rotate(0, 0, 1, 0);
+	glassWall4.Rotate(90, 0, 1, 0);
+	
+	glassWall1.SetPosition(portalFrameObj1.GetPosition() + [0, 0, 0.003 * SCALE_FACTOR]);
+	glassWall2.SetPosition(portalFrameObj2.GetPosition() + [0.003 * SCALE_FACTOR, 0, 0]);
+	glassWall3.SetPosition(portalFrameObj3.GetPosition() + [0, 0, -0.003 * SCALE_FACTOR]);
+	glassWall4.SetPosition(portalFrameObj4.GetPosition() + [-0.003 * SCALE_FACTOR, 0, 0]);
+	
 	mPortalRooms = {};
 	mPortalFrames = {};
 	mPortalFramesNormals = {};
+	mPortalFramesGlassWalls = {};
+	mPortalRoomsLightColor = {};
 	
 	// Adding to each array its components
 	aadd(mPortalRooms, portalRoom1);
@@ -303,7 +334,21 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	aadd(mPortalFramesNormals, frameNormal2);
 	aadd(mPortalFramesNormals, frameNormal3);
 	aadd(mPortalFramesNormals, frameNormal4);
-
+	
+	aadd(mPortalFramesGlassWalls, glassWall1);
+	aadd(mPortalFramesGlassWalls, glassWall2);
+	aadd(mPortalFramesGlassWalls, glassWall3);
+	aadd(mPortalFramesGlassWalls, glassWall4);
+	
+	
+	aadd(mPortalRoomsLightColor, [0.6, 0.1, 0.0]);
+	aadd(mPortalRoomsLightColor, [0.3, 0.7, 0.0]);
+	aadd(mPortalRoomsLightColor, [0.0, 0.3, 0.7]);
+	aadd(mPortalRoomsLightColor, [0.0, 0.7, 0.7]);
+//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
+//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
+//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
+//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
 	
 	// Now I create the event triggers to be placed in front of each frame, so that we can find ount if the player steps in front of a portal
 	var eventTrigger1 = EventTrigger(PORTAL_ROOM_FAR_WALL_WIDTH, EVENT_TRIGGER_DEPTH, 0);
@@ -328,32 +373,22 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	aadd(mEventTriggers, eventTrigger4);
 	
 	
-	// Now I create the elevator, as a "Elevator" object; the width is a little less than the size of the frames, otherwise we get z-buffer problems
-//	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.3 * SCALE_FACTOR;
-	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH;
+	// Now I create the elevator, as a "Elevator" object; the width and depth are a little less than the size of the frames, otherwise we get z-buffer problems
+	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.01 * SCALE_FACTOR;
+	var elevatorDepth = PORTAL_ROOM_SIDE_WALL_WIDTH - 0.16 * SCALE_FACTOR;
+	var elevatorHeight = PORTAL_ROOM_HEIGHT;
 	
-	mElevator = Elevator(elevatorWidth, PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 1, 1);
+	mElevator = Elevator(elevatorWidth, elevatorDepth, elevatorHeight, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
 		
 	// Positioning the room so that is right behind the first portal frame
-//	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, PORTAL_ROOM_SIDE_WALL_WIDTH - 0.285 * SCALE_FACTOR]);
-	mElevator.SetPosition([0, halfHeight + 0.08 * SCALE_FACTOR, -PORTAL_ROOM_SIDE_WALL_WIDTH + 0.185 * SCALE_FACTOR]);
-	
+	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, elevatorDepth - 0.04 * SCALE_FACTOR]);
+				
 	// At start I hide the elevator; it will appear later
 	mElevator.Hide();
 	
-	
-	// The elevator has its own light, which is used for rendering when the player steps in the elevator
-	mLight2Position = mElevator.GetPosition() + [0, 0, 3 * SCALE_FACTOR];
-		
-	// This light is for the elevator
-	mLight2 = lights[2];
-	mLight2.SetPosition(mLight2Position);
-	mLight2.SetDiffuse(1, 1, 1);
-	mLight2.Enable();
-	
 	// Text for the elevator
 	var elevatorText = Text("The Tower");
-	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.05);
+	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.001);
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -366,8 +401,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
 	
-
-	
+	// Sounds when the player steps in the right direction
 	mSoundManager.AddSound("sounds/Mi1.wav", 0);
 	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
 	mSoundManager.AddSound("sounds/Sol3.wav", 2);
@@ -375,154 +409,70 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	mSoundManager.AddSound("sounds/Si5.wav", 4);
 	mSoundManager.AddSound("sounds/Do#6.wav", 5);
 	mSoundManager.AddSound("sounds/Mi7.wav", 6);
-	
-	
-	// Creating temporary spheres to fill the portal rooms. In case these sphere won't be temporary, it's better to put some of these things as
-	// class members instead of using "global"
-	global sphereMeshArray = {};
-	
-	var num_seg = 30;
+
+
+	// Creating the sphere meshes for the portal rooms
+	var numberOfSegments = 30;
 	var radius = 2 * SCALE_FACTOR;
-	var hemisphere = 1;  // 0.5 = hemisphere, 1 = sphere
-	var sphereMesh1 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);  
-	var sphereMesh2 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere); 
-	var sphereMesh3 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere); 
-	var sphereMesh4 = CVmNewMesh(VRP_SPHERE , num_seg, radius, hemisphere);    
+	var sphereMesh1 = CVmNewMesh(VRP_SPHERE, numberOfSegments, radius, 1);  
+	var sphereMesh2 = CVmNewMesh(VRP_SPHERE, numberOfSegments, radius, 1); 
+	var sphereMesh3 = CVmNewMesh(VRP_SPHERE, numberOfSegments, radius, 1); 
+	var sphereMesh4 = CVmNewMesh(VRP_SPHERE, numberOfSegments, radius, 1);    
 	
-	// I give each sphere the cel shader and a random color
-	if(USE_TOON_SHADER == 2){		
-		sphereMesh1.ShaderAdd("antishader.glsl", 0);
-		sphereMesh1.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		sphereMesh1.ShaderAdd("toonShader.glsl", 0);
-		sphereMesh1.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		sphereMesh1.ShaderActivate(false);				
-	}
-	sphereMesh1.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	sphereMesh1.ShaderSetParameter(0, "diffuse", 0, [0.0, 0.25, 0.75]);
-	sphereMesh1.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	sphereMesh1.ShaderSetParameter(0, "shininess", 0, 50);
-	sphereMesh1.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-	sphereMesh1.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-	sphereMesh1.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	sphereMesh1.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	if(USE_TOON_SHADER == 2){		
-		sphereMesh2.ShaderAdd("antishader.glsl", 0);
-		sphereMesh2.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		sphereMesh2.ShaderAdd("toonShader.glsl", 0);
-		sphereMesh2.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		sphereMesh2.ShaderActivate(false);				
-	}
-	sphereMesh2.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	sphereMesh2.ShaderSetParameter(0, "diffuse", 0, [0.0, 1.0, 0.75]);
-	sphereMesh2.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	sphereMesh2.ShaderSetParameter(0, "shininess", 0, 50);
-	sphereMesh2.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-	sphereMesh2.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-	sphereMesh2.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	sphereMesh2.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	if(USE_TOON_SHADER == 2){		
-		sphereMesh3.ShaderAdd("antishader.glsl", 0);
-		sphereMesh3.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		sphereMesh3.ShaderAdd("toonShader.glsl", 0);
-		sphereMesh3.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		sphereMesh3.ShaderActivate(false);				
-	}
-	sphereMesh3.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	sphereMesh3.ShaderSetParameter(0, "diffuse", 0, [1.0, 0.25, 0.75]);
-	sphereMesh3.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	sphereMesh3.ShaderSetParameter(0, "shininess", 0, 50);
-	sphereMesh3.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-	sphereMesh3.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-	sphereMesh3.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	sphereMesh3.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	if(USE_TOON_SHADER == 2){		
-		sphereMesh4.ShaderAdd("antishader.glsl", 0);
-		sphereMesh4.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		sphereMesh4.ShaderAdd("toonShader.glsl", 0);
-		sphereMesh4.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		sphereMesh4.ShaderActivate(false);				
-	}
-	sphereMesh4.ShaderSetParameter(0, "ambient", 0, [0.04, 0.04, 0.04]);
-	sphereMesh4.ShaderSetParameter(0, "diffuse", 0, [1.0, 0.25, 0.0]);
-	sphereMesh4.ShaderSetParameter(0, "specular", 0, [0.5, 0.5, 0.5]);
-	sphereMesh4.ShaderSetParameter(0, "shininess", 0, 50);
-	sphereMesh4.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-	sphereMesh4.ShaderSetParameter(0, "lightsRangeMax", 0, 0);
-	sphereMesh4.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	sphereMesh4.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	aadd(sphereMeshArray, sphereMesh1);
-	aadd(sphereMeshArray, sphereMesh2);
-	aadd(sphereMeshArray, sphereMesh3);
-	aadd(sphereMeshArray, sphereMesh4);
+	// Ading the toon shader to the spheres; the diffuse color is not really relevant, since it will be defined by an animation later in the code
+	AddToonShaderToMesh(sphereMesh1, [0.04, 0.04, 0.04], [0.0, 0.25, 0.75], [0.5, 0.5, 0.5], 50, 0, 0, SCALE_FACTOR, 1.0);
+	AddToonShaderToMesh(sphereMesh2, [0.04, 0.04, 0.04], [0.0, 0.25, 0.75], [0.5, 0.5, 0.5], 50, 0, 0, SCALE_FACTOR, 1.0);
+	AddToonShaderToMesh(sphereMesh3, [0.04, 0.04, 0.04], [0.0, 0.25, 0.75], [0.5, 0.5, 0.5], 50, 0, 0, SCALE_FACTOR, 1.0);
+	AddToonShaderToMesh(sphereMesh4, [0.04, 0.04, 0.04], [0.0, 0.25, 0.75], [0.5, 0.5, 0.5], 50, 0, 0, SCALE_FACTOR, 1.0);
 	
 	var sphereObj1 = CVmObj(sphereMesh1);
 	var sphereObj2 = CVmObj(sphereMesh2);
 	var sphereObj3 = CVmObj(sphereMesh3);
 	var sphereObj4 = CVmObj(sphereMesh4);
 	
-	// Adding each sphere as child of the given portal; they all have the same position, except for the first one which moves around as a test
-	portalRoom1.AddObject(sphereObj1, -2 * SCALE_FACTOR, -3 * SCALE_FACTOR, 2 * SCALE_FACTOR);
-	portalRoom2.AddObject(sphereObj2, 0, -3 * SCALE_FACTOR, 5 * SCALE_FACTOR);
-	portalRoom3.AddObject(sphereObj3, 0, -3 * SCALE_FACTOR, 5 * SCALE_FACTOR);
-	portalRoom4.AddObject(sphereObj4, 0, -3 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	var time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+	var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+			
+	mAnimator.CreateScalingTransition(sphereObj1, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+	mAnimator.CreateRotatingTransition(sphereObj1, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	mAnimator.CreateToonShaderColorTransition(sphereObj1.GetMesh(), color1, color2, 3.5, true);
+	
+	color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+	rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+			
+	mAnimator.CreateScalingTransition(sphereObj2, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+	mAnimator.CreateRotatingTransition(sphereObj2, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	mAnimator.CreateToonShaderColorTransition(sphereObj2.GetMesh(), color1, color2, 3.5, true);
+	
+	color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+	rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+			
+	mAnimator.CreateScalingTransition(sphereObj3, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+	mAnimator.CreateRotatingTransition(sphereObj3, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	mAnimator.CreateToonShaderColorTransition(sphereObj3.GetMesh(), color1, color2, 3.5, true);
+	
+	color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+	rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+			
+	mAnimator.CreateScalingTransition(sphereObj4, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
+	mAnimator.CreateRotatingTransition(sphereObj4, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	mAnimator.CreateToonShaderColorTransition(sphereObj4.GetMesh(), color1, color2, 3.5, true);
+	
+	// Adding the spheres to the rooms
+	portalRoom1.AddObject(sphereObj1, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	portalRoom2.AddObject(sphereObj2, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	portalRoom3.AddObject(sphereObj3, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	portalRoom4.AddObject(sphereObj4, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
 
-	// These are the waypoints for the movements of the first sphere. Note that since the sphere is child of another object, its position is set
-	// in terms of the local system it is in. So, these waypoints are set as local coordinates. The trick to finding the right coordinates to use
-	// is to start with the original positions, and then for each waypoint add the previous position to a translation vector (that contains the values
-	// it has to increase to along a given axis)
-	var first = sphereObj1.GetPosition();
-	var second = first + [0, 0, 6 * SCALE_FACTOR];
-	var third = second + [4.5 * SCALE_FACTOR, 0, 0];
-	var fourth  = third + [0, 0, -6 * SCALE_FACTOR];
-	
-	// Adding the waypoint transition to the first object; the time to reach each waypoint is 1, and it set to loop
-	mAnimator.CreateTransition(sphereObj1, first, {second, third, fourth}, 2.0, true);
-	
-	// Flying fuck. Very important.
-	global var flyingFuck = Text("Flying Fact");
-	flyingFuck.SetPosition([-15 * SCALE_FACTOR, 5 * SCALE_FACTOR, -20 * SCALE_FACTOR]);
-	flyingFuck.Rotate(90, 0, 1, 0);
-	
-	// Waypoints for the flyring fuck
-	var a = flyingFuck.GetPosition() + [0, 0, 30 * SCALE_FACTOR];
-	var b = a + [30 * SCALE_FACTOR, 0, 0];
-	var c = b + [0, 0, -30 * SCALE_FACTOR];
-	var waypoints = {a, b, c};
-
-	// Transition and rotation for the flying fuck
-	mAnimator.CreateTransition(flyingFuck, flyingFuck.GetPosition(), waypoints, 3.0, true);
-	mAnimator.CreateRotatingTransition(flyingFuck, 0, 180, [0, 1, 0], 2.0, true, false);
-	
-		
-	global var endText = Text("The End\n\nPS: that would be 59,99$, thanks");
-	endText.Rotate(180, 0, 1, 0);
-	endText.Translate(0, 7, -0.3 * SCALE_FACTOR);
-	endText.Hide();
-	
-	global var controller = ViveController();
-	
-	controller.SetPosition(7 * SCALE_FACTOR, 7 * SCALE_FACTOR, 7 * SCALE_FACTOR);
-	
+	// If the Vive is on, I get the reference to the controllers
 	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
@@ -539,11 +489,12 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
  * Render method
  */
 function Level0::Render()
-{					
+{			
+	// To avoid problems with the lights when using teleportation and the Vive, I reset the light's position to their current place at each frame		
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
- 	 	
+ 	
 	
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
 	DrawAllPortals();
@@ -551,17 +502,13 @@ function Level0::Render()
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
 		mMainRoom.Draw();
+		
+	// Drawing the glass walls for the frames
+	foreach(var glassWall in mPortalFramesGlassWalls)
+		glassWall.Draw();
 	
 	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
-	
-	flyingFuck.Draw();
-	endText.Draw();
-	
-	
-	controller.Draw();
-	
-	
 	
 	if(mIsVRon)
 	{
@@ -603,7 +550,7 @@ function Level0::DrawAllPortals()
 		if(dotProduct >= 0)
 		{
 			// I render the portal
-			DrawPortal(mPortalFrames[i], mPortalRooms[i]);
+			DrawPortal(mPortalFrames[i], mPortalRooms[i], mPortalRoomsLightColor[i]);
 			
 			// Since it's visible, I add this to the array
 			aadd(mCurrentlyVisiblePortalFrames, mPortalFrames[i]);
@@ -640,17 +587,7 @@ function Level0::DrawAllPortals()
 	
 	// Now I draw each portal, even the ones that weren't actually visible, because they still need to "occupy space"
 	for(var i = 0; i < PORTALS_NUMBER; i++)
-	{
-		// I use the silhouette shader so that the outline of the frames will be there
-//		mSilhouetteShader.Start();
-//			mSilhouetteShader.SetParameter("offset", 0.08 * SCALE_FACTOR);
-//    		mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-//    		
-//    		mPortalFrames[i].Draw();
-//		mSilhouetteShader.Stop();
-		
 		mPortalFrames[i].Draw();
-	}
 
 	// I enable the color buffer again for the rest of the scene
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -665,7 +602,7 @@ function Level0::DrawAllPortals()
   * portalFrame: (CVmObj) the frame from which the portal's room will be visible
   * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
   */
-function Level0::DrawPortal(portalFrame, portalRoom)
+function Level0::DrawPortal(portalFrame, portalRoom, lightColor)
 {
 	// I add a matrix to the opengl stack; I will update the camera's position for the time being, so a copy of the current matrix 
 	// comes in handy when we need to go back to how thing where
@@ -729,7 +666,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	newLightPos.x += mOffset;
 	newLightPos.y += sin(mOffset*1);
 	
-	if(mOffset > 7 * SCALE_FACTOR || mOffset < -7 * SCALE_FACTOR) 
+	if(mOffset > 5.0 * SCALE_FACTOR || mOffset < -5.0 * SCALE_FACTOR) 
 		mIncrement = -mIncrement;
 
 	var oldLightPos = mLight0.GetPosition();	
@@ -741,6 +678,9 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	// Note: the order of operation is important: if I moved the light before the translation above the light would be wrong. Basically
 	// I'm moving the light according the position of the world set by the glTranslate above
 	glLight(GL_LIGHT0, GL_POSITION, [newLightPos.x, newLightPos.y, newLightPos.z, 1.0]); 
+	
+	// Changing color
+	glLight(GL_LIGHT0, GL_DIFFUSE, lightColor); 
 					
 	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -754,7 +694,7 @@ function Level0::DrawPortal(portalFrame, portalRoom)
 	glStencilFunc(GL_EQUAL, 1, 0xFF);
 	
 	// Drawing the actual portal's room where the stencil is 1
-	portalRoom.Draw();
+	portalRoom.Draw(true);
 	
 	// I move the light back where it was; still using opengl to avoid problems with the Vive
 	glLight(GL_LIGHT0, GL_POSITION, [oldLightPos.x, oldLightPos.y, oldLightPos.z, 1.0]); 
@@ -826,6 +766,7 @@ function Level0::UpdateLogic(dt)
 						
 						// I hide the first portal frame and unhide the elevator, which is positioned where the frame was
 						mPortalFrames[0].Hide();
+						mPortalFramesGlassWalls[0].Hide();
 						mElevator.Unhide();
 						
 						// I play the sound for this event trigger (number 3)
@@ -906,9 +847,6 @@ function Level0::UpdateLogic(dt)
 			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
 			
 			mIsElevatorOpen = false;
-			endText.Unhide();
-			
-			mElevator.SetLightsRange(1, 1);
 			
 			// I signal that the game is about to end and get the time; I need that the transitions of the doors end before actually ending the level,
 			// so I need to save the time the animations started
@@ -948,7 +886,7 @@ function Level0::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 		
 		if(flag)
 		{
-			isWall = false;
+			isWall = true;
 			return false;
 		}
 	}

@@ -79,57 +79,21 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	
 	var halfHeight = height/2.0;
 	
-//	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
-//	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0.1 * SCALE_FACTOR, -halfHeight - 0.1 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0.1 * SCALE_FACTOR, halfHeight + 0.1 * SCALE_FACTOR, 0], 2, 2);
-	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0 * SCALE_FACTOR, -halfHeight - 0 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0 * SCALE_FACTOR, halfHeight + 0 * SCALE_FACTOR, 0], 2, 2);
-	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4 - 0 * SCALE_FACTOR, -halfHeight - 0 * SCALE_FACTOR, 0], [elevatorWidth/4 + 0 * SCALE_FACTOR, halfHeight + 0 * SCALE_FACTOR, 0], 2, 2);
+	mElevatorDoorLeftMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4, -halfHeight, 0], [elevatorWidth/4, halfHeight, 0], 2, 2);
+	mElevatorDoorRightMesh = CVmNewMesh(VRP_PLANE, 1, [-elevatorWidth/4, -halfHeight, 0], [elevatorWidth/4, halfHeight, 0], 2, 2);
 	
 	// Adding the cel shader to the doors; the material is the same as for every wall
-	if(USE_TOON_SHADER == 2){		
-		mElevatorDoorLeftMesh.ShaderAdd("antishader.glsl", 0);
-		mElevatorDoorLeftMesh.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		mElevatorDoorLeftMesh.ShaderAdd("toonShader.glsl", 0);
-		mElevatorDoorLeftMesh.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		mElevatorDoorLeftMesh.ShaderActivate(false);				
-	}
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "specular", 0, [0.1, 0.1, 0.1]);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "shininess", 0, 20);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mElevatorDoorLeftMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	if(USE_TOON_SHADER == 2){		
-		mElevatorDoorRightMesh.ShaderAdd("antishader.glsl", 0);
-		mElevatorDoorRightMesh.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		mElevatorDoorRightMesh.ShaderAdd("toonShader.glsl", 0);
-		mElevatorDoorRightMesh.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		mElevatorDoorRightMesh.ShaderActivate(false);				
-	}
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "ambient", 0, [1, 1, 1]);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "specular", 0, [0.1, 0.1, 0.1]);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "shininess", 0, 20);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mElevatorDoorRightMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	AddToonShaderToMesh(mElevatorDoorLeftMesh, [1, 1, 1], [0.8, 0.8, 0.8], [0.1, 0.1, 0.1], 20, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	AddToonShaderToMesh(mElevatorDoorRightMesh, [1, 1, 1], [0.8, 0.8, 0.8], [0.1, 0.1, 0.1], 20, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	mElevatorDoorLeftObj = CVmObj(mElevatorDoorLeftMesh);
 	mElevatorDoorRightObj = CVmObj(mElevatorDoorRightMesh);
 	
-	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0 * SCALE_FACTOR, 0, sideWallWidth];
-	mRightDoorClosedPosition = [elevatorWidth/4 - 0 * SCALE_FACTOR, 0, sideWallWidth];
+	AddSilhouetteLinesToPlanarObject(mElevatorDoorLeftObj, 0.02 * SCALE_FACTOR, elevatorWidth / 2.0, height);
+	AddSilhouetteLinesToPlanarObject(mElevatorDoorRightObj, 0.02 * SCALE_FACTOR, elevatorWidth / 2.0, height);
+	
+	mLeftDoorClosedPosition = [-elevatorWidth/4 - 0 * SCALE_FACTOR, 0, sideWallWidth + 0.005 * SCALE_FACTOR];
+	mRightDoorClosedPosition = [elevatorWidth/4 - 0 * SCALE_FACTOR, 0, sideWallWidth + 0.005 * SCALE_FACTOR];
 	
 	mLeftDoorOpenPosition = mLeftDoorClosedPosition - [GetRoomWidth()/3.0 + 0.1 * SCALE_FACTOR, 0, 0];
 	mRightDoorOpenPosition = mRightDoorClosedPosition + [GetRoomWidth()/3.0 + 0.1 * SCALE_FACTOR,  0, 0];
