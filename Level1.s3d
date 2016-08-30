@@ -52,8 +52,16 @@ class Level1
 	var mElevatorTravelTime;
 	var mCameraYoffset;
 	
-	// Offset used for translating objects; a better description can be found in the GameManager class
+	// Offset used for translating objects; a better description can be found in the GameManager class. The "previous" version is used for the elevator ride
 	var mOpenglTranslationOffset;
+	var mPreviousOpenglTranslationOffset;
+	
+	// This translate factor is applied to the position of every object in the room. This is due to the position of the elevator: since the position
+	// of the elevator needs to stay fixxed (because I can't move it with the player inside while using the Vive, because the player wouldn't move;
+	// actually, it could move using a glTranslate(), but it would be a graphical thing and the world would remain where it was, causing problems 
+	// when applying the game logic using the positions of the objects), I need to translate every object that need it by a level-dependent amount
+	// in order to make the elevator be in the center of the room
+	var mTranslateFactor;
 	
 	// Boolean that is true when the player is drawing
 	var mIsDrawing;
@@ -129,6 +137,7 @@ class Level1
 	UpdateLogic(dt);
 	IsLevelCompleted();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
 };
@@ -144,6 +153,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
+	// I need translate the room back (and every object belonging to it) so that the elevator stays in the center of the room; this is that amount
+	mTranslateFactor = [0, 0, -20 * SCALE_FACTOR];
+	
 	// Initially the level is not ending (you don't say?)
 	mEnding = false;
 	mIsLevelCompleted = false;
@@ -157,8 +169,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	mAnimator = Animator();
 	
 	// Creating the main room
-//	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 10 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2);
+	
+	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mLinesTimeVariable = 0;
@@ -169,11 +182,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	var offset = 10 * SCALE_FACTOR;
 	
 	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
-	connector1.SetPosition([-offset, 0.05, offsetFromFarWall]);
+	connector1.SetPosition([-offset, 0.05, offsetFromFarWall] + mTranslateFactor);
 	connector1.Rotate(85, 0, 1, 0);
 	
 	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
-	connector2.SetPosition([offset, 0.05, offsetFromFarWall]);
+	connector2.SetPosition([offset, 0.05, offsetFromFarWall] + mTranslateFactor);
 	connector2.Rotate(135, 0, 1, 0);
 	
 	// This is group 1: the connectors in front of the elevator
@@ -185,11 +198,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	offset = 7.0 * SCALE_FACTOR;
 	
 	var connector3 = DrawingsConnector([1.0, 1.0, 0], 1, 2);
-	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0.05, offset - 5 * SCALE_FACTOR]);
+	connector3.SetPosition([offsetFromSideWall + 1 * SCALE_FACTOR, 0.05, offset - 5 * SCALE_FACTOR] + mTranslateFactor);
 	connector3.Rotate(85 * 2, 0, 1, 0);
 	
 	var connector4 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offsetFromSideWall, 0.05, -offset - 5 * SCALE_FACTOR]);
+	connector4.SetPosition([offsetFromSideWall, 0.05, -offset - 5 * SCALE_FACTOR] + mTranslateFactor);
 	connector4.Rotate(115 * 2, 0, 1, 0);
 	
 	// This is group 2: the connectors on the left of the elevator
@@ -197,11 +210,11 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	
 	var connector5 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector5.SetPosition([-offsetFromSideWall, 0.05, offset - 5 * SCALE_FACTOR]);
+	connector5.SetPosition([-offsetFromSideWall, 0.05, offset - 5 * SCALE_FACTOR] + mTranslateFactor);
 	connector5.Rotate(42, 0, 1, 0);
 	
 	var connector6 = DrawingsConnector([0, 1.0, 0.6], 1, 2);
-	connector6.SetPosition([-offsetFromSideWall, 0.05, -offset - 5 * SCALE_FACTOR]);
+	connector6.SetPosition([-offsetFromSideWall, 0.05, -offset - 5 * SCALE_FACTOR] + mTranslateFactor);
 	connector6.Rotate(-12, 0, 1, 0);
 	
 	// This is group 3: the connectors on the right of the elevator
@@ -211,23 +224,23 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	offsetFromFarWall = -mMainRoom.GetRoomDepth()/2 + 15.0 * SCALE_FACTOR;
 	
 	var connector7 = DrawingsConnector([1.0, 0.0, 0.0], 1, 2);
-	connector7.SetPosition([-8 * SCALE_FACTOR, 0.05, offsetFromFarWall - 0 * SCALE_FACTOR]);
+	connector7.SetPosition([-8 * SCALE_FACTOR, 0.05, offsetFromFarWall - 0 * SCALE_FACTOR] + mTranslateFactor);
 	connector7.Rotate(24, 0, 1, 0);
 	
 	var connector8 = DrawingsConnector([0, 1.0, 1.0], 1, 2);
-	connector8.SetPosition([-7 * SCALE_FACTOR, 0.05, offsetFromFarWall - 4 * SCALE_FACTOR]);
+	connector8.SetPosition([-7 * SCALE_FACTOR, 0.05, offsetFromFarWall - 4 * SCALE_FACTOR] + mTranslateFactor);
 	connector8.Rotate(-42, 0, 1, 0);
 	
 	var connector9 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0.05, offsetFromFarWall - 7 * SCALE_FACTOR]);
+	connector9.SetPosition([-3.0 * SCALE_FACTOR, 0.05, offsetFromFarWall - 7 * SCALE_FACTOR] + mTranslateFactor);
 	connector9.Rotate(-69, 0, 1, 0);
 	
 	var connector10 = DrawingsConnector([1.0, 0.0, 1.0], 1, 2);
-	connector10.SetPosition([2 * SCALE_FACTOR, 0.05, offsetFromFarWall - 5 * SCALE_FACTOR]);
+	connector10.SetPosition([2 * SCALE_FACTOR, 0.05, offsetFromFarWall - 5 * SCALE_FACTOR] + mTranslateFactor);
 	connector10.Rotate(-89, 0, 1, 0);
 	
 	var connector11 = DrawingsConnector([0.0, 0.0, 1.0], 1, 2);
-	connector11.SetPosition([4 * SCALE_FACTOR, 0.05, offsetFromFarWall - 2 * SCALE_FACTOR]);
+	connector11.SetPosition([4 * SCALE_FACTOR, 0.05, offsetFromFarWall - 2 * SCALE_FACTOR] + mTranslateFactor);
 	connector11.Rotate(-162, 0, 1, 0);
 	
 	// This is group 4: the connectors behind the elevator
@@ -296,13 +309,13 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	// Creating texts object for the scene
 	mEverythingIsConnectedText = Text("In life, everything is connected", 2);
-	mEverythingIsConnectedText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR]);
+	mEverythingIsConnectedText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR] + mTranslateFactor);
 	mEverythingIsConnectedText.Rotate(180, 0, 1, 0);
 	
 	mConnectionsHaveDirectionsText1 = Text("Sometimes the connection is in one direction only", 2);
 	mConnectionsHaveDirectionsText2 = Text("Sometimes the connection is in one direction only", 2); 
-	mConnectionsHaveDirectionsText1.SetPosition([mMainRoom.GetRoomWidth()/2 - 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -5 * SCALE_FACTOR]);
-	mConnectionsHaveDirectionsText2.SetPosition([-mMainRoom.GetRoomWidth()/2 + 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -7 * SCALE_FACTOR]);
+	mConnectionsHaveDirectionsText1.SetPosition([mMainRoom.GetRoomWidth()/2 - 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -5 * SCALE_FACTOR] + mTranslateFactor);
+	mConnectionsHaveDirectionsText2.SetPosition([-mMainRoom.GetRoomWidth()/2 + 0.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -7 * SCALE_FACTOR] + mTranslateFactor);
 	mConnectionsHaveDirectionsText1.Rotate(-90, 0, 1, 0);
 	mConnectionsHaveDirectionsText2.Rotate(90, 0, 1, 0);
 	
@@ -311,7 +324,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 }
 
 
- 
+ /*
+  * Note: it is assumed that the lights used for the room and the elevator are the lights 1 and 2
+  */
  function Level1::Init(lights, elevator, openglTransformOffset)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
@@ -319,29 +334,19 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
-	
 	mLight0 = lights[0];
-	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(1, 1, 1);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
-	mLight1.SetPosition(mLight1Position);
 	mLight1.SetDiffuse(1, 1, 1);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
-	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(1, 1, 1);
 	mLight2.Enable();
 	
-		
 	mElevator = elevator;
-//	mElevator.SetPosition([0, mElevator.GetRoomHeight() + 0.08 * SCALE_FACTOR, -mElevator.GetRoomDepth() + 0.185 * SCALE_FACTOR]);
-	mElevator.SetLightsRange(0,0);
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
@@ -352,16 +357,28 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	// The final position of the elevator (after the animation is complete) is the current one
 	mElevatorFinalPosition = mElevator.GetPosition();
+		
+	// I set the lights used for the elevator down, along with the elevator
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
 	
-	mLight0Position = mLight0Position - [0, -mElevatorTravelDistance, 0];
-	mLight0.SetPosition(mLight0Position);
+	// Initially the lights have the same position as in the level before
+	mLight0Position = mLight0.GetPosition();
+	mLight1Position = mLight1.GetPosition();
+	mLight2Position = mLight2.GetPosition();
 	
 	// Creating the animation for the elevator	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 	
-	// Computing the offset of the camera, so that it stays always at the same level as the elevator while it goes up
-	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
-	
+	// I compute the increment speed that I can use to update the y coordinate of the opengl offset, so that it goes up with the elevator
+	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+
+	// I save the previous value of the opengl offset, so that after the elevator ride I can resume it
+	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+
+	// I bring the opengl offset down, at the same level of the elevator (remember, the offset goes backward, so if I'm adding here I'm actually subracting)
+	mOpenglTranslationOffset.y += mElevatorTravelDistance;
+
 	// Starting status for the level
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
@@ -537,20 +554,25 @@ function Level1::UpdateLogic(dt)
 			
 			var elevatorPos = mElevator.GetPosition();
 	
-			// I check if the elevator is halfway through the transtition; if this is the case, I change its lights range for the rendering (but only
-			// if I didn't do so already)
-			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0 && mElevator.GetLightsRange().y < 1)
-				 mElevator.SetLightsRange(1,2);
+			// I check if the elevator is halfway through the transtition; if this is the case, I change the positions of the lights to their final place
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0)
+			{	
+				// I set the lights position to the ones for this level
+				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position = [0, 10 * SCALE_FACTOR, 10 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + mTranslateFactor;
+				
+				mLight0.SetPosition(mLight0Position);
+				mLight1.SetPosition(mLight1Position);
+				mLight2.SetPosition(mLight2Position);
+			}
 			
-			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
-			cameraPosition.y = mCameraYoffset + elevatorPos.y;
-	   	    
-			// To make the shaking camera effect, I randomly move the x and y axis with random values
-		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
-		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+			// I make sure that the camera goes up with the elevator by increasing the y of the opengl offset using the increment computed before
+			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
 			
-			// I set the new (shaken and at level with the elevator) position
-			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
+		    // To make the shaking camera effect, I randomly move the x and y axis with random values
+		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
 			
 			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
@@ -562,8 +584,11 @@ function Level1::UpdateLogic(dt)
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+				
+				// I reset the opengl offset to what it was at the start of the level
+				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
 			}
-	
+
 			break;
 		}		
 		// This is the case where the elevator arrived, BUT the player is still inside
@@ -777,8 +802,9 @@ function Level1::HandleDrawings()
 			var controllerWasInsideLight = mControllersInLightArray[controllerIndex - 1];
 			
 			// If the player's controller was inside a connector, then mCurrentActiveConnector is not void. In that case, 
-			// this drawing is a potential "connected" drawing, but only if the controller that is inside is the one the player is using to draw
-			if(mCurrentActiveConnector != Void && controllerWasInsideLight)
+			// this drawing is a potential "connected" drawing, but only if the controller that is inside is the one the player is using to draw,
+			// and the current active connector has a linked connector
+			if(mCurrentActiveConnector != Void && controllerWasInsideLight && mCurrentActiveConnector.GetLinkedConnector() != Void)
 			{	    				
 				// I state that this line is connected; I don't know for sure, but it's starting in the right place, so I give it the 
 				// benefit of the doubt. If later I find out that it's not connected, I'll change this boolean to false
@@ -978,6 +1004,11 @@ function Level1::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 function Level1::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
+}
+
+function Level1::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
 }
 
 function Level1::SetOpenglTransformOffset(openglTransformOffset)

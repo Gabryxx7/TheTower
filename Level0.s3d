@@ -20,8 +20,6 @@
 #include <SoundManager.s3d>
 #include <Elevator.s3d>
 
- global var mouseRightClickPressed = false;
-
 
 class Level0
 {
@@ -66,7 +64,14 @@ class Level0
 	var mPortalFrames;
 	var mPortalFramesNormals;
 	var mPortalFramesGlassWalls;
-	var mPortalRoomsLightColor;
+	
+	// Arrays to handle the light's movements inside the portal's rooms. Since I'm using only one light to render 4 four rooms far away from 
+	// each other and with different colors and positions, I need to store these information for each portal room
+	var mPortalRoomsLightColorArray;
+	var mPortalRoomsLightPositionArray;
+	var mPortalRoomsLightTransitionAngleArray;
+	var mPortalRoomsLightTransitionSpeedArray;
+	var mPortalRoomsLightTransitionCenterArray;
 	
 	// This array contains the reference to the currently visible portal's frames
 	var mCurrentlyVisiblePortalFrames;
@@ -85,15 +90,7 @@ class Level0
 	
 	// Counter that keeps track of what is the next string we need to show from the mPortalTextStrings array
 	var mNextPortalTextIndex;
-	
-	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
-	// draw the silhouettes for the portals' frames
-	var mSilhouetteShader;
-	
-	// These variables are temporary (or not?) floats used to move the light in a semi-random way, to create a nice dynamic effect
-	var mIncrement;
-	var mOffset;
-	
+
 	// Array containing the "EventTrigger" objects, used to check when the player steps in front of the "right" portal
 	var mEventTriggers;
 	
@@ -115,16 +112,13 @@ class Level0
 	// This offset is used to get the actual position of the player in the world. More information on the GameManager class
 	var mOpenglTranslationOffset;
 	
-	
-	var viveControllerObj;
-	
+	// Vive controllers
 	var mController1;
 	var mController2;
-	
+
 	// Private functions
 	DrawAllPortals();
-	DrawPortal(portalFrame, portalRoom, lightColor);
-	FadeToBlackScreen(fadeIn);
+	DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, lightAngle, lightIncrement, lightCenter, lightRadius);
 	
 	// Public functions
 	Render();
@@ -132,6 +126,7 @@ class Level0
 	IsLevelCompleted();
 	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
 };
@@ -140,11 +135,11 @@ class Level0
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level0::Level0(isVRon, inputManager, soundManager, lights)
+function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTranslationOffset)
 {
 	mIsVRon = isVRon;
 			
-	mOpenglTranslationOffset = [0, 0, 0];
+	mOpenglTranslationOffset = openglTranslationOffset;
 	
 	// Updating the booleans, the level is now starting
 	mStarting = true;
@@ -163,8 +158,8 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 		
 	// In order to not have the frames cube in the center of the origin (where the player with the Vive on will likely start), 
 	// I translate the room and everything else by this amount, because I'm too lazy to redo the positions of the objects
-//	var translateFactor = [0, 0, -20 * SCALE_FACTOR];
-	var translateFactor = [0, 0, 0];
+	var translateFactor = [0, 0, -20 * SCALE_FACTOR];
+//	var translateFactor = [0, 0, 0];
 	
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
 	mLight1Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
@@ -317,7 +312,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	mPortalFrames = {};
 	mPortalFramesNormals = {};
 	mPortalFramesGlassWalls = {};
-	mPortalRoomsLightColor = {};
+	mPortalRoomsLightColorArray = {};
 	
 	// Adding to each array its components
 	aadd(mPortalRooms, portalRoom1);
@@ -341,14 +336,10 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	aadd(mPortalFramesGlassWalls, glassWall4);
 	
 	
-	aadd(mPortalRoomsLightColor, [0.6, 0.1, 0.0]);
-	aadd(mPortalRoomsLightColor, [0.3, 0.7, 0.0]);
-	aadd(mPortalRoomsLightColor, [0.0, 0.3, 0.7]);
-	aadd(mPortalRoomsLightColor, [0.0, 0.7, 0.7]);
-//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
-//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
-//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
-//	aadd(mPortalRoomsLightColor, [Rand(7) / 7.0, Rand(7) / 7.0, Rand(7) / 7.0]);
+	aadd(mPortalRoomsLightColorArray, [0.6, 0.1, 0.0]);
+	aadd(mPortalRoomsLightColorArray, [0.3, 0.7, 0.0]);
+	aadd(mPortalRoomsLightColorArray, [0.0, 0.3, 0.7]);
+	aadd(mPortalRoomsLightColorArray, [0.0, 0.7, 0.7]);
 	
 	// Now I create the event triggers to be placed in front of each frame, so that we can find ount if the player steps in front of a portal
 	var eventTrigger1 = EventTrigger(PORTAL_ROOM_FAR_WALL_WIDTH, EVENT_TRIGGER_DEPTH, 0);
@@ -389,14 +380,6 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	// Text for the elevator
 	var elevatorText = Text("The Tower");
 	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.001);
-	
-	// Instantiating the silhouette shader, to draw outlines
-	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
-	
-	// Values used to move the portals' rooms light around, for a dynamic effect
-	mIncrement = 0.03 * SCALE_FACTOR;
-	mOffset = 0;
-	
 	
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
@@ -471,6 +454,61 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights)
 	portalRoom2.AddObject(sphereObj2, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
 	portalRoom3.AddObject(sphereObj3, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
 	portalRoom4.AddObject(sphereObj4, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);
+	
+	
+	// Now I prepare the arrays to handle the light0 transition inside the portal rooms. I'm using only this light for each room, so
+	// when I draw a portal I also load the light's position for that given room, which is updated inside UpdateLogic() to perform the rotation transition
+	mPortalRoomsLightPositionArray = {};
+	mPortalRoomsLightTransitionAngleArray = {};
+	mPortalRoomsLightTransitionSpeedArray = {};
+	mPortalRoomsLightTransitionCenterArray = {};
+	
+	// Starting positions: the first and third lights rotate horizontaly, so their initial position has a x-shifted position from the center (the object's
+	// position in world coordinates). The second and fourth rotate vertically, so they're shifted in the y
+	var lightStartingPos1 = portalRoom1.LocalToWorld(sphereObj1.GetPosition()) - [4.0 * SCALE_FACTOR, 0.0, 0.0];
+	var lightStartingPos2 = portalRoom2.LocalToWorld(sphereObj2.GetPosition()) - [0.0, 2.0 * SCALE_FACTOR, 0.0];
+	var lightStartingPos3 = portalRoom3.LocalToWorld(sphereObj3.GetPosition()) + [4.0 * SCALE_FACTOR, 0.0, 0.0];
+	var lightStartingPos4 = portalRoom4.LocalToWorld(sphereObj4.GetPosition()) + [0.0, -2.0 * SCALE_FACTOR, 0.0];
+		
+	// Period of rotation, in seconds
+	var period = 5.0;
+	
+	// For each room I compute a different speed, which is splitted in 3 parts (1 value for each axis). I do this because I can set the speed
+	// of the axis that doesn't rotate to 0 (for horizontal rotation the y speed is 0, while for vertical the z speed is 0). This way I can
+	// use generic operations with sines and cosines that only effect the correct axis
+	var lightTransitionSpeed1 = [360.0 / period, 0.0, 360.0 / period];
+	var lightTransitionSpeed2 = [360.0 / period, 360.0 / period, 0.0];
+	var lightTransitionSpeed3 = [-360.0 / period, 0.0, -360.0 / period];
+	var lightTransitionSpeed4 = [360.0 / period, 360.0 / period, 0.0];
+	
+	// For each rotation, the center is the portal's object (for vertical rotation it's a bit shiftd otherwise it goes below the floor while rotating)
+	var lightTransitionCenter1 = portalRoom1.LocalToWorld(sphereObj1.GetPosition());
+	var lightTransitionCenter2 = portalRoom2.LocalToWorld(sphereObj2.GetPosition()) + [0.0, 2.0 * SCALE_FACTOR, 0.0];
+	var lightTransitionCenter3 = portalRoom3.LocalToWorld(sphereObj3.GetPosition());
+	var lightTransitionCenter4 = portalRoom4.LocalToWorld(sphereObj4.GetPosition()) + [0.0, 2.0 * SCALE_FACTOR, 0.0];
+	
+	aadd(mPortalRoomsLightPositionArray, lightStartingPos1);
+	aadd(mPortalRoomsLightPositionArray, lightStartingPos2);
+	aadd(mPortalRoomsLightPositionArray, lightStartingPos3);
+	aadd(mPortalRoomsLightPositionArray, lightStartingPos4);
+	
+	// The initial angle for each room is 0; note that every room has an angle for each axis, so that I can increment only the angle for the axis used
+	// and leave the unusued one to 0 (for horizontal rotations it's the y, for vertical it's the z)
+	aadd(mPortalRoomsLightTransitionAngleArray, [0, 0, 0]);
+	aadd(mPortalRoomsLightTransitionAngleArray, [0, 0, 0]);
+	aadd(mPortalRoomsLightTransitionAngleArray, [0, 0, 0]);
+	aadd(mPortalRoomsLightTransitionAngleArray, [0, 0, 0]);
+	
+	aadd(mPortalRoomsLightTransitionSpeedArray, lightTransitionSpeed1);
+	aadd(mPortalRoomsLightTransitionSpeedArray, lightTransitionSpeed2);
+	aadd(mPortalRoomsLightTransitionSpeedArray, lightTransitionSpeed3);
+	aadd(mPortalRoomsLightTransitionSpeedArray, lightTransitionSpeed4);
+	
+	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter1);
+	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter2);
+	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter3);
+	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter4);
+
 
 	// If the Vive is on, I get the reference to the controllers
 	if(mIsVRon)
@@ -549,8 +587,8 @@ function Level0::DrawAllPortals()
 		// because  XVR will know that the portal isn't actually visible from the camera perspective
 		if(dotProduct >= 0)
 		{
-			// I render the portal
-			DrawPortal(mPortalFrames[i], mPortalRooms[i], mPortalRoomsLightColor[i]);
+			// I render the portal, passing also the information about the light's color and position
+			DrawPortal(mPortalFrames[i], mPortalRooms[i], mPortalRoomsLightColorArray[i], mPortalRoomsLightPositionArray[i]);
 			
 			// Since it's visible, I add this to the array
 			aadd(mCurrentlyVisiblePortalFrames, mPortalFrames[i]);
@@ -602,7 +640,7 @@ function Level0::DrawAllPortals()
   * portalFrame: (CVmObj) the frame from which the portal's room will be visible
   * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
   */
-function Level0::DrawPortal(portalFrame, portalRoom, lightColor)
+function Level0::DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, lightAngle, lightIncrement, lightCenter, lightRadius)
 {
 	// I add a matrix to the opengl stack; I will update the camera's position for the time being, so a copy of the current matrix 
 	// comes in handy when we need to go back to how thing where
@@ -656,30 +694,14 @@ function Level0::DrawPortal(portalFrame, portalRoom, lightColor)
 	// So, in this case I'm assuming that they both have the same orientation, to make things easier
 	var translation = newCameraPosition - framePos - mOpenglTranslationOffset;
 		
-	// Now I want to move the first opengl light so that it's in front of the portal and it moves around. The change of position must be done outside the
-	// SceneBegin/SceneEnd block, just like for the camera, otherwise (in XVR) it doesn't have any effect.
-	mOffset += mIncrement;
-	
-	var newLightPos = newCameraPosition;
-	
-	// I place the light where the camera's default position is, but I change it a bit in a pseudo-random way to make it move dynamically
-	newLightPos.x += mOffset;
-	newLightPos.y += sin(mOffset*1);
-	
-	if(mOffset > 5.0 * SCALE_FACTOR || mOffset < -5.0 * SCALE_FACTOR) 
-		mIncrement = -mIncrement;
-
-	var oldLightPos = mLight0.GetPosition();	
 		
 	// Now I move the world where the camera should be rendering the portal room (it's "minus" translation, because the glTranslate pushes the world away)
 	glTranslate(-translation);
 	
-	// I also move the light to the new position; I move it using opengl and not XVR objects so that with the Vive there is no problem.
-	// Note: the order of operation is important: if I moved the light before the translation above the light would be wrong. Basically
-	// I'm moving the light according the position of the world set by the glTranslate above
-	glLight(GL_LIGHT0, GL_POSITION, [newLightPos.x, newLightPos.y, newLightPos.z, 1.0]); 
+	// Setting the light to its defined position
+	glLight(GL_LIGHT0, GL_POSITION, [lightPosition.x, lightPosition.y, lightPosition.z, 1.0]); 
 	
-	// Changing color
+	// Changing the light's color
 	glLight(GL_LIGHT0, GL_DIFFUSE, lightColor); 
 					
 	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
@@ -695,9 +717,6 @@ function Level0::DrawPortal(portalFrame, portalRoom, lightColor)
 	
 	// Drawing the actual portal's room where the stencil is 1
 	portalRoom.Draw(true);
-	
-	// I move the light back where it was; still using opengl to avoid problems with the Vive
-	glLight(GL_LIGHT0, GL_POSITION, [oldLightPos.x, oldLightPos.y, oldLightPos.z, 1.0]); 
 	
 	// I'm done with this portal, so I pop the matrix from the stack. This way the glTranslsate() that I did above will be undone, bringing the world
 	// back the way it was before rendering the portal room, which is what I want
@@ -723,10 +742,11 @@ function Level0::UpdateLogic(dt)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
+	// Getting the camera position, minus the opengl offset used for teleporting
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
-	// I restore the previous porisiotn
+	// I restore the previous porision. Very badly written code
 	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
 		mInputManager.RestoreCameraPosition();
 	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
@@ -738,6 +758,31 @@ function Level0::UpdateLogic(dt)
     if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
     	mInputManager.RestoreCameraPosition();
     	
+	// For each portal, I need to update the position of its light
+	for(var i = 0; i < PORTALS_NUMBER; i++)
+	{
+		var lightPosition = mPortalRoomsLightPositionArray[i];
+		var centerPoint = mPortalRoomsLightTransitionCenterArray[i];
+		var radius = Modulus(lightPosition - centerPoint);
+		var currentAngle = mPortalRoomsLightTransitionAngleArray[i];
+		var speed = mPortalRoomsLightTransitionSpeedArray[i];
+		
+		// I update the position as if the object. Note that if the rotation of this light horizontal, the y axis position would always remain equal to
+		// centerPoint.y, because the currentAngle.y would always be 0, and sin(0) == 0. Same thing goes for vertical rotations, but with the z axis
+		lightPosition.x = cos(currentAngle.x * GRAD_TO_RAD) * radius + centerPoint.x;
+		lightPosition.y = sin(currentAngle.y * GRAD_TO_RAD) * radius + centerPoint.y;
+		lightPosition.z = sin(currentAngle.z * GRAD_TO_RAD) * radius + centerPoint.z;
+					
+		// Incrementing the angle; note that for horizontal rotations, the speed.y is set to 0, so the angle is not incremented (same goes for vertical, but with z)
+		currentAngle.x += speed.x * dt;
+		currentAngle.y += speed.y * dt;
+		currentAngle.z += speed.z * dt;
+		
+		// Saving the new position and angle
+		mPortalRoomsLightPositionArray[i] = lightPosition;
+		mPortalRoomsLightTransitionAngleArray[i] = currentAngle;
+	}
+	
    	    
     // Now I look if the player is on an event trigger
     var outsideEventTrigger = true;
@@ -919,6 +964,11 @@ function Level0::~Level0()
 function Level0::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
+}
+
+function Level0::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
 }
 
 function Level0::SetOpenglTransformOffset(openglTransformOffset)

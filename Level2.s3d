@@ -45,10 +45,7 @@ class Level2
 	var mLight0Diffuse;
 	var mLight1Diffuse;
 	var mLight2Diffuse;
-	
-	// These variables are temporary (or not?) floats used to move the light in a semi-random way, to create a nice dynamic effect
-	var mIncrement;
-	var mOffset;
+
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
@@ -84,6 +81,7 @@ class Level2
 	var mElevatorTravelTime;
 	var mCameraYoffset;	
 	var mOpenglTranslationOffset;	
+	var mPreviousOpenglTranslationOffset;
 	
 	var floorObj;	
 	var numpadObj;
@@ -116,6 +114,7 @@ class Level2
 	IsLevelCompleted();
 	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	GetOpenglTransformOffset();
  	SetOpenglTransformOffset(mOpenglTranslationOffset);
  	SetupOpenglLights();
 };
@@ -258,11 +257,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();
-	
-	// Values used to move the portals' rooms light around, for a dynamic effect
-	mIncrement = 0.03 * SCALE_FACTOR;
-	mOffset = 0;
-	
+
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
 
@@ -284,7 +279,11 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 //	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
 	
-	mCameraYoffset = mCamera.GetPosition().y - mElevatorFinalPosition.y;
+	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+
+	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+
+	mOpenglTranslationOffset.y += mElevatorTravelDistance;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 //	///// CONTAINER BOX GENERATION /////
@@ -626,15 +625,10 @@ function Level2::UpdateLogic(dt)
 			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2 && mElevator.GetLightsRange().y < 1)
 				 mElevator.SetLightsRange(1,2);
 			
-			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
-			cameraPosition.y = mCameraYoffset + elevatorPos.y;
-	   	    
-			// To make the shaking camera effect, I randomly move the x and y axis with random values
-		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
-		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
 			
-			// I set the new (shaken and at level with the elevator) position
-			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
+		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
 			
 			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
@@ -646,6 +640,8 @@ function Level2::UpdateLogic(dt)
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+				
+				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
 			}
 	
 			break;
@@ -1001,6 +997,11 @@ function Level2::ResetNumpad(){
 function Level2::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
+}
+
+function Level2::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
 }
 
 function Level2::SetOpenglTransformOffset(openglTransformOffset)

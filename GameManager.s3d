@@ -192,7 +192,6 @@ function GameManager::GameManager(HMD)
 	aadd(mLights, light1);
 	aadd(mLights, light2);
 	
-//	mOpenglTranslationOffset = [0, 0, -20 * SCALE_FACTOR]; 
 	mOpenglTranslationOffset = [0, 0, 0]; 
 	
 	mTimeToEnd = 7000;
@@ -203,7 +202,7 @@ function GameManager::GameManager(HMD)
 	if(DEBUG_MODE)
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
-		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights);
+		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
 		
 		mElevator = mCurrentLevel.GetElevator();
 		mElevator.Unhide();
@@ -212,9 +211,9 @@ function GameManager::GameManager(HMD)
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 				
 		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
-		mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
 		
-		mCurrentLevelNumber = 4;
+		mCurrentLevelNumber = 2;
 		
 //		aadd(mLevels, "placeholder");
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
@@ -229,7 +228,7 @@ function GameManager::GameManager(HMD)
 	else 
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
-		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights);
+		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
 		mCurrentLevelNumber = 0;
 		
 		mElevator = mCurrentLevel.GetElevator();
@@ -237,8 +236,8 @@ function GameManager::GameManager(HMD)
 		aadd(mLevels, "placeholder");
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;
@@ -328,7 +327,11 @@ function GameManager::Render()
 	}
 }
 
-function GameManager::XVRRendering(){
+function GameManager::XVRRendering()
+{
+	// The current level might change the opengl offset (for now only when it moves the camera with the elevator), so we get it before applying it below
+	mOpenglTranslationOffset = mCurrentLevel.GetOpenglTransformOffset();
+	
 	/* This is very important: in order to move around with the HTC Vive using the teleportation, we need to translate everything when rendering by
 	 * the amount computed when the teleportation goes through. This means that the whole world will shift by this amount, BUT the XVR objects
 	 * won't move, meaning that their position taken with their GetPosition() methods will stay the same even after the translation.
@@ -554,7 +557,7 @@ function GameManager::UpdateLogic(dt)
 						mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
 						
 						// I notify the current level that the offset has changed
-						mCurrentLevel.SetOpenglTransformOffset(mOpenglTranslationOffset);
+						mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
 					}
 					
 					mControllerBeingUsedIndex = 0;

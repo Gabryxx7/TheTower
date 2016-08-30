@@ -40,6 +40,7 @@ class Level3
 	var mCameraYoffset;
 	
 	var mOpenglTranslationOffset;
+	var mPreviousOpenglTranslationOffset;
 	
 	// Array containing the Vive controllers (ViveController objects), if VR is on; also, array containing duplicates and the currently 
 	// visible controllers (among real ones and duplicates)
@@ -94,6 +95,8 @@ class Level3
 	var mDebugControllerHidden;
 	var mDebugKeyHit;
 	
+	var mTranslateFactor;
+	
 	// Private functions
 	CheckActiveConnector();
 	HandleDrawings();
@@ -104,6 +107,7 @@ class Level3
 	UpdateLogic(dt);
 	IsLevelCompleted();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
 };
@@ -114,6 +118,9 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
+	
+	mTranslateFactor = [0, 0, -20 * SCALE_FACTOR];
+//	mTranslateFactor = [0, 0, 0];
 	
 	mEnding = false;
 	mIsLevelCompleted = false;
@@ -126,6 +133,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
 	
+	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mLinesTimeVariable = 0;
@@ -135,11 +143,11 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	// The first 2 connectors that appear
 	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
-	connector1.SetPosition([-offset, 0.05, -offsetFromFarWall]);
+	connector1.SetPosition([-offset, 0.05, -offsetFromFarWall] + mTranslateFactor);
 	connector1.Rotate(15, 0, 1, 0);
 	
 	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
-	connector2.SetPosition([offset, 0.05, -offsetFromFarWall]);
+	connector2.SetPosition([offset, 0.05, -offsetFromFarWall] + mTranslateFactor);
 	connector2.Rotate(203, 0, 1, 0);
 	
 	// This is group 1: the connectors in front of the elevator
@@ -148,11 +156,11 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	// The second group of connectors
 	var connector3 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector3.SetPosition([-offset, 0.05, offsetFromFarWall]);
+	connector3.SetPosition([-offset, 0.05, offsetFromFarWall] + mTranslateFactor);
 	connector3.Rotate(15, 0, 1, 0);
 	
 	var connector4 = DrawingsConnector([0.0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offset, 0.05, offsetFromFarWall]);
+	connector4.SetPosition([offset, 0.05, offsetFromFarWall] + mTranslateFactor);
 	connector4.Rotate(203, 0, 1, 0);
 	
 	connector4.SetLinkedConnector(connector3);
@@ -202,11 +210,15 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 		
 		// I create the duplicates of the controllers so that I can move them around in the mirrored side
 		var controllerDuplicate1 = ViveController(1);
-		var controllersDuplicate2 = ViveController(2);
+		var controllerDuplicate2 = ViveController(2);
+		
+		// Initially the duplicates are invisible
+		controllerDuplicate1.Hide();
+		controllerDuplicate2.Hide();
 		
 		// Initially these controllers are the visible ones
 		aadd(mControllersDuplicateArray, controllerDuplicate1);
-		aadd(mControllersDuplicateArray, controllersDuplicate2);
+		aadd(mControllersDuplicateArray, controllerDuplicate2);
 	}
 	else
 	{
@@ -226,6 +238,8 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 		var controllerDuplicate1 = ViveController(1);
 		aadd(mControllersDuplicateArray, controllerDuplicate1);
 		aadd(mControllersDuplicateArray, controllerDuplicate2);
+		
+		controllerDuplicate1.Hide();
 	}
 	
 	
@@ -259,28 +273,20 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
-	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
-	
 	mLight0 = lights[0];
-	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(1, 1, 1);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
-	mLight1.SetPosition(mLight1Position);
 	mLight1.SetDiffuse(1, 1, 1);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
-	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(1, 1, 1);
 	mLight2.Enable();
 	
 		
 	mElevator = elevator;
-	mElevator.SetLightsRange(0,0);
 	
 	mCamera = mInputManager.GetActiveCamera();
 	
@@ -289,9 +295,18 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	
+	mLight0Position = mLight0.GetPosition();
+	mLight1Position = mLight1.GetPosition();
+	mLight2Position = mLight2.GetPosition();
+	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
 	
-	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
+	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+	mOpenglTranslationOffset.y += mElevatorTravelDistance;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
@@ -299,9 +314,9 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mMainRoom.Translate(-mElevator.GetRoomDepth() / 2.0 + 3.0 * SCALE_FACTOR, 0, -mElevator.GetRoomWidth() / 2.0);
 	
 	// I set now the position of a text that needed to know where the elevator was
-	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0]);
+	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
 	mBackText.SetPosition(mElevatorFinalPosition + [0.1 * SCALE_FACTOR, 1 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
-	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0]);
+	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
 }
 
 
@@ -479,15 +494,21 @@ function Level3::UpdateLogic(dt)
 			
 			var elevatorPos = mElevator.GetPosition();
 
-			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0 && mElevator.GetLightsRange().y < 1)
-				 mElevator.SetLightsRange(1,2);
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0)
+			{
+				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + mTranslateFactor;
+				
+				mLight0.SetPosition(mLight0Position);
+				mLight1.SetPosition(mLight1Position);
+				mLight2.SetPosition(mLight2Position);
+			}
 			
-			cameraPosition.y = mCameraYoffset + elevatorPos.y;
-	   	    
-		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
-		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
 			
-			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
+		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
 			
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
 			{
@@ -498,6 +519,8 @@ function Level3::UpdateLogic(dt)
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+				
+				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
 			}
 	
 			break;
@@ -521,7 +544,8 @@ function Level3::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 //			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-//		    	mInputManager.RestoreCameraPosition();
+//		    	mInputManager.RestoreCameraPosition();			    
+
 		    	
 	    	// Now I have to change the position of the duplicates controller so that they mirror the real ones
 	    	for(var i = 0; i < len(mControllersArray); i++)
@@ -549,10 +573,14 @@ function Level3::UpdateLogic(dt)
 
     			var controllerPos = controller.GetPosition();
     			
-    			// The z coordinate where the side ends is 0. Depending on what is the mirror side, in order to check if the controller has changed side
-    			// I need to check if its z coordinate is positive or negative
-    			var isNotInMirrorSide = mMirrorSideIsLeft ? controllerPos.z >= 0 : controllerPos.z <= 0;
-				    			
+    			// This is the z coordinate where the side ends. It's basically 0 plus the translation factor and half the elevator depth, so that
+    			// the side ends at half the length of the elevator
+    			var threshold = mTranslateFactor.z - mElevator.GetRoomDepth() / 2.0;
+    			
+    			// Depending on what is the mirror side, in order to check if the controller has changed side
+    			// I need to check if its z coordinate is below or above the threshold
+    			var isNotInMirrorSide = mMirrorSideIsLeft ? controllerPos.z >= threshold: controllerPos.z <= threshold;
+				    			    			
     			// If the real controller is NOT in the mirror side and it was visible, I need to hide it and show the duplicate    	
 		    	if(isNotInMirrorSide && controller.IsVisible())
     			{
@@ -577,15 +605,17 @@ function Level3::UpdateLogic(dt)
 	    			var rotationMatrix = controller.GetRotationMatrix();
 	    			controllerDuplicate.SetRotationMatrix(rotationMatrix);
 	    			
-	    			// I only need to change the z coordinates of the real controller's position so that it has the opposite sign
-					controllerPos.z = -controllerPos.z;
+	    			// I only need to change the z coordinates of the real controller's position so that it has the opposite sign, but I need
+	    			// to take into account the threshold
+					controllerPos.z = -controllerPos.z + threshold * 2.0;
+
 	    			controllerDuplicate.SetPosition(controllerPos);
     			}
     		}
-		    
-		    // Now I have to check if the player is near the threshold around the z = 0 axis, and in that case change the alpha of the connectors accordingly.
-		    // Depending on which is the side that works as a mirror, I take the z position of the camera
-    		var distanceFromZaxis = mMirrorSideIsLeft ? cameraPosition.z : -cameraPosition.z;
+    		
+    		 // Now I have to check if the player is near the threshold around the z = 0 axis, and in that case change the alpha of the connectors accordingly.
+		    // Depending on which is the side that works as a mirror, I take the z position of the camera, taking into account the translation factor
+    		var distanceFromZaxis = mMirrorSideIsLeft ? cameraPosition.z  - mTranslateFactor.z: -cameraPosition.z + mTranslateFactor.z;
     			
 			// I compute the alpha value. Basically to compute it I normalize the current distance with the threshold distance
     		var alphaValue = distanceFromZaxis / mDistanceToZaxisThreshold;
@@ -908,6 +938,11 @@ function Level3::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 function Level3::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
+}
+
+function Level3::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
 }
 
 function Level3::SetOpenglTransformOffset(openglTransformOffset)

@@ -43,6 +43,7 @@ class Level4
 	var mLight2Position;
 	
 	var mOpenglTranslationOffset;
+	var mPreviousOpenglTranslationOffset;
 	
 	var mMainRoom;
 	
@@ -158,6 +159,7 @@ class Level4
 	// "The Tower" text object, displayed at the base of the tower in the final animation
 	var mTheTowerText;
 	
+	var mTranslateFactor;
 	
 	// Private functions
 	DrawPortal();
@@ -171,6 +173,7 @@ class Level4
 	UpdateLogic(dt);
 	IsLevelCompleted();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
 };
@@ -186,6 +189,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
+	mTranslateFactor = [0.0, 0.0, -20.0 * SCALE_FACTOR];
+//	mTranslateFactor = [0.0, 0.0, 0.0];
 		
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
@@ -194,12 +199,14 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	// Creating the main room
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, false);
 	
+	mMainRoom.Translate(mTranslateFactor.x,  mTranslateFactor.y, mTranslateFactor.z);
+	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 		
 
 	mMainClock = Clock(1, 2);
-	mMainClock.Translate(0, 5 * SCALE_FACTOR, -20 * SCALE_FACTOR);
+	mMainClock.Translate(0 + mTranslateFactor.x, 5 * SCALE_FACTOR + mTranslateFactor.y, -20 * SCALE_FACTOR + mTranslateFactor.z);
 	mMainClock.Rotate(180, 0, 1, 0);
 	
 	// Initially the time runs forward
@@ -209,21 +216,21 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	// Creating texts object for the scene
 	var frontText = Text("Time is relative", 2.0);
 	frontText.Rotate(180, 0, 1, 0);
-	var frontTextPos = [2.0 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2.0 - 0.1 * SCALE_FACTOR];
+	var frontTextPos = [2.0 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2.0 - 0.1 * SCALE_FACTOR] + mTranslateFactor;
 	var frontTextBoundingBox = [frontTextPos.x - frontText.GetWidthOfLine(0) * 2.0, frontTextPos.y - 2.5 * SCALE_FACTOR, frontTextPos.x + frontText.GetWidthOfLine(0) * 2.0, frontTextPos.y + 2.5 * SCALE_FACTOR];
 	frontText.SetPosition(frontTextPos);
 	
 	// Creating texts object for the scene
 	var leftText = Text("Sometimes it seems to follow you as you go", 2.0);
 	leftText.Rotate(-90, 0, 1, 0);
-	var leftTextPos = [mMainRoom.GetRoomWidth()/2.0 - 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR];
+	var leftTextPos = [mMainRoom.GetRoomWidth()/2.0 - 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR] + mTranslateFactor;
 	var leftTextBoundingBox = [leftTextPos.z - leftText.GetWidthOfLine(0) * 2.0, leftTextPos.y - 2.5 * SCALE_FACTOR, leftTextPos.z + leftText.GetWidthOfLine(0) * 2.0, leftTextPos.y + 2.5 * SCALE_FACTOR];
 	leftText.SetPosition(leftTextPos);
 	
 	// Creating texts object for the scene
 	var rightText = Text("At times it seems to slow down or speed up", 2.0);
 	rightText.Rotate(90, 0, 1, 0);
-	var rightTextPos = [-mMainRoom.GetRoomWidth()/2.0 + 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR];
+	var rightTextPos = [-mMainRoom.GetRoomWidth()/2.0 + 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR] + mTranslateFactor;
 	var rightTextBoundingBox = [rightTextPos.z - rightText.GetWidthOfLine(0) * 2.0, rightTextPos.y - 2.5 * SCALE_FACTOR, rightTextPos.z + rightText.GetWidthOfLine(0) * 2.0, rightTextPos.y + 2.5 * SCALE_FACTOR];
 	rightText.SetPosition(rightTextPos);
 	
@@ -232,7 +239,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	aadd(mTexts, leftText);
 	aadd(mTexts, rightText);
 	
-	// Text behind the elevator
+	// Text behind the elevator; its position is defined in the Init() function
 	mBackText = Text("Look back to find what you need", 1.0);
 	mBackText.SetRotation(180, 0, 1, 0);
 		
@@ -384,7 +391,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		// Creating the transitions
 		mAnimator.CreateScalingTransition(starObj, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
 		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-		mAnimator.CreateRotationAroundPointTransition(starObj, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
+		mAnimator.CreateRotationAroundPointTransition(starObj, [posX, posY, posZ] + mTranslateFactor, [0, 0, 0] + mTranslateFactor, time, true, true, clockwise);
 		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
 		
 		aadd(mStarObjects, starObj);
@@ -412,7 +419,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 		mAnimator.CreateScalingTransition(coneThing, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
 		mAnimator.CreateRotatingTransition(coneThing, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-		mAnimator.CreateRotationAroundPointTransition(coneThing, [posX, posY, posZ], [0, 0, 0], time, true, true, clockwise);
+		mAnimator.CreateRotationAroundPointTransition(coneThing, [posX, posY, posZ] + mTranslateFactor, [0, 0, 0] + mTranslateFactor, time, true, true, clockwise);
 		mAnimator.CreateToonShaderColorTransition(coneThing.GetMesh(), color1, color2, 3.5, true);
 		
 		aadd(mConeObjects, coneThing);
@@ -426,19 +433,19 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	var rightEventTriggerDepth = leftEventTriggerDepth / 2.0;
 
 	mLeftEventTrigger = EventTrigger(eventTriggerWidth,leftEventTriggerDepth, 0);
-	mLeftEventTrigger.Translate(eventTriggersOffset, 0, 0);
+	mLeftEventTrigger.Translate(eventTriggersOffset + mTranslateFactor.x,  mTranslateFactor.y,  mTranslateFactor.z);
 	
 	mRightEventTrigger1 = EventTrigger(eventTriggerWidth, rightEventTriggerDepth, 0);
-	mRightEventTrigger1.Translate(-eventTriggersOffset, 0, -(rightEventTriggerDepth / 2.0));
+	mRightEventTrigger1.Translate(-eventTriggersOffset + mTranslateFactor.x, mTranslateFactor.y, -(rightEventTriggerDepth / 2.0) + mTranslateFactor.z);
 	
 	mRightEventTrigger2 = EventTrigger(eventTriggerWidth, rightEventTriggerDepth, 0);
-	mRightEventTrigger2.Translate(-eventTriggersOffset, 0,  rightEventTriggerDepth / 2.0);
+	mRightEventTrigger2.Translate(-eventTriggersOffset + mTranslateFactor.x, mTranslateFactor.y,  rightEventTriggerDepth / 2.0 + mTranslateFactor.z);
 	
 	
 	// Portal frame for the mirror portal; it's as big as the wall and I put it in the back of the room
 	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-mMainRoom.GetRoomWidth() / 2.0, -mMainRoom.GetRoomHeight() / 2.0, 0], [mMainRoom.GetRoomWidth() / 2.0, mMainRoom.GetRoomHeight() / 2.0, 0], 2, 2);
 	mPortalFrame = CVmObj(portalFrameMesh);
-	mPortalFrame.Translate(0, mMainRoom.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 + 0.1 * SCALE_FACTOR);
+	mPortalFrame.Translate(mTranslateFactor.x, mMainRoom.GetRoomHeight() / 2.0 + mTranslateFactor.y, -mMainRoom.GetRoomDepth() / 2.0 + 0.1 * SCALE_FACTOR + mTranslateFactor.z);
 	
 	// Variables used to handle the ending animation, done entirely with opengl functions and with the portal, of course
 	mPortalTranslateOffset = [0.0, 0.0, 0.0];
@@ -451,7 +458,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	// Glass wall to create a "mirror-like" surface; it's as big as the wall and I put it in the back of the room
 	mGlassWall = CreateGlassWall(mMainRoom.GetRoomWidth(), mMainRoom.GetRoomHeight(), 0.2 * SCALE_FACTOR, 2, 2);
 	mGlassWall.Rotate(180, 0, 1, 0);
-	mGlassWall.Translate(0, mMainRoom.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 + 0.13 * SCALE_FACTOR);
+	mGlassWall.Translate(mTranslateFactor.x, mMainRoom.GetRoomHeight() / 2.0 + mTranslateFactor.y, -mMainRoom.GetRoomDepth() / 2.0 + 0.13 * SCALE_FACTOR + mTranslateFactor.z);
 	
 	
 	// Now I create the keypad and the number objects. This is the length of the code for the keypad
@@ -484,7 +491,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mFinalNumbersFound = false;
 	
 	// Number objects' position, and x offset between each other
-	var numbersPosition = [0, 6.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR];
+	var numbersPosition = [0, 6.0 * SCALE_FACTOR, -25.0 * SCALE_FACTOR] + mTranslateFactor;
 	var numbersPositionOffset = 10.0 * SCALE_FACTOR;
 	
 	// Total from in the x axis that the objects occupy
@@ -603,7 +610,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	// Setting the tower position to be right below the main room
 	var roomPos = mMainRoom.GetPosition();
-	mTower.SetPosition(roomPos.x, roomPos.y - mTowerHeight - 0.01 * SCALE_FACTOR, roomPos.z + towerLevelDepth);
+	mTower.SetPosition([roomPos.x, roomPos.y - mTowerHeight - 0.01 * SCALE_FACTOR, roomPos.z + towerLevelDepth]);
 	
 	
 	// These are the list of keypoints in the song for the final animation. The values are seconds in the song multiplied by 1000 to save them as milliseconds
@@ -632,8 +639,9 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	billboardMesh.ForceMaterial(billboardMaterial);
 	
-	// Creating the billboard object
+	// Creating the billboard object; initially it's invisible
 	mLight0Billboard = CVmObj(billboardMesh);
+	mLight0Billboard.Hide();
 	
 	
 	// Text to be put in the base of the tower. I don't use the Text() class since I want it to be white, and I've no idea why but in the Text() 
@@ -660,29 +668,21 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	foreach(var light in lights)
 		light.Disable();
-		
-	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + [0, -100 * SCALE_FACTOR, 0];
-	mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight2Position = [0, 10.0 * SCALE_FACTOR, -30.0 * SCALE_FACTOR];
 	
 	mLight0 = lights[0];
-	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(1, 1, 1);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
-	mLight1.SetPosition(mLight1Position);
 	mLight1.SetDiffuse(1, 1, 1);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
-	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(1, 1, 1);
 	mLight2.Enable();
 	
 		
 	mElevator = elevator;
-	mElevator.SetLightsRange(0,0);
 	
 	mCamera = mInputManager.GetActiveCamera();
 
@@ -694,9 +694,19 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 
 	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	
+	mLight0Position = mLight0.GetPosition();
+	mLight1Position = mLight1.GetPosition();
+	mLight2Position = mLight2.GetPosition();
 		
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
-	mCameraYoffset = mCamera.GetPosition().y - mOpenglTranslationOffset.y - mElevatorFinalPosition.y;
+	
+	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+	mOpenglTranslationOffset.y += mElevatorTravelDistance;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
@@ -707,7 +717,10 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	// Setting the position of the numpad and the text above it; I need to do it here since I need to know the position of the elevator
 	mNumpad.SetPosition(mElevatorFinalPosition + [0.0 * SCALE_FACTOR, 0.0 * SCALE_FACTOR, -0.2 * SCALE_FACTOR]);
 	mBackText.SetPosition(mElevatorFinalPosition + [0.3 * SCALE_FACTOR, 3.0 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
-	mTheTowerText.SetPosition([18.0 * SCALE_FACTOR, -mTowerHeight + mMainRoom.GetRoomHeight() / 1.85, -mMainRoom.GetRoomDepth() / 2.0 - 0.1 * SCALE_FACTOR]);
+	
+	// The position of the final text is actually not correct; I just want it out of the way for now, otherwise it might appear at the origin. 
+	// It will be moved when needed
+	mTheTowerText.SetPosition([18.0 * SCALE_FACTOR, -mTowerHeight + mMainRoom.GetRoomHeight(), -mMainRoom.GetRoomDepth() / 2.0 - 0.1 * SCALE_FACTOR]);
 }
 
 
@@ -837,7 +850,7 @@ function Level4::DrawPortal()
 	var localPoint = [0, 0, mMainRoom.GetRoomDepth() + 0.1 * SCALE_FACTOR];
 	var newCameraPosition = mMainRoom.LocalToWorld(localPoint);
 
-	var translation = newCameraPosition - framePos - mOpenglTranslationOffset;
+	var translation = newCameraPosition - framePos - mOpenglTranslationOffset - mTranslateFactor * 2.0;
 		
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
@@ -1157,19 +1170,22 @@ function Level4::UpdateLogic(dt)
 	
 			// I check if the elevator is halfway through the transtition; if this is the case, I change its lights range for the rendering (but only
 			// if I didn't do so already)
-			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2 && mElevator.GetLightsRange().y < 1)
-				 mElevator.SetLightsRange(1,2);
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2)
+			{
+				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position = [0, 10.0 * SCALE_FACTOR, -30.0 * SCALE_FACTOR] + mTranslateFactor;
+				
+				mLight0.SetPosition(mLight0Position);
+				mLight1.SetPosition(mLight1Position);
+				mLight2.SetPosition(mLight2Position);
+			}
 			
-			// I make sure that the camera goes up with the elevator by increasing the y along with the elevator's
-			cameraPosition.y = mCameraYoffset + elevatorPos.y;
-	   	    
-			// To make the shaking camera effect, I randomly move the x and y axis with random values
-		    cameraPosition.y += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
-		    cameraPosition.x += Rand(1) == 0 ? Rand(8)/500.0 : -Rand(8)/500.0;
+			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
 			
-			// I set the new (shaken and at level with the elevator) position
-			mCamera.SetPosition(cameraPosition + mOpenglTranslationOffset);
-			
+		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    
 			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
 			{
@@ -1180,6 +1196,8 @@ function Level4::UpdateLogic(dt)
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+				
+				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
 			}
 	
 			break;
@@ -1494,12 +1512,18 @@ function Level4::UpdateLogic(dt)
 				foreach(var numberObject in mNumbersObjectArray)
 					numberObject.Hide();
 					
+				var elevatorPos = mElevator.GetPosition();
+					
 				// I don't hide the elevator, since I also show it at the end of the tower. So I move it there, in a way that is basically behind the tower
 				// (this is why I also rotate it). I change the lights range since for the final animation I'm using Light0. I also reset the scale to default
-				mElevator.SetPosition([0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, -mMainRoom.GetRoomDepth() / 2.0 - mElevator.GetRoomDepth() + 10 * SCALE_FACTOR]);
+				mElevator.SetPosition([0, -mTowerHeight + mElevator.GetRoomHeight() / 2.0, elevatorPos.z - mMainRoom.GetRoomDepth() / 2.0 + mElevator.GetRoomDepth()]);
 				mElevator.Rotate(180, 0, 1, 0);
 				mElevator.SetLightsRange(0, 0);
 				mElevator.SetScale(1.0, 1.0, 1.0);
+				
+				elevatorPos = mElevator.GetPosition();
+				
+				mTheTowerText.SetPosition([elevatorPos.x + 18 * SCALE_FACTOR, elevatorPos.y + 10.0 * SCALE_FACTOR, elevatorPos.z - 1.0 * SCALE_FACTOR]);
 			}
 				
 			// Now, before starting the final animation, I have to check if the user is looking at the glass wall in order to start it
@@ -1539,8 +1563,11 @@ function Level4::UpdateLogic(dt)
 						// The light will be rotating around the center, so the z coordinate is its radius
 						mLight0RotationRadius = mLight0Position.z;
 						
-						// I move the billboard where the light is
+						// I move the billboard where the light is and unhide it
 						mLight0Billboard.SetPosition(mLight0Position);
+						mLight0Billboard.Unhide();
+						
+						mInvariantAnimator.CreateRotatingTransition(mLight0Billboard, 0, (360), [0, 0, 1], 8.0, true, false);
 	
 						// I save the moment that the music started; this is essential in order to know at which keypoint in the song we are
 						mMusicStartTime = GetTime();
@@ -1895,6 +1922,11 @@ function Level4::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 function Level4::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
+}
+
+function Level4::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
 }
 
 /*
