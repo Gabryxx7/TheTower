@@ -126,7 +126,7 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mControllersArray = {};
 		

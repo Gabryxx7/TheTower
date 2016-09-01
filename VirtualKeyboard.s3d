@@ -39,6 +39,7 @@ class VirtualKeyboard{
 	
 	var mAnimationTime;
 	
+	ClearScreen();
 	DrawHolder();
 	DrawUnPressedButtons();
 	DrawPressedButtons();
@@ -442,13 +443,17 @@ function VirtualKeyboard::PressAllButtons(){
 	}
 }
 
-function VirtualKeyboard::UnpressAllButtons(){	
-	mHoveredButton = -1;	
-	//Remove chars from the screen
+function VirtualKeyboard::ClearScreen(){
 	while(len(mCharOnScreen) > 0){
 		mScreenTextObjs.RemoveChild(mCharOnScreen[0]);
 		adel(mCharOnScreen, 0);		
-	}
+	}	
+}
+
+function VirtualKeyboard::UnpressAllButtons(){	
+	mHoveredButton = -1;	
+	//Remove chars from the screen
+	ClearScreen();
 			
 	//All buttons must NOT be pressed
 	while(len(mPressedButtonsObjs) > 0){
