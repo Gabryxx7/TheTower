@@ -382,7 +382,7 @@ function Level5::Render()
 	
 	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
-	mPortalRooms[0].Draw();
+//	mPortalRooms[0].Draw();
 	
 	if(mIsVRon)
 	{
@@ -582,18 +582,18 @@ function Level5::UpdateLogic(dt)
 	// Getting the camera position, minus the opengl offset used for teleporting
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
-//	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
-//	// I restore the previous porision. Very badly written code
-//	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
-//		mInputManager.RestoreCameraPosition();
-//	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
-//       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
-//       	    !mIsElevatorPresent)
-//   	    mInputManager.RestoreCameraPosition();
-//
-//    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-//    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
-//    	mInputManager.RestoreCameraPosition();
+	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
+	// I restore the previous porision. Very badly written code
+	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
+		mInputManager.RestoreCameraPosition();
+	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
+       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
+       	    !mIsElevatorPresent)
+   	    mInputManager.RestoreCameraPosition();
+
+    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
+    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
+    	mInputManager.RestoreCameraPosition();
     	
     switch(mLevelStatus)
 	{
@@ -654,12 +654,12 @@ function Level5::UpdateLogic(dt)
 		
 		case STATUS_LEVEL_STARTED:
 		{
-			if(   cameraPosition.x >= mPortalFrames[0].GetPosition().x - 3*SCALE_FACTOR && cameraPosition.x <= mPortalFrames[0].GetPosition().x + 3*SCALE_FACTOR
-			   && cameraPosition.z >= mPortalFrames[0].GetPosition().z - 3*SCALE_FACTOR && cameraPosition.z <= mPortalFrames[0].GetPosition().z + 3*SCALE_FACTOR
-			){
-				outputln("\nTRESPASSING PORTAL 1");
-				mCamera.SetPosition(mPortalRooms[0].GetPosition().x, cameraPosition.y, mPortalRooms[0].GetPosition().z);
-			}
+//			if(   cameraPosition.x >= mPortalFrames[0].GetPosition().x - 3*SCALE_FACTOR && cameraPosition.x <= mPortalFrames[0].GetPosition().x + 3*SCALE_FACTOR
+//			   && cameraPosition.z >= mPortalFrames[0].GetPosition().z - 3*SCALE_FACTOR && cameraPosition.z <= mPortalFrames[0].GetPosition().z + 3*SCALE_FACTOR
+//			){
+//				outputln("\nTRESPASSING PORTAL 1");
+//				mCamera.SetPosition(mPortalRooms[0].GetPosition().x, cameraPosition.y, mPortalRooms[0].GetPosition().z);
+//			}
 			// At start I hide the elevator; it will appear later
 			mElevator.Hide();
 			// For each portal, I need to update the position of its light
