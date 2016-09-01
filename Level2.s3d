@@ -126,7 +126,7 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mControllersArray = {};
 		
@@ -786,7 +786,7 @@ function Level2::UpdateLogic(dt)
 							timeFromLastClick = 0;	
 							pressedButton = (vrPointedButton1 == "") ? vrPointedButton2 : vrPointedButton1;
 							if(pressedButton != ""){
-								numpadObj.PressButton(pressedButton);		
+								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);		
 								numpadObj.AnimateButton(pressedButton);	
 								mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);						
 							}
@@ -805,7 +805,7 @@ function Level2::UpdateLogic(dt)
 							timeFromLastClick = 0;
 							pressedButton = pointed;
 							if(pressedButton != ""){
-								numpadObj.PressButton(pressedButton);		
+								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);		
 								numpadObj.AnimateButton(pressedButton);								
 							}						
 						}
@@ -828,7 +828,7 @@ function Level2::UpdateLogic(dt)
 					}
 					
 					if(pressedButton != ""){		
-						numpadObj.PressButton(pressedButton);
+						numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);
 						numpadObj.AnimateButton(pressedButton);				
 					}
 				}
