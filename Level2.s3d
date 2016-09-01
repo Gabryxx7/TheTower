@@ -232,27 +232,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), (ROOM_FAR_WALL_WIDTH/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -ROOM_SIDE_WALL_WIDTH/2);
 	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), -(ROOM_FAR_WALL_WIDTH/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -ROOM_SIDE_WALL_WIDTH/2);
 	for(var i = 0; i < len(mElevatorWallMeshes); i++){		
-		if(USE_TOON_SHADER == 2){		
-			mElevatorWallMeshes[i].ShaderAdd("antishader.glsl", 0);
-			mElevatorWallMeshes[i].ShaderActivate(true);
-		}
-		else if(USE_TOON_SHADER == 1){
-			mElevatorWallMeshes[i].ShaderAdd("toonShader.glsl", 0);
-			mElevatorWallMeshes[i].ShaderActivate(true);		
-		}
-		else if(USE_TOON_SHADER == 0){
-			mElevatorWallMeshes[i].ShaderActivate(false);				
-		}
-		
-		// Passing the material parameters of the mesh to the shader, and also the light number that has to be used to render the lighting on the mesh
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "shininess", 0, 0);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "lightsRangeMax", 0, 2);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-		mElevatorWallMeshes[i].ShaderSetParameter(0, "alpha", 0, 1.0);
+		AddToonShaderToMesh(mElevatorWallMeshes[i], [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, 0, 2, SCALE_FACTOR, 1.0);
 	}
 	
 	// Retrieving the input manager and setting the initial camera's position
@@ -311,6 +291,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	randomCubes = {};
 	paths = {};
 	var meshes = {};
+	
 	aadd(meshes, CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes));
 	aadd(meshes, CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25));
 	aadd(meshes, CVmNewMesh(VRP_SPHERE, 10, cubeSizes * 0.80, 1));
@@ -335,8 +316,10 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	aadd(paths, TilesPath(tileMesh, [-2,4,-1,5,-2,5,-2,4,-1,4,-1,8,-1,6,-2,5,-2,7,-1,5,-1,6,-2,7,-1,2,-2,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1], soundsRange)); //BLUE
 	
 	//Adding as many randomObjects as the number of tilesPaths
-	for(var i = 0; i < len(paths); i++)
-		aadd(randomCubes, RandomMeshes(meshes[Rand(len(meshes)-1)], randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
+	for(var i = 0; i < len(paths); i++){
+		var selectedMesh = meshes[Rand(len(meshes)-1)];
+		aadd(randomCubes, RandomMeshes(selectedMesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
+	}
 	
 	///// NUMBER PAD GENERATION /////
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
@@ -348,8 +331,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var wrongColor = [0.8,0.0,0.0];
 	var buttonsTextColor = [0.0,0.0,0.0];
 	var clearingColor = [0.8,0.8,0];
-	numpadObj = Numpad("123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize, len(paths));	
-//	numpadObj = Numpad("abcdefghi ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize);	
+	numpadObj = VirtualKeyboard(mAnimator, "123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize, len(paths));	
+//	numpadObj = VirtualKeyboard("abcdefghi ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize);	
 /////////////////////////////////////////////////////////
 	
 	
@@ -539,41 +522,11 @@ function Level2::Render()
 	// The elevator is always present, so it's always drawn
 	mElevator.Draw();
 	testo.Draw();
-	
-	mToonShader.Start();
-		mToonShader.SetParameter("ambient", [1, 1, 1]);
-		mToonShader.SetParameter("diffuse", [1, 1, 1]);
-		mToonShader.SetParameter("specular", [0.1, 0.1, 0.1]);
-		mToonShader.SetParameter("shininess", 50);
-		mToonShader.SetParameter("lightsRangeMin", 0);
-		mToonShader.SetParameter("lightsRangeMax", 2);
-		mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-		mToonShader.SetParameter("alpha", 1.0);
-		
-		numpadObj.DrawHolder();
-		
-		mToonShader.SetParameter("diffuse", numpadObj.GetScreenColor());
-		numpadObj.DrawScreen();
-		mToonShader.SetParameter("diffuse", numpadObj.GetScreenTextColor());
-		numpadObj.DrawScreenText();
-	
-		mToonShader.SetParameter("diffuse", numpadObj.GetUnpressedButtonColor());
-		numpadObj.DrawUnpressedButtons();
-		
-		if(numpadClearNeeded == 1)			
-			mToonShader.SetParameter("diffuse", numpadObj.GetWrongCodeColor());
-		else if(numpadClearNeeded == 2)
-			mToonShader.SetParameter("diffuse", numpadObj.GetSecondaryColor());
-		else
-			mToonShader.SetParameter("diffuse", numpadObj.GetPressedButtonColor());			
-		
-		numpadObj.DrawPressedButtons();
-		
-//		mToonShader.SetParameter("lightsRangeMin", 0);
-//		mToonShader.SetParameter("lightsRangeMax", 2);
-//		mToonShader.SetParameter("diffuse", [1, 1, 1]);
-//		box.Draw([0,1,1,1,1,1]);
-	mToonShader.Stop();
+	numpadObj.DrawHolder();
+	numpadObj.DrawScreenText();	
+	numpadObj.DrawScreen();			
+	numpadObj.DrawPressedButtons();
+	numpadObj.DrawUnpressedButtons();
 			
 //	mAlphaShader.Start();
 //		mAlphaShader.SetParameter("time", 0);
@@ -582,8 +535,6 @@ function Level2::Render()
 //		mAlphaShader.SetParameter("finalColor", [0.6, 0.6, 1]);
 //		box.Draw([1,0,0,0,0,0], 0);
 //	mAlphaShader.Stop();
-	
-	numpadObj.DrawButtonsText();
 	
 	if(mIsVRon){
 		mController1.Draw();
@@ -808,40 +759,76 @@ function Level2::UpdateLogic(dt)
 			
 			var pressedButton = "";
 			//If the player is close to the numpad
-			if(!doorUnlocked && numpadObj.IsCameraInNumpadRange(cameraPosition, 8 * SCALE_FACTOR) && numpadClearNeeded == 0){			   	
+			if(!doorUnlocked && numpadObj.IsCameraInKeyboardRange(cameraPosition, 8 * SCALE_FACTOR) && numpadClearNeeded == 0){			   	
 			   	
 				if(mIsVRon){
+					mControllersArray[0].SetActionAvailable(true);	
+					mControllersArray[1].SetActionAvailable(true);	
 					if(numpadClearNeeded == 0 && !doorUnlocked){
 						var vrPressedButton1 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[0].GetPosition(), dt, mInputManager, 1);
-						var vrPressedButton2 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[1].GetPosition(), dt, mInputManager, 2);
-						pressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;	
+						var vrPressedButton2 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[1].GetPosition(), dt, mInputManager, 2);						
+					 	var vrPointedButton1 = numpadObj.PointedButton(mControllersArray[0], mControllersArray[0].GetPosition(), false);											
+					 	var vrPointedButton2 = numpadObj.PointedButton(mControllersArray[1], mControllersArray[1].GetPosition(), false);	
+						var vrPressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;
+						if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
+							timeFromLastClick = 0;	
+							pressedButton = (vrPointedButton1 == "") ? vrPointedButton2 : vrPointedButton1;
+							if(pressedButton != ""){
+								numpadObj.PressButton(pressedButton);		
+								numpadObj.AnimateButton(pressedButton);	
+								mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);						
+							}
+						}
+						else{
+							pressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;								
+						}
 					}			
 				}
-				else if(debugVrOn){;
+				else if(debugVrOn){
+					mDebugController.SetActionAvailable(true);
 					if(numpadClearNeeded == 0 && !doorUnlocked){
-						var vrPressedButton = numpadObj.PressTouchedButton(mDebugController.GetPosition(), dt);
-						pressedButton = vrPressedButton;
+						var vrPressedButton = numpadObj.PressTouchedButton(mDebugController.GetPosition(), dt);	
+						var pointed = numpadObj.PointedButton(mDebugController, mDebugController.GetPosition(), false);	
+						if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
+							timeFromLastClick = 0;
+							pressedButton = pointed;
+							if(pressedButton != ""){
+								numpadObj.PressButton(pressedButton);		
+								numpadObj.AnimateButton(pressedButton);								
+							}						
+						}
+						else		
+							pressedButton = vrPressedButton;		
 					}
 				}
 				else {
+					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true);
 					 var pressedKey = Keyboard();
 					
 					if(pressedKey != ""){
 						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){	
-							pressedButton = pressedKey;	
-							numpadObj.PressButton(pressedButton);
-							numpadObj.AnimateButton(pressedButton, mAnimator);				
+							pressedButton = pressedKey;				
 						}
 					}
 					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
 						timeFromLastClick = 0;
-						pressedButton = numpadObj.PressPointedButton(mCamera, cameraPosition);	
-						if(pressedButton != "")	
-							numpadObj.AnimateButton(pressedButton, mAnimator);			
+						pressedButton = pointedButton;	
+					}
+					
+					if(pressedButton != ""){		
+						numpadObj.PressButton(pressedButton);
+						numpadObj.AnimateButton(pressedButton);				
 					}
 				}
 			}
-			else{				
+			else{
+				if(mIsVRon){
+					mControllersArray[0].SetActionAvailable(false);	
+					mControllersArray[1].SetActionAvailable(false);						
+				}			
+				else if(debugVrOn){
+					mDebugController.SetActionAvailable(false);	
+				}
 				Keyboard(); //Needed to process the input even when not close to the numpad. Otherwise it will go in a queue and will be processed as soon as I get closer to the numpad
 			}	
 			
@@ -850,9 +837,10 @@ function Level2::UpdateLogic(dt)
 				if(asc(pressedButton) > 47 && asc(pressedButton) <= 48+9){
 					aadd(typedNumbers, val(pressedButton));
 				}
-				else if(pressedButton == "c"){				
+				else if(pressedButton == "c"){
+					numpadObj.FadePressedButtonsColor(numpadObj.GetSecondaryColor(), numpadObj.GetUnpressedButtonColor());
 					numpadClearNeeded = 2;
-					numpadClearTime = 0;	
+					numpadClearTime = 0;
 				}			
 			}
 			
@@ -879,11 +867,16 @@ function Level2::UpdateLogic(dt)
 					numpadObj.PressAllButtons();
 				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
 					outputln("Wrong Code!! ");
+					numpadObj.FadePressedButtonsColor(numpadObj.GetWrongCodeColor(), numpadObj.GetUnpressedButtonColor());
 					doorUnlocked = false;
 					numpadClearNeeded = 1;
 					numpadClearTime = 0;
 				}
-			}				
+			}		
+			
+			if(numpadClearNeeded > 0 && numpadClearTime == 0){				
+				numpadObj.AnimatePressedButtons();
+			}
 						
 			var time = (Rand(10)+ 11) / 5;
 			var objPos;
@@ -982,7 +975,7 @@ function Level2::UpdateLogic(dt)
 	mSoundManager.UpdateMusic(dt);
 }
 
-function Level2::ResetNumpad(){	
+function Level2::ResetNumpad(){		
 	numpadObj.UnpressAllButtons();	
 			
 	while(len(typedNumbers) > 0){

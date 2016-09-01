@@ -1,4 +1,4 @@
-global var DEBUG_MODE = false;
+global var DEBUG_MODE = true;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -12,8 +12,8 @@ global var SCALE_FACTOR = 0.2;
 
 #include "Utils.s3d"
 #include "Text.s3d"
+#include "VirtualKeyboard.s3d"
 #include "Numpad.s3d"
-#include "Numpad2.s3d"
 #include "ViveController.s3d"
 #include "DrawingsConnector.s3d"
 #include "GlassBox.s3d"
@@ -210,7 +210,7 @@ function GameManager::GameManager(HMD)
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 				
-		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 2;

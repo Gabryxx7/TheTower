@@ -1,439 +1,621 @@
-class Numpad{	
-	var mButtonsObjs;
-	var mPressedButtonsObjs;
-	var mUnpressedButtonsObjs;
+ 
+class Numpad
+{
+	// Container of the numpad
+	var mNumpadObject;
 	
-	var mTextsObjs;
+	// Code that the user needs to digit (created randomly in the constructor)
+	var mCodeArray;
 	
-	var mHolderObj;
-	var mHolderSizes;
+	// Boolean that is true if the correct code was found, or false otherwise
+	var mCorrectCodeFound;
 	
-	var mScreenTextsMeshes;
-	var mCharOnScreen;
-	var mScreenObj;
-	var mScreenTextObjs;
-	var mScreenTextSize;
-	var mMaxDigitsOnScreen;
-	
-	var mCharacters;
-	
-	var mUnpressedButtonColor;
-	var mPressedButtonColor;
-	var mWrongCodeColor;
-	var mSecondaryColor;
-	var mButtonsTextColor;
-	var mScreenColor;
-	var mScreenTextColor;
-	
+	// Size and thickness for the buttons
+	var mButtonsSize;
 	var mButtonsThickness;
-	var mButtonsWidth;
 	
-	var mOriginalButtonPos;
-	var mOriginalTextPos;
+	// Sizes for the whole numpad
+	var mNumpadWidth;
+	var mNumpadHeight;
+	var mNumpadDepth;
 	
-	var mTextOffset;
+	// Screen object that holds the text of the buttons pressed by the player
+	var mScreenObject;
 	
-	var mTimefromLastAction;
+	// Text object for the screen
+	var mScreenText;
 	
-	var mNumpadPosition;
-	DrawHolder();
-	DrawUnPressedButtons();
-	DrawPressedButtons();
-	DrawButtonsText();
-	DrawScreen();
-	DrawScreenText();
-	GetButtonsObjs();
-	GetHolderObj();
-	GetHolderSizes();
-	GetUnpressedButtonsObjs();
-	GetPressedButtonsObjs();
-	GetTextsObjs();
-	GetUnpressedButtonColor();
-	GetPressedButtonColor();
-	GetWrongCodeColor();
-	GetButtonsTextColor();
-	GetSecondaryColor();
-	GetScreenTextColor();
-	GetScreenColor();
-	GetButtonObj(buttonChar);
-	GetNumpadCharacters();	
-	AnimateButton(buttonChar, mAnimator);
-	PressButton(buttonChar);
-	PressPointedButton(mCamera, cameraPosition);
-	PressTouchedButton(objPos, dt, pViveObj, controllerIndex);
-	UnpressButton(buttonChar);
-	UnpressAllButtons();
-	PressAllButtons();	
-	IsCameraInNumpadRange(cameraPosition, range);
+	// Sizes for the screen
+	var mScreenWidth; 
+	var mScreenHeight;
+	
+	// List of buttons objects and list and list of the corresponding numbers (as string)
+	var mButtonObjects;
+	var mButtonNumberArray;
+	
+	
+	// Colors for the various states of the buttons
+	var mButtonDefaultColor;
+	var mButtonHoveredColor;
+	var mButtonPressedColor;
+	var mButtonHoveredAndPressedColor;
+	var mButtonWrongColor;
+	var mButtonClearingColor;
+	
+	// Distance range that the player has to be in in order to press the buttons
+	var mCloseEnoughRange;
+	
+	// When the user hovers the controller on a button, these variables contain the button object and the corresponding number (as string)
+	var mCurrentHoveredButton;
+	var mCurrentHoveredNumber;
+	
+	// List of currently pressed buttons and relative numbers (as integers)
+	var mPressedButtons;
+	var mPressedNumbers;
+	
+	// Time that needs to pass between 2 keystroke and timer, so not to spam button presses
+	var mDelayBetweenKeystrokes;
+	var mDelayTimer;
+	
+	
+	// Boolean that is true if the keypad is visible, false otherwise
+	var mIsVisible;
+	
+	// Animator and SoundManagers object passed from the Level class; used to animate the buttons
+	var mAnimator;
+	var mSoundManager;
+	
+	// This array contains every child of the numpad object; I need to have a reference of the children so I can invert them to create the mirror effect
+	var mChildren;
+	
+	
+	// Public functions
+	Draw();
+	GetObj();
+	SetPosition(position);
+	GetPosition();
+	SetRotationMatrix(matrix);
+	GetRotationMatrix();
+	GetScale();
+	Rotate(angle, x, y, z);
+	SetRotation(angle, x, y, z);
+	LocalToWorld(point);
+	Hide();
+	Unhide();
+	IsVisible();
+	SetScale(x, y, z);
+	IsCollidingBBox(object);
+	PressSelectedButton();
+	SelectClosestButtonToPosition(position);
+	GetCodeArray();
+	CheckCode();
+	UnpressAllButtons(codeWasWrong);
+	IsCorrectCodeBeenFound();
+	GetChildren();
 };
 
 
-function Numpad::Numpad(buttonsText, tilesSize, spaceSize, tilesThickness, numpadPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, secondaryColor, buttonsTextColor, holderSize, maxDigitsOnScreen, screenColor, screenTextColor){
-	mTimefromLastAction = 0;
-	mNumpadPosition = numpadPosition;
-	mTextsObjs = {};
-	mButtonsObjs = {};
-	mScreenTextsMeshes = {};
-	mScreenObj =  CvmObj();
-	mCharOnScreen = {};
-	mPressedButtonsObjs = {};
-	mUnpressedButtonsObjs = {};
-	mCharacters = {};
-	mOriginalButtonPos = {};
-	mOriginalTextPos = {};
-	mPressedButtonColor = pressedButtonColor;
-	mUnpressedButtonColor = unpressedButtonColor;
-	mWrongCodeColor = wrongCodeColor;
-	mSecondaryColor = secondaryColor;
-	mButtonsTextColor = buttonsTextColor;
-	mButtonsThickness = tilesThickness;
-	mButtonsWidth = tilesSize;
-	mTextOffset = 0.02*SCALE_FACTOR;
-	mHolderSizes = holderSize;
-	mHolderObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z));	
-	mHolderObj.SetPosition(numpadPosition.x+mButtonsWidth, 0, numpadPosition.z-mButtonsThickness);
-	mScreenColor = valtype(screenColor) == "V" ? mScreenColor : [0.35,0.8,0.35];
-	mScreenTextColor = valtype(screenTextColor) == "V" ? mScreenTextColor : [0,0,0];
+/*
+ * Constructor
+ * 
+ * codeLength: (integer) the length of the code that the user needs to digit; the code itself is created randomly here
+ * animator: (Animator) reference to the animator object from the Level
+ * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the numpad
+ * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the numpad
+ */
+function Numpad::Numpad(codeLength, animator, soundManager, lightsRangeMin, lightsRangeMax)
+{
+	// Reference to the Animator and SoundManager object from the Level class that uses the Numpad
+	mAnimator = animator;
+	mSoundManager = soundManager;
 	
-	mScreenTextSize = mButtonsWidth * 0.7;
+	mSoundManager.AddSound("sounds/numpadBeep.wav", "numpadBeep");
+	mSoundManager.AddSound("sounds/numpadCorrectCode.wav", "numpadCorrectCode");
+	mSoundManager.AddSound("sounds/numpadWrongCode.wav", "numpadWrongCode");
+	
+	mChildren = {};
 		
+	mCodeArray = {};
 	
-	var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
-	var offsetY = mButtonsWidth + spaceSize;
-	var offsetX = mButtonsWidth + spaceSize;
-	var offsetZ = mButtonsThickness;
+	var counter = 0;
 	
-	var txt;
-	var txtObj;
-	var buttonObj;
-	var num = 9;
-	var rows = 0;
-	var cols = 0;
-	var maxRowLength = -1;
-	for(var i = 0; i < len(buttonsText) ; i++){	
-		if(buttonsText[i] == "\n"){			
-			if(rows > maxRowLength)
-				maxRowLength = rows;
+	// I create the code for the numpad in such a way that every digit is different
+	while(counter < codeLength)
+	{
+		var number = Rand(9);
+		
+		var alreadyPresent = false;
+		
+		// I check if the generated number was already present in the code
+		for(var i = 0; i < len(mCodeArray) && !alreadyPresent; i++)
+			alreadyPresent = number == mCodeArray[i];
+			
+		// If it wasn't present, I add it and go on, otherwise I iterate again
+		if(!alreadyPresent)
+		{
+			aadd(mCodeArray, number);
+			counter++;
+		}
+	}
+	
+	// Initially the code is not found
+	mCorrectCodeFound = false;
+	
+	// Range for the player that wants to use the numpad
+	mCloseEnoughRange = 2.0 * SCALE_FACTOR;
+	
+	// Colors for the buttons
+	mButtonDefaultColor = [0.7, 0.7, 0.7];
+	mButtonHoveredColor = [0.9, 0.9, 0.9];
+	mButtonPressedColor = [0.0, 0.8, 0.0];
+	mButtonHoveredAndPressedColor = [0.0, 0.95, 0.0];
+	mButtonWrongColor = [0.8, 0.0, 0.0];
+	mButtonClearingColor = [0.8, 0.8, 0.0];
+
+	// Delay for keystrokes, in milliseconds
+	mDelayBetweenKeystrokes = 760;
+	mDelayTimer = 0;
+	
+	// Sizes for the buttons and spacing
+	mButtonsSize = 0.75 * SCALE_FACTOR;
+	mButtonsThickness = 0.1 * SCALE_FACTOR;
+	var spacing = 0.1 * SCALE_FACTOR;
+	
+	// Sizes for the screen; the width takes into account the length of the code
+	var screenTextSize = mButtonsSize * 0.7;
+	mScreenWidth = codeLength * screenTextSize + 0.2 * SCALE_FACTOR;
+	mScreenHeight = 1.0 * SCALE_FACTOR;	
+	
+	// Mesh for the screen, to which I add the toon shader using the function from the "Utils" file
+	var screenMesh = CVmNewMesh(VRP_PLANE, 1, [-mScreenWidth / 2.0, -mScreenHeight / 2.0, 0], [mScreenWidth / 2.0, mScreenHeight / 2.0, 0], 2, 2);
+	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], [0.2, 0.2, 0.2], 25, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	
+	// Screen object, to which I add the silhouette lines using the function from the "Utils" file
+	mScreenObject = CVmObj(screenMesh);
+	AddSilhouetteLinesToPlanarObject(mScreenObject, 0.02 * SCALE_FACTOR, mScreenWidth, mScreenHeight);
+	
+	// Text for the screen; I add it as child of the screen and move it a bit down so that is centered
+	mScreenText = Text("", 1, [0.0, 0.5, 0.0]);
+	mScreenObject.AddChild(mScreenText.GetObj(), 0, -mScreenText.GetFontHeight() / 4.0, 0.001 * SCALE_FACTOR);
+	
+ 	// Text for the buttons, divided in chunks, 1 for each row
+	var buttonsTexts = "123\n456\n789\nC0 ";
+	var rowsTexts = Split(buttonsTexts, "\n");
+	
+	// Computing the rows and the number of elements per row, which depend on the length of the code
+	var buttonsPerRow = len(rowsTexts[0]);
+	var buttonsRows = len(rowsTexts);
+	
+	// Total sizes for the numpad; these take into account the presence of the buttons, the spacing between them and the screen object
+	mNumpadWidth = mButtonsSize * buttonsPerRow + spacing * buttonsPerRow + spacing + mScreenWidth / 2.0;
+	mNumpadHeight = mButtonsSize * buttonsRows + spacing * buttonsRows + spacing * 2 + mScreenHeight;
+	mNumpadDepth = 0.3 * SCALE_FACTOR;
+	
+	// Holder mesh, i.e. the mesh where the buttons are attached to. I also add the toon shader to it
+	var holderMesh = CVmNewMesh(VRP_BOX, 1, [-mNumpadWidth / 2.0, -mNumpadHeight / 2.0, 0], [mNumpadWidth / 2.0, mNumpadHeight / 2.0, 0], mNumpadDepth / 2.0);
+	AddToonShaderToMesh(holderMesh, [0.4, 0.4, 0.4], [1, 1, 1], [0.2, 0.2, 0.2], 0, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	
+	// I create the numpad object itself, based on the holderMesh; I then add the silhouette lines
+	mNumpadObject = CvmObj(holderMesh);	
+	AddSilhouetteLinesToPlanarObject(mNumpadObject, 0.02 * SCALE_FACTOR, mNumpadWidth, mNumpadHeight, 0);
+	
+	// I add the screen object as child of the container object; the x is already center, I only need to move it up a bit
+	mNumpadObject.AddChild(mScreenObject, 0, mNumpadHeight / 2.0 - mScreenHeight / 2.0 - spacing, 0.01 * SCALE_FACTOR);
+	
+	aadd(mChildren, mScreenObject);
+	aadd(mChildren, mScreenText);
+	
+	// Now I need to create the buttons
+	mButtonObjects = {};
+	mButtonNumberArray = {};
+	
+	// I iterate across all rows
+	for(var i = 0; i < buttonsRows; i++)
+	{
+		// Getting the text string for this row
+		var rowText = rowsTexts[i];
+		
+		for(var j = 0; j < buttonsPerRow; j++)
+		{
+			// Creating the mesh for the button; every button has a different mesh so that I can change the color separately without making a mess in the code.
+			// I add the toon shader to it
+			var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsSize / 2.0, -mButtonsSize / 2.0, 0], [mButtonsSize / 2.0, mButtonsSize / 2.0, 0], mButtonsThickness);
+			AddToonShaderToMesh(buttonMesh, [0.4, 0.4, 0.4], mButtonDefaultColor, [0.2, 0.2, 0.2], 0, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+			
+			// Creating the button object. Now I need to compute its position
+			var buttonObj = CVmObj(buttonMesh);
+			
+			// The x position takes into account the width of the whole numpad to position the buttons from left to right, with spacing between each other
+			var x = spacing * 2.0 + mButtonsSize - mNumpadWidth + mButtonsSize * (j + 1) + spacing * (j + 1) + mScreenWidth / 2.0;
+			
+			// The y position takes into account the height of the numpad and that of the screen
+			var y = -spacing * 4.0 - mButtonsSize / 2.0 - mButtonsSize + mNumpadHeight - mButtonsSize * (i + 1) - spacing * (i + 1) - mScreenHeight - mScreenHeight / 2.0;			
+			
+			var z = mNumpadDepth / 2.0;
+			
+			// Text object for this button
+			var textObj = Text(rowText[j]);
+			
+			// I add the silhouette lines to the button object
+			AddSilhouetteLinesToPlanarObject(buttonObj, 0.02 * SCALE_FACTOR, mButtonsSize, mButtonsSize, 0);
+			
+			// I add the button object to the numpad and the text object to the button, moving it a bit so that it stays in the center of the button
+			mNumpadObject.AddChild(buttonObj, x, y, z);
+			buttonObj.AddChild(textObj.GetObj(), -textObj.GetWidthOfLine(0) / 2.0, -mButtonsSize / 4.0, 0.03 * SCALE_FACTOR);
+			
+			// Adding the reference to the button and the text object to the corresponding arrays
+			aadd(mButtonObjects, buttonObj);
+			aadd(mButtonNumberArray, rowText[j]);
+			
+			aadd(mChildren, buttonObj);
+			aadd(mChildren, textObj);
+		}
+	}
+	
+	// Initially no button is pressed
+	mPressedButtons = {};
+	mPressedNumbers = {};
+	
+	mIsVisible = true;
+}
+
+/*
+ * This method finds the button that is nearest to the position passed as parameter (i.e. the position of a controller more likely).
+ * The position needs to be close enough to the numpad, otherwise the button will not be looked for.
+ * 
+ * position: (vector) the position
+ * 
+ * returns: true if a button was found, false otherwise (i.e. the position is too far from the numpad to be considered)
+ */
+function Numpad::SelectClosestButtonToPosition(position)
+{
+	// Initially I state that the position is out of range
+	var isInRange = false;
+	
+	// I only procede if the correct code was NOT found yet
+	if(!mCorrectCodeFound)
+	{
+		// I check if the position is in the correct range (don't care about the y values)
+		var numpadPosition = GetPosition();
+		isInRange = (position.x > (numpadPosition.x - mCloseEnoughRange)) && (position.x < (numpadPosition.x + mCloseEnoughRange)) &&
+			   		(position.z > (numpadPosition.z - mCloseEnoughRange)) && (position.z < (numpadPosition.z + mCloseEnoughRange));
+			   	
+	   	// If we are in range, I continue		
+		if(isInRange)
+		{
+			// I need to iterate over all buttons to find the closest one; in particular I need to find its index in the array. I initialize 
+			// the distance with a "big" value that is outside the range
+			var minDistanceFound = mCloseEnoughRange * 10.0;
+			var minButtonIndex = -1;
+			
+			// Iterating over all buttons
+			for(var i = 0; i < len(mButtonObjects); i++)
+			{
+				// I take the position of the button. I can't just use GetPosition() from the button because it would be relative to the numpad object; I need
+				// the world position, which I can get using the LocalToWorld of the numpad object. This works even if the numpad object is rotated (in that case
+				// the position of the button object would remain the same even if it's rotated, making it a mess to compute its actual position)
+				var buttonPos = LocalToWorld(mButtonObjects[i].GetPosition());
 				
-			i++;
-			cols++;
-			rows = 0;	
-		}			
-		var buttonPos = numpadPosition + [(offsetX * (rows++)), -offsetY*(cols), 0] ;
-		
-		txt = CVmText();		
-		txt.Load(upper(buttonsText[i]));
-		txt.SetColor(mButtonsTextColor.r, mButtonsTextColor.g, mButtonsTextColor.b);
-		
-		
-		txtObj = CVmObj();
-		txtObj.LinkToText(txt);
-		txtObj.SetScale(0.1,0.1,0.1);
-		txtObj.SetPosition(buttonPos.x-(0.1*SCALE_FACTOR), buttonPos.y - (1.65*SCALE_FACTOR), buttonPos.z + mTextOffset);
-		
-		buttonObj = CVmObj(buttonMesh);
-		buttonObj.SetPosition(buttonPos.x, buttonPos.y - (1.5*SCALE_FACTOR), buttonPos.z);	
-		
-		aadd(mCharacters, lower(buttonsText[i]));
-		aadd(mOriginalButtonPos, buttonObj.GetPosition());
-		aadd(mOriginalTextPos, txtObj.GetPosition());
-		aadd(mTextsObjs, txtObj);
-		aadd(mButtonsObjs, buttonObj);
-		aadd(mUnpressedButtonsObjs, buttonObj);	
-		
-		
-		var screenTxt = CVmText();		
-		screenTxt.Load(upper(buttonsText[i]));
-		screenTxt.SetColor(mScreenTextColor.r, mScreenTextColor.g, mScreenTextColor.b);
-		aadd(mScreenTextsMeshes, screenTxt);
-	}
-	
-	if(maxRowLength < 0)
-		maxRowLength = rows;
-		
-	outputln(maxRowLength);
-	mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : maxRowLength+2;
-	mScreenObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2)));
-	mScreenObj.SetPosition(numpadPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
-	mScreenTextObjs = CVmObj();
-	mScreenTextObjs.SetPosition(numpadPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);	
-}
-
-
-function Numpad::DrawUnPressedButtons(){	
-	for(var i = 0; i < len(mUnpressedButtonsObjs); i++)
-		mUnpressedButtonsObjs[i].Draw();
-}
-
-function Numpad::DrawPressedButtons(){
-	for(var i = 0; i < len(mPressedButtonsObjs); i++)
-		mPressedButtonsObjs[i].Draw();	
-}
-
-function Numpad::DrawButtonsText(){	
-	for(var i = 0; i < len(mTextsObjs); i++)
-		mTextsObjs[i].Draw();		
-}
-
-function Numpad::DrawHolder(){
-	mHolderObj.Draw();
-}
-
-function Numpad::DrawScreen(){
-	mScreenObj.Draw();
-}
-
-function Numpad::DrawScreenText(){
-	mScreenTextObjs.Draw();
-}
-
-
-function Numpad::GetButtonsObjs(){	
-	return mButtonsObjs;
-}
-
-function Numpad::GetHolderObj(){
-	return mHolderObj;
-}
-
-function Numpad::GetHolderSizes(){
-	return mHolderSizes;
-}
-
-function Numpad::GetButtonObj(buttonChar){	
-	for(var i = 0; i < len(mCharacters); i++){
-		if(mCharacters == buttonChar)
-			return mButtonsObjs[i];
-	}
-}
-
-function Numpad::GetNumpadCharacters(){
-	return mCharacters;
-}
-
-
-function Numpad::GetUnpressedButtonsObjs(){	
-	return mUnpressedButtonsObjs;
-}
-
-function Numpad::GetPressedButtonsObjs(){	
-	return mPressedButtonsObjs;
-}
-
-function Numpad::GetTextsObjs(){
-	return mTextsObjs;
-}
-
-function Numpad::GetUnpressedButtonColor(){
-	return mUnpressedButtonColor;
-}
-
-function Numpad::GetPressedButtonColor(){
-	return mPressedButtonColor;
-}
-
-function Numpad::GetWrongCodeColor(){
-	return mWrongCodeColor;
-}
-
-function Numpad::GetButtonsTextColor(){
-	return mButtonsTextColor;
-}
-
-function Numpad::GetSecondaryColor(){
-	return mSecondaryColor;
-}
-
-function Numpad::GetScreenTextColor(){
-	return mScreenTextColor;
-}
-
-function Numpad::GetScreenColor(){
-	return mScreenColor;
-}
-
-
-function Numpad::AnimateButton(buttonChar, mAnimator){	
-	var charPos = -1;
-	//CHeck if char is present in the numpad
-	for(var i = 0; i < len(mCharacters); i++){
-		if(mCharacters[i] == buttonChar)
-			charPos = i;
-	}
-	if(charPos == -1)
-		return false;
-		
-	mAnimator.CreateTransition(mButtonsObjs[charPos], mOriginalButtonPos[charPos], {mOriginalButtonPos[charPos] - [0, 0, mButtonsThickness*0.8], mOriginalButtonPos[charPos]}, 0.25, false);
-	mAnimator.CreateTransition(mTextsObjs[charPos], mOriginalTextPos[charPos], {mOriginalTextPos[charPos] - [0, 0, mButtonsThickness*0.8], mOriginalTextPos[charPos]}, 0.25, false);
-	return true;
-}
-
-function Numpad::PressPointedButton(mCamera, cameraPosition){	
-	var raycastOrigin = cameraPosition;
-	var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
-	var contactPoint;
-	
-	for(var i = 0; i < len(mButtonsObjs); i++){
-		contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mButtonsObjs[i]);
-		if(contactPoint != Void){
-			PressButton(mCharacters[i]);
-			return mCharacters[i];	
-		}	
-	}
-	
-	return "";
-}
-
-//-1 not present, 0 already pressed, 1 was not pressed, now it is pressed
-function Numpad::PressButton(buttonChar){
-	var charPos = -1;
-	//CHeck if char is present in the numpad
-	for(var i = 0; i < len(mCharacters); i++){
-		if(mCharacters[i] == buttonChar)
-			charPos = i;
-	}
-	
-	if(charPos == -1)
-		return -1;
-	
-	//If it's present, I should check if it is already pressed
-	var alreadyPressed = false;
-	for(var i = 0; i < len(mPressedButtonsObjs); i++){
-		if(mPressedButtonsObjs[i] == mButtonsObjs[charPos])
-			alreadyPressed = true;
-	}
-	
-	//I add it anyway to the screen (Pressing multiple times)	
-	var charObj = CVmObj();
-	charObj.LinkToText(mScreenTextsMeshes[charPos]);
-	aadd(mCharOnScreen, charObj);
-	charObj.SetScale(0.1,0.1,0.1);
-	mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
-	
-	//If it is not already pressed, I add it to the pressed buttons vector
-	if(!alreadyPressed){
-		aadd(mPressedButtonsObjs, mButtonsObjs[charPos]);
-		//If it was not pressed, I have to remove it from the unpressed buttons
-		for(var i = 0; i < len(mUnpressedButtonsObjs); i++){
-			if(mUnpressedButtonsObjs[i] == mButtonsObjs[charPos]){
-				adel(mUnpressedButtonsObjs, i);	
-				return 1;
-			}			
-		}	
-	}
-	else 
-		return 0; //if it was pressed already then there is nothing to do here
-	
-	return 1;
-}
-
-function Numpad::UnpressButton(buttonChar){	
-	var charPos = -1;
-	//CHeck if char is present in the numpad
-	for(var i = 0; i < len(mCharacters); i++){
-		if(mCharacters[i] == buttonChar)
-			charPos = i;
-	}
-	
-	if(charPos == -1)
-		return false;
-	
-	//If it's present, I should check if it is pressed or unpressed
-	var alreadyUnpressed = false;
-	for(var i = 0; i < len(mUnpressedButtonsObjs); i++){
-		if(mUnpressedButtonsObjs[i] == mButtonsObjs[charPos])
-			alreadyUnpressed = true;
-	}
-	
-	//If it is pressed, I add it to the unpressed buttons vector
-	if(!alreadyUnpressed){
-		aadd(mUnpressedButtonsObjs, mButtonsObjs[charPos]);	
-	}
-	else 
-		return true; //if it was pressed already then there is nothing to do here
-		
-	//If it was pressed, I have to remove it from the pressed buttons
-	for(var i = 0; i < len(mPressedButtonsObjs); i++){
-		if(mPressedButtonsObjs[i] == mButtonsObjs[charPos]){
-			adel(mPressedButtonsObjs, i);	
-			return true;				
-		}			
-	}	
-	
-	return true;
-}
-
-function Numpad::PressTouchedButton(objPos, dt, inputManager, controllerIndex){
-	mTimefromLastAction += dt;
-	var usingVive = valtype(inputManager) == "" ? false : true;
-	var buttonPos;
-	var maxDepth = mButtonsThickness * 0.8;
-	var offsets = [mButtonsWidth/2, mButtonsWidth/2, mButtonsThickness];
-	for(var i = 0; i < len(mButtonsObjs); i++){
-		buttonPos = mOriginalButtonPos[i];
-		if(objPos.x >= buttonPos.x - offsets.x && objPos.x <= buttonPos.x + offsets.x
-		&& objPos.y >= buttonPos.y - offsets.y && objPos.y <= buttonPos.y + offsets.y){
-			if(objPos.z >= buttonPos.z - maxDepth && objPos.z <= buttonPos.z){
-				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, objPos.z]);
-				mTextsObjs[i].SetPosition([mOriginalTextPos[i].x, mOriginalTextPos[i].y, objPos.z + mTextOffset]);
-				if(mTimefromLastAction > 0.4){
-					mTimefromLastAction = 0;
-					if(PressButton(mCharacters[i]) > -1){
-						if(usingVive){
-							inputManager.VibrateController(controllerIndex, 100);
-						}
-						return mCharacters[i];						
-					}
+				// I compute the distance between the button and the position
+				var distance = Modulus(position - buttonPos);
+							
+				if(distance < minDistanceFound)
+				{
+					minDistanceFound = distance;
+					minButtonIndex = i;
 				}
-				return "";
+			}
+	
+			// If there is no current button hovered, or if there is and it's different from the closest button found now, we have a new button being hovered
+			if(mCurrentHoveredButton == Void || mCurrentHoveredButton != mButtonObjects[minButtonIndex])
+			{
+				// I need to check if the previous hovered button (if there was) was a pressed button or not
+				var hoveredButtonWasPressed = false;
+				
+				// If there was a previous hovered button, I need to change its color since now it's not being hovered anymore
+				if(mCurrentHoveredButton != Void)
+				{
+					// I search if the button was a pressed button
+					for(var i = 0; i < len(mPressedButtons) && !hoveredButtonWasPressed; i++)
+						hoveredButtonWasPressed = mCurrentHoveredButton == mPressedButtons[i];
+						
+					// Getting the mesh of the previous hovered button
+					var previousHoveredButtonMesh = mCurrentHoveredButton.GetMesh();
+					
+					// If the button was NOT pressed, I reset its color to the default value; otherwise I reset it to the "pressed button" color
+					if(!hoveredButtonWasPressed)
+						previousHoveredButtonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonDefaultColor);
+					else
+						previousHoveredButtonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonPressedColor);
+				}
+				
+				// Now I can update the current hovered button and the corresponding number 
+				mCurrentHoveredButton = mButtonObjects[minButtonIndex];
+				mCurrentHoveredNumber = mButtonNumberArray[minButtonIndex];
+				
+				var buttonMesh = mButtonObjects[minButtonIndex].GetMesh();
+				
+				hoveredButtonWasPressed = false;
+	
+				// I search if the button is a pressed button
+				for(var i = 0; i < len(mPressedButtons) && !hoveredButtonWasPressed; i++)
+					hoveredButtonWasPressed = mCurrentHoveredButton == mPressedButtons[i];
+						
+				// If it's NOT a pressed button, I change its color to the hovered one; otherwise I change it to the "hovered and pressed" color
+				if(!hoveredButtonWasPressed)
+					buttonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonHoveredColor);
+				else
+					buttonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonHoveredAndPressedColor);
 			}
 		}
-		else{
-			mButtonsObjs[i].SetPosition(mOriginalButtonPos[i]);
-			mTextsObjs[i].SetPosition(mOriginalTextPos[i]);
+		// If we're out of range, if there was an hovered button I reset it to its default state
+		else
+		{
+			if(mCurrentHoveredButton != Void)
+			{
+				var hoveredButtonWasPressed = false;
+
+				for(var i = 0; i < len(mPressedButtons) && !hoveredButtonWasPressed; i++)
+					hoveredButtonWasPressed = mCurrentHoveredButton == mPressedButtons[i];
+					
+
+				var previousHoveredButtonMesh = mCurrentHoveredButton.GetMesh();
+				
+
+				if(!hoveredButtonWasPressed)
+					previousHoveredButtonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonDefaultColor);
+				else
+					previousHoveredButtonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonPressedColor);
+					
+				// I also reset the variables
+				mCurrentHoveredButton = Void;
+				mCurrentHoveredNumber = Void;
+			}
 		}
-	}	
-	return "";
-}
-
-function Numpad::PressAllButtons(){	
-	while(len(mPressedButtonsObjs) > 0){
-		adel(mPressedButtonsObjs, 0);		
-	}	
-	
-	while(len(mUnpressedButtonsObjs) > 0){
-		adel(mUnpressedButtonsObjs, 0);		
 	}
 	
-	for(var i = 0; i < len(mButtonsObjs); i++){		
-		aadd(mPressedButtonsObjs, mButtonsObjs[i]);	
-	}
+	return isInRange;
 }
 
-function Numpad::UnpressAllButtons(){		
-	//Remove chars from the screen
-	while(len(mCharOnScreen) > 0){
-		mScreenTextObjs.RemoveChild(mCharOnScreen[0]);
-		adel(mCharOnScreen, 0);		
-	}
+/*
+ * This method pressed the currently hovered button
+ */
+function Numpad::PressSelectedButton()
+{	
+	// I only procede if the code was NOT found yet and if there actually is a button being hovered, and finally if it's passed enough time from the last press
+	if(!mCorrectCodeFound && mCurrentHoveredButton != Void && GetTime() - mDelayTimer > mDelayBetweenKeystrokes)
+	{	
+		// Saving the time of this new press
+		mDelayTimer = GetTime();
+		
+		// If the user presses the "C" button, I unpress every button
+		if(mCurrentHoveredNumber == "C")
+		{
+			// Add the button to the pressed one, so that it will be animated
+			aadd(mPressedButtons, mCurrentHoveredButton);
+			aadd(mPressedNumbers, val(mCurrentHoveredNumber));
 			
-	//All buttons must NOT be pressed
-	while(len(mPressedButtonsObjs) > 0){
-		adel(mPressedButtonsObjs, 0);		
-	}	
-	
-	//Insted, they must be Pressed
-	while(len(mUnpressedButtonsObjs) > 0){
-		adel(mUnpressedButtonsObjs, 0);		
-	}
-	
-	for(var i = 0; i < len(mButtonsObjs); i++){		
-		aadd(mUnpressedButtonsObjs, mButtonsObjs[i]);	
+			UnpressAllButtons(false);
+			mSoundManager.PlaySound("numpadWrongCode", true, 0.85);
+		}
+		// If the user pressed a button other than the empty one, I procede
+		else if(mCurrentHoveredNumber != " ")
+		{
+			var buttonPos = mCurrentHoveredButton.GetPosition();
+			
+			var buttonWasPressed = false;
+			var index;
+			
+			// I need to find if this button was pressed; in that case I have to unpress it
+			for(index = 0; index < len(mPressedButtons) && !buttonWasPressed; index++)
+				buttonWasPressed = mCurrentHoveredButton == mPressedButtons[index];
+			
+			// Getting the button mesh; in either case I have to change the color of the button
+			var buttonMesh = mCurrentHoveredButton.GetMesh();
+			
+			// If the button was pressed, now it's not anymore
+			if(buttonWasPressed)
+			{
+				// Change the color back to the deafult color
+				buttonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonDefaultColor);
+				
+				// I remove the character of the number from the screen. This is ok since I don't allow codes with repeating number, so I don't care
+				// if it deletes every occurence of this character (since there is only one)
+				mScreenText.RemoveCharFromText(str(mPressedNumbers[index - 1]));
+				
+				// removing the button from the "pressed buttons" list
+				adel(mPressedButtons, index - 1);
+				adel(mPressedNumbers, index - 1);
+				
+				mSoundManager.PlaySound("numpadBeep", true, 0.85);
+			}
+			// If the button was not pressed, now it is
+			else
+			{
+				// I get the current text in the screen
+				var screenString = mScreenText.GetLine(0);
+				
+				// I add to the text the new number (as string)
+				screenString += mCurrentHoveredNumber + " ";
+								
+				// I load the updated string
+				mScreenText.LoadString(screenString);
+				
+				// Changing the color
+				buttonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonHoveredAndPressedColor);
+				
+				// Adding the button to the "pressed buttons" list (note that I pass to the mPressedNumbers array the integer version of the hovered number string)
+				aadd(mPressedButtons, mCurrentHoveredButton);
+				aadd(mPressedNumbers, val(mCurrentHoveredNumber));
+				
+				// Now I check if the player has pressed enough buttons to enter the code. If that is so, I check if the code is correct
+				if(len(mPressedButtons) == len(mCodeArray))
+				{
+					if(CheckCode())
+						mSoundManager.PlaySound("numpadCorrectCode", true, 0.85);
+					else
+						mSoundManager.PlaySound("numpadWrongCode", true, 0.85);
+				}
+				else
+					mSoundManager.PlaySound("numpadBeep", true, 0.85);
+			}
+						
+			// Creating the animation to press the button
+			mAnimator.CreateTransition(mCurrentHoveredButton, buttonPos, {buttonPos - [0, 0, mButtonsThickness * 0.8], buttonPos}, 0.25, false);
+		}
 	}
 }
 
+/*
+ * This method unpressed every button that was pressed, and give them a color animation
+ * 
+ * codeWasWrong: (boolean) if true, the animation color will use the "wrong color", otherwise the "clearing color" for the buttons
+ */
+function Numpad::UnpressAllButtons(codeWasWrong)
+{	
+	// Iterating over all pressed buttons
+	for(var i = 0; i < len(mPressedButtons); i++)
+	{
+		// Resetting the text in the screen
+		mScreenText.LoadString("");
+				
+		var button = mPressedButtons[i];
+		var buttonPos = button.GetPosition();
+		
+		// Creating the press animation for the button
+		mAnimator.CreateTransition(button, buttonPos, {buttonPos - [0, 0, mButtonsThickness * 0.8], buttonPos}, 0.25, false);
 
-function Numpad::IsCameraInNumpadRange(cameraPosition, range){
-	return (cameraPosition.x > (mNumpadPosition.x - range)) && (cameraPosition.x < (mNumpadPosition.x + range)) &&
-		   (cameraPosition.z > (mNumpadPosition.z - range)) && (cameraPosition.z < (mNumpadPosition.z + range));
+		var buttonMesh = button.GetMesh();
+								
+		// Creating the color animation
+		if(codeWasWrong)
+			mAnimator.CreateToonShaderColorTransition(buttonMesh, mButtonWrongColor, mButtonDefaultColor, 0.5, false);
+		else
+			mAnimator.CreateToonShaderColorTransition(buttonMesh, mButtonClearingColor, mButtonDefaultColor, 0.5, false);
+	}
+	
+	// Emptying the arrays
+	asize(mPressedButtons, 0);
+	asize(mPressedNumbers, 0);
+}
+
+
+/*
+ * This method checks if the current pressed buttons form the right code
+ */
+function Numpad::CheckCode()
+{
+	var isCodeCorrect = true;
+	
+	// I initially assume that the code is correct and check it until I find a wrong number
+	for(var i = 0; i < len(mPressedNumbers) && isCodeCorrect; i++)
+		isCodeCorrect = mPressedNumbers[i] == mCodeArray[i];
+	
+	// If the code is correct, I change the color of every button
+	if(isCodeCorrect)
+	{
+		for(var i = 0; i < len(mButtonObjects); i++)
+		{
+			var buttonMesh = mButtonObjects[i].GetMesh();
+			buttonMesh.ShaderSetParameter(0, "diffuse", 0, mButtonPressedColor);
+		}
+		
+		// I save the fact that the code has been found
+		mCorrectCodeFound = true;
+	}
+	// If the code was wrong, I unpress every button
+	else
+		UnpressAllButtons(true);
+		
+	return mCorrectCodeFound;
+}
+
+/*
+ * This method returns true if the correct code was found (making the numpad useless now)
+ */
+function Numpad::IsCorrectCodeBeenFound()
+{
+	return mCorrectCodeFound;
+}
+
+function Numpad::GetCodeArray()
+{
+	return mCodeArray;
+}
+
+function Numpad::Draw()
+{
+	mNumpadObject.Draw();
+}
+
+function Numpad::GetObj()
+{
+	return mNumpadObject;
+}
+
+function Numpad::SetPosition(position)
+{
+	mNumpadObject.SetPosition(position);
+}
+
+function Numpad::GetPosition()
+{
+	return mNumpadObject.GetPosition();
+}
+
+function Numpad::SetRotationMatrix(matrix)
+{
+	mNumpadObject.SetRotationMatrix(matrix);
+}
+
+function Numpad::GetRotationMatrix()
+{
+	return mNumpadObject.GetRotationMatrix();
+}
+
+function Numpad::GetScale()
+{
+	return mNumpadObject.GetScale();
+}
+
+function Numpad::Rotate(angle, x, y, z)
+{
+	mNumpadObject.RotateAbs(angle, x, y, z);
+}
+
+function Numpad::SetRotation(angle, x, y, z)
+{
+	mNumpadObject.SetRotation(angle, x, y, z);
+}
+
+function Numpad::LocalToWorld(point)
+{
+	return mNumpadObject.LocalToWorld(point);
+}
+
+function Numpad::Hide()
+{
+	mIsVisible = false;
+	mNumpadObject.Hide();
+}
+
+function Numpad::Unhide()
+{
+	mIsVisible = true;
+	mNumpadObject.Unhide();
+}
+
+function Numpad::IsVisible()
+{
+	return mIsVisible;
+}
+
+function Numpad::SetScale(x, y, z)
+{
+	return mNumpadObject.SetScale(x, y, z);
+}
+
+function Numpad::GetChildren()
+{
+	return mChildren;
 }

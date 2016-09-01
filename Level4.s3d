@@ -107,7 +107,7 @@ class Level4
 	// Boolean; true if the player discovered the final number objects
 	var mFinalNumbersFound;
 	
-	// Numpad2 object
+	// Numpad object
 	var mNumpad;
 	
 	// References to the controller behing hovered near something in a certain moment
@@ -465,7 +465,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	var codeLength = 3;
 	
 	// Creating the numpad
-	mNumpad = Numpad2(codeLength, mInvariantAnimator, mSoundManager, 1, 2);
+	mNumpad = Numpad(codeLength, mInvariantAnimator, mSoundManager, 1, 2);
 	mNumpad.SetRotation(180, 0, 1, 0);
 	
 	// Getting the generated code from the numpad

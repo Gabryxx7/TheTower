@@ -1,0 +1,497 @@
+class VirtualKeyboard{	
+	var mButtonsObjs;
+	var mPressedButtonsObjs;
+	var mPressedText;
+	var mUnpressedButtonsObjs;
+	var mHoveredButton;
+	var mAnimator;
+	
+	var mHolderObj;
+	var mHolderSizes;
+	
+	var mScreenTextsMeshes;
+	var mCharOnScreen;
+	var mScreenObj;
+	var mScreenTextObjs;
+	var mScreenTextSize;
+	var mMaxDigitsOnScreen;
+	
+	var mCharacters;
+	
+	var mUnpressedButtonColor;
+	var mPressedButtonColor;
+	var mWrongCodeColor;
+	var mSecondaryColor;
+	var mButtonsTextColor;
+	var mScreenColor;
+	var mScreenTextColor;
+	
+	var mButtonsThickness;
+	var mButtonsWidth;
+	
+	var mOriginalButtonPos;
+	
+	var mTextOffset;
+	
+	var mTimefromLastAction;
+	
+	var mKeyboardPosition;
+	
+	var mAnimationTime;
+	
+	DrawHolder();
+	DrawUnPressedButtons();
+	DrawPressedButtons();
+	DrawButtonsText();
+	DrawScreen();
+	DrawScreenText();
+	GetButtonsObjs();
+	GetHolderObj();
+	GetHolderSizes();
+	GetUnpressedButtonsObjs();
+	GetPressedButtonsObjs();
+	GetTextsObjs();
+	GetUnpressedButtonColor();
+	GetPressedButtonColor();
+	GetWrongCodeColor();
+	GetButtonsTextColor();
+	GetSecondaryColor();
+	GetScreenTextColor();
+	GetScreenColor();
+	GetButtonObj(buttonChar);
+	GetKeyboardCharacters();	
+	AnimateButton(buttonChar);
+	AnimatePressedButtons();
+	PressButton(buttonChar);
+	HoverButton();
+	UnhoverButton();
+	ChangePressedButtonsColor(pColor);
+	FadePressedButtonsColor(startColor, endColor);
+	PointedButton(mObject, cameraPosition, isCamera);
+	PressTouchedButton(objPos, dt, pViveObj, controllerIndex);
+	UnpressButton(buttonChar);
+	UnpressAllButtons();
+	PressAllButtons();	
+	IsCameraInKeyboardRange(cameraPosition, range);
+};
+
+
+function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spaceSize, tilesThickness, KeyboardPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, secondaryColor, buttonsTextColor, holderSize, maxDigitsOnScreen, screenColor, screenTextColor){
+	mTimefromLastAction = 0;
+	mAnimator = animator;
+	mAnimationTime = 0.25;
+	mHoveredButton = -1;
+	mKeyboardPosition = keyboardPosition;
+	mButtonsObjs = {};
+	mScreenTextsMeshes = {};
+	mScreenObj =  CvmObj();
+	mCharOnScreen = {};
+	mPressedButtonsObjs = {};
+	mPressedText = {};
+	mUnpressedButtonsObjs = {};
+	mCharacters = {};
+	mOriginalButtonPos = {};
+	mPressedButtonColor = pressedButtonColor;
+	mUnpressedButtonColor = unpressedButtonColor;
+	mWrongCodeColor = wrongCodeColor;
+	mSecondaryColor = secondaryColor;
+	mButtonsTextColor = buttonsTextColor;
+	mButtonsThickness = tilesThickness;
+	mButtonsWidth = tilesSize;
+	mTextOffset = 0.02*SCALE_FACTOR;
+	
+	mHolderSizes = holderSize;
+	var holderMesh = CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z);
+	AddToonShaderToMesh(holderMesh, [0.4, 0.4, 0.4], [1, 1, 1], [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
+	mHolderObj = CvmObj(holderMesh);	
+	mHolderObj.SetPosition(keyboardPosition.x+mButtonsWidth, 0, keyboardPosition.z-mButtonsThickness);
+	AddSilhouetteLinesToPlanarObject(mHolderObj, 0.02 * SCALE_FACTOR, holderSize.x, holderSize.y, 0, holderSize.y/2, 0);
+	
+	mScreenColor = valtype(screenColor) == "V" ? mScreenColor : [0.35,0.8,0.35];
+	mScreenTextColor = valtype(screenTextColor) == "V" ? mScreenTextColor : [0,0,0];
+	mScreenTextSize = mButtonsWidth * 0.7;		
+	
+	var offsetY = mButtonsWidth + spaceSize;
+	var offsetX = mButtonsWidth + spaceSize;
+	var offsetZ = mButtonsThickness;
+	
+	var txt;
+	var txtObj;
+	var buttonObj;
+	var num = 9;
+	var rows = 0;
+	var cols = 0;
+	var maxRowLength = -1;
+	for(var i = 0; i < len(buttonsText) ; i++){	
+		if(buttonsText[i] == "\n"){			
+			if(rows > maxRowLength)
+				maxRowLength = rows;
+				
+			i++;
+			cols++;
+			rows = 0;	
+		}			
+		var buttonPos = keyboardPosition + [(offsetX * (rows++)), -offsetY*(cols), 0] ;
+		
+		txt = CVmText();		
+		txt.Load(upper(buttonsText[i]));
+		txt.SetColor(mButtonsTextColor.r, mButtonsTextColor.g, mButtonsTextColor.b);		
+		
+		txtObj = CVmObj();
+		txtObj.LinkToText(txt);
+		txtObj.SetScale(0.1,0.1,0.1);
+//		txtObj.SetPosition(buttonPos.x-(0.1*SCALE_FACTOR), buttonPos.y - (1.65*SCALE_FACTOR), buttonPos.z + mTextOffset);
+		
+		var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
+		AddToonShaderToMesh(buttonMesh, [0.4, 0.4, 0.4], mUnpressedButtonColor, [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
+		buttonObj = CVmObj(buttonMesh);
+		buttonObj.AddChild(txtObj, -(0.1*SCALE_FACTOR), -(0.1*SCALE_FACTOR) ,mTextOffset);
+		AddSilhouetteLinesToPlanarObject(buttonObj, 0.02 * SCALE_FACTOR, mButtonsWidth, mButtonsWidth, 0);
+		buttonObj.SetPosition(buttonPos.x, buttonPos.y - (1.5*SCALE_FACTOR), buttonPos.z);	
+		
+		aadd(mCharacters, lower(buttonsText[i]));
+		aadd(mOriginalButtonPos, buttonObj.GetPosition());
+		aadd(mButtonsObjs, buttonObj);
+		aadd(mUnpressedButtonsObjs, buttonObj);	
+		
+		
+		var screenTxt = CVmText();		
+		screenTxt.Load(upper(buttonsText[i]));
+		screenTxt.SetColor(mScreenTextColor.r, mScreenTextColor.g, mScreenTextColor.b);
+		aadd(mScreenTextsMeshes, screenTxt);
+	}
+	
+	if(maxRowLength < 0)
+		maxRowLength = rows;
+		
+	outputln(maxRowLength);
+	mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : maxRowLength+2;
+	var screenMesh = CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2);
+	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], mScreenColor, 25, 0, 2, SCALE_FACTOR, 1.0);
+	mScreenObj.AddChild(CvmObj(screenMesh));
+	AddSilhouetteLinesToPlanarObject(mScreenObj, 0.02 * SCALE_FACTOR, (mMaxDigitsOnScreen*mScreenTextSize)+0.4*SCALE_FACTOR, offsetY, 0);
+	mScreenObj.SetPosition(keyboardPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+	mScreenTextObjs = CVmObj();
+	mScreenTextObjs.SetPosition(keyboardPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);	
+}
+
+
+function VirtualKeyboard::DrawUnPressedButtons(){	
+	for(var i = 0; i < len(mUnpressedButtonsObjs); i++)
+		mUnpressedButtonsObjs[i].Draw();
+}
+
+function VirtualKeyboard::DrawPressedButtons(){
+	for(var i = 0; i < len(mPressedButtonsObjs); i++)
+		mPressedButtonsObjs[i].Draw();	
+}
+
+function VirtualKeyboard::DrawHolder(){
+	mHolderObj.Draw();
+}
+
+function VirtualKeyboard::DrawScreen(){
+	mScreenObj.Draw();
+}
+
+function VirtualKeyboard::DrawScreenText(){
+	mScreenTextObjs.Draw();
+}
+
+
+function VirtualKeyboard::GetButtonsObjs(){	
+	return mButtonsObjs;
+}
+
+function VirtualKeyboard::GetHolderObj(){
+	return mHolderObj;
+}
+
+function VirtualKeyboard::GetHolderSizes(){
+	return mHolderSizes;
+}
+
+function VirtualKeyboard::GetButtonObj(buttonChar){	
+	for(var i = 0; i < len(mCharacters); i++){
+		if(mCharacters == buttonChar)
+			return mButtonsObjs[i];
+	}
+}
+
+function VirtualKeyboard::GetKeyboardCharacters(){
+	return mCharacters;
+}
+
+
+function VirtualKeyboard::GetUnpressedButtonsObjs(){	
+	return mUnpressedButtonsObjs;
+}
+
+function VirtualKeyboard::GetPressedButtonsObjs(){	
+	return mPressedButtonsObjs;
+}
+
+function VirtualKeyboard::GetUnpressedButtonColor(){
+	return mUnpressedButtonColor;
+}
+
+function VirtualKeyboard::GetPressedButtonColor(){
+	return mPressedButtonColor;
+}
+
+function VirtualKeyboard::GetWrongCodeColor(){
+	return mWrongCodeColor;
+}
+
+function VirtualKeyboard::GetButtonsTextColor(){
+	return mButtonsTextColor;
+}
+
+function VirtualKeyboard::GetSecondaryColor(){
+	return mSecondaryColor;
+}
+
+function VirtualKeyboard::GetScreenTextColor(){
+	return mScreenTextColor;
+}
+
+function VirtualKeyboard::GetScreenColor(){
+	return mScreenColor;
+}
+
+
+function VirtualKeyboard::AnimateButton(buttonChar){	
+	var charPos = -1;
+	//CHeck if char is present in the Keyboard
+	for(var i = 0; i < len(mCharacters); i++){
+		if(mCharacters[i] == buttonChar)
+			charPos = i;
+	}
+	if(charPos == -1)
+		return false;
+		
+	mAnimator.CreateTransition(mButtonsObjs[charPos], mOriginalButtonPos[charPos], {mOriginalButtonPos[charPos] - [0, 0, mButtonsThickness*0.8], mOriginalButtonPos[charPos]}, mAnimationTIme, false);
+	return true;
+}
+
+
+function VirtualKeyboard::AnimatePressedButtons(){	
+	for(var j = 0; j < len(mPressedButtonsObjs); j++){		
+		mAnimator.CreateTransition(mPressedButtonsObjs[j], mOriginalButtonPos[mPressedText[j]], {mOriginalButtonPos[mPressedText[j]] - [0, 0, mButtonsThickness*0.8], mOriginalButtonPos[mPressedText[j]]}, mAnimationTIme, false);
+	}
+}
+
+
+function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){	
+	var raycastOrigin = objectPosition;
+	var raycastEnd = isCamera ? (raycastOrigin + mObject.GetDirection() * mObject.GetZFar()) : (raycastOrigin + mObject.GetDirection() * 20);
+	var contactPoint;	
+	
+	
+	for(var i = 0; i < len(mButtonsObjs); i++){
+		contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mButtonsObjs[i]);
+		if(contactPoint != Void){
+			if(mHoveredButton != i){
+				if(mHoveredButton != -1)	
+					UnhoverButton(mAnimator);
+				mHoveredButton = i;				
+				HoverButton(mAnimator);
+			}
+			return mCharacters[i];	
+		}	
+	}
+	return "";
+}
+
+
+function VirtualKeyboard::ChangePressedButtonsColor(pColor){
+	for(var i = 0; i < len(mPressedButtonsObjs); i++){
+		mPressedButtonsObjs[i].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, pColor);
+	}
+}
+
+
+function VirtualKeyboard::FadePressedButtonsColor(startColor, endColor){
+	for(var i = 0; i < len(mPressedButtonsObjs); i++){		
+		mAnimator.CreateToonShaderColorTransition(mPressedButtonsObjs[i].GetMesh(0), startColor, endColor, mAnimationTime*2, false);
+	}
+}
+
+
+//-1 not present, 0 already pressed, 1 was not pressed, now it is pressed
+function VirtualKeyboard::PressButton(buttonChar){
+	var charPos = -1;
+	//CHeck if char is present in the Keyboard
+	for(var i = 0; i < len(mCharacters); i++){
+		if(mCharacters[i] == buttonChar)
+			charPos = i;
+	}
+	
+	if(charPos == -1)
+		return -1;
+	
+	//If it's present, I should check if it is already pressed
+	var alreadyPressed = false;
+	for(var i = 0; i < len(mPressedButtonsObjs); i++){
+		if(mPressedButtonsObjs[i] == mButtonsObjs[charPos])
+			alreadyPressed = true;
+	}
+	
+	//I add it anyway to the screen (Pressing multiple times)	
+	var charObj = CVmObj();
+	charObj.LinkToText(mScreenTextsMeshes[charPos]);
+	aadd(mCharOnScreen, charObj);
+	charObj.SetScale(0.1,0.1,0.1);
+	mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);
+	
+	//If it is not already pressed, I add it to the pressed buttons vector
+	if(!alreadyPressed){
+		aadd(mPressedButtonsObjs, mButtonsObjs[charPos]);
+		mButtonsObjs[charPos].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mPressedButtonColor);
+		aadd(mPressedText, charPos);
+		//If it was not pressed, I have to remove it from the unpressed buttons
+		for(var i = 0; i < len(mUnpressedButtonsObjs); i++){
+			if(mUnpressedButtonsObjs[i] == mButtonsObjs[charPos]){
+				adel(mUnpressedButtonsObjs, i);	
+				return 1;
+			}			
+		}	
+	}
+	else 
+		return 0; //if it was pressed already then there is nothing to do here
+	
+	return 1;
+}
+
+function VirtualKeyboard::UnpressButton(buttonChar){	
+	mHoveredButton = -1;
+	var charPos = -1;
+	//CHeck if char is present in the Keyboard
+	for(var i = 0; i < len(mCharacters); i++){
+		if(mCharacters[i] == buttonChar)
+			charPos = i;
+	}
+	
+	if(charPos == -1)
+		return false;
+	
+	//If it's present, I should check if it is pressed or unpressed
+	var alreadyUnpressed = false;
+	for(var i = 0; i < len(mUnpressedButtonsObjs); i++){
+		if(mUnpressedButtonsObjs[i] == mButtonsObjs[charPos])
+			alreadyUnpressed = true;
+	}
+	
+	//If it is pressed, I add it to the unpressed buttons vector
+	if(!alreadyUnpressed){
+		aadd(mUnpressedButtonsObjs, mButtonsObjs[charPos]);
+		mButtonsObjs[charPos].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor);	
+	}
+	else 
+		return true; //if it was pressed already then there is nothing to do here
+		
+	//If it was pressed, I have to remove it from the pressed buttons
+	for(var i = 0; i < len(mPressedButtonsObjs); i++){
+		if(mPressedButtonsObjs[i] == mButtonsObjs[charPos]){
+			adel(mPressedButtonsObjs, i);
+			adel(mPressedText, i);	
+			return true;				
+		}			
+	}	
+	
+	return true;
+}
+
+function VirtualKeyboard::PressTouchedButton(objPos, dt, inputManager, controllerIndex){
+	mTimefromLastAction += dt;
+	var usingVive = valtype(inputManager) == "" ? false : true;
+	var buttonPos;
+	var maxDepth = mButtonsThickness * 0.8;
+	var offsets = [mButtonsWidth/2, mButtonsWidth/2, mButtonsThickness];
+	for(var i = 0; i < len(mButtonsObjs); i++){
+		buttonPos = mOriginalButtonPos[i];
+		if(objPos.x >= buttonPos.x - offsets.x && objPos.x <= buttonPos.x + offsets.x
+		&& objPos.y >= buttonPos.y - offsets.y && objPos.y <= buttonPos.y + offsets.y){
+			if(objPos.z >= buttonPos.z - maxDepth && objPos.z <= buttonPos.z){
+				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, objPos.z]);
+				if(mTimefromLastAction > 0.6){
+					mTimefromLastAction = 0;
+					if(PressButton(mCharacters[i]) > -1){
+						if(usingVive){
+							inputManager.VibrateController(controllerIndex, 100);
+						}
+						return mCharacters[i];						
+					}
+				}
+				return "";
+			}
+		}
+		else{
+			mButtonsObjs[i].SetPosition(mOriginalButtonPos[i]);
+		}
+	}	
+	return "";
+}
+
+function VirtualKeyboard::PressAllButtons(){	
+	while(len(mPressedButtonsObjs) > 0){
+		adel(mPressedButtonsObjs, 0);		
+	}	
+	
+	while(len(mUnpressedButtonsObjs) > 0){
+		adel(mUnpressedButtonsObjs, 0);		
+	}
+	
+	for(var i = 0; i < len(mButtonsObjs); i++){		
+		aadd(mPressedButtonsObjs, mButtonsObjs[i]);
+		mButtonsObjs[i].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mPressedButtonColor);		
+	}
+}
+
+function VirtualKeyboard::UnpressAllButtons(){	
+	mHoveredButton = -1;	
+	//Remove chars from the screen
+	while(len(mCharOnScreen) > 0){
+		mScreenTextObjs.RemoveChild(mCharOnScreen[0]);
+		adel(mCharOnScreen, 0);		
+	}
+			
+	//All buttons must NOT be pressed
+	while(len(mPressedButtonsObjs) > 0){
+		adel(mPressedButtonsObjs, 0);
+		adel(mPressedText, 0);			
+	}	
+	
+	//Insted, they must be Pressed
+	while(len(mUnpressedButtonsObjs) > 0){
+		adel(mUnpressedButtonsObjs, 0);		
+	}
+	
+	for(var i = 0; i < len(mButtonsObjs); i++){		
+		aadd(mUnpressedButtonsObjs, mButtonsObjs[i]);
+		mButtonsObjs[i].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor);			
+	}
+}
+
+
+function VirtualKeyboard::IsCameraInKeyboardRange(cameraPosition, range){
+	return (cameraPosition.x > (mKeyboardPosition.x - range)) && (cameraPosition.x < (mKeyboardPosition.x + range)) &&
+		   (cameraPosition.z > (mKeyboardPosition.z - range)) && (cameraPosition.z < (mKeyboardPosition.z + range));
+}
+
+
+function VirtualKeyboard::HoverButton(){
+	for(var i = 0; i < len(mPressedText); i++){
+		if(mPressedText[i] == mHoveredButton)
+			return;			
+	}
+	mButtonsObjs[mHoveredButton].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor + [0.3,0.3,0.3]);
+}
+
+function VirtualKeyboard::UnhoverButton(){
+	for(var i = 0; i < len(mPressedText); i++){
+		if(mPressedText[i] == mHoveredButton)
+			return;			
+	}
+	mButtonsObjs[mHoveredButton].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor);
+}
