@@ -339,7 +339,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var buttonsTextColor = [0.0,0.0,0.0];
 	var clearingColor = [0.8,0.8,0];
 	numpadObj = VirtualKeyboard(mAnimator, "123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize, len(paths));	
-//	numpadObj = VirtualKeyboard("abcdefghi ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize);	
+//	numpadObj = VirtualKeyboard(mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize);	
 /////////////////////////////////////////////////////////
 	
 	
@@ -630,8 +630,8 @@ function Level2::UpdateLogic(dt)
 						time = (Rand(13)+ 11) / 5;
 						mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 						time = (Rand(13)+ 11) / 5;	
-						cubePos	= randomShapes[j].GetObjs()[i].GetPosition();			
-						mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
+						cubePos	= randomShapes[j].GetObjs()[i].GetPosition();	
+						mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true, Rand(1) == 1);
 					}	
 				}
 			}
@@ -785,8 +785,8 @@ function Level2::UpdateLogic(dt)
 						if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
 							timeFromLastClick = 0;	
 							pressedButton = (vrPointedButton1 == "") ? vrPointedButton2 : vrPointedButton1;
-							if(pressedButton != ""){
-								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);		
+							if(pressedButton != "" && pressedButton != " "){
+								numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
 								numpadObj.AnimateButton(pressedButton);	
 								mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);						
 							}
@@ -807,7 +807,7 @@ function Level2::UpdateLogic(dt)
 						if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
 							timeFromLastClick = 0;
 							pressedButton = pointed;
-							if(pressedButton != ""){
+							if(pressedButton != "" && pressedButton != " "){
 								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);		
 								numpadObj.AnimateButton(pressedButton);								
 							}						
@@ -823,7 +823,7 @@ function Level2::UpdateLogic(dt)
 					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true);
 					 var pressedKey = Keyboard();
 					
-					if(pressedKey != ""){
+					if(pressedKey != "" && pressedKey != " "){
 						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){	
 							pressedButton = pressedKey;				
 						}
@@ -833,7 +833,7 @@ function Level2::UpdateLogic(dt)
 						pressedButton = pointedButton;	
 					}
 					
-					if(pressedButton != ""){		
+					if(pressedButton != "" && pressedButton != " "){		
 						numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);
 						numpadObj.AnimateButton(pressedButton);				
 					}
@@ -851,7 +851,7 @@ function Level2::UpdateLogic(dt)
 			}	
 			
 			
-			if(pressedButton != ""){
+			if(pressedButton != "" && pressedButton != " "){
 				if(asc(pressedButton) > 47 && asc(pressedButton) <= 48+9){
 					aadd(typedNumbers, val(pressedButton));
 				}
@@ -937,7 +937,7 @@ function Level2::UpdateLogic(dt)
 								startingPosx = objPos.x > 0 ? objPos.x - rotationRadius : objPos.x + rotationRadius;
 								startingPosz = objPos.z > 0 ? objPos.z - rotationRadius : objPos.z + rotationRadius;								
 							}
-							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], [startingPosx, objPos.y, startingPosz], [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true);
+							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], [startingPosx, objPos.y, startingPosz], [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true, Rand(1) == 1);
 						}					
 					}
 				}
@@ -953,7 +953,7 @@ function Level2::UpdateLogic(dt)
 							time = (Rand(13)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(9)+ 11) / 5;			
-							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
+							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true, Rand(1) == 1);
 						}						
 					}
 				}

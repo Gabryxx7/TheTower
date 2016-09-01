@@ -432,7 +432,7 @@ function Level5::DrawPortal(portalFrame, portalFrameNormal)
 	// Now I move the world where the camera should be rendering the portal room (it's "minus" translation, because the glTranslate pushes the world away)
 //	glTranslate(-translation);
 //	if(portalFrameNormal == [1,0,0])
-		glRotate(-90, 0, 1, 0);
+		glRotate(180, 0, 1, 0);
 	// Setting the light to its defined position
 //	glLight(GL_LIGHT0, GL_POSITION, [lightPosition.x, lightPosition.y, lightPosition.z, 1.0]); 
 	
@@ -699,6 +699,6 @@ function Level5::SetupOpenglLights()
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
  	
 	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+	glLight(GL_LIGHT1, GL_DIFFUSE, [0, 0, 1]); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 0, 0]);
 }

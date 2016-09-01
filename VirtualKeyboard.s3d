@@ -300,6 +300,11 @@ function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){
 			return mCharacters[i];	
 		}	
 	}
+	
+	if(mHoveredButton != -1){
+		UnhoverButton(mAnimator);
+		mHoveredButton = -1;		
+	}
 	return "";
 }
 
