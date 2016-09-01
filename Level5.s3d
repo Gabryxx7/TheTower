@@ -38,16 +38,9 @@ class Level5
 	
 	// Arrays that contain the reference to the portal rooms, the portal frames (i.e. the rectangle's where we can see the portals' rooms) 
 	// and the normals of the frames
-	var mPortalRooms;
 	var mPortalFrames;
 	var mPortalFramesNormals;
-	var mPortalFramesGlassWalls;
-	
-	// Arrays to handle the light's movements inside the portal's rooms. Since I'm using only one light to render 4 four rooms far away from 
-	// each other and with different colors and positions, I need to store these information for each portal room
-	var mPortalRoomsLightColorArray;
-	var mPortalRoomsLightPositionArray;
-	
+	var mPortalFramesGlassWalls;	
 	// This array contains the reference to the currently visible portal's frames
 	var mCurrentlyVisiblePortalFrames;
 		
@@ -75,9 +68,11 @@ class Level5
 	
 	var mTranslateFactor;
 
+	var mProvaObj;
+	var mMaskObj;
 	// Private functions
 	DrawAllPortals();
-	DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, lightAngle, lightIncrement, lightCenter, lightRadius);
+	DrawPortal(portalFrame, portalFrameNormal);
 	
 	// Public functions
 	Init(lights, elevator, openglTransformOffset);
@@ -121,24 +116,6 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2);
 	
 	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
-
-	// 	Creating the portal rooms
-	var portalRoom1 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
-	var portalRoom2 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
-	var portalRoom3 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
-	var portalRoom4 = Room(PORTAL_ROOM_FAR_WALL_WIDTH , PORTAL_ROOM_SIDE_WALL_WIDTH, PORTAL_ROOM_HEIGHT, true, 0, 0, false);
-	
-	// Moving the portal rooms away. This is not actually needed, but I do it to enhance the fact that they're NOT in the main room
-	portalRoom1.Translate(mTranslateFactor.x-20*SCALE_FACTOR, mTranslateFactor.y, mTranslateFactor.z-20*SCALE_FACTOR);
-	portalRoom2.Translate(-500, 0, 0);
-	portalRoom3.Translate(100, 0, 0);
-	portalRoom4.Translate(500, 0, 0);
-	
-	// Rotating the rooms so that they reflect the player's position
-	portalRoom2.Rotate(90, 0, 1, 0);
-	portalRoom3.Rotate(180, 0, 1, 0);
-	portalRoom4.Rotate(-90, 0, 1, 0);
-	
 	// Sizes of the portal frames, i.e. the rectangles from where the portal rooms can be seen
 	var halfWidth = PORTAL_ROOM_FAR_WALL_WIDTH/2.0;
 	var halfHeight = PORTAL_ROOM_HEIGHT/2.0;
@@ -153,14 +130,24 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	var portalFrameObj4 = CVmObj(portalFrameMesh);
 	
 	// Moving the frames so that they form a sort of cube
-	portalFrameObj1.Translate(0, halfHeight, 0);
+	portalFrameObj1.Translate(0, halfHeight, 0);	
 	portalFrameObj2.Translate(halfWidth, halfHeight, -halfWidth);
 	portalFrameObj3.Translate(0, halfHeight, -halfWidth * 2.0);
 	portalFrameObj4.Translate(-halfWidth, halfHeight, -halfWidth);
 		
 	// Translate the frames again to move away from the origin
 	portalFrameObj1.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
-	portalFrameObj2.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
+	var maskMesh = CVmNewMesh("GuyFawkesMask.aam");
+	maskMesh.Scale(SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR);
+	mMaskObj = CVmObj(maskMesh);
+	mMaskObj.SetRotation(180, 0,1,0);
+	mMaskObj.SetPosition(portalFrameObj1.GetPosition()+[0,0,3*SCALE_FACTOR]);
+	
+	portalFrameObj2.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);	
+	var provaMesh = CVmNewMesh("provaMesh.AAM");
+	provaMesh.Scale(SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR);
+	mProvaObj = CVmObj(provaMesh);
+	mProvaObj.SetPosition(portalFrameObj2.GetPosition());
 	portalFrameObj3.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	portalFrameObj4.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
@@ -196,22 +183,12 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	glassWall3.SetPosition(portalFrameObj3.GetPosition() + [0, 0, -0.003 * SCALE_FACTOR]);
 	glassWall4.SetPosition(portalFrameObj4.GetPosition() + [-0.003 * SCALE_FACTOR, 0, 0]);
 	
-	mPortalRooms = {};
 	mPortalFrames = {};
 	mPortalFramesNormals = {};
 	mPortalFramesGlassWalls = {};
-	mPortalRoomsLightColorArray = {};
-	
-	// Adding to each array its components
-	aadd(mPortalRooms, portalRoom1);
-	aadd(mPortalRooms, portalRoom2);
-	aadd(mPortalRooms, portalRoom3);
-	aadd(mPortalRooms, portalRoom4);
 	
 	aadd(mPortalFrames, portalFrameObj1);
 	aadd(mPortalFrames, portalFrameObj2);
-	aadd(mPortalFrames, portalFrameObj3);
-	aadd(mPortalFrames, portalFrameObj4);
 	
 	aadd(mPortalFramesNormals, frameNormal1);
 	aadd(mPortalFramesNormals, frameNormal2);
@@ -222,13 +199,7 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	aadd(mPortalFramesGlassWalls, glassWall2);
 	aadd(mPortalFramesGlassWalls, glassWall3);
 	aadd(mPortalFramesGlassWalls, glassWall4);
-	
-	
-	aadd(mPortalRoomsLightColorArray, [0.6, 0.1, 0.0]);
-	aadd(mPortalRoomsLightColorArray, [0.3, 0.7, 0.0]);
-	aadd(mPortalRoomsLightColorArray, [0.0, 0.3, 0.7]);
-	aadd(mPortalRoomsLightColorArray, [0.0, 0.7, 0.7]);	
-	
+		
 	// Now I create the elevator, as a "Elevator" object; the width and depth are a little less than the size of the frames, otherwise we get z-buffer problems
 	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.01 * SCALE_FACTOR;
 	var elevatorDepth = PORTAL_ROOM_SIDE_WALL_WIDTH - 0.16 * SCALE_FACTOR;
@@ -255,46 +226,6 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mSoundManager.AddSound("sounds/Si5.wav", 4);
 	mSoundManager.AddSound("sounds/Do#6.wav", 5);
 	mSoundManager.AddSound("sounds/Mi7.wav", 6);
-
-
-	// Creating the sphere meshes for the portal rooms
-	var numberOfSegments = 30;
-	var radius = 2 * SCALE_FACTOR;
-	var sphereMesh1 = CVmNewMesh(VRP_SPHERE, numberOfSegments, radius, 1);  
-	
-	// Ading the toon shader to the spheres; the diffuse color is not really relevant, since it will be defined by an animation later in the code
-	AddToonShaderToMesh(sphereMesh1, [0.04, 0.04, 0.04], [0.0, 0.25, 0.75], [0.5, 0.5, 0.5], 50, 0, 0, SCALE_FACTOR, 1.0);
-	
-	var sphereObj1 = CVmObj(sphereMesh1);
-	
-	var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	var time = 180.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
-	var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-			
-	mAnimator.CreateScalingTransition(sphereObj1, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
-	mAnimator.CreateRotatingTransition(sphereObj1, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-	mAnimator.CreateToonShaderColorTransition(sphereObj1.GetMesh(), color1, color2, 3.5, true);
-	
-	// Adding the spheres to the rooms
-	portalRoom1.AddObject(sphereObj1, 0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR);	
-	
-	// Now I prepare the arrays to handle the light0 transition inside the portal rooms. I'm using only this light for each room, so
-	// when I draw a portal I also load the light's position for that given room, which is updated inside UpdateLogic() to perform the rotation transition
-	mPortalRoomsLightPositionArray = {};
-	
-	// Starting positions: the first and third lights rotate horizontaly, so their initial position has a x-shifted position from the center (the object's
-	// position in world coordinates). The second and fourth rotate vertically, so they're shifted in the y
-	var pos = [0, -2 * SCALE_FACTOR, 5 * SCALE_FACTOR];
-	var lightStartingPos1 = portalRoom1.LocalToWorld(sphereObj1.GetPosition()) - [4.0 * SCALE_FACTOR, 0.0, 0.0];
-	var lightStartingPos2 = portalRoom2.LocalToWorld(pos) - [0.0, 2.0 * SCALE_FACTOR, 0.0];
-	var lightStartingPos3 = portalRoom3.LocalToWorld(pos) + [4.0 * SCALE_FACTOR, 0.0, 0.0];
-	var lightStartingPos4 = portalRoom4.LocalToWorld(pos) + [0.0, -2.0 * SCALE_FACTOR, 0.0];		
-	
-	aadd(mPortalRoomsLightPositionArray, lightStartingPos1);
-	aadd(mPortalRoomsLightPositionArray, lightStartingPos2);
-	aadd(mPortalRoomsLightPositionArray, lightStartingPos3);
-	aadd(mPortalRoomsLightPositionArray, lightStartingPos4);
 
 	// If the Vive is on, I get the reference to the controllers
 	if(mIsVRon)
@@ -382,7 +313,9 @@ function Level5::Render()
 	
 	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
-	mPortalRooms[0].Draw();
+	
+	mProvaObj.Draw();
+	mMaskObj.Draw();
 	
 	if(mIsVRon)
 	{
@@ -408,7 +341,7 @@ function Level5::DrawAllPortals()
 	mCurrentlyVisiblePortalFrames = {};
 		
 	// I iterate over all the portals to check which one is visible by the user
-	for(var i = 0; i < PORTALS_NUMBER; i++) 
+	for(var i = 0; i < len(mPortalFrames); i++) 
 	{
 		// I get the normal to the portal's frame, which was set manually; I also get the position of the frame
 		var normal = mPortalFramesNormals[i];
@@ -424,7 +357,7 @@ function Level5::DrawAllPortals()
 		if(dotProduct >= 0)
 		{
 			// I render the portal, passing also the information about the light's color and position
-			DrawPortal(mPortalFrames[i], mPortalRooms[i], mPortalRoomsLightColorArray[i], mPortalRoomsLightPositionArray[i]);
+			DrawPortal(mPortalFrames[i], mPortalFramesNormals[i]);
 			
 			// Since it's visible, I add this to the array
 			aadd(mCurrentlyVisiblePortalFrames, mPortalFrames[i]);
@@ -460,7 +393,7 @@ function Level5::DrawAllPortals()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
 	// Now I draw each portal, even the ones that weren't actually visible, because they still need to "occupy space"
-	for(var i = 0; i < PORTALS_NUMBER; i++)
+	for(var i = 0; i < len(mPortalFrames); i++)
 		mPortalFrames[i].Draw();
 
 	// I enable the color buffer again for the rest of the scene
@@ -476,69 +409,35 @@ function Level5::DrawAllPortals()
   * portalFrame: (CVmObj) the frame from which the portal's room will be visible
   * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
   */
-function Level5::DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, lightAngle, lightIncrement, lightCenter, lightRadius)
+function Level5::DrawPortal(portalFrame, portalFrameNormal)
 {
-	// I add a matrix to the opengl stack; I will update the camera's position for the time being, so a copy of the current matrix 
-	// comes in handy when we need to go back to how thing where
 	glPushMatrix();
 	
-	// In order to draw the portal, I first need to draw the frame using the stencil buffer. To do that, I first disable the color, writing to the depht
-	// buffer and the depth buffer itself; they're not needed now
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	glDepthMask(GL_FALSE);
 	glDisable(GL_DEPTH_TEST);
 	
-	// I make sure that the stencil test will fail for every pixel drawn (thanks to GL_NEVER)
-	glStencilFunc(GL_NEVER, 1, 0xFF);
-	
-	// I state that when the stencil test fails (so always, because I'm using GL_NEVER), the buffer will replace the current value in the buffer (0 initially)
-	// with the reference value I passed as parameter to glStencilFunc (1 in this case). Basically this means that when I'll draw the portal's frame soon,
-	// the stencil buffer will be filled with 1s for every fragment of the frame and 0s for every fragment outside the frame. This will help us
-	// render the portal's room ONLY where the frame was rendered
+	glStencilFunc(GL_NEVER, 1, 0xFF);	
 	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-	
-	// I enable writing to the stencil buffer
 	glStencilMask(0xFF);
 	
-	// I empty the stencil buffer
 	glClear(GL_STENCIL_BUFFER_BIT);
-	
-	// I draw the portal frame; now the stencil buffer will contain 1s where the frame was rendered and 0s outside
 	portalFrame.Draw();
-
 	
-	// Now it's time to draw the portal room. To do that, I need translate BACK the world by the opengl offset, and translate it back FORWARD 
-	// when I'm done with the portal, otherwise the camera's position will be wrong, and so will the rendering of the portal's room
 	glTranslate(-mOpenglTranslationOffset);
 	
-	// Getting the positions of the frame
-	var framePos = portalFrame.GetPosition();
-	
-	// First I need to place the camera at the end of the portal's room, so I'm going to compute that position
-	var localPoint = [0, 0, portalRoom.GetRoomDepth() + 0.1 * SCALE_FACTOR];
-	var newCameraPosition = portalRoom.LocalToWorld(localPoint);
-	
-	// Now I need to compute the translation I need to apply to the camera. For example, imagine being really close to the portal's frame: the portal room
-	// will need to be rendered as if you're really close to the room; this means moving the camera in the portal's room so that it's closer.
-	// To the the right translation, we start with the new camera position that we'd like to have, and subtract the position of the portal frame, so that
-	// we get the right view (without it, the portal room will probably be visible, but shifted in an unexpected way). To this, we subtract the opengl offset,
-	// in case the world was already shifted. 
-	// NOTE: this will only work if the orientation of the frame is the same as the orientation of the portal's room. If for example the room is rotated by 90°
-	// and the frame isn't, we can't simply add the distance vector, because we'll be updating the wrong components; in this example, if the frame has
-	// rotation 0 and the portal's room rotation 90, if we move away from the frame we move across the Z axis, while in the portal's room the camera
-	// shouldn't increase the Z axis but the X axis. Drawing the example in a piace of paper helps understand the concept.
-	// So, in this case I'm assuming that they both have the same orientation, to make things easier
-	var translation = newCameraPosition - framePos - mOpenglTranslationOffset;
-		
+	var framePos = portalFrame.GetPosition();	
+	var translation = framePos;		
 		
 	// Now I move the world where the camera should be rendering the portal room (it's "minus" translation, because the glTranslate pushes the world away)
-	glTranslate(-translation);
-	
+//	glTranslate(-translation);
+//	if(portalFrameNormal == [1,0,0])
+		glRotate(-90, 0, 1, 0);
 	// Setting the light to its defined position
-	glLight(GL_LIGHT0, GL_POSITION, [lightPosition.x, lightPosition.y, lightPosition.z, 1.0]); 
+//	glLight(GL_LIGHT0, GL_POSITION, [lightPosition.x, lightPosition.y, lightPosition.z, 1.0]); 
 	
 	// Changing the light's color
-	glLight(GL_LIGHT0, GL_DIFFUSE, lightColor); 
+//	glLight(GL_LIGHT0, GL_DIFFUSE, lightColor); 
 					
 	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -552,7 +451,9 @@ function Level5::DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, 
 	glStencilFunc(GL_EQUAL, 1, 0xFF);
 	
 	// Drawing the actual portal's room where the stencil is 1
-	portalRoom.Draw(true);
+	mMainRoom.Draw(true);
+	mProvaObj.Draw(true);
+	mMaskObj.Draw(true);
 	
 	// I'm done with this portal, so I pop the matrix from the stack. This way the glTranslsate() that I did above will be undone, bringing the world
 	// back the way it was before rendering the portal room, which is what I want
@@ -654,12 +555,17 @@ function Level5::UpdateLogic(dt)
 		
 		case STATUS_LEVEL_STARTED:
 		{
-			if(   cameraPosition.x >= mPortalFrames[0].GetPosition().x - 3*SCALE_FACTOR && cameraPosition.x <= mPortalFrames[0].GetPosition().x + 3*SCALE_FACTOR
-			   && cameraPosition.z >= mPortalFrames[0].GetPosition().z - 3*SCALE_FACTOR && cameraPosition.z <= mPortalFrames[0].GetPosition().z + 3*SCALE_FACTOR
-			){
+			var checkRange = 2*SCALE_FACTOR;
+			if(   cameraPosition.x >= mPortalFrames[0].GetPosition().x - checkRange && cameraPosition.x <= mPortalFrames[0].GetPosition().x + checkRange
+			   && cameraPosition.z >= mPortalFrames[0].GetPosition().z - checkRange && cameraPosition.z <= mPortalFrames[0].GetPosition().z + checkRange){
 				outputln("\nTRESPASSING PORTAL 1");
-				mCamera.SetPosition(mPortalRooms[0].GetPosition().x, cameraPosition.y, mPortalRooms[0].GetPosition().z);
+				mCamera.SetPosition(mPortalFrames[1].GetPosition().x+checkRange*2, cameraPosition.y, mPortalFrames[1].GetPosition().z+checkRange*2);
 			}
+			else if(   cameraPosition.x >= mPortalFrames[1].GetPosition().x - checkRange && cameraPosition.x <= mPortalFrames[1].GetPosition().x + checkRange
+			   && cameraPosition.z >= mPortalFrames[1].GetPosition().z - checkRange && cameraPosition.z <= mPortalFrames[1].GetPosition().z + checkRange){
+				outputln("\nTRESPASSING PORTAL 2");
+				mCamera.SetPosition(mPortalFrames[0].GetPosition().x +checkRange*2, cameraPosition.y, mPortalFrames[0].GetPosition().z+checkRange*2);			   	
+			 }
 			// At start I hide the elevator; it will appear later
 			mElevator.Hide();
 			// For each portal, I need to update the position of its light
