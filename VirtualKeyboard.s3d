@@ -164,7 +164,6 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 	if(maxRowLength < 0)
 		maxRowLength = rows;
 		
-	outputln(maxRowLength);
 	mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : maxRowLength+2;
 	var screenMesh = CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2);
 	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], mScreenColor, 25, 0, 2, SCALE_FACTOR, 1.0);

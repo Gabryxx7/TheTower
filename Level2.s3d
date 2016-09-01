@@ -74,7 +74,7 @@ class Level2
 	var musicCircleStepped;
 	var musicCircleRadius;
 	var musicCirclePosition;
-	var randomCubes;
+	var randomShapes;
 	
 	var mElevatorFinalPosition;
 	var mElevatorTravelDistance;
@@ -126,7 +126,7 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
-	debugVrOn = false;
+	debugVrOn = true;
 	
 	mControllersArray = {};
 		
@@ -288,14 +288,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var cubeSizes = 0.80 *SCALE_FACTOR;
 	var randomMeshNumber = 100; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
-	randomCubes = {};
+	randomShapes = {};
 	paths = {};
-	var meshes = {};
-	
-	aadd(meshes, CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes));
-	aadd(meshes, CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25));
-	aadd(meshes, CVmNewMesh(VRP_SPHERE, 10, cubeSizes * 0.80, 1));
-	aadd(meshes, CVmNewMesh(VRP_CYLINDER, 10, cubeSizes * 0.70, cubeSizes,1));
 	
 	var soundsRange = [0,6];
 	
@@ -317,8 +311,21 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 	//Adding as many randomObjects as the number of tilesPaths
 	for(var i = 0; i < len(paths); i++){
-		var selectedMesh = meshes[Rand(len(meshes)-1)];
-		aadd(randomCubes, RandomMeshes(selectedMesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
+		var selectedMesh = Rand(3);
+		var mesh;
+		switch(selectedMesh){
+			case 0: mesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+				break;
+			case 1: mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
+				break;
+			case 2: mesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes * 0.80, 1);
+				break;
+			case 3: mesh = CVmNewMesh(VRP_CYLINDER, 10, cubeSizes * 0.70, cubeSizes,1);
+				break;
+		}
+		
+		
+		aadd(randomShapes, RandomMeshes(mesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
 	}
 	
 	///// NUMBER PAD GENERATION /////
@@ -339,13 +346,13 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	codeNumbers = {};
 	var finalPositions;
 	var cubeNums = CubeNumbers();
-	var numPosOffset = len(randomCubes)/2;
+	var numPosOffset = len(randomShapes)/2;
 	var numberPosition;
-	for(var i = 0; i < len(randomCubes); i++){
+	for(var i = 0; i < len(randomShapes); i++){
 		numberPosition = [(13*cubeSizes)*(numPosOffset--), ROOM_HEIGHT/2-3.5*SCALE_FACTOR, ROOM_FAR_WALL_WIDTH/2 - 3*SCALE_FACTOR];
 		for(var j = 0; j < randomMeshNumber; j++){
-			aadd(randomCubes[i].GetFinalAngles(),[0, 0, 0]);
-			aadd(randomCubes[i].GetAnimationsVector(),[0, 0, 0]);	
+			aadd(randomShapes[i].GetFinalAngles(),[0, 0, 0]);
+			aadd(randomShapes[i].GetAnimationsVector(),[0, 0, 0]);	
 		}
 		
 		var randNumb;
@@ -367,8 +374,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		finalPositions = cubeNums.GenerateNumberPositions(codeNumbers[i], numberPosition);
 		
 		var j = 0;
-		while(len(randomCubes[i].GetFinalPos()) < len(randomCubes[i].GetObjs())){	
-			aadd(randomCubes[i].GetFinalPos(),[finalPositions[j].x, finalPositions[j].y, finalPositions[j].z]);	
+		while(len(randomShapes[i].GetFinalPos()) < len(randomShapes[i].GetObjs())){	
+			aadd(randomShapes[i].GetFinalPos(),[finalPositions[j].x, finalPositions[j].y, finalPositions[j].z]);	
 					
 			if(j+1 == len(finalPositions))
 				j = 0;
@@ -501,10 +508,10 @@ function Level2::Render()
 				}
 				
 				var cubesObjs;
-				for(var j = 0; j < len(randomCubes); j++){
-					cubesObjs = randomCubes[j].GetObjs();
+				for(var j = 0; j < len(randomShapes); j++){
+					cubesObjs = randomShapes[j].GetObjs();
 						
-					mSpotShader.SetParameter("outlineColor", randomCubes[j].GetColor());
+					mSpotShader.SetParameter("outlineColor", randomShapes[j].GetColor());
 					mSpotShader.SetParameter("offset", 0.01 * SCALE_FACTOR);		
 					for(var i = 0; i < len(cubesObjs); i++){
 						mSpotShader.SetParameter("stepped", true);	
@@ -618,13 +625,13 @@ function Level2::UpdateLogic(dt)
 				animStarted = true;
 				var cubePos;
 				
-				for(var j = 0; j < len(randomCubes); j++){		
-					for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
+				for(var j = 0; j < len(randomShapes); j++){		
+					for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
 						time = (Rand(13)+ 11) / 5;
-						mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+						mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 						time = (Rand(13)+ 11) / 5;	
-						cubePos	= randomCubes[j].GetObjs()[i].GetPosition();			
-						mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
+						cubePos	= randomShapes[j].GetObjs()[i].GetPosition();			
+						mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
 					}	
 				}
 			}
@@ -668,32 +675,34 @@ function Level2::UpdateLogic(dt)
 				}
 						
 				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
-					randomCubes[j].StartAnimation();
-					outputln("RED ANIMATION STARTED");
+					randomShapes[j].StartAnimation();
 					if(j == 0){		
-						outputln("\nRED PATH COMPLETED");
-						outputln("RED ANIMATION STARTED");				
-					}
-					else if(j == 1){		
-						outputln("\nGREEN PATH COMPLETED");	
-						outputln("nGREEN ANIMATION STARTED");					
-					}
-					else if(j == 2){		
-						outputln("\nBLUE PATH COMPLETED");	
-						outputln("nBLUE ANIMATION STARTED");				
-					}
+							outputln("\nGREEN ANIMATION STARTED");				
+						}
+						else if(j == 1){
+							outputln("\nLIGHT BLUE  ANIMATION STARTED");					
+						}
+						else if(j == 2){
+							outputln("\nRED ANIMATION STARTED");				
+						}
+						else if(j == 3){
+							outputln("\nWHITE ANIMATION STARTED");				
+						}
+						else if(j == 4){
+							outputln("\nBLUE ANIMATION STARTED");				
+						}
 				}
 				
 				//Workaround for the mAnimator diagonal transition bug
 				//I'll start first the animation on the x axis, then the one on the Y axis and in the end the one on the z axis
 				//so that the movement are computed correctly for every direction
-				if(paths[j].HasBeenWalked() && j < len(randomCubes) && randomCubes[j].IsAnimating()){	
+				if(paths[j].HasBeenWalked() && j < len(randomShapes) && randomShapes[j].IsAnimating()){	
 					var time;
-					var cubesObjs = randomCubes[j].GetObjs();
-					var objsAnimations = randomCubes[j].GetAnimationsVector();
-					var startAngle = randomCubes[j].GetOriginalAngles();
-					var finalAngle = randomCubes[j].GetFinalAngles();
-					var finalPos = randomCubes[j].GetFinalPos();
+					var cubesObjs = randomShapes[j].GetObjs();
+					var objsAnimations = randomShapes[j].GetAnimationsVector();
+					var startAngle = randomShapes[j].GetOriginalAngles();
+					var finalAngle = randomShapes[j].GetFinalAngles();
+					var finalPos = randomShapes[j].GetFinalPos();
 					var objPos;
 					var checkOffs = 0.5*SCALE_FACTOR; //The position is never perfect
 					var completedAnimations = 0;
@@ -703,45 +712,48 @@ function Level2::UpdateLogic(dt)
 						time = (Rand(10)+ 11) / 5;
 												
 						if(objsAnimations[i].x == 0){	
-//							mAnimator.RemoveTransitionByObject(randomCubes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
+//							mAnimator.RemoveTransitionByObject(randomShapes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
 							objsAnimations[i].x = 1;
 							mAnimator.CreateTransition(cubesObjs[i], [objPos.x, objPos.y, objPos.z], [finalPos[i].x, objPos.y, objPos.z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].x, 1,0,0);
 							time = (Rand(10)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
 						}
-						
-						if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
+						else if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
 							objsAnimations[i].y = 1;
 							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, objPos.y, objPos.z], [finalPos[i].x, finalPos[i].y, objPos.z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].y, 0,1,0);
 							time = (Rand(10)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
-						}
-						
-						if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
+						}						
+						else if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
 							objsAnimations[i].z = 1;
 							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, finalPos[i].y, objPos.z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
 							cubesObjs[i].SetRotation(startAngle[i].z, 0,0,1);
 							time = (Rand(10)+ 11) / 5;
 							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
-						}
-						
-						if(objPos.z < finalPos[i].z + checkOffs && objPos.z > finalPos[i].z - checkOffs && objsAnimations[i].z == 1){
+						}						
+						else if(objPos.z < finalPos[i].z + checkOffs && objPos.z > finalPos[i].z - checkOffs && objsAnimations[i].z == 1){
 							completedAnimations++;
 						}
 					}
 					
 					
-					if(completedAnimations == len(cubesObjs)){
-						randomCubes[j].StopAnimation();						
+					if(completedAnimations >= len(cubesObjs)){
+						randomShapes[j].StopAnimation();						
 						if(j == 0){		
-							outputln("RED ANIMATION COMPLETED");				
+							outputln("\nGREEN ANIMATION COMPLETED");				
 						}
 						else if(j == 1){
-							outputln("nGREEN ANIMATION COMPLETED");					
+							outputln("\nLIGHT BLUE  ANIMATION COMPLETED");					
 						}
 						else if(j == 2){
+							outputln("\nRED ANIMATION COMPLETED");				
+						}
+						else if(j == 3){
+							outputln("\nWHITE ANIMATION COMPLETED");				
+						}
+						else if(j == 4){
 							outputln("\nBLUE ANIMATION COMPLETED");				
 						}
 					}
@@ -904,12 +916,12 @@ function Level2::UpdateLogic(dt)
 			if(distanceFromCircle  < musicCircleRadius*musicCircleRadius && !musicCircleStepped){
 				musicCircleStepped = true;
 				mAnimator.CreateTransition(musicCircle, musicCirclePosition, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], 0.7, false);
-				for(var j = 0; j < len(randomCubes); j++){
+				for(var j = 0; j < len(randomShapes); j++){
 					if(!paths[j].HasBeenWalked()){
-						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
-							objPos = randomCubes[j].GetObjs()[i].GetPosition();
+						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
+							objPos = randomShapes[j].GetObjs()[i].GetPosition();
 							time = (Rand(13)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(100)+ 50) / 7;
 							var randomSpeed = (Rand(9)+1);
 							var rotationRadius = 10*SCALE_FACTOR;
@@ -919,7 +931,7 @@ function Level2::UpdateLogic(dt)
 								startingPosx = objPos.x > 0 ? objPos.x - rotationRadius : objPos.x + rotationRadius;
 								startingPosz = objPos.z > 0 ? objPos.z - rotationRadius : objPos.z + rotationRadius;								
 							}
-							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], [startingPosx, objPos.y, startingPosz], [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true);
+							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], [startingPosx, objPos.y, startingPosz], [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true);
 						}					
 					}
 				}
@@ -928,14 +940,14 @@ function Level2::UpdateLogic(dt)
 			if(distanceFromCircle > musicCircleRadius*musicCircleRadius && musicCircleStepped){
 				musicCircleStepped = false;
 				mAnimator.CreateTransition(musicCircle, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], musicCirclePosition, 0.7, false);
-				for(var j = 0; j < len(randomCubes); j++){
+				for(var j = 0; j < len(randomShapes); j++){
 					if(!paths[j].HasBeenWalked()){
-						for(var i = 0; i < len(randomCubes[j].GetObjs()); i++){
-							objPos = randomCubes[j].GetObjs()[i].GetPosition();
+						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
+							objPos = randomShapes[j].GetObjs()[i].GetPosition();
 							time = (Rand(13)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(randomCubes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
 							time = (Rand(9)+ 11) / 5;			
-							mAnimator.CreateRotationAroundPointTransition(randomCubes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
+							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true);
 						}						
 					}
 				}

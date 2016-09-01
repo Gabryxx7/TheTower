@@ -76,6 +76,7 @@ class Animator
 	// Public functions
 	CreateTransition(object, startingPos, endingPos, time, loop);
 	RemoveTransitionByObject(object, isRotating);
+	HaveTransition(object, isType);
 	CreatePathTransition(object, waypoints, time, loop);
 	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	ChangeScaleFactors(newFactor);
@@ -960,6 +961,19 @@ function Animator::RemoveTransitionByObject(object, isType)
 		else
 			found = false;
 	}
+}
+
+function Animator::HaveTransition(object, isType)
+{
+	var found = false;
+	for(var i = 0; i < len(mObjects) && !found; i++)
+	{
+		found = mObjects[i] == object;
+		
+		if(found && mTransitionTypeArray[i] == isType)
+			return true;
+	}
+	return false;
 }
 
 /*
