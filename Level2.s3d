@@ -126,7 +126,7 @@ class Level2
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
-	debugVrOn = false;
+	debugVrOn = true;
 	
 	mControllersArray = {};
 		
@@ -777,8 +777,8 @@ function Level2::UpdateLogic(dt)
 					mControllersArray[0].SetActionAvailable(true);	
 					mControllersArray[1].SetActionAvailable(true);	
 					if(numpadClearNeeded == 0 && !doorUnlocked){
-						var vrPressedButton1 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[0].GetPosition(), dt, mInputManager, 1);
-						var vrPressedButton2 = pressedButton = numpadObj.PressTouchedButton(mControllersArray[1].GetPosition(), dt, mInputManager, 2);						
+						var vrPressedButton1 = pressedButton = numpadObj.TouchedButton(mControllersArray[0].GetPosition());
+						var vrPressedButton2 = pressedButton = numpadObj.TouchedButton(mControllersArray[1].GetPosition());						
 					 	var vrPointedButton1 = numpadObj.PointedButton(mControllersArray[0], mControllersArray[0].GetPosition(), false);											
 					 	var vrPointedButton2 = numpadObj.PointedButton(mControllersArray[1], mControllersArray[1].GetPosition(), false);	
 						var vrPressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;
@@ -791,15 +791,18 @@ function Level2::UpdateLogic(dt)
 								mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);						
 							}
 						}
-						else{
-							pressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;								
+						else if(timeFromLastClick > 0.4){
+							timeFromLastClick = 0;
+							pressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;	
+							numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);	
+							mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);								
 						}
 					}			
 				}
 				else if(debugVrOn){
 					mDebugController.SetActionAvailable(true);
 					if(numpadClearNeeded == 0 && !doorUnlocked){
-						var vrPressedButton = numpadObj.PressTouchedButton(mDebugController.GetPosition(), dt);	
+						var vrPressedButton = numpadObj.TouchedButton(mDebugController.GetPosition(), dt);	
 						var pointed = numpadObj.PointedButton(mDebugController, mDebugController.GetPosition(), false);	
 						if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
 							timeFromLastClick = 0;
@@ -809,8 +812,11 @@ function Level2::UpdateLogic(dt)
 								numpadObj.AnimateButton(pressedButton);								
 							}						
 						}
-						else		
-							pressedButton = vrPressedButton;		
+						else if(timeFromLastClick > 0.4){	
+							timeFromLastClick = 0;	
+							pressedButton = vrPressedButton;	
+							numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);						
+						}	
 					}
 				}
 				else {

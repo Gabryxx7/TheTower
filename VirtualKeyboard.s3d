@@ -68,7 +68,7 @@ class VirtualKeyboard{
 	ChangePressedButtonsColor(pColor);
 	FadePressedButtonsColor(startColor, endColor);
 	PointedButton(mObject, cameraPosition, isCamera);
-	PressTouchedButton(objPos, dt, pViveObj, controllerIndex);
+	TouchedButton(objPos);
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
 	PressAllButtons();	
@@ -403,9 +403,8 @@ function VirtualKeyboard::UnpressButton(buttonChar){
 	return true;
 }
 
-function VirtualKeyboard::PressTouchedButton(objPos, dt, inputManager, controllerIndex){
-	mTimefromLastAction += dt;
-	var usingVive = valtype(inputManager) == "" ? false : true;
+function VirtualKeyboard::TouchedButton(objPos){
+
 	var buttonPos;
 	var maxDepth = mButtonsThickness * 0.8;
 	var offsets = [mButtonsWidth/2, mButtonsWidth/2, mButtonsThickness];
@@ -414,17 +413,11 @@ function VirtualKeyboard::PressTouchedButton(objPos, dt, inputManager, controlle
 		if(objPos.x >= buttonPos.x - offsets.x && objPos.x <= buttonPos.x + offsets.x
 		&& objPos.y >= buttonPos.y - offsets.y && objPos.y <= buttonPos.y + offsets.y){
 			if(objPos.z >= buttonPos.z - maxDepth && objPos.z <= buttonPos.z){
-				mButtonsObjs[i].SetPosition([mOriginalButtonPos[i].x, mOriginalButtonPos[i].y, objPos.z]);
-				if(mTimefromLastAction > 0.6){
-					mTimefromLastAction = 0;
-					if(PressButton(mCharacters[i], true) > -1){
-						if(usingVive){
-							inputManager.VibrateController(controllerIndex, 100);
-						}
-						return mCharacters[i];						
-					}
-				}
-				return "";
+				mButtonsObjs[i].SetPosition([buttonPos.x, buttonPos.y, objPos.z]);
+				if(objPos.z < buttonPos.z)
+					return mCharacters[i];
+				else
+					return "";
 			}
 		}
 		else{
