@@ -276,7 +276,7 @@ function VirtualKeyboard::AnimateButton(buttonChar){
 
 
 function VirtualKeyboard::AnimatePressedButtons(){	
-	for(var j = 0; j < len(mPressedButtonsObjs); j++){		
+	for(var j = 0; j < len(mPressedButtonsObjs); j++){	
 		mAnimator.CreateTransition(mPressedButtonsObjs[j], mOriginalButtonPos[mPressedText[j]], {mOriginalButtonPos[mPressedText[j]] - [0, 0, mButtonsThickness*0.8], mOriginalButtonPos[mPressedText[j]]}, mAnimationTIme, false);
 	}
 }
@@ -435,7 +435,8 @@ function VirtualKeyboard::TouchedButton(objPos){
 
 function VirtualKeyboard::PressAllButtons(){	
 	while(len(mPressedButtonsObjs) > 0){
-		adel(mPressedButtonsObjs, 0);		
+		adel(mPressedButtonsObjs, 0);	
+		adel(mPressedText, 0);	
 	}	
 	
 	while(len(mUnpressedButtonsObjs) > 0){
@@ -443,7 +444,8 @@ function VirtualKeyboard::PressAllButtons(){
 	}
 	
 	for(var i = 0; i < len(mButtonsObjs); i++){		
-		aadd(mPressedButtonsObjs, mButtonsObjs[i]);
+		aadd(mPressedButtonsObjs, mButtonsObjs[i]);		
+		aadd(mPressedText, i);
 		mButtonsObjs[i].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mPressedButtonColor);		
 	}
 }

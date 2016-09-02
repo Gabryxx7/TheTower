@@ -883,6 +883,8 @@ function Level2::UpdateLogic(dt)
 					// I switch status
 					mLevelStatus = STATUS_LEVEL_ENDING;
 					numpadObj.PressAllButtons();
+					numpadObj.AnimatePressedButtons();
+					numpadObj.FadePressedButtonsColor(numpadObj.GetPressedButtonColor(), numpadObj.GetPressedButtonColor() + [0.15, 0.3, 0.15]);
 				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
 					outputln("Wrong Code!! ");
 					numpadObj.FadePressedButtonsColor(numpadObj.GetWrongCodeColor(), numpadObj.GetUnpressedButtonColor());
