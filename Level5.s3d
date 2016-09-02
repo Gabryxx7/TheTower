@@ -72,7 +72,7 @@ class Level5
 	var mMaskObj;
 	// Private functions
 	DrawAllPortals();
-	DrawPortal(portalFrame, portalFrameNormal);
+	DrawPortal(portalFrame1, portalFrameNormal1, portalFrame2, portalFrameNormal2);
 	
 	// Public functions
 	Init(lights, elevator, openglTransformOffset);
@@ -357,7 +357,10 @@ function Level5::DrawAllPortals()
 		if(dotProduct >= 0)
 		{
 			// I render the portal, passing also the information about the light's color and position
-			DrawPortal(mPortalFrames[i], mPortalFramesNormals[i]);
+			if(i == 0)
+				DrawPortal(mPortalFrames[0], mPortalFramesNormals[0], mPortalFrames[1], mPortalFramesNormals[1]);
+			else
+				DrawPortal(mPortalFrames[1], mPortalFramesNormals[1], mPortalFrames[0], mPortalFramesNormals[0]);
 			
 			// Since it's visible, I add this to the array
 			aadd(mCurrentlyVisiblePortalFrames, mPortalFrames[i]);
@@ -409,7 +412,7 @@ function Level5::DrawAllPortals()
   * portalFrame: (CVmObj) the frame from which the portal's room will be visible
   * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
   */
-function Level5::DrawPortal(portalFrame, portalFrameNormal)
+function Level5::DrawPortal(portalFrame1, portalFrameNormal1, portalFrame2, portalFrameNormal2)
 {
 	glPushMatrix();
 	
@@ -422,17 +425,20 @@ function Level5::DrawPortal(portalFrame, portalFrameNormal)
 	glStencilMask(0xFF);
 	
 	glClear(GL_STENCIL_BUFFER_BIT);
-	portalFrame.Draw();
+	portalFrame1.Draw();	
 	
-	glTranslate(-mOpenglTranslationOffset);
-	
-	var framePos = portalFrame.GetPosition();	
-	var translation = framePos;		
+	var framePos = portalFrame2.GetPosition();	
+	var translation = [framePos.x, 0, framePos.z];		
 		
 	// Now I move the world where the camera should be rendering the portal room (it's "minus" translation, because the glTranslate pushes the world away)
-//	glTranslate(-translation);
-//	if(portalFrameNormal == [1,0,0])
-		glRotate(180, 0, 1, 0);
+	glRotate(180, 0, 1, 0);
+	glTranslate(-mOpenglTranslationOffset);
+	glTranslate(-translation);
+//	if(portalFrameNormal1 == [0,0,1])
+		
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
 	// Setting the light to its defined position
 //	glLight(GL_LIGHT0, GL_POSITION, [lightPosition.x, lightPosition.y, lightPosition.z, 1.0]); 
 	
@@ -453,11 +459,16 @@ function Level5::DrawPortal(portalFrame, portalFrameNormal)
 	// Drawing the actual portal's room where the stencil is 1
 	mMainRoom.Draw(true);
 	mProvaObj.Draw(true);
+	
+	glCullFace(GL_BACK);
 	mMaskObj.Draw(true);
 	
 	// I'm done with this portal, so I pop the matrix from the stack. This way the glTranslsate() that I did above will be undone, bringing the world
 	// back the way it was before rendering the portal room, which is what I want
 	glPopMatrix();
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
 }
 
 

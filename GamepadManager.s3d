@@ -304,7 +304,7 @@ function GamepadManager::IsPressingPrimaryButton()
 
 function GamepadManager::IsPressingSecondaryButton()
 {
-	return mJoystick.button7;
+	return mJoystick.button5;
 }
 
 
