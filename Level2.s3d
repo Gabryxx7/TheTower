@@ -144,8 +144,20 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		aadd(mControllersArray, mDebugController);
 	}
 	
+	mEnding = false;
+	mIsLevelCompleted = false;
+	mTimeToEnd = 2500;
+	
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
+	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
+	// Retrieving the input manager and setting the initial camera's position
+	mCamera = mInputManager.GetActiveCamera();
+	// Creating the object that will handle transitions and rotations of objects
+	mAnimator = Animator();
+	
 	mIsElevatorPresent = false;
 	
 	// Creating the main room
@@ -181,6 +193,19 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	testo.AddChild(line,ROOM_FAR_WALL_WIDTH/2-0.1*SCALE_FACTOR, ROOM_HEIGHT/2-2*SCALE_FACTOR, -30*SCALE_FACTOR);
 	// Adding each text to its portal room
 	testo.SetScale([1, 1, 1]);
+	
+	///// NUMBER PAD GENERATION /////
+	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
+	var buttonsSpacing = 0.04 * SCALE_FACTOR;
+	var unpressedColor = [0.7,0.7,0.7];
+	var pressedColor = [0,0.8,0.0];
+	var wrongColor = [0.8,0.0,0.0];
+	var buttonsTextColor = [0.0,0.0,0.0];
+	var clearingColor = [0.8,0.8,0];
+	numpadObj = VirtualKeyboard(mAnimator, "123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
+//	numpadObj = VirtualKeyboard(mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null,  numpadPos, numpadHolderSize);	
+/////////////////////////////////////////////////////////
+	
 	
 	if(mIsVRon)
 	{
@@ -234,20 +259,6 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	for(var i = 0; i < len(mElevatorWallMeshes); i++){		
 		AddToonShaderToMesh(mElevatorWallMeshes[i], [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, 0, 2, SCALE_FACTOR, 1.0);
 	}
-	
-	// Retrieving the input manager and setting the initial camera's position
-	mCamera = mInputManager.GetActiveCamera();
-
-	// Creating the object that will handle transitions and rotations of objects
-	mAnimator = Animator();
-
-	
-	mEnding = false;
-	mIsLevelCompleted = false;
-	mTimeToEnd = 2500;
-	
-	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
-	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
 	
 	mElevator.SetPosition([mElevator.GetPosition().x, mElevator.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()+0.3*SCALE_FACTOR]);
 	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset);
@@ -328,20 +339,15 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		aadd(randomShapes, RandomMeshes(mesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
 	}
 	
-	///// NUMBER PAD GENERATION /////
-	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
-	var buttonsSpacing = 0.04 * SCALE_FACTOR;
-	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (buttonsSize.x*1.5), mElevatorFinalPosition.y + 4*buttonsSize.x, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(buttonsSize.y*1.4)];
-	var numpadHolderSize = [buttonsSize.x*len(paths), mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, buttonsSize.y*1.5];
-	var unpressedColor = [0.7,0.7,0.7];
-	var pressedColor = [0,0.8,0.0];
-	var wrongColor = [0.8,0.0,0.0];
-	var buttonsTextColor = [0.0,0.0,0.0];
-	var clearingColor = [0.8,0.8,0];
-	numpadObj = VirtualKeyboard(mAnimator, "123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize, len(paths));	
-//	numpadObj = VirtualKeyboard(mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", buttonsSize.x, buttonsSpacing, buttonsSize.y, numpadPos, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, numpadHolderSize);	
-/////////////////////////////////////////////////////////
-	
+	/////// NUMPAD SCREEN SETTING AND POSITIONING /////
+	var numpadButtonsSize = numpadObj.GetButtonsSize();
+	var numpadButtonsThickness = numpadObj.GetButtonsThickness();
+	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (numpadButtonsSize*1.5), mElevatorFinalPosition.y + 4*numpadButtonsSize, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(numpadButtonsThickness*1.4)];
+ 	var numpadHolderSize = [numpadButtonsSize*len(paths), mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, numpadButtonsThickness*1.5];
+	numpadObj.CreateHolder(numpadHolderSize);
+	numpadObj.SetMaxCharOnScreen(len(paths));
+	numpadObj.SetPosition(numpadPos);
+	/////////////////////////////////////////////////////////7
 	
 	codeNumbers = {};
 	var finalPositions;

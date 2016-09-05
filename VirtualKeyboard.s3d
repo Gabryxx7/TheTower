@@ -1,4 +1,11 @@
 class VirtualKeyboard{	
+	
+	var offsetY;
+	var offsetX;
+	var offsetZ;
+	var mMaxRowLength;
+	var mSpaceSize;
+	
 	var mButtonsObjs;
 	var mPressedButtonsObjs;
 	var mPressedText;
@@ -11,6 +18,7 @@ class VirtualKeyboard{
 	
 	var mScreenTextsMeshes;
 	var mCharOnScreen;
+	var mScreenMeshObj;
 	var mScreenObj;
 	var mScreenTextObjs;
 	var mScreenTextSize;
@@ -47,6 +55,9 @@ class VirtualKeyboard{
 	DrawScreen();
 	DrawScreenText();
 	GetButtonsObjs();
+	GetButtonsSize();
+	GetButtonsThickness();
+	GetButtonsSpacing();
 	GetHolderObj();
 	GetHolderSizes();
 	GetUnpressedButtonsObjs();
@@ -74,18 +85,19 @@ class VirtualKeyboard{
 	UnpressAllButtons();
 	PressAllButtons();	
 	IsCameraInKeyboardRange(cameraPosition, range);
+	CreateHolder(holderSize);
+	SetPosition(newPos);
+	SetMaxCharOnScreen(maxCharOnScreen);
 };
 
 
-function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spaceSize, tilesThickness, KeyboardPosition, unpressedButtonColor, pressedButtonColor, wrongCodeColor, secondaryColor, buttonsTextColor, holderSize, maxDigitsOnScreen, screenColor, screenTextColor){
+function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spaceSize, tilesThickness, unpressedButtonColor, pressedButtonColor, wrongCodeColor, secondaryColor, buttonsTextColor, screenColor, screenTextColor, maxDigitsOnScreen, keyboardPosition){
 	mTimefromLastAction = 0;
 	mAnimator = animator;
 	mAnimationTime = 0.25;
 	mHoveredButton = -1;
-	mKeyboardPosition = keyboardPosition;
 	mButtonsObjs = {};
 	mScreenTextsMeshes = {};
-	mScreenObj =  CvmObj();
 	mCharOnScreen = {};
 	mPressedButtonsObjs = {};
 	mPressedText = {};
@@ -99,22 +111,17 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 	mButtonsTextColor = buttonsTextColor;
 	mButtonsThickness = tilesThickness;
 	mButtonsWidth = tilesSize;
-	mTextOffset = 0.02*SCALE_FACTOR;
-	
-	mHolderSizes = holderSize;
-	var holderMesh = CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z);
-	AddToonShaderToMesh(holderMesh, [0.4, 0.4, 0.4], [1, 1, 1], [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
-	mHolderObj = CvmObj(holderMesh);	
-	mHolderObj.SetPosition(keyboardPosition.x+mButtonsWidth, 0, keyboardPosition.z-mButtonsThickness);
-	AddSilhouetteLinesToPlanarObject(mHolderObj, 0.02 * SCALE_FACTOR, holderSize.x, holderSize.y, 0, holderSize.y/2, 0);
+	mSpaceSize = spaceSize;
+	mTextOffset = 0.005*SCALE_FACTOR;
 	
 	mScreenColor = valtype(screenColor) == "V" ? mScreenColor : [0.35,0.8,0.35];
 	mScreenTextColor = valtype(screenTextColor) == "V" ? mScreenTextColor : [0,0,0];
+	mKeyboardPosition = valtype(keyboardPosition) == "V" ? keyboardPosition : [0,0,0];
 	mScreenTextSize = mButtonsWidth * 0.7;		
 	
-	var offsetY = mButtonsWidth + spaceSize;
-	var offsetX = mButtonsWidth + spaceSize;
-	var offsetZ = mButtonsThickness;
+	offsetY = mButtonsWidth + mSpaceSize;
+	offsetX = mButtonsWidth + mSpaceSize;
+	offsetZ = mButtonsThickness;
 	
 	var txt;
 	var txtObj;
@@ -132,8 +139,7 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 			cols++;
 			rows = 0;	
 		}			
-		var buttonPos = keyboardPosition + [(offsetX * (rows++)), -offsetY*(cols), 0] ;
-		
+		var buttonPos = mKeyboardPosition + [(offsetX * (rows++)), -offsetY*(cols)- (1.5*SCALE_FACTOR), 0] ;
 		txt = CVmText();		
 		txt.Load(upper(buttonsText[i]));
 		txt.SetColor(mButtonsTextColor.r, mButtonsTextColor.g, mButtonsTextColor.b);		
@@ -141,20 +147,18 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 		txtObj = CVmObj();
 		txtObj.LinkToText(txt);
 		txtObj.SetScale(0.1,0.1,0.1);
-//		txtObj.SetPosition(buttonPos.x-(0.1*SCALE_FACTOR), buttonPos.y - (1.65*SCALE_FACTOR), buttonPos.z + mTextOffset);
 		
 		var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
 		AddToonShaderToMesh(buttonMesh, [0.4, 0.4, 0.4], mUnpressedButtonColor, [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
 		buttonObj = CVmObj(buttonMesh);
 		buttonObj.AddChild(txtObj, -(0.1*SCALE_FACTOR), -(0.13*SCALE_FACTOR) ,mTextOffset);
 		AddSilhouetteLinesToPlanarObject(buttonObj, 0.02 * SCALE_FACTOR, mButtonsWidth, mButtonsWidth, 0);
-		buttonObj.SetPosition(buttonPos.x, buttonPos.y - (1.5*SCALE_FACTOR), buttonPos.z);	
+		buttonObj.SetPosition(buttonPos.x, buttonPos.y, buttonPos.z);	
 		
 		aadd(mCharacters, lower(buttonsText[i]));
 		aadd(mOriginalButtonPos, buttonObj.GetPosition());
 		aadd(mButtonsObjs, buttonObj);
-		aadd(mUnpressedButtonsObjs, buttonObj);	
-		
+		aadd(mUnpressedButtonsObjs, buttonObj);			
 		
 		var screenTxt = CVmText();		
 		screenTxt.Load(upper(buttonsText[i]));
@@ -165,14 +169,13 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 	if(maxRowLength < 0)
 		maxRowLength = rows;
 		
-	mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : maxRowLength+2;
-	var screenMesh = CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2);
-	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], mScreenColor, 25, 0, 2, SCALE_FACTOR, 1.0);
-	mScreenObj.AddChild(CvmObj(screenMesh));
-	AddSilhouetteLinesToPlanarObject(mScreenObj, 0.02 * SCALE_FACTOR, (mMaxDigitsOnScreen*mScreenTextSize)+0.4*SCALE_FACTOR, offsetY, 0);
-	mScreenObj.SetPosition(keyboardPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth,-mButtonsThickness + 0.1*SCALE_FACTOR]);
+	mMaxRowLength = maxRowLength;
+	mMaxDigitsOnScreen = valtype(maxDigitsOnScreen) == "I" ? maxDigitsOnScreen : mMaxRowLength+2;
+	mScreenObj = CvmObj();
 	mScreenTextObjs = CVmObj();
-	mScreenTextObjs.SetPosition(keyboardPosition + [offsetX*(maxRowLength-1)/2, +spaceSize-mButtonsWidth, -mButtonsThickness + 0.1*SCALE_FACTOR]);	
+	mScreenObj.SetPosition(mKeyboardPosition + [offsetX*(mMaxRowLength-1)/2, +mSpaceSize*3-mButtonsWidth, -mButtonsThickness + mTextOffset]);
+	mScreenTextObjs.SetPosition(mScreenObj.GetPosition() + [0, -0.15*SCALE_FACTOR, mTextOffset]);
+	SetMaxCharOnScreen(mMaxDigitsOnScreen);
 }
 
 
@@ -187,7 +190,8 @@ function VirtualKeyboard::DrawPressedButtons(){
 }
 
 function VirtualKeyboard::DrawHolder(){
-	mHolderObj.Draw();
+	if(valtype(mHolderObj) != "")
+		mHolderObj.Draw();
 }
 
 function VirtualKeyboard::DrawScreen(){
@@ -216,6 +220,18 @@ function VirtualKeyboard::GetButtonObj(buttonChar){
 		if(mCharacters == buttonChar)
 			return mButtonsObjs[i];
 	}
+}
+
+function VirtualKeyboard::GetButtonsSize(){
+	return mButtonsWidth;
+}
+
+function VirtualKeyboard::GetButtonsThickness(){
+	return mButtonsThickness;
+}
+
+function VirtualKeyboard::GetButtonsSpacing(){
+	return mSpaceSize;
 }
 
 function VirtualKeyboard::GetKeyboardCharacters(){
@@ -348,7 +364,7 @@ function VirtualKeyboard::PressButton(buttonChar, typeOnScreen){
 		charObj.LinkToText(mScreenTextsMeshes[charPos]);
 		aadd(mCharOnScreen, charObj);
 		charObj.SetScale(0.1,0.1,0.1);
-		mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.15*SCALE_FACTOR, 0.05*SCALE_FACTOR);	
+		mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, 0,0);	
 	}
 	
 	//If it is not already pressed, I add it to the pressed buttons vector
@@ -500,4 +516,41 @@ function VirtualKeyboard::UnhoverButton(){
 			return;			
 	}
 	mButtonsObjs[mHoveredButton].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor);
+}
+
+function VirtualKeyboard::CreateHolder(holderSize){
+	mHolderSizes = holderSize;
+	var holderMesh = CVmNewMesh(VRP_BOX, 1, [-holderSize.x/2, 0, 0], [holderSize.x/2, holderSize.y, 0], holderSize.z);
+	AddToonShaderToMesh(holderMesh, [0.4, 0.4, 0.4], [1, 1, 1], [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
+	mHolderObj = CvmObj(holderMesh);	
+	mHolderObj.SetPosition(mKeyboardPosition.x+mButtonsWidth, 0, mKeyboardPosition.z-mButtonsThickness);
+	AddSilhouetteLinesToPlanarObject(mHolderObj, 0.02 * SCALE_FACTOR, holderSize.x, holderSize.y, 0, holderSize.y/2, 0);
+}
+
+function VirtualKeyboard::SetPosition(newPos){
+	for(var i = 0; i < len(mButtonsObjs); i++){
+		mOriginalButtonPos[i] = mOriginalButtonPos[i] - mKeyboardPosition + newPos;
+		mButtonsObjs[i].SetPosition(mOriginalButtonPos[i]);
+	}
+	
+	UnpressAllButtons();
+	
+	if(valtype(mHolderObj) != "")
+		mHolderObj.SetPosition(mHolderObj.GetPosition() - [mKeyboardPosition.x, 0, mKeyboardPosition.z]  + [newPos.x, 0, newPos.z]);
+		
+	mScreenObj.SetPosition(mScreenObj.GetPosition() - mKeyboardPosition + newPos);
+	mScreenTextObjs.SetPosition(mScreenTextObjs.GetPosition() - mKeyboardPosition + newPos);
+	mKeyboardPosition = newPos;	
+}
+
+function VirtualKeyboard::SetMaxCharOnScreen(maxCharOnScreen){
+	mMaxDigitsOnScreen = maxCharOnScreen;
+	if(valtype(mScreenMeshObj) != "")
+		mScreenTextObjs.RemoveChild(mScreenMeshObj);
+	
+	var screenMesh = CVmNewMesh(VRP_PLANE, 1, [-(mMaxDigitsOnScreen*mScreenTextSize)/2-0.2*SCALE_FACTOR, -offsetY/2, 0], [(mMaxDigitsOnScreen*mScreenTextSize)/2+0.2*SCALE_FACTOR, offsetY/2, 0], 2, 2);
+	AddToonShaderToMesh(screenMesh, [0.4, 0.4, 0.4], [0.0, 0.8, 0.0], mScreenColor, 25, 0, 2, SCALE_FACTOR, 1.0);
+	mScreenMeshObj = CvmObj(screenMesh);
+	AddSilhouetteLinesToPlanarObject(mScreenMeshObj, 0.02 * SCALE_FACTOR, (mMaxDigitsOnScreen*mScreenTextSize)+0.4*SCALE_FACTOR, offsetY, 0);
+	mScreenObj.AddChild(mScreenMeshObj, 0,0,0);
 }
