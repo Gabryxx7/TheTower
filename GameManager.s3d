@@ -205,9 +205,9 @@ function GameManager::GameManager(HMD)
 	if(DEBUG_MODE)
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
-		mCurrentLevel = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
+		var arrayLevel0 = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
 		
-		mElevator = mCurrentLevel.GetElevator();
+		mElevator = arrayLevel0.GetElevator();
 		mElevator.Unhide();
 		
 		// Sposto la camera in modo che sia dentro l'ascensore
@@ -218,12 +218,16 @@ function GameManager::GameManager(HMD)
 		
 		mCurrentLevelNumber = 0;
 		
-		aadd(mLevels, "placeholder");
-		aadd(mLevels, "placeholder");
+		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, "placeholder");
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, "placeholder");
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, "placeholder");
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, "placeholder");
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, "placeholder");
 		
 		mFadeToBlackAlpha = 1;
 		mFadingIn = false;

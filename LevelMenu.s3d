@@ -349,7 +349,7 @@ function LevelMenu::UpdateLogic(dt)
 				}
 			}
 			
-			if(pointedLevel > 0 && mInputManager.IsPressingPrimaryButton())
+			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton())
 			{
 				mSelectedLevel = pointedLevel;
 				mIsLevelCompleted = true;
