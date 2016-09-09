@@ -130,6 +130,9 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 	var rows = 0;
 	var cols = 0;
 	var maxRowLength = -1;
+	var buttonTxtScale = 1.2;
+	var screenTxtScale = 1.4;
+	var objScale = 0.1;
 	for(var i = 0; i < len(buttonsText) ; i++){	
 		if(buttonsText[i] == "\n"){			
 			if(rows > maxRowLength)
@@ -141,17 +144,17 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 		}			
 		var buttonPos = mKeyboardPosition + [(offsetX * (rows++)), -offsetY*(cols)- (1.5*SCALE_FACTOR), 0] ;
 		txt = CVmText(upper(buttonsText[i]),0,0,"DS-Digital", 0);		
-		txt.SetScale(1.2);
+		txt.SetScale(buttonTxtScale);
 		txt.SetColor(mButtonsTextColor.r, mButtonsTextColor.g, mButtonsTextColor.b);		
 		
 		txtObj = CVmObj();
 		txtObj.LinkToText(txt);
-		txtObj.SetScale(0.1,0.1,0.1);
+		txtObj.SetScale(objScale, objScale, objScale);
 		
 		var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
 		AddToonShaderToMesh(buttonMesh, [0.4, 0.4, 0.4], mUnpressedButtonColor, [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
 		buttonObj = CVmObj(buttonMesh);
-		buttonObj.AddChild(txtObj, -(0.14*SCALE_FACTOR), -(0.18*SCALE_FACTOR) ,mTextOffset);
+		buttonObj.AddChild(txtObj, -(buttonTxtScale*objScale)*SCALE_FACTOR, -(buttonTxtScale*objScale + 0.07)*SCALE_FACTOR, mTextOffset);
 		AddSilhouetteLinesToPlanarObject(buttonObj, 0.02 * SCALE_FACTOR, mButtonsWidth, mButtonsWidth, 0);
 		buttonObj.SetPosition(buttonPos.x, buttonPos.y, buttonPos.z);	
 		
@@ -161,7 +164,7 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 		aadd(mUnpressedButtonsObjs, buttonObj);			
 		
 		var screenTxt = CVmText(upper(buttonsText[i]),0,0,"DS-Digital", 0);			
-		screenTxt.SetScale(1.4);	
+		screenTxt.SetScale(screenTxtScale);	
 		screenTxt.SetColor(mScreenTextColor.r, mScreenTextColor.g, mScreenTextColor.b);
 		aadd(mScreenTextsMeshes, screenTxt);
 	}

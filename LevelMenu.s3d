@@ -9,7 +9,8 @@ class LevelMenu
 	var menuRoom_BordersThickness ;
 	var mIsVRon;
 	
-	
+	var levelSelectorsObj;
+	var levelSelectors;
 	var numberOfLevels;
 	var towerLevelHeight;
 	var towerLevelWidth;
@@ -78,6 +79,7 @@ class LevelMenu
 	IsLevelCompleted();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
+	GetOpenglTransformOffset();
 	SetupOpenglLights();
 };
 
@@ -140,6 +142,32 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	
 	towerLevels.SetPosition(-towerLevelWidth*5, -towerLevelHeight*(numberOfLevels/2), menuRoom_WidthFar/2 - towerConnectionsWidth/2);
 	
+	levelSelectors = {};
+	levelSelectorsObj = CVmObj();
+	var elementPerRow = 2;
+	var spacing = 0.5*SCALE_FACTOR;
+	var startingY = 0;
+	var width = 4*SCALE_FACTOR;
+	var height = 1.5*SCALE_FACTOR;
+	var thickness = 0.1*SCALE_FACTOR;
+	var scale = 0.15;
+	var pos;
+	var levels = 4;
+	for(var i = 0; i < levels; i++){		
+		if( i > 0 && (i % elementPerRow) == 0)
+			startingY += (height+thickness*2) + spacing;
+			
+		pos = [(width+thickness*2)*(i % elementPerRow) + spacing*(i % elementPerRow), startingY, 0];
+			
+		var selector = LevelMenuSelector(mAnimator, i, [0,0,0], width, height, thickness, [1,1,1], [1,0,0], scale);
+		aadd(levelSelectors, selector);
+		levelSelectorsObj.AddChild(selector.GetObj(), pos.x, pos.y, pos.z);
+	}
+	
+	var objScale = 2.5;
+	levelSelectorsObj.SetScale(objScale, objScale, 0);
+	levelSelectorsObj.SetPosition(-(menuRoom_WidthFar/2 - (width*2)), menuRoom_Height/2-height*2, -menuRoom_WidthSide/2+0.02*SCALE_FACTOR);
+	
 	if(mIsVRon)
 	{
 		mController1 = mInputManager.GetController(1);
@@ -163,7 +191,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	var diffuseFactor = 0.05;
 	mLight0Diffuse = [1, 0, 0];
 	mLight1Diffuse = [0, 1, 1];
-	mLight2Diffuse = [1, 1, 1];
+	mLight2Diffuse = [0.5, 0.5, 0.5];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -219,7 +247,7 @@ function LevelMenu::Render()
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
-       		DrawGrid([1,1,1], false, false, true, true, true, true);
+       		DrawGrid([1,1,1], false, false, false, true, true, true);
        		text1.Draw();
 		
 			mToonShader.Start();
@@ -249,8 +277,10 @@ function LevelMenu::Render()
 			mAlphaShader.SetParameter("finalColor", [0.6, 0.6, 1]);
 			mMenuRoom.Draw([0,0,0,1,0,0], [0,0,0,0,0,0]);
 		mAlphaShader.Stop();
+		
+		levelSelectorsObj.Draw();
 			
-			break;
+		break;
 	}
 	
 	if(mIsVRon)
@@ -284,7 +314,14 @@ function LevelMenu::UpdateLogic(dt)
 		
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{			
+		{		
+			for(var i = 0; i < len(levelSelectors); i++){
+				var res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, true);
+				outputln();
+				output(i);
+				output(" ");
+				outputln(res);
+			}	
 			break;
 		}
 	}
@@ -323,6 +360,11 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 function LevelMenu::IsLevelCompleted()
 {
 	return mIsLevelCompleted;
+}
+
+function LevelMenu::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
 }
 
 function LevelMenu::SetOpenglTransformOffset(openglTransformOffset)

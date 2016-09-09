@@ -18,6 +18,7 @@ global var SCALE_FACTOR = 0.2;
 #include "DrawingsConnector.s3d"
 #include "GlassBox.s3d"
 #include "TilesPath.s3d"
+#include "LevelMenuSelector.s3d"
 #include "CubeNumbers.s3d"
 #include "RandomMeshes.s3d"
 #include "MarcelloUtils.s3d"
@@ -211,7 +212,7 @@ function GameManager::GameManager(HMD)
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 				
-		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
 		
 		mCurrentLevelNumber = 0;

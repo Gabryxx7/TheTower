@@ -1,0 +1,108 @@
+class LevelMenuSelector{
+	var mAnimator;
+	var mObj;
+	var mTextObj;
+	var mTextColor;
+	var mBordersColor;
+	var mPos;
+	var mFont;
+	var mLevelNumber;
+	var mScale;
+	var mWidth;
+	var mHeight;
+	var mThickness;
+	
+	Draw();
+	SetPosition(pos);
+	SetRotation(deg, x,y,z);
+	GetObj();
+	GetWidth();
+	GetHeight();
+	IsBeingPointedBy(mObject, objectPosition, isCamera);
+};
+
+function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, pos, length, height, thickness, textColor, bordersColor, scale, font){
+	mObj = CVmObj();	
+	mAnimator = animator;
+	mLevelNumber = levelNumber;
+	mTextColor = valtype(textColor) != "" ? textColor : [1,1,1];
+	mBordersColor = valtype(bordersColor) != "" ? bordersColor : [1,1,1];
+	mPos = valtype(pos) != "" ? pos : [0,0,0];
+	mFont = valtype(font) != "" ? font : "DS-Digital";
+	mScale = valtype(scale) != "" ? scale : 0.25;
+	mWidth = valtype(length) != "" ? length : 6*SCALE_FACTOR;
+	mHeight = valtype(height) != "" ? height : 3*SCALE_FACTOR;
+	mThickness = valtype(thickness) != "" ? thickness : 0.5*SCALE_FACTOR;
+	
+	var ambient = [1,1,1];
+	var diffuse = mBordersColor;
+	var specular = [0.2, 0.2, 0.2];
+	var shininess = 0;
+	var lightMin = 0;
+	var lightMax = 2;
+	var alpha = 1;
+	var longSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mThickness/2, 0], [mWidth/2, mThickness/2, 0], 2,2 );
+	AddToonShaderToMesh(longSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
+	var shortSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mThickness/2, -mHeight/2, 0], [mThickness/2, mHeight/2, 0], 2,2 );
+	AddToonShaderToMesh(shortSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
+	var backgroundMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mHeight/2, 0], [mWidth/2, mHeight/2, 0], 2,2 );
+	AddToonShaderToMesh(backgroundMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, 0.5);
+	
+	var levelString = "Level " + char(levelNumber+48);
+	var txt = CVmText(levelString,0,0,mFont, 0);		
+	txt.SetScale(mScale);
+	txt.SetColor(mTextColor.r, mTextColor.g, mTextColor.b);		
+	
+	mTextObj = CVmObj();
+	mTextObj.LinkToText(txt);
+	
+	var mTextOffset = 0.05 *SCALE_FACTOR;
+	mObj.AddChild(CvmObj(longSideMesh), 0, mHeight/2+mThickness/2, 0);
+	mObj.AddChild(CvmObj(longSideMesh), 0, -mHeight/2-mThickness/2, 0);
+	mObj.AddChild(CvmObj(shortSideMesh), -mWidth/2+mThickness/2, 0, 0);
+	mObj.AddChild(CvmObj(shortSideMesh), mWidth/2-mThickness/2, 0, 0);
+	mObj.AddChild(CvmObj(backgroundMesh), 0, 0, 0);
+	mObj.AddChild(mTextObj, -(len(levelString)*(mScale + 0.025))*SCALE_FACTOR, -mScale*SCALE_FACTOR, mTextOffset);
+	mObj.SetPosition(mPos);
+}
+
+
+function LevelMenuSelector::Draw(){
+	mObj.Draw();
+}	
+
+function LevelMenuSelector::SetPosition(pos){
+	mObj.SetPosition(pos);
+}
+
+function LevelMenuSelector::SetRotation(deg, x,y,z){
+	if(valtype(x) == "V")
+		mObj.SetRotation(deg, x);
+	else
+		mObj.SetRotation(deg, x,y,z);
+}
+
+function LevelMenuSelector::GetHeight(){
+	return mHeight+mThickness*2;
+}
+
+function LevelMenuSelector::GetWidth(){
+	return mWidth;
+}
+
+function LevelMenuSelector::GetObj(){
+	return mObj;
+}
+
+function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, isCamera){
+	var raycastOrigin = objectPosition;
+	var raycastEnd = isCamera ? (raycastOrigin + mObject.GetDirection() * mObject.GetZFar()) : (raycastOrigin + mObject.GetDirection() * 20);
+	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mObj);
+	
+	if(contactPoint != Void){
+		mAnimator.CreateToonShaderColorTransition(mObj, mBordersColor, [1,1,1], 0.25, false);
+		return true;		
+	}
+		
+	return false;	
+}
