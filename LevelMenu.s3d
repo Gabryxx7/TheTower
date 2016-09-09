@@ -9,7 +9,6 @@ class LevelMenu
 	var menuRoom_BordersThickness ;
 	var mIsVRon;
 	
-	var levelSelectorsObj;
 	var levelSelectors;
 	var numberOfLevels;
 	var towerLevelHeight;
@@ -143,30 +142,32 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	towerLevels.SetPosition(-towerLevelWidth*5, -towerLevelHeight*(numberOfLevels/2), menuRoom_WidthFar/2 - towerConnectionsWidth/2);
 	
 	levelSelectors = {};
-	levelSelectorsObj = CVmObj();
-	var elementPerRow = 2;
-	var spacing = 0.5*SCALE_FACTOR;
-	var startingY = 0;
-	var width = 4*SCALE_FACTOR;
-	var height = 1.5*SCALE_FACTOR;
-	var thickness = 0.1*SCALE_FACTOR;
-	var scale = 0.15;
-	var pos;
 	var levels = 4;
-	for(var i = 0; i < levels; i++){		
-		if( i > 0 && (i % elementPerRow) == 0)
-			startingY += (height+thickness*2) + spacing;
-			
-		pos = [(width+thickness*2)*(i % elementPerRow) + spacing*(i % elementPerRow), startingY, 0];
-			
-		var selector = LevelMenuSelector(mAnimator, i, [0,0,0], width, height, thickness, [1,1,1], [1,0,0], scale);
-		aadd(levelSelectors, selector);
-		levelSelectorsObj.AddChild(selector.GetObj(), pos.x, pos.y, pos.z);
-	}
+	var elementsPerRow = 2;
 	
 	var objScale = 2.5;
-	levelSelectorsObj.SetScale(objScale, objScale, 0);
-	levelSelectorsObj.SetPosition(-(menuRoom_WidthFar/2 - (width*2)), menuRoom_Height/2-height*2, -menuRoom_WidthSide/2+0.02*SCALE_FACTOR);
+	var txtSize = 0.15*objScale;
+	var spacing = 0.5*SCALE_FACTOR*objScale;
+	var width = 4*SCALE_FACTOR*objScale;
+	var height = 1.5*SCALE_FACTOR*objScale;
+	var thickness = 0.1*SCALE_FACTOR*objScale;	
+	var startingY = height/2+thickness;
+	var yPos = startingY + (height*(levels/elementsPerRow) + spacing*(levels/elementsPerRow-1))/2;
+	var zPos = -menuRoom_WidthSide/2+0.04*SCALE_FACTOR;
+	var xPos = 0;
+	var xOffset = menuRoom_WidthSide/2 - width/2 - 2*SCALE_FACTOR;
+	var pos;
+	
+	for(var i = 0; i < levels; i++){		
+		if( i > 0 && (i % elementsPerRow) == 0)
+			yPos += (height+thickness*2) + spacing;
+			
+		xPos = (width+thickness*2)*(i % elementsPerRow) + spacing*(i % elementsPerRow);
+			
+		var selector = LevelMenuSelector(mAnimator, i, [xPos - xOffset, yPos, zPos], width, height, thickness, [1,1,1], [1,0,0], [0,0,1], txtSize);
+		aadd(levelSelectors, selector);
+	}
+	
 	
 	if(mIsVRon)
 	{
@@ -278,7 +279,9 @@ function LevelMenu::Render()
 			mMenuRoom.Draw([0,0,0,1,0,0], [0,0,0,0,0,0]);
 		mAlphaShader.Stop();
 		
-		levelSelectorsObj.Draw();
+		for(var i = 0; i < len(levelSelectors); i++){
+			levelSelectors[i].Draw();		
+		}
 			
 		break;
 	}
@@ -317,11 +320,10 @@ function LevelMenu::UpdateLogic(dt)
 		{		
 			for(var i = 0; i < len(levelSelectors); i++){
 				var res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, true);
-				outputln();
-				output(i);
-				output(" ");
-				outputln(res);
-			}	
+//				output(res);
+//				output(" ");
+			}
+//			outputln();	
 			break;
 		}
 	}

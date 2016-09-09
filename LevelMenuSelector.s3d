@@ -3,14 +3,19 @@ class LevelMenuSelector{
 	var mObj;
 	var mTextObj;
 	var mTextColor;
-	var mBordersColor;
+	var mColor;
+	var mSelectedColor;
 	var mPos;
 	var mFont;
 	var mLevelNumber;
-	var mScale;
+	var mTxtSize;
 	var mWidth;
 	var mHeight;
 	var mThickness;
+	
+	var mLongSideMesh;
+	var mShortSideMesh;
+	var mBackgroundMesh;
 	
 	Draw();
 	SetPosition(pos);
@@ -21,48 +26,49 @@ class LevelMenuSelector{
 	IsBeingPointedBy(mObject, objectPosition, isCamera);
 };
 
-function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, pos, length, height, thickness, textColor, bordersColor, scale, font){
+function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, pos, length, height, thickness, textColor, color, selectedColor, txtSize, font){
 	mObj = CVmObj();	
 	mAnimator = animator;
 	mLevelNumber = levelNumber;
 	mTextColor = valtype(textColor) != "" ? textColor : [1,1,1];
-	mBordersColor = valtype(bordersColor) != "" ? bordersColor : [1,1,1];
+	mColor = valtype(color) != "" ? color : [1,1,1];
+	mSelectedColor = valtype(selectedColor) != "" ? selectedColor : [1,1,1];
 	mPos = valtype(pos) != "" ? pos : [0,0,0];
 	mFont = valtype(font) != "" ? font : "DS-Digital";
-	mScale = valtype(scale) != "" ? scale : 0.25;
+	mTxtSize = valtype(txtSize) != "" ? txtSize : 0.25;
 	mWidth = valtype(length) != "" ? length : 6*SCALE_FACTOR;
 	mHeight = valtype(height) != "" ? height : 3*SCALE_FACTOR;
 	mThickness = valtype(thickness) != "" ? thickness : 0.5*SCALE_FACTOR;
 	
 	var ambient = [1,1,1];
-	var diffuse = mBordersColor;
+	var diffuse = mColor;
 	var specular = [0.2, 0.2, 0.2];
 	var shininess = 0;
 	var lightMin = 0;
 	var lightMax = 2;
 	var alpha = 1;
-	var longSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mThickness/2, 0], [mWidth/2, mThickness/2, 0], 2,2 );
-	AddToonShaderToMesh(longSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
-	var shortSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mThickness/2, -mHeight/2, 0], [mThickness/2, mHeight/2, 0], 2,2 );
-	AddToonShaderToMesh(shortSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
-	var backgroundMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mHeight/2, 0], [mWidth/2, mHeight/2, 0], 2,2 );
-	AddToonShaderToMesh(backgroundMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, 0.5);
+	mLongSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mThickness/2, 0], [mWidth/2, mThickness/2, 0], 2,2 );
+	AddToonShaderToMesh(mLongSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
+	mShortSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mThickness/2, -mHeight/2, 0], [mThickness/2, mHeight/2, 0], 2,2 );
+	AddToonShaderToMesh(mShortSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
+	mBackgroundMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mHeight/2, 0], [mWidth/2, mHeight/2, 0], 2,2 );
+	AddToonShaderToMesh(mBackgroundMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, 0.5);
 	
 	var levelString = "Level " + char(levelNumber+48);
 	var txt = CVmText(levelString,0,0,mFont, 0);		
-	txt.SetScale(mScale);
+	txt.SetScale(mTxtSize);
 	txt.SetColor(mTextColor.r, mTextColor.g, mTextColor.b);		
 	
 	mTextObj = CVmObj();
 	mTextObj.LinkToText(txt);
 	
 	var mTextOffset = 0.05 *SCALE_FACTOR;
-	mObj.AddChild(CvmObj(longSideMesh), 0, mHeight/2+mThickness/2, 0);
-	mObj.AddChild(CvmObj(longSideMesh), 0, -mHeight/2-mThickness/2, 0);
-	mObj.AddChild(CvmObj(shortSideMesh), -mWidth/2+mThickness/2, 0, 0);
-	mObj.AddChild(CvmObj(shortSideMesh), mWidth/2-mThickness/2, 0, 0);
-	mObj.AddChild(CvmObj(backgroundMesh), 0, 0, 0);
-	mObj.AddChild(mTextObj, -(len(levelString)*(mScale + 0.025))*SCALE_FACTOR, -mScale*SCALE_FACTOR, mTextOffset);
+	mObj.AddChild(CvmObj(mBackgroundMesh), 0, 0, 0);
+	mObj.AddChild(CvmObj(mLongSideMesh), 0, mHeight/2+mThickness/2, 0);
+	mObj.AddChild(CvmObj(mLongSideMesh), 0, -mHeight/2-mThickness/2, 0);
+	mObj.AddChild(CvmObj(mShortSideMesh), -mWidth/2+mThickness/2, 0, 0);
+	mObj.AddChild(CvmObj(mShortSideMesh), mWidth/2-mThickness/2, 0, 0);
+	mObj.AddChild(mTextObj, -(len(levelString)*(mTxtSize + 0.025))*SCALE_FACTOR, -mTxtSize*SCALE_FACTOR, mTextOffset);
 	mObj.SetPosition(mPos);
 }
 
@@ -100,9 +106,15 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, isCamera){
 	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mObj);
 	
 	if(contactPoint != Void){
-		mAnimator.CreateToonShaderColorTransition(mObj, mBordersColor, [1,1,1], 0.25, false);
+		mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+		mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+		mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
 		return true;		
 	}
+	
+		mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+		mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+		mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
 		
 	return false;	
 }
