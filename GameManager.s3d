@@ -212,22 +212,16 @@ function GameManager::GameManager(HMD)
 		
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
-				
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
-		
-		mCurrentLevelNumber = 0;
 		
 		aadd(mLevels, arrayLevel0);
-//		aadd(mLevels, "placeholder");
-//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, "placeholder");
+		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, "placeholder");
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, "placeholder");
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, "placeholder");
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+		
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);			
+		mCurrentLevelNumber = -1;
 		
 		mFadeToBlackAlpha = 1;
 		mFadingIn = false;

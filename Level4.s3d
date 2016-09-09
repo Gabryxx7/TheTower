@@ -176,6 +176,7 @@ class Level4
 	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
+	GetLevelPreview();
 };
 
 
@@ -1956,3 +1957,6 @@ function Level4::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
 
+function Level4::GetLevelPreview(){
+	return "Level4Prev.png";
+}

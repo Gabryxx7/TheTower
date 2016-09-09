@@ -91,7 +91,7 @@ class LevelMenu
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
+function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 {		
 	mIsVRon = isVRon;
 	mSelectedLevel = -1;
@@ -147,15 +147,13 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	
 	towerLevels.SetPosition(-towerLevelWidth*5, -towerLevelHeight*(numberOfLevels/2), menuRoom_WidthFar/2 - towerConnectionsWidth/2);
 	
+	var levels = len(mLevels);
 	var levelPreviews = {};
-	aadd(levelPreviews, "Level0Prev.png");
-	aadd(levelPreviews, "Level1Prev.png");
-	aadd(levelPreviews, "Level2Prev.png");
-	aadd(levelPreviews, "Level3Prev.png");
-	aadd(levelPreviews, "Level4Prev.png");
+	for(var i = 0; i < levels; i++){
+		aadd(levelPreviews, mLevels[i].GetLevelPreview());
+	}
 	
 	levelSelectors = {};
-	var levels = len(levelPreviews);
 	var elementsPerRow = 2;
 	
 	var objScale = 2.5;
@@ -186,7 +184,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager)
 	}
 	
 	var previewSize = [15*SCALE_FACTOR, 15*SCALE_FACTOR, 0.25*SCALE_FACTOR];
-	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, 0.5);
+	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, 0.8);
 	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.y/2 - 2*SCALE_FACTOR, menuRoom_Height/2, zPos);
 	
 	if(mIsVRon)

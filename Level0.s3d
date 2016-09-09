@@ -132,6 +132,7 @@ class Level0
 	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
+	GetLevelPreview();
 };
 
 
@@ -1011,4 +1012,8 @@ function Level0::SetupOpenglLights()
 	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
 	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+}
+
+function Level0::GetLevelPreview(){
+	return "Level0Prev.png";
 }

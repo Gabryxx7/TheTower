@@ -110,6 +110,7 @@ class Level3
 	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
+	GetLevelPreview();
 };
 
 function Level3::Level3(isVRon, inputManager, soundManager)
@@ -964,4 +965,8 @@ function Level3::SetupOpenglLights()
 	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
 	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+}
+
+function Level3::GetLevelPreview(){
+	return "Level3Prev.png";
 }
