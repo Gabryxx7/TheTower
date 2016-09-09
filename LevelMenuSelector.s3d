@@ -12,6 +12,7 @@ class LevelMenuSelector{
 	var mWidth;
 	var mHeight;
 	var mThickness;
+	var mIsSelected;
 	
 	var mRelatedImage;
 	
@@ -26,11 +27,13 @@ class LevelMenuSelector{
 	GetWidth();
 	GetHeight();
 	GetImage();
-	IsBeingPointedBy(mObject, objectPosition, isCamera);
+	IsSelected(selection);
+	IsBeingPointedBy(mObject, objectPosition, distance);
 };
 
 function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImage, pos, length, height, thickness, textColor, color, selectedColor, txtSize, font){
-	mObj = CVmObj();	
+	mObj = CVmObj();
+	mIsSelected = false;	
 	mRelatedImage = relatedImage;
 	mAnimator = animator;
 	mLevelNumber = levelNumber;
@@ -108,9 +111,12 @@ function LevelMenuSelector::GetImage(){
 	return mRelatedImage;
 }
 
-function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, isCamera){
+function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, distance){
+	if(mIsSelected)
+		return false;
+		
 	var raycastOrigin = objectPosition;
-	var raycastEnd = isCamera ? (raycastOrigin + mObject.GetDirection() * mObject.GetZFar()) : (raycastOrigin + mObject.GetDirection() * 20);
+	var raycastEnd = raycastOrigin + mObject.GetDirection() * distance;
 	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mObj);
 	
 	if(contactPoint != Void){
@@ -120,9 +126,29 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, isCamera){
 		return true;		
 	}
 	
+	mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+	mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+	mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+		
+	return false;	
+}
+
+function LevelMenuSelector::IsSelected(selection){
+	if(valtype(selection) != "B")	
+		return mIsSelected;
+	
+	if(selection){
+		mIsSelected = true;
+		mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+		mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+		mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);	
+		return true;
+	}
+	else{
+		mIsSelected = false;
 		mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
 		mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
 		mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
-		
-	return false;	
+		return false;
+	}
 }

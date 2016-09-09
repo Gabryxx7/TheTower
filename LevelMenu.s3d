@@ -7,7 +7,16 @@ class LevelMenu
 	var menuRoom_WidthSide;
 	var menuRoom_Height;
 	var menuRoom_BordersThickness ;
+	
 	var mIsVRon;
+	var debugVrOn;
+	var mControllersArray;
+	var mController1;
+	var mController2;
+	
+	var mDebugController;
+	var mDebugControllerHidden;
+	var mDebugKeyHit;
 	
 	var levelSelectors;
 	var levelPreviewFrame;
@@ -68,9 +77,6 @@ class LevelMenu
 		
 	var mOpenglTranslationOffset;
 	
-	var mController1;
-	var mController2;
-	
 	// Private functions
 	FadeToBlackScreen(fadeIn);
 	DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor);
@@ -93,7 +99,25 @@ class LevelMenu
  */
 function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 {		
-	mIsVRon = isVRon;
+	mIsVRon = isVRon;	
+	debugVrOn = false;
+	
+	mControllersArray = {};
+		
+	if(mIsVRon)
+	{
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
+	}
+	else if(debugVrOn)
+	{
+		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
+		mDebugController = ViveController(1);
+		mDebugControllerHidden = false;
+		mDebugKeyHit = false;
+		aadd(mControllersArray, mDebugController);
+	}
+	
 	mSelectedLevel = -1;
 	
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -183,8 +207,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 		aadd(levelSelectors, selector);
 	}
 	
-	var previewSize = [15*SCALE_FACTOR, 15*SCALE_FACTOR, 0.25*SCALE_FACTOR];
-	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, 0.8);
+	var previewSize = [15*SCALE_FACTOR, 15*SCALE_FACTOR, 0.5*SCALE_FACTOR];
+	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, [1,0,0], [0,0,1], 1);
 	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.y/2 - 2*SCALE_FACTOR, menuRoom_Height/2, zPos);
 	
 	if(mIsVRon)
@@ -306,10 +330,20 @@ function LevelMenu::Render()
 		break;
 	}
 	
-	if(mIsVRon)
-	{
-		mController1.Draw();
-		mController2.Draw();
+	if(mIsVRon || debugVrOn){
+		mDebugController.Draw();
+		var raycastOrigin = mDebugController.GetPosition();
+		var raycastEnd = mDebugController.GetPosition() + mDebugController.GetDirection() * mCamera.GetZFar();
+//		if(mInputManager.IsPressingPrimaryButton()){			
+			glLineWidth(4); 		
+			glColor([1,1,0]); 
+			
+			// I draw the ray as a simple opengl line
+			glBegin(GL_LINES);
+				glVertex(raycastOrigin);
+				glVertex(raycastEnd);		
+			glEnd();
+//		}		
 	}
 }
 
@@ -337,19 +371,44 @@ function LevelMenu::UpdateLogic(dt)
 		
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{		
+		{					
+			if(debugVrOn)			
+				mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);	
+				
 			var pointedLevel = -1;
 			for(var i = 0; i < len(levelSelectors); i++){
-				var res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, true);
+				var res = false;
+				if(mIsVrOn)
+					res = levelSelectors[i].IsBeingPointedBy(mController1, mController1.GetPosition(), mCamera.GetZFar());
+				else if(debugVrOn)	
+					res = levelSelectors[i].IsBeingPointedBy(mDebugController, mDebugController.GetPosition(), mCamera.GetZFar());
+				else						
+					res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
+				
 				if(res){
-					levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
 					pointedLevel = i;
+					break;
 				}
 			}
 			
-			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton())
-			{
+			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton()){
+				levelPreviewFrame.ChangeImage(levelSelectors[pointedLevel].GetImage());
+				if(mSelectedLevel >= 0)
+					levelSelectors[mSelectedLevel].IsSelected(false);	
+									
+				levelSelectors[pointedLevel].IsSelected(true);
 				mSelectedLevel = pointedLevel;
+			}
+			
+			var res = false;
+			if(mIsVrOn)
+				res = levelPreviewFrame.IsBeingPointedBy(mController1, mController1.GetPosition(), mCamera.GetZFar());	
+			else if(debugVrOn)
+				res = levelPreviewFrame.IsBeingPointedBy(mDebugController, mDebugController.GetPosition(), mCamera.GetZFar());
+			else
+				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
+			
+			if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
 				mIsLevelCompleted = true;
 			}
 			break;

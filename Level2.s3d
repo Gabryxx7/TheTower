@@ -7,6 +7,8 @@ class Level2
 {
 	var mIsVRon;
 	var mControllersArray;
+	var mController1;
+	var mController2;
 	var debugVrOn;
 	
 	var mDebugController;
@@ -94,8 +96,6 @@ class Level2
 	
 	var box;
 	
-	var mController1;
-	var mController2;
 	
 	var animStarted;
 	
