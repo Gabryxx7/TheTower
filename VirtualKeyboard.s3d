@@ -140,8 +140,8 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 			rows = 0;	
 		}			
 		var buttonPos = mKeyboardPosition + [(offsetX * (rows++)), -offsetY*(cols)- (1.5*SCALE_FACTOR), 0] ;
-		txt = CVmText();		
-		txt.Load(upper(buttonsText[i]));
+		txt = CVmText(upper(buttonsText[i]),0,0,"DS-Digital", 0);		
+		txt.SetScale(1.2);
 		txt.SetColor(mButtonsTextColor.r, mButtonsTextColor.g, mButtonsTextColor.b);		
 		
 		txtObj = CVmObj();
@@ -151,7 +151,7 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 		var buttonMesh = CVmNewMesh(VRP_BOX, 1, [-mButtonsWidth/2, -mButtonsWidth/2, 0], [mButtonsWidth/2, mButtonsWidth/2, 0], mButtonsThickness);
 		AddToonShaderToMesh(buttonMesh, [0.4, 0.4, 0.4], mUnpressedButtonColor, [0.2, 0.2, 0.2], 0, 0, 2, SCALE_FACTOR, 1.0);
 		buttonObj = CVmObj(buttonMesh);
-		buttonObj.AddChild(txtObj, -(0.1*SCALE_FACTOR), -(0.13*SCALE_FACTOR) ,mTextOffset);
+		buttonObj.AddChild(txtObj, -(0.14*SCALE_FACTOR), -(0.18*SCALE_FACTOR) ,mTextOffset);
 		AddSilhouetteLinesToPlanarObject(buttonObj, 0.02 * SCALE_FACTOR, mButtonsWidth, mButtonsWidth, 0);
 		buttonObj.SetPosition(buttonPos.x, buttonPos.y, buttonPos.z);	
 		
@@ -160,8 +160,8 @@ function VirtualKeyboard::VirtualKeyboard(animator, buttonsText, tilesSize, spac
 		aadd(mButtonsObjs, buttonObj);
 		aadd(mUnpressedButtonsObjs, buttonObj);			
 		
-		var screenTxt = CVmText();		
-		screenTxt.Load(upper(buttonsText[i]));
+		var screenTxt = CVmText(upper(buttonsText[i]),0,0,"DS-Digital", 0);			
+		screenTxt.SetScale(1.4);	
 		screenTxt.SetColor(mScreenTextColor.r, mScreenTextColor.g, mScreenTextColor.b);
 		aadd(mScreenTextsMeshes, screenTxt);
 	}
@@ -364,7 +364,7 @@ function VirtualKeyboard::PressButton(buttonChar, typeOnScreen){
 		charObj.LinkToText(mScreenTextsMeshes[charPos]);
 		aadd(mCharOnScreen, charObj);
 		charObj.SetScale(0.1,0.1,0.1);
-		mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, 0,0);	
+		mScreenTextObjs.AddChild(charObj, -(mMaxDigitsOnScreen*mScreenTextSize)/2 + (len(mCharOnScreen)-1)*mScreenTextSize +mScreenTextSize/4, -0.08*SCALE_FACTOR,0);	
 	}
 	
 	//If it is not already pressed, I add it to the pressed buttons vector

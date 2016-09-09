@@ -235,8 +235,8 @@ function GameManager::GameManager(HMD)
 		mElevator = mCurrentLevel.GetElevator();
 		
 		aadd(mLevels, "placeholder");
-//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 

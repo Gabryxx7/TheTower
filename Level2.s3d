@@ -178,14 +178,12 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	
 //	testo = Text("Chaos cannot exist without order\nWhere order, cannot exist without chaos");
 	testo = CVmObj();
-	var txt = CVmText();
-	txt.Load("Chaos cannot exist without order...");
+	var txt = CVmText("Chaos cannot exist without order...",0,0,"Walkway bold", 0);
 	var line = CVmObj();	
 	line.LinkToText(txt);	
 	line.SetRotation(90,0,1,0);
 	testo.AddChild(line,-ROOM_FAR_WALL_WIDTH/2+0.1*SCALE_FACTOR, ROOM_HEIGHT/2-2*SCALE_FACTOR, 30*SCALE_FACTOR);
-	txt = CVmText();
-	txt.Load("Order cannot exist without chaos...");
+	txt = CVmText("Order cannot exist without chaos...",0,0,"Walkway bold", 0);
 	line = CVmObj();
 	line.LinkToText(txt);
 	line.SetRotation(-90,0,1,0);
@@ -615,7 +613,10 @@ function Level2::UpdateLogic(dt)
 		{
 			// I check if the player goes out from the elevator. Note: I'm not checking that he exits from the doors; he can pass through walls right now.
 			// If the player comes out, I close the doors and change status
-			if(!mElevator.IsPointInElevator(cameraPosition))
+			//Since the elevator is outside of the room, I must be sure that the level start when he is actually insie the main room
+			//otherwise he would be stuck in the space between the elevator exit and the main room. which is considered outside of the room
+			var elevatorEntrancePos = mElevator.GetPosition().z + mElevator.GetRoomWidth();
+			if(!mElevator.IsPointInElevator(cameraPosition) && !(cameraPosition.z > elevatorEntrancePos - 2*SCALE_FACTOR && cameraPosition.z < elevatorEntrancePos + 2*SCALE_FACTOR))
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
@@ -649,8 +650,8 @@ function Level2::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-//		    	mInputManager.RestoreCameraPosition();
+			if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition) && !mMainRoom.IsPointInRoom(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
 			
 			var stepDistance = pathAnim ? 8*SCALE_FACTOR : 3*SCALE_FACTOR;				
 			var tilePos;
