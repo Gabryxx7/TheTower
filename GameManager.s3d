@@ -19,6 +19,7 @@ global var SCALE_FACTOR = 0.2;
 #include "GlassBox.s3d"
 #include "TilesPath.s3d"
 #include "LevelMenuSelector.s3d"
+#include "PreviewFrame.s3d"
 #include "CubeNumbers.s3d"
 #include "RandomMeshes.s3d"
 #include "MarcelloUtils.s3d"
@@ -218,10 +219,11 @@ function GameManager::GameManager(HMD)
 		mCurrentLevelNumber = 0;
 		
 		aadd(mLevels, "placeholder");
+		aadd(mLevels, "placeholder");
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
 		mFadeToBlackAlpha = 1;
 		mFadingIn = false;
@@ -567,8 +569,14 @@ function GameManager::UpdateLogic(dt)
 			}
 			
 			if(mCurrentLevel.IsLevelCompleted())
-			{				
-				if(mCurrentLevelNumber + 1 < len(mLevels))
+			{
+				if(mCurrentLevel.__GetName() == "LEVELMENU"){
+					mCurrentLevelNumber = mCurrentLevel.GetSelectedLevel();
+					mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
+					mCurrentLevel = mLevels[mCurrentLevelNumber];
+					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+				}			
+				else if(mCurrentLevelNumber + 1 < len(mLevels))
 				{
 					mCurrentLevel = mLevels[mCurrentLevelNumber + 1];
 					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);

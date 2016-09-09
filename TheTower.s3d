@@ -39,6 +39,11 @@ function OnDownload()
 	FileDownload("data.zip");
 	FileDownload("viveControllerModel.AAM");
 	FileDownload("Sci-fi-thing.aam");
+	FileDownload("Level0Prev.png");
+	FileDownload("Level1Prev.png");
+	FileDownload("Level2Prev.png");
+	FileDownload("Level3Prev.png");
+	FileDownload("Level4Prev.png");
 }
 
 /* Init system - Start GameManager */

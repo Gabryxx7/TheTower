@@ -1,0 +1,120 @@
+class PreviewFrame{
+	var mGlassWallObj;
+	var glassMesh;
+	
+	GetObj();
+	ChangeImage(imgName);
+	Draw();
+	SetPosition(x,y,z);
+};
+
+function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, lightsRangeMin, lightsRangeMax, glassAlpha){
+	var halfWidth = wallWidth / 2.0;
+	var halfHeight = wallHeight / 2.0;
+	var halfThickness = borderThickness / 2.0;
+	
+	if(glassAlpha == Void)
+		glassAlpha = 0.5;
+	
+	// The glass mesh is smaller than the wall, because it takes into account the borders
+	glassMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth + borderThickness, -halfHeight + borderThickness, 0], [halfWidth - borderThickness, halfHeight - borderThickness, 0], 2, 2);	
+	
+	glassMesh.ShaderAdd("phongLightingWithTextureShader.glsl", 0);
+	glassMesh.ShaderActivate(true);	
+	glassMesh.ShaderSetParameter(0, "ambient", 0, [1.0, 1.0, 1.0]);
+	glassMesh.ShaderSetParameter(0, "diffuse", 0, [0.8, 0.8, 0.8]);
+	glassMesh.ShaderSetParameter(0, "specular", 0, [0.4, 0.4, 0.4]);
+	glassMesh.ShaderSetParameter(0, "shininess", 0, 50);
+	glassMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
+	glassMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 2);
+	glassMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
+	glassMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	
+	// Not really sure what to put in the third parameter. If it's 0, it uses Vive controller's texture. It seems it depends on the order textures
+	//  are loaded in the game, so it's a little precarious leaving the code like this, but who cares
+	glassMesh.ShaderSetParameter(0, "tex", 0, 1, "clock_face.png");	 
+	
+	mGlassWallObj = CVmObj(glassMesh);
+	
+	// Meshes for the borders
+	var verticalBorderMesh = CVmNewMesh(VRP_PLANE, 1, [-halfThickness, -halfHeight, 0], [halfThickness, halfHeight, 0], 2, 2);
+	var horizzontalBorderMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth + halfThickness, -halfThickness, 0], [halfWidth - halfThickness, halfThickness, 0], 2, 2);
+	
+	var leftBorderObj = CVmObj(verticalBorderMesh);
+	var rightBorderObj = CVmObj(verticalBorderMesh);
+	var topBorderObj = CVmObj(horizzontalBorderMesh);
+	var bottomBorderObj = CVmObj(horizzontalBorderMesh);
+	
+	// Mesh for the silhouette lines used in the borders
+	var silhouetteLineHalfWidth = 0.02 * SCALE_FACTOR;
+	
+	// I add the silhouettes from either side of the plane
+	var innerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight + borderThickness, 0], [silhouetteLineHalfWidth, halfHeight - borderThickness, 0], 2, 2);
+	var innerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth + borderThickness, 0], [silhouetteLineHalfWidth, halfWidth - borderThickness, 0], 2, 2);
+	var outerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight, 0], [silhouetteLineHalfWidth, halfHeight, 0], 2, 2);
+	var outerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth, 0], [silhouetteLineHalfWidth, halfWidth, 0], 2, 2);
+
+	// Black material for the lines
+	var silhouetteMaterial = CVmMaterial();
+	silhouetteMaterial.diffuse = [0, 0, 0];
+	silhouetteMaterial.ambient = [0, 0, 0];
+	silhouetteMaterial.specular = [0, 0, 0];
+	
+	innerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
+	innerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
+	outerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
+	outerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
+
+	var innerSilhouetteLeft = CVmObj(innerSilhouetteVerticalLine);
+	var innerSilhouetteRight = CVmObj(innerSilhouetteVerticalLine);
+	var innerSilhouetteTop = CVmObj(innerSilhouetteHorizzontalLine);
+	var innerSilhouetteBottom = CVmObj(innerSilhouetteHorizzontalLine);
+	
+	var outerSilhouetteLeft = CVmObj(outerSilhouetteVerticalLine);
+	var outerSilhouetteRight = CVmObj(outerSilhouetteVerticalLine);
+	var outerSilhouetteTop = CVmObj(outerSilhouetteHorizzontalLine);
+	var outerSilhouetteBottom = CVmObj(outerSilhouetteHorizzontalLine);
+	
+	innerSilhouetteTop.Rotate(90, 0, 0, 1);
+	innerSilhouetteBottom.Rotate(90, 0, 0, 1);
+	outerSilhouetteTop.Rotate(90, 0, 0, 1);
+	outerSilhouetteBottom.Rotate(90, 0, 0, 1);
+	
+	AddToonShaderToMesh(verticalBorderMesh, [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	AddToonShaderToMesh(horizzontalBorderMesh, [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	
+	// Adding the borders to the wall
+	mGlassWallObj.AddChild(leftBorderObj, halfWidth - halfThickness, 0, 0);
+	mGlassWallObj.AddChild(rightBorderObj, -halfWidth + halfThickness, 0, 0);
+	mGlassWallObj.AddChild(topBorderObj, 0, halfHeight - halfThickness, 0);
+	mGlassWallObj.AddChild(bottomBorderObj, 0, -halfHeight + halfThickness, 0);
+	
+	// Adding the silhouette lines to the wall where the borders are, using a very low z offset to avoid Z fighting but at the same time making
+	// it look like they're attached to the wall
+	mGlassWallObj.AddChild(innerSilhouetteLeft, halfWidth - borderThickness, 0, -0.003 * SCALE_FACTOR);
+	mGlassWallObj.AddChild(innerSilhouetteRight, -halfWidth + borderThickness, 0, -0.003 * SCALE_FACTOR);
+	mGlassWallObj.AddChild(innerSilhouetteTop, 0, halfHeight - borderThickness - silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	mGlassWallObj.AddChild(innerSilhouetteBottom, 0, -halfHeight + borderThickness + silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	
+	mGlassWallObj.AddChild(outerSilhouetteLeft, halfWidth, 0, -0.003 * SCALE_FACTOR);
+	mGlassWallObj.AddChild(outerSilhouetteRight, -halfWidth, 0, -0.003 * SCALE_FACTOR);
+	mGlassWallObj.AddChild(outerSilhouetteTop, 0, halfHeight - silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	mGlassWallObj.AddChild(outerSilhouetteBottom, 0, -halfHeight + silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+}
+
+
+function PreviewFrame::GetObj(){
+	return mGlassWallObj;
+}
+
+function PreviewFrame::Draw(){
+	mGlassWallObj.Draw();
+}
+
+function PreviewFrame::SetPosition(x,y,z){
+	mGlassWallObj.SetPosition(x,y,z);
+}
+
+function PreviewFrame::ChangeImage(imgName){	
+	glassMesh.ShaderSetParameter(0, "tex", 0, 1, imgName);	 
+}

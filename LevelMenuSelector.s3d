@@ -13,6 +13,8 @@ class LevelMenuSelector{
 	var mHeight;
 	var mThickness;
 	
+	var mRelatedImage;
+	
 	var mLongSideMesh;
 	var mShortSideMesh;
 	var mBackgroundMesh;
@@ -23,11 +25,13 @@ class LevelMenuSelector{
 	GetObj();
 	GetWidth();
 	GetHeight();
+	GetImage();
 	IsBeingPointedBy(mObject, objectPosition, isCamera);
 };
 
-function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, pos, length, height, thickness, textColor, color, selectedColor, txtSize, font){
+function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImage, pos, length, height, thickness, textColor, color, selectedColor, txtSize, font){
 	mObj = CVmObj();	
+	mRelatedImage = relatedImage;
 	mAnimator = animator;
 	mLevelNumber = levelNumber;
 	mTextColor = valtype(textColor) != "" ? textColor : [1,1,1];
@@ -98,6 +102,10 @@ function LevelMenuSelector::GetWidth(){
 
 function LevelMenuSelector::GetObj(){
 	return mObj;
+}
+
+function LevelMenuSelector::GetImage(){
+	return mRelatedImage;
 }
 
 function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, isCamera){

@@ -1144,4 +1144,3 @@ function Level2::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
 }
 
-
