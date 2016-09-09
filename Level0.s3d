@@ -31,6 +31,8 @@ class Level0
 	var mIsLevelCompleted;
 	var mEndTimer;
 	
+	var mPortalFrameObj1;
+	
 	// When the player steps into the elevator, this constant hold the time (in milliseconds) until the next level is rendered
 	var mTimeToEnd;
 	
@@ -121,6 +123,7 @@ class Level0
 	DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, lightAngle, lightIncrement, lightCenter, lightRadius);
 	
 	// Public functions
+	Init();
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -260,6 +263,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	
 	// Linking the frame objects to the mesh
 	var portalFrameObj1 = CVmObj(portalFrameMesh);
+	mPortalFrameObj1 = portalFrameObj1;
 	var portalFrameObj2 = CVmObj(portalFrameMesh);
 	var portalFrameObj3 = CVmObj(portalFrameMesh);
 	var portalFrameObj4 = CVmObj(portalFrameMesh);
@@ -516,6 +520,14 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
 	}
+}
+
+function Level0::Init(){	
+	// Positioning the room so that is right behind the first portal frame
+	mElevator.SetPosition(mPortalFrameObj1.GetPosition() - [0, 0, mElevator.GetRoomDepth() - 0.04 * SCALE_FACTOR]);
+				
+	// At start I hide the elevator; it will appear later
+	mElevator.Hide();
 }
 
 /* ****************************************************** *
