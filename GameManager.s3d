@@ -213,6 +213,11 @@ function GameManager::GameManager(HMD)
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 		
+//		for(var i = 0; i < 5; i++){
+//			aadd(mLevels, i);	
+//		}
+
+		SetClearColor(0.9,0.9,0.9);  
 		aadd(mLevels, arrayLevel0);
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
