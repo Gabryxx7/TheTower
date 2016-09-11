@@ -31,13 +31,14 @@ function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, ligh
 	glassMesh.ShaderAdd("phongLightingWithTextureShader.glsl", 0);
 	glassMesh.ShaderActivate(true);	
 	glassMesh.ShaderSetParameter(0, "ambient", 0, [1.0, 1.0, 1.0]);
-	glassMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+	glassMesh.ShaderSetParameter(0, "diffuse", 0, [0.5, 0.5, 0.5]);
 	glassMesh.ShaderSetParameter(0, "specular", 0, [0.4, 0.4, 0.4]);
 	glassMesh.ShaderSetParameter(0, "shininess", 0, 50);
 	glassMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
 	glassMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 2);
 	glassMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	glassMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+	glassMesh.ShaderSetParameter(0, "tex", 0, 1, "thetower.png");	 	
 	
 	mGlassWallObj = CVmObj(glassMesh);
 	
@@ -49,29 +50,7 @@ function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, ligh
 	var rightBorderObj = CVmObj(verticalBorderMesh);
 	var topBorderObj = CVmObj(horizzontalBorderMesh);
 	var bottomBorderObj = CVmObj(horizzontalBorderMesh);
-	
-	// Mesh for the silhouette lines used in the borders
-	var silhouetteLineHalfWidth = 0.02 * SCALE_FACTOR;
-	
-	var outerSilhouetteVerticalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfHeight, 0], [silhouetteLineHalfWidth, halfHeight, 0], 2, 2);
-	var outerSilhouetteHorizzontalLine = CVmNewMesh(VRP_PLANE, 1, [-silhouetteLineHalfWidth, -halfWidth, 0], [silhouetteLineHalfWidth, halfWidth, 0], 2, 2);
-
-	// Black material for the lines
-	var silhouetteMaterial = CVmMaterial();
-	silhouetteMaterial.diffuse = [0, 0, 0];
-	silhouetteMaterial.ambient = [0, 0, 0];
-	silhouetteMaterial.specular = [0, 0, 0];
-	
-	outerSilhouetteVerticalLine.ForceMaterial(silhouetteMaterial);
-	outerSilhouetteHorizzontalLine.ForceMaterial(silhouetteMaterial);
-	var outerSilhouetteLeft = CVmObj(outerSilhouetteVerticalLine);
-	var outerSilhouetteRight = CVmObj(outerSilhouetteVerticalLine);
-	var outerSilhouetteTop = CVmObj(outerSilhouetteHorizzontalLine);
-	var outerSilhouetteBottom = CVmObj(outerSilhouetteHorizzontalLine);
-	
-	outerSilhouetteTop.Rotate(90, 0, 0, 1);
-	outerSilhouetteBottom.Rotate(90, 0, 0, 1);
-	
+		
 	AddToonShaderToMesh(verticalBorderMesh, [1.0, 1.0, 1.0], mColor, [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	AddToonShaderToMesh(horizzontalBorderMesh, [1.0, 1.0, 1.0], mColor, [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
@@ -80,11 +59,7 @@ function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, ligh
 	mGlassWallObj.AddChild(rightBorderObj, -halfWidth + halfThickness, 0, 0);
 	mGlassWallObj.AddChild(topBorderObj, 0, halfHeight - halfThickness, 0);
 	mGlassWallObj.AddChild(bottomBorderObj, 0, -halfHeight + halfThickness, 0);
-	
-	mGlassWallObj.AddChild(outerSilhouetteLeft, halfWidth, 0, -0.003 * SCALE_FACTOR);
-	mGlassWallObj.AddChild(outerSilhouetteRight, -halfWidth, 0, -0.003 * SCALE_FACTOR);
-	mGlassWallObj.AddChild(outerSilhouetteTop, 0, halfHeight - silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
-	mGlassWallObj.AddChild(outerSilhouetteBottom, 0, -halfHeight + silhouetteLineHalfWidth, -0.003 * SCALE_FACTOR);
+	AddSilhouetteLinesToPlanarObject(mGlassWallObj, 0.04 * SCALE_FACTOR, wallWidth, wallHeight, 0);
 }
 
 
@@ -110,15 +85,15 @@ function PreviewFrame::IsBeingPointedBy(mObject, objectPosition, distance){
 	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mGlassWallObj);
 	
 	if(contactPoint != Void){
-		glassMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+	glassMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
 		verticalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
 		horizzontalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
 		return true;		
 	}
 	
-		glassMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
-		verticalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
-		horizzontalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+	glassMesh.ShaderSetParameter(0, "diffuse", 0, [0.5, 0.5, 0.5]);
+	verticalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+	horizzontalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
 		
 	return false;	
 }

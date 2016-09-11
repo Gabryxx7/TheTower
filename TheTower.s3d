@@ -39,6 +39,7 @@ function OnDownload()
 	FileDownload("data.zip");
 	FileDownload("viveControllerModel.AAM");
 	FileDownload("Sci-fi-thing.aam");
+	FileDownload("thetower.png");
 	FileDownload("Level0Prev.png");
 	FileDownload("Level1Prev.png");
 	FileDownload("Level2Prev.png");

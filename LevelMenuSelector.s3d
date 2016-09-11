@@ -14,6 +14,7 @@ class LevelMenuSelector{
 	var mThickness;
 	var mIsSelected;
 	
+	var mAlpha;
 	var mRelatedImage;
 	
 	var mLongSideMesh;
@@ -31,13 +32,14 @@ class LevelMenuSelector{
 	IsBeingPointedBy(mObject, objectPosition, distance);
 };
 
-function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImage, pos, length, height, thickness, textColor, color, selectedColor, txtSize, font){
+function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImage, pos, length, height, thickness, textColor, color, selectedColor, pApha, txtSize, font){
 	mObj = CVmObj();
 	mIsSelected = false;	
 	mRelatedImage = relatedImage;
 	mAnimator = animator;
 	mLevelNumber = levelNumber;
 	mTextColor = valtype(textColor) != "" ? textColor : [1,1,1];
+	mAlpha = valtype(pApha) != "" ? pApha : 1.0;
 	mColor = valtype(color) != "" ? color : [1,1,1];
 	mSelectedColor = valtype(selectedColor) != "" ? selectedColor : [1,1,1];
 	mPos = valtype(pos) != "" ? pos : [0,0,0];
@@ -54,12 +56,12 @@ function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImag
 	var lightMin = 0;
 	var lightMax = 2;
 	var alpha = 1;
-	mLongSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mThickness/2, 0], [mWidth/2, mThickness/2, 0], 2,2 );
+	mLongSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2-mThickness, -mThickness/2, 0], [mWidth/2+mThickness, mThickness/2, 0], 2,2 );
 	AddToonShaderToMesh(mLongSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
 	mShortSideMesh = CVmNewMesh(VRP_PLANE, 1, [-mThickness/2, -mHeight/2, 0], [mThickness/2, mHeight/2, 0], 2,2 );
 	AddToonShaderToMesh(mShortSideMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, alpha);
 	mBackgroundMesh = CVmNewMesh(VRP_PLANE, 1, [-mWidth/2, -mHeight/2, 0], [mWidth/2, mHeight/2, 0], 2,2 );
-	AddToonShaderToMesh(mBackgroundMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, 0.5);
+	AddToonShaderToMesh(mBackgroundMesh, ambient, diffuse, specular, shininess, lightMin, lightMax, SCALE_FACTOR, mAlpha);
 	
 	var levelString = "Level " + char(levelNumber+48);
 	var txt = CVmText(levelString,0,0,mFont, 0);		
@@ -73,10 +75,11 @@ function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImag
 	mObj.AddChild(CvmObj(mBackgroundMesh), 0, 0, 0);
 	mObj.AddChild(CvmObj(mLongSideMesh), 0, mHeight/2+mThickness/2, 0);
 	mObj.AddChild(CvmObj(mLongSideMesh), 0, -mHeight/2-mThickness/2, 0);
-	mObj.AddChild(CvmObj(mShortSideMesh), -mWidth/2+mThickness/2, 0, 0);
-	mObj.AddChild(CvmObj(mShortSideMesh), mWidth/2-mThickness/2, 0, 0);
+	mObj.AddChild(CvmObj(mShortSideMesh), -mWidth/2-mThickness/2, 0, 0);
+	mObj.AddChild(CvmObj(mShortSideMesh), mWidth/2+mThickness/2, 0, 0);
 	mObj.AddChild(mTextObj, -(len(levelString)*(mTxtSize + 0.025))*SCALE_FACTOR, -mTxtSize*SCALE_FACTOR, mTextOffset);
 	mObj.SetPosition(mPos);
+	AddSilhouetteLinesToPlanarObject(mObj, 0.04 * SCALE_FACTOR, mWidth + mThickness*2, mHeight + mThickness*2, 0);
 }
 
 
@@ -140,6 +143,7 @@ function LevelMenuSelector::IsSelected(selection){
 	if(selection){
 		mIsSelected = true;
 		mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+		mBackgroundMesh.ShaderSetParameter(0, "alpha", 0, 1);
 		mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
 		mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);	
 		return true;
@@ -147,6 +151,7 @@ function LevelMenuSelector::IsSelected(selection){
 	else{
 		mIsSelected = false;
 		mBackgroundMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
+		mBackgroundMesh.ShaderSetParameter(0, "alpha", 0, mAlpha);
 		mLongSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
 		mShortSideMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
 		return false;
