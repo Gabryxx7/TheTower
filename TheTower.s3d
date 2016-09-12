@@ -68,7 +68,7 @@ function OnInit(params)
 	HMD.__AddFunction( C_INT, "IsGripPressed", C_INT);
 	HMD.__AddFunction( C_INT, "IsTouchpadPressed", C_INT);
 	HMD.__AddFunction( C_VOID, "VibrateController", C_INT, C_INT);
-//	HMD.__AddFunction( C_PFLOAT_2, "GetPlayAreaSize");
+	HMD.__AddFunction( C_PFLOAT_2, "GetPlayAreaSize");
 	
 	mGameManager = GameManager(HMD);
 	

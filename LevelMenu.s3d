@@ -105,8 +105,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 		
 	if(mIsVRon)
 	{
-		aadd(mControllersArray, mInputManager.GetController(1));
-		aadd(mControllersArray, mInputManager.GetController(2));
+		aadd(mControllersArray, inputManager.GetController(1));
+		aadd(mControllersArray, inputManager.GetController(2));
 	}
 	else if(debugVrOn)
 	{

@@ -218,15 +218,16 @@ function GameManager::GameManager(HMD)
 //		}
 
 		SetClearColor(0.9,0.9,0.9);  
-		aadd(mLevels, arrayLevel0);
-		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+//		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels);
+//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels);
+		mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);			
-		mCurrentLevelNumber = -1;
+		mCurrentLevelNumber = 4;
 		
 		mFadeToBlackAlpha = 1;
 		mFadingIn = false;
@@ -241,7 +242,7 @@ function GameManager::GameManager(HMD)
 		mElevator = mCurrentLevel.GetElevator();
 		
 		aadd(mLevels, arrayLevel0);
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));

@@ -363,7 +363,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mStarObjects = {};
 	
 	// Creating random star things
-	for(var i = 0; i < 30; i++)
+	for(var i = 0; i < 10; i++)
 	{
 		// To create the star object I use a function from the "Utils" file
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
@@ -401,7 +401,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mConeObjects = {};
 	
 	// Creating random cone things; the procedure is the same as for the star objects
-	for(var i = 0; i < 25; i++)
+	for(var i = 0; i < 10; i++)
 	{
 		var coneThing = CreateConeThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
 		
@@ -1957,6 +1957,7 @@ function Level4::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
 }
 
-function Level4::GetLevelPreview(){
+function Level4::GetLevelPreview()
+{
 	return "Level4Prev.png";
 }

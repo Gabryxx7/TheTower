@@ -133,8 +133,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		
 	if(mIsVRon)
 	{
-		aadd(mControllersArray, mInputManager.GetController(1));
-		aadd(mControllersArray, mInputManager.GetController(2));
+		aadd(mControllersArray, inputManager.GetController(1));
+		aadd(mControllersArray, inputManager.GetController(2));
 	}
 	else if(debugVrOn)
 	{
