@@ -160,21 +160,31 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	// Adding each text to its portal room
 	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));	
 	
-	towerLevelHeight = 12*SCALE_FACTOR;
-	towerLevelWidth =  19*SCALE_FACTOR;
-	towerConnectionsHeight = towerLevelHeight * 0.7;
-	towerConnectionsWidth = towerLevelWidth * 0.85;
+	towerLevelHeight = 7*SCALE_FACTOR;
+	towerLevelWidth =  15*SCALE_FACTOR;
+	towerConnectionsHeight = towerLevelHeight * 0.6;
+	towerConnectionsWidth = towerLevelWidth * 0.75;
 	
 	towerLevels = CVmObj();
-	numberOfLevels = 50;
+	numberOfLevels = 35;
+	var towerMaterial = CVmMaterial();
+	towerMaterial.Ambient = [0.7,0.7,0.7,1];
+	towerMaterial.Diffuse = [0.8,0.8,0.90,1];
+	towerMaterial.Emission = [0.2,0.2,0.8,1];
+	towerMaterial.Shininess = 0.05;
+	towerMaterial.Specular = [0.02,0.02,0.02,1];
+	var towerRoomMesh = CVmNewMesh(VRP_BOX,1, [-towerLevelWidth/2, -towerLevelHeight/2, 0], [towerLevelWidth/2, towerLevelHeight/2, 0], towerLevelWidth);
+	towerRoomMesh.SetMaterial(towerMaterial);
+	var towerConnectionMesh = CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth);
+	towerConnectionMesh.SetMaterial(towerMaterial);
 	for(var i = 0; i < numberOfLevels; i++){
-		towerLevels.AddChild(CVmObj(CVmNewMesh(VRP_BOX,1, [-towerLevelWidth/2, -towerLevelHeight/2, 0], [towerLevelWidth/2, towerLevelHeight/2, 0], towerLevelWidth)), 0,(towerConnectionsHeight + towerLevelHeight)*i,0);
+		towerLevels.AddChild(CVmObj(towerRoomMesh), 0,(towerConnectionsHeight + towerLevelHeight)*i,0);
 		
 		if(i != numberOfLevels-1)
-			towerLevels.AddChild(CVmObj(CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth)), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i, -towerLevelWidth/2 + towerConnectionsWidth/2);
+			towerLevels.AddChild(CVmObj(towerConnectionMesh), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i, -towerLevelWidth/2 + towerConnectionsWidth/2);
 	}
 	
-	towerPosition =[-towerLevelWidth*3.8, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2), towerLevelWidth/2]; 
+	towerPosition =[-towerLevelWidth*5, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2), towerLevelWidth/2]; 
 	towerLevels.SetPosition(towerPosition);
 	
 	levelSelectors = {};
@@ -225,8 +235,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-towerLevelWidth*2.8, menuRoom_Height, 0];
-	mLight1Position = [-towerLevelWidth*2.8, -menuRoom_Height/2, 0];
+	mLight0Position = [-towerLevelWidth*4.6, menuRoom_Height, -2*SCALE_FACTOR];
+	mLight1Position = [-towerLevelWidth*4.6, -menuRoom_Height/2, 2*SCALE_FACTOR];
 	mLight2Position = [0, menuRoom_Height/2, 0];
 	
 	var diffuseFactor = 0.05;
@@ -294,7 +304,7 @@ function LevelMenu::Render()
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
 //       		DrawPointCloud(amount, [-(amount/2.1)*spacing-menuRoom_WidthSide/2, -yRange/2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 3.5, 0.09, 0.09, [0.2, 0.5, 1], 3.25)
-       		DrawPointCloud(amount, [towerPosition.x, -yRange, towerPosition.z-towerLevelWidth/2], yRange, spacing, 4, 0.065, 0.08, [0.2, 0.8, 1], 3.25);
+       		DrawPointCloud(amount, [towerPosition.x, -yRange, towerPosition.z-towerLevelWidth/2], yRange, spacing, 4, 0.065, 0.08, [0.5, 0.7, 0.9], 3.25);
 		
 			mToonShader.Start();
 				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
@@ -307,17 +317,16 @@ function LevelMenu::Render()
 				mToonShader.SetParameter("lightsRangeMin", 2);
 				mToonShader.SetParameter("lightsRangeMax", 2);
 				mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,1,1,1]);
-				
-				
-				mToonShader.SetParameter("ambient", [1, 1, 1]);
-				mToonShader.SetParameter("diffuse", [1, 1, 1]);
-				mToonShader.SetParameter("specular", [0.05, 0.05, 0.05]);
-				mToonShader.SetParameter("shininess", 0);
-				mToonShader.SetParameter("lightsRangeMin", 0);
-				mToonShader.SetParameter("lightsRangeMax", 1);
-	       		towerLevels.Draw();
 			mToonShader.Stop();
 			
+			glEnable(GL_FOG);
+		 	glFog(GL_FOG_MODE, GL_EXP);
+		 	glFog(GL_FOG_DENSITY, 0.18f);
+		 	glFog(GL_FOG_START, towerPosition.x);
+		 	glFog(GL_FOG_END, towerPosition.x + 100);
+		 	glFog(GL_FOG_COLOR, [0.9,0.9,0.9]);
+	   		towerLevels.Draw();
+			glDisaBle(GL_FOG);
 			
 		mAlphaShader.Start();
 			mAlphaShader.SetParameter("time", 0);
