@@ -2,7 +2,11 @@
 #define STATUS_LEVEL_STARTED 2
 
 class LevelMenu
-{
+{	
+	var mDt;
+	
+	var cloudDt;
+	
 	var menuRoom_WidthFar;
 	var menuRoom_WidthSide;
 	var menuRoom_Height;
@@ -30,6 +34,7 @@ class LevelMenu
 	var towerConnectionsWidth;
 	var towerLevels;
 	var towerConnectionos;
+	var towerPosition;
 	
 	// Booleans that indicate if the level is starting or ending
 	var mEnding;
@@ -79,6 +84,7 @@ class LevelMenu
 	// Private functions
 	FadeToBlackScreen(fadeIn);
 	DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor);
+	DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -101,6 +107,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
+	mDt = 0;
+	cloudDt = 0;
+		
 	mControllersArray = {};
 		
 	if(mIsVRon)
@@ -165,7 +174,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 			towerLevels.AddChild(CVmObj(CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth)), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i, -towerLevelWidth/2 + towerConnectionsWidth/2);
 	}
 	
-	towerLevels.SetPosition(-towerLevelWidth*3.8, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2), towerLevelWidth/2);
+	towerPosition =[-towerLevelWidth*3.8, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2), towerLevelWidth/2]; 
+	towerLevels.SetPosition(towerPosition);
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -199,7 +209,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	var previewSize = [15*SCALE_FACTOR, 15*SCALE_FACTOR, 0.5*SCALE_FACTOR];
 	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, [1,0,0], [0,0,1], 1);
 	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.x/2 -offset.x, previewSize.y/2+previewSize.z + offset.y, -menuRoom_WidthSide/2+offset.z);
-	
+
 	if(mIsVRon){
 		mController1 = mInputManager.GetController(1);
 		mController2 = mInputManager.GetController(2);
@@ -275,11 +285,16 @@ function LevelMenu::Render()
 // 	glFog(GL_FOG_END, 20);
 // 	glFog(GL_FOG_COLOR, [0,0,1,0.5]);
 	
+	var yRange = 5.5*SCALE_FACTOR;
+	var amount = 180;
+	var spacing = 1*SCALE_FACTOR;
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
+//       		DrawPointCloud(amount, [-(amount/2.1)*spacing-menuRoom_WidthSide/2, -yRange/2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 3.5, 0.09, 0.09, [0.2, 0.5, 1], 3.25)
+       		DrawPointCloud(amount, [towerPosition.x, -yRange, towerPosition.z-towerLevelWidth/2], yRange, spacing, 4, 0.065, 0.08, [0.2, 0.8, 1], 3.25);
 		
 			mToonShader.Start();
 				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
@@ -349,7 +364,8 @@ function LevelMenu::Render()
  * dt: (float) delta time, i.e. the time between the last update and this one
  */
 function LevelMenu::UpdateLogic(dt)
-{
+{ 
+	mDt = dt;
 	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
@@ -559,4 +575,40 @@ function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight
   
    /* polite restoration of previous OpenGL status */
    glPopAttrib();   
+}
+
+function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed){
+	glPointSize(mSize);
+	glBegin(GL_POINTS);
+
+	var a = 0;
+	var b = 0;
+	var alpha = 0;
+	var x = 0;
+	var y = 0;
+	var z = 0;
+		
+	if(cloudDt >= 3.14)
+		cloudDt = 0;
+		
+	cloudDt += mDt/(5-speed);		
+	//The center is in (mAmount/2, mAmount/2)
+	for(var j = 0; j < mAmount; j++){
+		a = 0;
+		b += mYPeriod;
+		
+		for(var i = 0; i < mAmount; i++){
+			x = -(j-mAmount/2)*mSpacing+mCenter.x;
+			y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+			z = (i-mAmount/2)*mSpacing+mCenter.z;
+			
+			alpha = sqrt((j-mAmount/2)^2 + (i-mAmount/2)^2);
+			glColor(mColor.r, mColor.g, mColor.b, 1-alpha/(mAmount/2.15));
+			glVertex(x,y,z);
+				
+			a += mXPeriod;
+		}
+	}
+
+	glEnd();	
 }
