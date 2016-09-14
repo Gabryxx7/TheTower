@@ -84,7 +84,7 @@ class LevelMenu
 	// Private functions
 	FadeToBlackScreen(fadeIn);
 	DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor);
-	DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed);
+	DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed, type);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -166,13 +166,13 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	towerConnectionsWidth = towerLevelWidth * 0.75;
 	
 	towerLevels = CVmObj();
-	numberOfLevels = 35;
+	numberOfLevels = 25;
 	var towerMaterial = CVmMaterial();
-	towerMaterial.Ambient = [0.7,0.7,0.7,1];
-	towerMaterial.Diffuse = [0.8,0.8,0.90,1];
-	towerMaterial.Emission = [0.2,0.2,0.8,1];
-	towerMaterial.Shininess = 0.05;
-	towerMaterial.Specular = [0.02,0.02,0.02,1];
+	towerMaterial.Ambient = [0.4, 0.4, 0.4,1];
+	towerMaterial.Diffuse = [0.1,0.1,0.5,1];
+	towerMaterial.Emission = [0.0,0.05,0.2,1];
+	towerMaterial.Shininess = 0.4;
+	towerMaterial.Specular = [0.02,0.2,0.2,1];
 	var towerRoomMesh = CVmNewMesh(VRP_BOX,1, [-towerLevelWidth/2, -towerLevelHeight/2, 0], [towerLevelWidth/2, towerLevelHeight/2, 0], towerLevelWidth);
 	towerRoomMesh.SetMaterial(towerMaterial);
 	var towerConnectionMesh = CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth);
@@ -186,6 +186,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	
 	towerPosition =[-towerLevelWidth*5, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2), towerLevelWidth/2]; 
 	towerLevels.SetPosition(towerPosition);
+	towerLevels.SetRotation(32, 0,1,0);
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -304,7 +305,7 @@ function LevelMenu::Render()
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
 //       		DrawPointCloud(amount, [-(amount/2.1)*spacing-menuRoom_WidthSide/2, -yRange/2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 3.5, 0.09, 0.09, [0.2, 0.5, 1], 3.25)
-       		DrawPointCloud(amount, [towerPosition.x, -yRange, towerPosition.z-towerLevelWidth/2], yRange, spacing, 4, 0.065, 0.08, [0.5, 0.7, 0.9], 3.25);
+       		DrawPointCloud(amount, [towerPosition.x, -yRange, towerPosition.z-towerLevelWidth/2], yRange, spacing, 4, 0.065, 0.08, [0.5, 0.7, 0.9], 3.25, 0);
 		
 			mToonShader.Start();
 				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
@@ -322,15 +323,16 @@ function LevelMenu::Render()
 			glEnable(GL_FOG);
 		 	glFog(GL_FOG_MODE, GL_EXP);
 		 	glFog(GL_FOG_DENSITY, 0.18f);
-		 	glFog(GL_FOG_START, towerPosition.x);
-		 	glFog(GL_FOG_END, towerPosition.x + 100);
-		 	glFog(GL_FOG_COLOR, [0.9,0.9,0.9]);
+		 	glFog(GL_FOG_START, 0);
+		 	glFog(GL_FOG_END, 0);
+		 	glFog(GL_FOG_COLOR, [0.95,0.95,0.95, 0.1]);
+//		 	glFog(GL_FOG_COORD, GL_FOG_COORD);
 	   		towerLevels.Draw();
 			glDisaBle(GL_FOG);
 			
 		mAlphaShader.Start();
 			mAlphaShader.SetParameter("time", 0);
-			mAlphaShader.SetParameter("alpha", 0.3);
+			mAlphaShader.SetParameter("alpha", 0.20);
 			mAlphaShader.SetParameter("startingColor", [0.6, 0.6, 1]);
 			mAlphaShader.SetParameter("finalColor", [0.6, 0.6, 1]);
 			mMenuRoom.Draw([0,0,0,1,0,0], [0,0,0,0,0,0]);
@@ -586,9 +588,7 @@ function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight
    glPopAttrib();   
 }
 
-function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed){
-	glPointSize(mSize);
-	glBegin(GL_POINTS);
+function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed, type){
 
 	var a = 0;
 	var b = 0;
@@ -600,23 +600,52 @@ function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, m
 	if(cloudDt >= 3.14)
 		cloudDt = 0;
 		
-	cloudDt += mDt/(5-speed);		
-	//The center is in (mAmount/2, mAmount/2)
-	for(var j = 0; j < mAmount; j++){
-		a = 0;
-		b += mYPeriod;
-		
-		for(var i = 0; i < mAmount; i++){
+	cloudDt += mDt/(5-speed);	
+	if(type == 0){	
+		glPointSize(mSize);
+		glBegin(GL_POINTS);
+		//The center is in (mAmount/2, mAmount/2)
+		for(var j = 0; j < mAmount; j++){
+			a = 0;
+			b += mYPeriod;
+			
+			for(var i = 0; i < mAmount; i++){
+				x = -(j-mAmount/2)*mSpacing+mCenter.x;
+				y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+				z = (i-mAmount/2)*mSpacing+mCenter.z;
+				
+				alpha = sqrt((j-mAmount/2)^2 + (i-mAmount/2)^2);
+				glColor(mColor.r, mColor.g, mColor.b, 1-alpha/(mAmount/2.15));
+				glVertex(x,y,z);
+					
+				a += mXPeriod;
+			}
+		}	
+	}
+	else if(type == 1){
+		glPointSize(10);
+		glBegin(GL_POINTS);
+		var i = 1;
+		//The center is in (mAmount/2, mAmount/2)
+		for(var j = 0; j < mAmount; j++){
+			a = 0;
+			b += mYPeriod;	
+			
 			x = -(j-mAmount/2)*mSpacing+mCenter.x;
 			y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
 			z = (i-mAmount/2)*mSpacing+mCenter.z;
 			
-			alpha = sqrt((j-mAmount/2)^2 + (i-mAmount/2)^2);
-			glColor(mColor.r, mColor.g, mColor.b, 1-alpha/(mAmount/2.15));
+			glColor(mColor.r, mColor.g, mColor.b, 1);
+			glVertex(x,y,z);
+			y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+			a += mXPeriod;
+			glVertex(x,y,z);
+			z = ((i+1)-mAmount/2)*mSpacing+mCenter.z;
+			glVertex(x,y,z);
+			z = (i-mAmount/2)*mSpacing+mCenter.z;
 			glVertex(x,y,z);
 				
-			a += mXPeriod;
-		}
+		}			
 	}
 
 	glEnd();	
