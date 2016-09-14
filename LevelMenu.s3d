@@ -297,15 +297,14 @@ function LevelMenu::Render()
 // 	glFog(GL_FOG_COLOR, [0,0,1,0.5]);
 	
 	var yRange = 3.25*SCALE_FACTOR;
-	var amount = 205;
-	var spacing = 0.75*SCALE_FACTOR;
+	var amount = 220;
+	var spacing = 0.6*SCALE_FACTOR;
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
-       		DrawPointCloud(amount, [towerPosition.x+menuRoom_WidthSide/2-(amount*spacing)/2+4.5*SCALE_FACTOR, -yRange/2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 3.25);
-//       		DrawPointCloud(amount, [towerPosition.x+menuRoom_WidthSide/2-(amount*spacing)/2+4.5*SCALE_FACTOR, -yRange/2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 12, 0.065, 0.08, [0.5, 0.9, 1], 3.25);
+       		DrawPointCloud(amount, [towerPosition.x+menuRoom_WidthSide/2-(amount*spacing)/2+4.5*SCALE_FACTOR, 0, towerPosition.z-towerLevelWidth/2], yRange, spacing, 17, 0.065, 0.08, [0.5, 0.9, 1], 2.45);
 		
 			mToonShader.Start();
 				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
