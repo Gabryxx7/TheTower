@@ -7,10 +7,15 @@ class LevelMenu
 	
 	var cloudDt;
 	
+	var mElevator;
+	
 	var menuRoom_WidthFar;
 	var menuRoom_WidthSide;
 	var menuRoom_Height;
 	var menuRoom_BordersThickness ;
+	var mMenuRoomHolder;
+	
+	var mWalkWay;
 	
 	var mIsVRon;
 	var debugVrOn;
@@ -102,8 +107,9 @@ class LevelMenu
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
+function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, elevator)
 {		
+	mElevator = elevator;
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
@@ -146,6 +152,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	mMenuRoom = GlassBox(menuRoom_WidthFar, menuRoom_Height, menuRoom_WidthSide,  menuRoom_BordersThickness);
 	mMenuRoom.SetPosition([0,0,-menuRoom_WidthFar/2]);
 	
+	mMenuRoomHolder = CVmObj(CVmNewMesh(VRP_BOX,1, [-(15*SCALE_FACTOR)/2, 100*SCALE_FACTOR, 0], [(15*SCALE_FACTOR)/2, 0, 0], 15*SCALE_FACTOR));
+	mMenuRoomHolder.SetPosition([0,-100*SCALE_FACTOR-0.005*SCALE_FACTOR, 15*SCALE_FACTOR/2]);
+	
 //	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 1, 2);
 	
 	
@@ -160,9 +169,10 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	// Adding each text to its portal room
 	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));	
 	
-	towerLevelHeight = 5*SCALE_FACTOR;
-	towerLevelWidth =  10*SCALE_FACTOR;
-	towerConnectionsHeight = towerLevelHeight * 0.6;
+	towerLevelHeight = 13*SCALE_FACTOR;
+	towerLevelWidth =  30*SCALE_FACTOR;
+//	towerConnectionsHeight = towerLevelHeight * 0.6;
+	towerConnectionsHeight = mElevator.GetRoomHeight();
 	towerConnectionsWidth = towerLevelWidth * 0.65;
 	
 	towerLevels = CVmObj();
@@ -178,15 +188,25 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	var towerConnectionMesh = CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth);
 	towerConnectionMesh.SetMaterial(towerMaterial);
 	for(var i = 0; i < numberOfLevels; i++){
-		towerLevels.AddChild(CVmObj(towerRoomMesh), 0,(towerConnectionsHeight + towerLevelHeight)*i,0);
+		towerLevels.AddChild(CVmObj(towerRoomMesh), 0, (towerConnectionsHeight + towerLevelHeight)*i,0);
 		
+//		if(i != numberOfLevels-1 && i != numberOfLevels/2)
 		if(i != numberOfLevels-1)
-			towerLevels.AddChild(CVmObj(towerConnectionMesh), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i, -towerLevelWidth/2 + towerConnectionsWidth/2);
+			towerLevels.AddChild(CVmObj(towerConnectionMesh), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i - 0.005*SCALE_FACTOR, -towerLevelWidth/2 + towerConnectionsWidth/2);
 	}
 	
-	towerPosition =[-towerLevelWidth*5, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2), towerLevelWidth/2]; 
+	towerPosition =[-80*SCALE_FACTOR, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2)-towerLevelHeight/2, towerLevelWidth/2]; 
 	towerLevels.SetPosition(towerPosition);
-	towerLevels.SetRotation(32, 0,1,0);
+//	towerLevels.SetRotation(32, 0,1,0);
+
+	mElevator.Rotate(90,0,1,0);
+	mElevator.SetPosition([towerPosition.x, mElevator.GetRoomHeight()/2, 0]);
+
+	var distance = towerPosition.x + towerLevelWidth/2 + menuRoom_WidthFar/2;
+	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], 5*SCALE_FACTOR);
+	walkwayMesh.SetMaterial(towerMaterial);
+	mWalkWay = CVmObj(walkwayMesh);
+	mWalkWay.SetPosition(-menuRoom_WidthSide/2+distance/2, -0.25*SCALE_FACTOR, -5*SCALE_FACTOR/2);
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -212,8 +232,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 		if(i % elementsPerRow != 0)
 			pos.x += width + thickness*2 + spacing;	
 			
-//		var selector = LevelMenuSelector(mAnimator, i, mLevels[i].GetLevelPreview(), pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
-		var selector = LevelMenuSelector(mAnimator, i, "thetower.png", pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
+		var selector = LevelMenuSelector(mAnimator, i, mLevels[i].GetLevelPreview(), pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
+//		var selector = LevelMenuSelector(mAnimator, i, "thetower.png", pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
 		aadd(levelSelectors, selector);
 	}
 	
@@ -236,14 +256,14 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-towerLevelWidth*4.5, menuRoom_Height, -2*SCALE_FACTOR];
-	mLight1Position = [-towerLevelWidth*4.5, -menuRoom_Height/2, 2*SCALE_FACTOR];
-	mLight2Position = [0, menuRoom_Height/2, 0];
+	mLight0Position = [towerPosition.x + 3*SCALE_FACTOR, menuRoom_Height, -2*SCALE_FACTOR];
+	mLight1Position = [towerPosition.x + 3*SCALE_FACTOR, -menuRoom_Height/2, 2*SCALE_FACTOR];
+	mLight2Position = [0, menuRoom_Height/2, -menuRoom_WidthFar];
 	
 	var diffuseFactor = 0.05;
 	mLight0Diffuse = [1, 0, 0];
 	mLight1Diffuse = [0, 0, 1];
-	mLight2Diffuse = [0.5, 0.5, 0.5];
+	mLight2Diffuse = [0.8, 0.8, 0.8];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -296,27 +316,34 @@ function LevelMenu::Render()
 // 	glFog(GL_FOG_END, 20);
 // 	glFog(GL_FOG_COLOR, [0,0,1,0.5]);
 	
-	var yRange = 3.25*SCALE_FACTOR;
-	var amount = 220;
-	var spacing = 0.6*SCALE_FACTOR;
+	var yRange = 4.5*SCALE_FACTOR;
+	var amount = 200;
+	var spacing = 0.8*SCALE_FACTOR;
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
-       		DrawPointCloud(amount, [towerPosition.x+menuRoom_WidthSide/2-(amount*spacing)/2+4.5*SCALE_FACTOR, 0, towerPosition.z-towerLevelWidth/2], yRange, spacing, 17, 0.065, 0.08, [0.5, 0.9, 1], 2.45);
+//       		DrawPointCloud(amount, [towerPosition.x+menuRoom_WidthSide/2-(amount*spacing)/2+4.5*SCALE_FACTOR, -yRange*2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
+       		DrawPointCloud(amount, [towerPosition.x/2, -yRange*3, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
+		SceneEnableFog(1,50,[0,0,1]);   
 		
 			mToonShader.Start();
 				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
 				mToonShader.SetParameter("alpha", 1.0);
 				
-				mToonShader.SetParameter("ambient", [1, 1, 1]);
-				mToonShader.SetParameter("diffuse", [1, 1, 1]);
-				mToonShader.SetParameter("specular", [0.2, 0.2, 0.2]);
-				mToonShader.SetParameter("shininess", 0);				
+				mToonShader.SetParameter("ambient", [0.5, 0.5, 0.5]);
+				mToonShader.SetParameter("diffuse", [0.2, 0.2, 0.2]);
+				mToonShader.SetParameter("specular", [0.01, 0.01, 0.01]);
+				mToonShader.SetParameter("shininess", 0.05);				
 				mToonShader.SetParameter("lightsRangeMin", 2);
 				mToonShader.SetParameter("lightsRangeMax", 2);
 				mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,1,1,1]);
+				
+				mToonShader.SetParameter("diffuse", [0.5, 0.5, 0.5]);			
+				mToonShader.SetParameter("lightsRangeMin", 0);
+				mToonShader.SetParameter("lightsRangeMax", 2);
+		   		mMenuRoomHolder.Draw(VR_NO_CULLING);
 			mToonShader.Stop();
 			
 			glEnable(GL_FOG);
@@ -326,7 +353,9 @@ function LevelMenu::Render()
 		 	glFog(GL_FOG_END, 2);
 		 	glFog(GL_FOG_COLOR, [0.95,0.95,0.95]);
 //		 	glFog(GL_FOG_COORD, GL_FOG_COORD);
-	   		towerLevels.Draw();
+	   		towerLevels.Draw(VR_NO_CULLING);
+	   		mWalkWay.Draw(VR_NO_CULLING);
+	   		mElevator.Draw();
 			glDisaBle(GL_FOG);
 			
 		mAlphaShader.Start();
@@ -375,7 +404,6 @@ function LevelMenu::Render()
  */
 function LevelMenu::UpdateLogic(dt)
 { 
-	mDt = dt;
 	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
@@ -435,6 +463,7 @@ function LevelMenu::UpdateLogic(dt)
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
+	mDt = dt;
 }
 
 
@@ -599,7 +628,7 @@ function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, m
 	if(cloudDt >= 3.14)
 		cloudDt = 0;
 		
-	cloudDt += mDt/(5-speed);
+	cloudDt += 0.035/(5-speed);
 	glPointSize(mSize);
 	glBegin(GL_POINTS);
 	//The center is in (mAmount/2, mAmount/2)

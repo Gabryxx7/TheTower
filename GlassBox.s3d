@@ -176,34 +176,34 @@ function GlassBox::Draw(panelsBoolean, bordersBoolean){
 			panelsBoolean = [0,0,0,0,0,0];
 	
 	if(bordersBoolean[0] == 1)	
-		mFrontBorders.Draw();		
+		mFrontBorders.Draw(VR_NO_CULLING);		
 	if(panelsBoolean[0] == 1)
-		mFrontPanel.Draw();
+		mFrontPanel.Draw(VR_NO_CULLING);
 		
 	if(bordersBoolean[1] == 1)	
-		mBackBorders.Draw();		
+		mBackBorders.Draw(VR_NO_CULLING);		
 	if(panelsBoolean[1] == 1)
-		mBackPanel.Draw();		
+		mBackPanel.Draw(VR_NO_CULLING);		
 	
 	if(bordersBoolean[2] == 1)	
-		mLeftBorders.Draw();		
+		mLeftBorders.Draw(VR_NO_CULLING);		
 	if(panelsBoolean[2] == 1)
-		mLeftPanel.Draw();		
+		mLeftPanel.Draw(VR_NO_CULLING);		
 	
 	if(bordersBoolean[3] == 1)	
-		mRightBorders.Draw();		
+		mRightBorders.Draw(VR_NO_CULLING);		
 	if(panelsBoolean[3] == 1)
-		mRightPanel.Draw();
+		mRightPanel.Draw(VR_NO_CULLING);
 			
 	if(bordersBoolean[4] == 1)	
-		mRoofBorders.Draw();		
+		mRoofBorders.Draw(VR_NO_CULLING);		
 	if(panelsBoolean[4] == 1)
-		mRoofPanel.Draw();		
+		mRoofPanel.Draw(VR_NO_CULLING);		
 	
 	if(bordersBoolean[5] == 1)	
-		mFloorBorders.Draw();		
+		mFloorBorders.Draw(VR_NO_CULLING);		
 	if(panelsBoolean[5] == 1)
-		mFloorPanel.Draw();
+		mFloorPanel.Draw(VR_NO_CULLING);
 }
 
 

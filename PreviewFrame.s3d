@@ -4,14 +4,18 @@ class PreviewFrame{
 	var verticalBorderMesh;
 	var horizzontalBorderMesh;
 	
+	
+	var mMaterial;
+	var mPreviewFrameMaterial;
 	var mColor;
 	var mSelectedColor;
 	
 	GetObj();
-	ChangeImage(imgName);
+	ChangeImage(tex);
 	Draw();
 	SetPosition(x,y,z);
 	IsBeingPointedBy(mObject, objectPosition, distance);
+	ChangeMeshesColor(color, previewColor);
 };
 
 function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, lightsRangeMin, lightsRangeMax, color, selectedColor, glassAlpha){
@@ -26,19 +30,7 @@ function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, ligh
 		glassAlpha = 0.5;
 	
 	// The glass mesh is smaller than the wall, because it takes into account the borders
-	glassMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth + borderThickness, -halfHeight + borderThickness, 0], [halfWidth - borderThickness, halfHeight - borderThickness, 0], 2, 2);	
-	
-	glassMesh.ShaderAdd("phongLightingWithTextureShader.glsl", 0);
-	glassMesh.ShaderActivate(true);	
-	glassMesh.ShaderSetParameter(0, "ambient", 0, [1.0, 1.0, 1.0]);
-	glassMesh.ShaderSetParameter(0, "diffuse", 0, [0.5, 0.5, 0.5]);
-	glassMesh.ShaderSetParameter(0, "specular", 0, [0.4, 0.4, 0.4]);
-	glassMesh.ShaderSetParameter(0, "shininess", 0, 50);
-	glassMesh.ShaderSetParameter(0, "lightsRangeMin", 0, 0);
-	glassMesh.ShaderSetParameter(0, "lightsRangeMax", 0, 2);
-	glassMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	glassMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	glassMesh.ShaderSetParameter(0, "tex", 0, 1, "thetower.png");	 	
+	glassMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth + borderThickness, -halfHeight + borderThickness, 0], [halfWidth - borderThickness, halfHeight - borderThickness, 0], 2, 2);		 	
 	
 	mGlassWallObj = CVmObj(glassMesh);
 	
@@ -50,9 +42,22 @@ function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, ligh
 	var rightBorderObj = CVmObj(verticalBorderMesh);
 	var topBorderObj = CVmObj(horizzontalBorderMesh);
 	var bottomBorderObj = CVmObj(horizzontalBorderMesh);
-		
-	AddToonShaderToMesh(verticalBorderMesh, [1.0, 1.0, 1.0], mColor, [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
-	AddToonShaderToMesh(horizzontalBorderMesh, [1.0, 1.0, 1.0], mColor, [0.0, 0.0, 0.0], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+	
+	mMaterial = CvmMaterial();
+	mMaterial.Ambient = [0, 0, 0];
+	mMaterial.Shininess = 0.05;
+	mMaterial.Specular = [0,0,0];
+	
+	mPreviewFrameMaterial = CVmMaterial();
+	mPreviewFrameMaterial.Ambient = [0, 0, 0];
+	mPreviewFrameMaterial.Shininess = 0.05;
+	mPreviewFrameMaterial.Specular = [0,0,0];
+	mPreviewFrameMaterial.SetTexture(CVmTexture("thetower.png"));
+	
+	glassMesh.SetMaterial(mPreviewFrameMaterial);
+	verticalBorderMesh.SetMaterial(mMaterial);
+	horizzontalBorderMesh.SetMaterial(mMaterial);
+	ChangeMeshesColor(mColor, [0.5, 0.5, 0.5]);
 	
 	// Adding the borders to the wall
 	mGlassWallObj.AddChild(leftBorderObj, halfWidth - halfThickness, 0, 0);
@@ -75,8 +80,8 @@ function PreviewFrame::SetPosition(x,y,z){
 	mGlassWallObj.SetPosition(x,y,z);
 }
 
-function PreviewFrame::ChangeImage(imgName){	
-	glassMesh.ShaderSetParameter(0, "tex", 0, 1, imgName);	 
+function PreviewFrame::ChangeImage(tex){
+	mPreviewFrameMaterial.SetTexture(tex);
 }
 
 function PreviewFrame::IsBeingPointedBy(mObject, objectPosition, distance){
@@ -85,15 +90,22 @@ function PreviewFrame::IsBeingPointedBy(mObject, objectPosition, distance){
 	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mGlassWallObj);
 	
 	if(contactPoint != Void){
-	glassMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
-		verticalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
-		horizzontalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mSelectedColor);
+		ChangeMeshesColor(mSelectedColor, [1,1,1]);
 		return true;		
 	}
 	
-	glassMesh.ShaderSetParameter(0, "diffuse", 0, [0.5, 0.5, 0.5]);
-	verticalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
-	horizzontalBorderMesh.ShaderSetParameter(0, "diffuse", 0, mColor);
-		
+	ChangeMeshesColor(mColor, [0.8, 0.8, 0.8]);		
 	return false;	
+}
+
+function PreviewFrame::ChangeMeshesColor(color, previewColor){
+		mMaterial.Diffuse = color;
+		mMaterial.Emission = color;
+		verticalBorderMesh.SetMaterial(mMaterial);
+		horizzontalBorderMesh.SetMaterial(mMaterial);
+		
+		mPreviewFrameMaterial.Diffuse = previewColor;
+		mPreviewFrameMaterial.Emission = previewColor;
+		glassMesh.SetMaterial(mPreviewFrameMaterial);
+	
 }

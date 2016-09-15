@@ -23,6 +23,7 @@
 
 class Level0
 {
+	var mTexture;
 	var mIsVRon;
 	
 	// Booleans that indicate if the level is starting or ending
@@ -141,6 +142,7 @@ class Level0
  */
 function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTranslationOffset)
 {
+	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
 			
 	mOpenglTranslationOffset = openglTranslationOffset;
@@ -1015,5 +1017,5 @@ function Level0::SetupOpenglLights()
 }
 
 function Level0::GetLevelPreview(){
-	return "Level0Prev.png";
+	return mTexture;
 }

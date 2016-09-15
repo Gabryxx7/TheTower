@@ -9,6 +9,7 @@
  */
 class Level3
 {
+	var mTexture;
 	var mIsVRon;
 	
 	var mEnding;
@@ -115,6 +116,7 @@ class Level3
 
 function Level3::Level3(isVRon, inputManager, soundManager)
 {		
+	mTexture = CVmTexture("Level3Prev.png");
 	mIsVRon = isVRon;
 	
 	mInputManager = inputManager;
@@ -968,5 +970,5 @@ function Level3::SetupOpenglLights()
 }
 
 function Level3::GetLevelPreview(){
-	return "Level3Prev.png";
+	return mTexture;
 }

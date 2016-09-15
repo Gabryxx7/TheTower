@@ -5,6 +5,7 @@
 
 class Level2
 {
+	var mTexture;
 	var mIsVRon;
 	var mControllersArray;
 	var mController1;
@@ -126,6 +127,7 @@ class Level2
  */
 function Level2::Level2(isVRon, inputManager, soundManager)
 {
+	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
@@ -1146,5 +1148,5 @@ function Level2::SetupOpenglLights()
 }
 
 function Level2::GetLevelPreview(){
-	return "Level2Prev.png";
+	return mTexture;
 }
