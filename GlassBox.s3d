@@ -28,6 +28,8 @@ class GlassBox{
 	var mBoxThickness;
 	var mBorderThickness;
 	
+	var boxMeshes;
+	
 	Draw(panelsBoolean, bordersBoolean);
 	SetPosition(Pos);
 	
@@ -44,6 +46,8 @@ class GlassBox{
 	GetRightPanel();
 	GetRoofPanel();
 	GetFloorPanel();
+	
+	SetMaterial(material);
 };
 
 
@@ -54,37 +58,43 @@ function GlassBox::GlassBox(boxWidth, boxHeight, boxThickness, borderThickness){
 	mBoxHeight = boxHeight/2;
 	mBoxThickness = boxThickness/2;
 	mBorderThickness = borderThickness/2;
-		
-	var frontBackTopBottomMesh;
-	frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBoxWidth, -mBorderThickness, 0], [mBoxWidth, mBorderThickness, 0], 2,2 );
 	
-	var frontBackLeftRightMesh;
-	frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxHeight, 0], [mBorderThickness, mBoxHeight, 0], 2,2 );
+	boxMeshes = {};
+		
+	var frontBackTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBoxWidth, -mBorderThickness, 0], [mBoxWidth, mBorderThickness, 0], 2,2 );
+	aadd(boxMeshes, frontBackTopBottomMesh);
+	
+	var frontBackLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxHeight, 0], [mBorderThickness, mBoxHeight, 0], 2,2 );
+	aadd(boxMeshes, frontBackLeftRightMesh);
 	
 	var frontBackMesh = CVmNewMesh(VRP_PLANE, 1, [-(mBoxWidth - mBorderThickness*2), -(mBoxHeight-mBorderThickness*2), 0], [+(mBoxWidth - mBorderThickness*2), (mBoxHeight-mBorderThickness*2), 0], 2,2 );
+	aadd(boxMeshes, frontBackMesh);
 	
 	var sidesTopBottomMesh;
 	sidesTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxThickness, 0], [mBorderThickness, mBoxThickness, 0], 2,2 );
 	sidesTopBottomMesh.Rotate(90,0,0,1);
 	sidesTopBottomMesh.Rotate(90,0,1,0);
+	aadd(boxMeshes, sidesTopBottomMesh);
 	
-	var sidesLeftRightMesh;
-	sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxHeight, 0], [mBorderThickness, mBoxHeight, 0], 2,2 );
+	var sidesLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxHeight, 0], [mBorderThickness, mBoxHeight, 0], 2,2 );
 	sidesLeftRightMesh.Rotate(90,0,1,0);
+	aadd(boxMeshes, sidesLeftRightMesh);
 	
 	var sidesMesh = CVmNewMesh(VRP_PLANE, 1, [-(mBoxThickness-mBorderThickness*2), -(mBoxHeight-mBorderThickness*2), 0], [+(mBoxThickness - mBorderThickness*2), (mBoxHeight-mBorderThickness*2), 0], 2,2 );
 	sidesMesh.Rotate(90,0,1,0);
+	aadd(boxMeshes, sidesMesh);
 	
-	var roofFloorLeftRightMesh;
-	roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxThickness, 0], [mBorderThickness, mBoxThickness, 0], 2,2 );
+	var roofFloorLeftRightMesh = CVmNewMesh(VRP_PLANE, 1, [-mBorderThickness, -mBoxThickness, 0], [mBorderThickness, mBoxThickness, 0], 2,2 );
 	roofFloorLeftRightMesh.Rotate(90,1,0,0);
+	aadd(boxMeshes, roofFloorLeftRightMesh);
 	
-	var roofFloorTopBottomMesh;
-	roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBoxWidth, -mBorderThickness, 0], [mBoxWidth, mBorderThickness, 0], 2,2 );
-	roofFloorTopBottomMesh.Rotate(90,1,0,0);	
+	var roofFloorTopBottomMesh = CVmNewMesh(VRP_PLANE, 1, [-mBoxWidth, -mBorderThickness, 0], [mBoxWidth, mBorderThickness, 0], 2,2 );
+	roofFloorTopBottomMesh.Rotate(90,1,0,0);
+	aadd(boxMeshes, roofFloorTopBottomMesh);	
 	
 	var roofFloorMesh = CVmNewMesh(VRP_PLANE, 1, [-(mBoxWidth-mBorderThickness*2), -(mBoxThickness-mBorderThickness*2), 0], [+(mBoxWidth - mBorderThickness*2), (mBoxThickness-mBorderThickness*2), 0], 2,2 );
 	roofFloorMesh.Rotate(90,1,0,0);
+	aadd(boxMeshes, roofFloorMesh);
 	
 	//front
 	mFrontBorders = CVmObj();
@@ -254,4 +264,10 @@ function GlassBox::GetRoofPanel(){
 
 function GlassBox::GetFloorPanel(){
 	return mFloorPanel;
+}
+
+function GlassBox::SetMaterial(material){
+	for(var i = 0; i < len(boxMeshes); i++){
+		boxMeshes[i].SetMaterial(material);		
+	}	
 }

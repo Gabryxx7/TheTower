@@ -11,6 +11,7 @@ class LevelMenu
 	var mElevator;
 	var mElevatorCover;
 	
+	var mElevatorWall;
 	var menuRoom_WidthFar;
 	var menuRoom_WidthSide;
 	var menuRoom_Height;
@@ -154,11 +155,17 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mMenuRoom = GlassBox(menuRoom_WidthFar, menuRoom_Height, menuRoom_WidthSide,  menuRoom_BordersThickness);
 	mMenuRoom.SetPosition([0,0,-menuRoom_WidthFar/2]);
 	
-	mMenuRoomHolder = CVmObj(CVmNewMesh(VRP_BOX,1, [-(15*SCALE_FACTOR)/2, 100*SCALE_FACTOR, 0], [(15*SCALE_FACTOR)/2, 0, 0], 15*SCALE_FACTOR));
+	var roomMaterial = CVmMaterial();
+	roomMaterial.Ambient = [0.2, 0.2, 0.2,1];
+	roomMaterial.Diffuse = [0.1,0.1,0.1,1];
+	roomMaterial.Emission = [0.0,0.05,0.2,1];
+	roomMaterial.Shininess = 0.4;
+	roomMaterial.Specular = [0.02,0.2,0.2,1];
+	mMenuRoom.SetMaterial(roomMaterial);
+	var mMenuRoomHolderMesh = CVmNewMesh(VRP_BOX,1, [-(15*SCALE_FACTOR)/2, 100*SCALE_FACTOR, 0], [(15*SCALE_FACTOR)/2, 0, 0], 15*SCALE_FACTOR);
+	mMenuRoomHolderMesh.SetMaterial(roomMaterial);
+	mMenuRoomHolder = CVmObj(mMenuRoomHolderMesh);
 	mMenuRoomHolder.SetPosition([0,-100*SCALE_FACTOR-0.005*SCALE_FACTOR, 15*SCALE_FACTOR/2]);
-	
-//	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 1, 2);
-	
 	
 	var txt = CVmText();
 	txt.Load("THE TOWER");
@@ -226,6 +233,31 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,mElevator.GetRoomHeight(),0);
 	
 	mElevatorCover.SetPosition([towerPosition.x, 0, +mElevator.GetRoomWidth()/2]);
+	
+	var mElevatorWallMeshes = {};
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-menuRoom_WidthFar/2, -(menuRoom_Height/2 - mElevator.GetRoomHeight()/2), 0], [menuRoom_WidthFar/2, +(menuRoom_Height/2 - mElevator.GetRoomHeight()/2), 0], 2, 2));
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-(menuRoom_WidthFar/2-mElevator.GetRoomWidth()/2)/2, -(mElevator.GetRoomHeight())/2, 0], [(menuRoom_WidthFar/2-mElevator.GetRoomWidth()/2)/2, +(mElevator.GetRoomHeight())/2, 0], 2, 2));
+	mElevatorWall = CVmObj();
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[0]), 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), (menuRoom_WidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -menuRoom_WidthSide/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), -(menuRoom_WidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -menuRoom_WidthSide/2);
+	var elevLeftDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+coverThickness, 0], coverThickness);
+	var elevRightDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+coverThickness, 0],coverThickness);
+	var elevLeftDoorGlass = CvmObj(elevLeftDoorMesh);
+	var elevRightDoorGlass = CvmObj(elevRightDoorMesh);
+	mElevatorWall.AddChild(elevLeftDoor, 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);
+	mElevatorWall.AddChild(elevRightDoor, 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);	
+	mElevatorWall.SetRotation(90,0,1,0);
+	var glassWallMaterial = CVmMaterial();	
+	glassWallMaterial.Ambient = [0.2, 0.2, 0.2,1];
+	glassWallMaterial.Diffuse = [0.2,0.2,0.8,1];
+	glassWallMaterial.Emission = [0.2,0.2,0.8,1];
+	glassWallMaterial.Shininess = 0.4;
+	glassWallMaterial.Transparency = 0.1;
+	glassWallMaterial.Specular = [0.02,0.2,0.2,1];
+	mElevatorWallMeshes[0].SetMaterial(glassWallMaterial);
+	mElevatorWallMeshes[1].SetMaterial(glassWallMaterial);
+	
 
 	var distance = towerPosition.x + towerLevelWidth/2 + menuRoom_WidthFar/2;
 	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
@@ -328,19 +360,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
  * Render method
  */
 function LevelMenu::Render()
-{	
-//	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
-//	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
-// 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
-// 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
- 	
-//	glEnable(GL_FOG);
-// 	glFog(GL_FOG_MODE, GL_EXP);
-// 	glFog(GL_FOG_DENSITY, 1);
-// 	glFog(GL_FOG_START, 1);
-// 	glFog(GL_FOG_END, 20);
-// 	glFog(GL_FOG_COLOR, [0,0,1,0.5]);
-	
+{		
 	var yRange = 4.5*SCALE_FACTOR;
 	var amountx = 250;
 	var amounty = 400;
@@ -352,24 +372,12 @@ function LevelMenu::Render()
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
 			DrawPointCloud(amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*1.5, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
-		
-			mToonShader.Start();
-				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
-				mToonShader.SetParameter("alpha", 1.0);
-				
-				mToonShader.SetParameter("ambient", [0.5, 0.5, 0.5]);
-				mToonShader.SetParameter("diffuse", [0.2, 0.2, 0.2]);
-				mToonShader.SetParameter("specular", [0.01, 0.01, 0.01]);
-				mToonShader.SetParameter("shininess", 0.05);				
-				mToonShader.SetParameter("lightsRangeMin", 2);
-				mToonShader.SetParameter("lightsRangeMax", 2);
-				mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,1,1,1]);
-				
-				mToonShader.SetParameter("diffuse", [0.5, 0.5, 0.5]);			
-				mToonShader.SetParameter("lightsRangeMin", 0);
-				mToonShader.SetParameter("lightsRangeMax", 2);
-		   		mMenuRoomHolder.Draw(VR_NO_CULLING);
-			mToonShader.Stop();
+
+			mElevatorWall.Draw(VR_NO_CULLING);
+			mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,0,1,1]);			
+//			mMenuRoom.Draw([0,0,0,1,0,0], [0,0,0,0,0,0]);
+
+	   		mMenuRoomHolder.Draw(VR_NO_CULLING);
 			
 			glEnable(GL_FOG);
 		 	glFog(GL_FOG_MODE, GL_EXP);
@@ -379,17 +387,8 @@ function LevelMenu::Render()
 		 	glFog(GL_FOG_COLOR, [0.95,0.95,0.95]);
 	   		towerLevels.Draw(VR_NO_CULLING);
 	   		mWalkWay.Draw(VR_NO_CULLING);
-//	   		mElevator.Draw();
 	   		mElevatorCover.Draw();
 			glDisaBle(GL_FOG);
-			
-		mAlphaShader.Start();
-			mAlphaShader.SetParameter("time", 0);
-			mAlphaShader.SetParameter("alpha", 0.20);
-			mAlphaShader.SetParameter("startingColor", [0.6, 0.6, 1]);
-			mAlphaShader.SetParameter("finalColor", [0.6, 0.6, 1]);
-			mMenuRoom.Draw([0,0,0,1,0,0], [0,0,0,0,0,0]);
-		mAlphaShader.Stop();
 		
 		for(var i = 0; i < len(levelSelectors); i++){
 			levelSelectors[i].Draw();		
@@ -565,7 +564,7 @@ function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight
    var max = menuRoom_WidthFar / 2.0;
    var min = -max;    
    var step = menuRoom_WidthFar / 13.0;
-   var offset = (0.15*SCALE_FACTOR);
+   var offset = (0.005*SCALE_FACTOR);
    glBegin(GL_LINES);
    for(var n = 0; n < 3; n++){
 		switch(n){

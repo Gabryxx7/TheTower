@@ -218,9 +218,9 @@ function GameManager::GameManager(HMD)
 //		}
 
 		SetClearColor(0.95,0.95,0.95);  
-		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		

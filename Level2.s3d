@@ -203,8 +203,8 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var wrongColor = [0.8,0.0,0.0];
 	var buttonsTextColor = [0.0,0.0,0.0];
 	var clearingColor = [0.8,0.8,0];
-	numpadObj = VirtualKeyboard(mAnimator, "123\n456\n789\nC0 ", buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
-//	numpadObj = VirtualKeyboard(mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null,  numpadPos, numpadHolderSize);	
+	numpadObj = VirtualKeyboard(true, mAnimator, "123\n456\n789\nC0 ", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
+//	numpadObj = VirtualKeyboard(true, mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null,  numpadPos, numpadHolderSize);	
 /////////////////////////////////////////////////////////
 	
 	
