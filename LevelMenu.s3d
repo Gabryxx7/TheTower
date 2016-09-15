@@ -6,8 +6,10 @@ class LevelMenu
 	var mDt;
 	
 	var cloudDt;
+	var cameraPosition;
 	
 	var mElevator;
+	var mElevatorCover;
 	
 	var menuRoom_WidthFar;
 	var menuRoom_WidthSide;
@@ -89,7 +91,7 @@ class LevelMenu
 	// Private functions
 	FadeToBlackScreen(fadeIn);
 	DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor);
-	DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed);
+	DrawPointCloud(mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -172,7 +174,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	towerLevelHeight = 13*SCALE_FACTOR;
 	towerLevelWidth =  30*SCALE_FACTOR;
 //	towerConnectionsHeight = towerLevelHeight * 0.6;
-	towerConnectionsHeight = mElevator.GetRoomHeight();
+	towerConnectionsHeight = mElevator.GetRoomHeight()+0.005*SCALE_FACTOR;
 	towerConnectionsWidth = towerLevelWidth * 0.65;
 	
 	towerLevels = CVmObj();
@@ -190,23 +192,46 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	for(var i = 0; i < numberOfLevels; i++){
 		towerLevels.AddChild(CVmObj(towerRoomMesh), 0, (towerConnectionsHeight + towerLevelHeight)*i,0);
 		
-//		if(i != numberOfLevels-1 && i != numberOfLevels/2)
-		if(i != numberOfLevels-1)
+		if(i != numberOfLevels-1 && i != numberOfLevels/2)
+//		if(i != numberOfLevels-1)
 			towerLevels.AddChild(CVmObj(towerConnectionMesh), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i - 0.005*SCALE_FACTOR, -towerLevelWidth/2 + towerConnectionsWidth/2);
 	}
 	
-	towerPosition =[-80*SCALE_FACTOR, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2)-towerLevelHeight/2, towerLevelWidth/2]; 
+	towerPosition =[-120*SCALE_FACTOR, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2)-towerLevelHeight/2, towerLevelWidth/2]; 
 	towerLevels.SetPosition(towerPosition);
 //	towerLevels.SetRotation(32, 0,1,0);
 
-	mElevator.Rotate(90,0,1,0);
-	mElevator.SetPosition([towerPosition.x, mElevator.GetRoomHeight()/2, 0]);
+	mElevatorCover = CVmObj();
+	var coverThickness = 0.025*SCALE_FACTOR;
+	var coverOffset = 0.005*SCALE_FACTOR;
+	
+	var elevSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), mElevator.GetRoomHeight(), 0], coverThickness);
+	var elevBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [coverThickness, mElevator.GetRoomHeight()+coverThickness, 0], mElevator.GetRoomWidth());
+	var elevFloorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), coverThickness, 0], mElevator.GetRoomWidth());	
+	var elevLeftDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [coverThickness, mElevator.GetRoomHeight()+coverThickness, 0], mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR);
+	var elevRightDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [coverThickness, mElevator.GetRoomHeight()+coverThickness, 0], mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
+	elevSideMesh.SetMaterial(towerMaterial);
+	elevBackMesh.SetMaterial(towerMaterial);
+	elevFloorMesh.SetMaterial(towerMaterial);
+	elevLeftDoorMesh.SetMaterial(towerMaterial);
+	elevRightDoorMesh.SetMaterial(towerMaterial);
+	var elevLeftDoor = CvmObj(elevLeftDoorMesh);
+	var elevRightDoor = CvmObj(elevRightDoorMesh);
+	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,-mElevator.GetRoomWidth());
+	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,0);
+	mElevatorCover.AddChild(CvmObj(elevBackMesh),0,0,0);
+	mElevatorCover.AddChild(elevLeftDoor,mElevator.GetRoomDepth(),0,0);
+	mElevatorCover.AddChild(elevRightDoor,mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
+	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,0,0);
+	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,mElevator.GetRoomHeight(),0);
+	
+	mElevatorCover.SetPosition([towerPosition.x, 0, +mElevator.GetRoomWidth()/2]);
 
 	var distance = towerPosition.x + towerLevelWidth/2 + menuRoom_WidthFar/2;
-	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], 5*SCALE_FACTOR);
+	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
 	walkwayMesh.SetMaterial(towerMaterial);
 	mWalkWay = CVmObj(walkwayMesh);
-	mWalkWay.SetPosition(-menuRoom_WidthSide/2+distance/2, -0.25*SCALE_FACTOR, -5*SCALE_FACTOR/2);
+	mWalkWay.SetPosition(-menuRoom_WidthSide/2+distance/2, -0.25*SCALE_FACTOR, -mElevator.GetRoomWidth()/2);
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -317,16 +342,16 @@ function LevelMenu::Render()
 // 	glFog(GL_FOG_COLOR, [0,0,1,0.5]);
 	
 	var yRange = 4.5*SCALE_FACTOR;
-	var amount = 200;
-	var spacing = 0.8*SCALE_FACTOR;
+	var amountx = 250;
+	var amounty = 400;
+	var viewDistance = 17;
+	var spacing = 0.75*SCALE_FACTOR;
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
-//       		DrawPointCloud(amount, [towerPosition.x+menuRoom_WidthSide/2-(amount*spacing)/2+4.5*SCALE_FACTOR, -yRange*2, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
-       		DrawPointCloud(amount, [towerPosition.x/2, -yRange*3, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
-		SceneEnableFog(1,50,[0,0,1]);   
+			DrawPointCloud(amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*1.5, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
 		
 			mToonShader.Start();
 				mToonShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
@@ -352,10 +377,10 @@ function LevelMenu::Render()
 		 	glFog(GL_FOG_START, 1);
 		 	glFog(GL_FOG_END, 2);
 		 	glFog(GL_FOG_COLOR, [0.95,0.95,0.95]);
-//		 	glFog(GL_FOG_COORD, GL_FOG_COORD);
 	   		towerLevels.Draw(VR_NO_CULLING);
 	   		mWalkWay.Draw(VR_NO_CULLING);
-	   		mElevator.Draw();
+//	   		mElevator.Draw();
+	   		mElevatorCover.Draw();
 			glDisaBle(GL_FOG);
 			
 		mAlphaShader.Start();
@@ -408,7 +433,7 @@ function LevelMenu::UpdateLogic(dt)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
-	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	switch(mLevelStatus)
 	{
@@ -616,7 +641,7 @@ function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight
    glPopAttrib();   
 }
 
-function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed){
+function LevelMenu::DrawPointCloud(mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed){
 
 	var a = 0;
 	var b = 0;
@@ -632,20 +657,24 @@ function LevelMenu::DrawPointCloud(mAmount, mCenter, mYRange, mSPacing, mSize, m
 	glPointSize(mSize);
 	glBegin(GL_POINTS);
 	//The center is in (mAmount/2, mAmount/2)
-	for(var j = 0; j < mAmount; j++){
+	for(var j = 0; j < mAmountx; j++){
 		a = 0;
 		b += mYPeriod;
-		
-		for(var i = 0; i < mAmount; i++){
-			x = -(j-mAmount/2)*mSpacing+mCenter.x;
-			y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
-			z = (i-mAmount/2)*mSpacing+mCenter.z;
-			
-			alpha = sqrt((j-mAmount/2)^2 + (i-mAmount/2)^2);
-			glColor(mColor.r, mColor.g, mColor.b, 1-alpha/(mAmount/1.85));
-			glVertex(x,y,z);
-				
-			a += mXPeriod;
+		z = -(j-mAmountx/2)*mSpacing+mCenter.z;
+		if(abs(cameraPosition.z-z) < viewDistance){
+			for(var i = 0; i < mAmounty; i++){
+				x = (i-mAmounty/2)*mSpacing+mCenter.x;
+				if(abs(cameraPosition.x-x) < viewDistance){					
+					y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+					
+					alpha = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2);
+					
+					glColor(mColor.r, mColor.g, mColor.b, 1-alpha/viewDistance);
+					glVertex(x,y,z);	
+					
+					a += mXPeriod;				
+				}
+			}		
 		}
 	}	
 
