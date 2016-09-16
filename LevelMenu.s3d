@@ -10,8 +10,12 @@ class LevelMenu
 	
 	var mElevator;
 	var mElevatorCover;
+	var mElevatorCoverDoors;
+	var elevatorOpen;
 	
+	var wallThickness;
 	var mElevatorWall;
+	var mElevatorWallDoors;
 	var menuRoom_WidthFar;
 	var menuRoom_WidthSide;
 	var menuRoom_Height;
@@ -19,6 +23,7 @@ class LevelMenu
 	var mMenuRoomHolder;
 	
 	var mWalkWay;
+	var walkwayStarted;
 	
 	var mIsVRon;
 	var debugVrOn;
@@ -187,8 +192,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	towerLevels = CVmObj();
 	numberOfLevels = 27;
 	var towerMaterial = CVmMaterial();
-	towerMaterial.Ambient = [0.4, 0.4, 0.4,1];
-	towerMaterial.Diffuse = [0.6,0.7,0.7,1];
+	towerMaterial.Ambient = [0.3, 0.3, 0.3,1];
+	towerMaterial.Diffuse = [0.5,0.5,0.5,1];
 	towerMaterial.Emission = [0.0,0.05,0.2,1];
 	towerMaterial.Shininess = 0.4;
 	towerMaterial.Specular = [0.02,0.2,0.2,1];
@@ -204,19 +209,19 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 			towerLevels.AddChild(CVmObj(towerConnectionMesh), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i - 0.005*SCALE_FACTOR, -towerLevelWidth/2 + towerConnectionsWidth/2);
 	}
 	
-	towerPosition =[-120*SCALE_FACTOR, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2)-towerLevelHeight/2, towerLevelWidth/2]; 
+	towerPosition =[-200*SCALE_FACTOR, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2)-towerLevelHeight/2, towerLevelWidth/2]; 
 	towerLevels.SetPosition(towerPosition);
 //	towerLevels.SetRotation(32, 0,1,0);
 
 	mElevatorCover = CVmObj();
-	var coverThickness = 0.025*SCALE_FACTOR;
+	wallThickness = 0.025*SCALE_FACTOR;
 	var coverOffset = 0.005*SCALE_FACTOR;
 	
-	var elevSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), mElevator.GetRoomHeight(), 0], coverThickness);
-	var elevBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [coverThickness, mElevator.GetRoomHeight()+coverThickness, 0], mElevator.GetRoomWidth());
-	var elevFloorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), coverThickness, 0], mElevator.GetRoomWidth());	
-	var elevLeftDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [coverThickness, mElevator.GetRoomHeight()+coverThickness, 0], mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR);
-	var elevRightDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [coverThickness, mElevator.GetRoomHeight()+coverThickness, 0], mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
+	var elevSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), mElevator.GetRoomHeight(), 0], wallThickness);
+	var elevBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth());
+	var elevFloorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), wallThickness, 0], mElevator.GetRoomWidth());	
+	var elevLeftDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR);
+	var elevRightDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
 	elevSideMesh.SetMaterial(towerMaterial);
 	elevBackMesh.SetMaterial(towerMaterial);
 	elevFloorMesh.SetMaterial(towerMaterial);
@@ -224,15 +229,18 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	elevRightDoorMesh.SetMaterial(towerMaterial);
 	var elevLeftDoor = CvmObj(elevLeftDoorMesh);
 	var elevRightDoor = CvmObj(elevRightDoorMesh);
+	mElevatorCoverDoors = {};
+	aadd(mElevatorCoverDoors, elevLeftDoor);
+	aadd(mElevatorCoverDoors, elevRightDoor);
 	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,-mElevator.GetRoomWidth());
 	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,0);
 	mElevatorCover.AddChild(CvmObj(elevBackMesh),0,0,0);
 	mElevatorCover.AddChild(elevLeftDoor,mElevator.GetRoomDepth(),0,0);
 	mElevatorCover.AddChild(elevRightDoor,mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
 	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,0,0);
-	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,mElevator.GetRoomHeight(),0);
-	
+	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,mElevator.GetRoomHeight(),0);	
 	mElevatorCover.SetPosition([towerPosition.x, 0, +mElevator.GetRoomWidth()/2]);
+	elevatorOpen = false;
 	
 	var mElevatorWallMeshes = {};
 	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-menuRoom_WidthFar/2, -(menuRoom_Height/2 - mElevator.GetRoomHeight()/2), 0], [menuRoom_WidthFar/2, +(menuRoom_Height/2 - mElevator.GetRoomHeight()/2), 0], 2, 2));
@@ -241,12 +249,17 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[0]), 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);
 	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), (menuRoom_WidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -menuRoom_WidthSide/2);
 	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), -(menuRoom_WidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -menuRoom_WidthSide/2);
-	var elevLeftDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+coverThickness, 0], coverThickness);
-	var elevRightDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+coverThickness, 0],coverThickness);
-	var elevLeftDoorGlass = CvmObj(elevLeftDoorMesh);
-	var elevRightDoorGlass = CvmObj(elevRightDoorMesh);
-	mElevatorWall.AddChild(elevLeftDoor, 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);
-	mElevatorWall.AddChild(elevRightDoor, 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);	
+	var elevLeftDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+wallThickness, 0], wallThickness);
+	var elevRightDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+wallThickness, 0], wallThickness);
+	elevLeftDoorMeshGlass.SetMaterial(towerMaterial);
+	elevRightDoorMeshGlass.SetMaterial(towerMaterial);
+	var elevLeftDoorGlass = CvmObj(elevLeftDoorMeshGlass);
+	var elevRightDoorGlass = CvmObj(elevRightDoorMeshGlass);
+	mElevatorWallDoors = {};
+	aadd(mElevatorWallDoors, elevLeftDoorGlass);
+	aadd(mElevatorWallDoors, elevRightDoorGlass);
+	mElevatorWall.AddChild(elevLeftDoorGlass, -mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2);
+	mElevatorWall.AddChild(elevRightDoorGlass, 0, 0,-menuRoom_WidthSide/2+wallThickness*2);	
 	mElevatorWall.SetRotation(90,0,1,0);
 	var glassWallMaterial = CVmMaterial();	
 	glassWallMaterial.Ambient = [0.2, 0.2, 0.2,1];
@@ -260,10 +273,12 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	
 
 	var distance = towerPosition.x + towerLevelWidth/2 + menuRoom_WidthFar/2;
-	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
-	walkwayMesh.SetMaterial(towerMaterial);
+//	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
+	walkwayStarted = false;	
+	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [0, 0.25*SCALE_FACTOR, 0], [10*SCALE_FACTOR, 0, 0], mElevator.GetRoomWidth());
 	mWalkWay = CVmObj(walkwayMesh);
-	mWalkWay.SetPosition(-menuRoom_WidthSide/2+distance/2, -0.25*SCALE_FACTOR, -mElevator.GetRoomWidth()/2);
+	walkwayMesh.SetMaterial(towerMaterial);
+	mWalkWay.SetPosition(-menuRoom_WidthSide/2-10*SCALE_FACTOR, -0.25*SCALE_FACTOR, +mElevator.GetRoomWidth()/2);
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -361,17 +376,17 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
  */
 function LevelMenu::Render()
 {		
-	var yRange = 4.5*SCALE_FACTOR;
+	var yRange = 6*SCALE_FACTOR;
 	var amountx = 250;
-	var amounty = 400;
-	var viewDistance = 17;
-	var spacing = 0.75*SCALE_FACTOR;
+	var amounty = 350;
+	var viewDistance = 18;
+	var spacing = 1.12*SCALE_FACTOR;
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
-			DrawPointCloud(amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*1.5, towerPosition.z-towerLevelWidth/2], yRange, spacing, 20, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
+			DrawPointCloud(amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*2.5, towerPosition.z-towerLevelWidth/2], yRange, spacing, 40, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
 
 			mElevatorWall.Draw(VR_NO_CULLING);
 			mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,0,1,1]);			
@@ -383,7 +398,7 @@ function LevelMenu::Render()
 		 	glFog(GL_FOG_MODE, GL_EXP);
 		 	glFog(GL_FOG_DENSITY, 0.25f);
 		 	glFog(GL_FOG_START, 1);
-		 	glFog(GL_FOG_END, 2);
+		 	glFog(GL_FOG_END, 20);
 		 	glFog(GL_FOG_COLOR, [0.95,0.95,0.95]);
 	   		towerLevels.Draw(VR_NO_CULLING);
 	   		mWalkWay.Draw(VR_NO_CULLING);
@@ -467,6 +482,8 @@ function LevelMenu::UpdateLogic(dt)
 									
 				levelSelectors[pointedLevel].IsSelected(true);
 				mSelectedLevel = pointedLevel;
+				mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 0.50, false);
+				mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 0.50, false);
 			}
 			
 			var res = false;
@@ -479,6 +496,20 @@ function LevelMenu::UpdateLogic(dt)
 			
 			if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
 				mIsLevelCompleted = true;
+			}
+			
+			var range = 3*SCALE_FACTOR;
+			if(cameraPosition.x <= mWalkWay.GetPosition().x + range && cameraPosition.x >= mWalkWay.GetPosition().x-range && !walkwayStarted){
+				walkwayStarted = true;
+				mAnimator.CreateTransition(mCamera, [-menuRoom_WidthSide/2-10*SCALE_FACTOR, mCamera.GetPosition().y, +mElevator.GetRoomWidth()/2], [towerPosition.x+towerLevelWidth/2, mCamera.GetPosition().y, mElevator.GetRoomWidth()/2],  3, false);
+				mAnimator.CreateTransition(mWalkWay, [-menuRoom_WidthSide/2-10*SCALE_FACTOR, -0.25*SCALE_FACTOR, +mElevator.GetRoomWidth()/2], [towerPosition.x+towerLevelWidth/2, -0.25*SCALE_FACTOR, mElevator.GetRoomWidth()/2],  3, false);
+			}
+			
+			range = 25*SCALE_FACTOR;
+			if(cameraPosition.x <= towerPosition.x+towerLevelWidth/2+range/2 && cameraPosition.x >= towerPosition.x+towerLevelWidth/2-range/2 && !elevatorOpen){
+				elevatorOpen = true;
+				mAnimator.CreateTransition(mElevatorCoverDoors[0],[mElevator.GetRoomDepth(),0,0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], 1, false);
+				mAnimator.CreateTransition(mElevatorCoverDoors[1],[mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], 1, false);
 			}
 			break;
 		}
@@ -504,8 +535,10 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 {
 	var intersectedPlane = -1;
 
-	if(intersectedPlane == -1)
-		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	if(intersectedPlane == -1){
+//		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+//		intersectedPlane = mWalkWay.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);		
+	}
 		
 	isWall = true;
 	
