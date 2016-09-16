@@ -23,6 +23,8 @@ class LevelMenu
 	var mMenuRoomHolder;
 	
 	var mWalkWay;
+	var mWalkdistance;
+	var mWalkWaySize;
 	var walkwayStarted;
 	
 	var mIsVRon;
@@ -272,13 +274,14 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mElevatorWallMeshes[1].SetMaterial(glassWallMaterial);
 	
 
-	var distance = towerPosition.x + towerLevelWidth/2 + menuRoom_WidthFar/2;
 //	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
 	walkwayStarted = false;	
-	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [0, 0.25*SCALE_FACTOR, 0], [10*SCALE_FACTOR, 0, 0], mElevator.GetRoomWidth());
+	mWalkWaySize = [10*SCALE_FACTOR, 0.5*SCALE_FACTOR, mElevator.GetRoomWidth()];
+	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-mWalkWaySize.x/2, -mWalkWaySize.y/2, 0], [mWalkWaySize.x/2, mWalkWaySize.y/2, 0], mWalkWaySize.z);
 	mWalkWay = CVmObj(walkwayMesh);
 	walkwayMesh.SetMaterial(towerMaterial);
-	mWalkWay.SetPosition(-menuRoom_WidthSide/2-10*SCALE_FACTOR, -0.25*SCALE_FACTOR, +mElevator.GetRoomWidth()/2);
+	mWalkWay.SetPosition(-menuRoom_WidthSide/2-mWalkWaySize.x/2, -mWalkWaySize.y/2, mWalkWaySize.z/2);
+	mWalkdistance = -abs((-menuRoom_WidthSide/2-mWalkWaySize.x) - (towerPosition.x + towerLevelWidth/2));
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -482,8 +485,8 @@ function LevelMenu::UpdateLogic(dt)
 									
 				levelSelectors[pointedLevel].IsSelected(true);
 				mSelectedLevel = pointedLevel;
-				mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 0.50, false);
-				mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 0.50, false);
+				mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+				mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
 			}
 			
 			var res = false;
@@ -498,11 +501,13 @@ function LevelMenu::UpdateLogic(dt)
 				mIsLevelCompleted = true;
 			}
 			
-			var range = 3*SCALE_FACTOR;
-			if(cameraPosition.x <= mWalkWay.GetPosition().x + range && cameraPosition.x >= mWalkWay.GetPosition().x-range && !walkwayStarted){
+			var range = 1*SCALE_FACTOR;
+			if(cameraPosition.x > mWalkWay.GetPosition().x - mWalkWaySize.z/2 + range/2 && cameraPosition.x < mWalkWay.GetPosition().x + mWalkWaySize.z/2 - range/2 &&
+			   cameraPosition.z > mWalkWay.GetPosition().z - mWalkWaySize.z/2 + range/2 && cameraPosition.z < mWalkWay.GetPosition().z + mWalkWaySize.z/2 - range/2 &&
+				!walkwayStarted){
 				walkwayStarted = true;
-				mAnimator.CreateTransition(mCamera, [-menuRoom_WidthSide/2-10*SCALE_FACTOR, mCamera.GetPosition().y, +mElevator.GetRoomWidth()/2], [towerPosition.x+towerLevelWidth/2, mCamera.GetPosition().y, mElevator.GetRoomWidth()/2],  3, false);
-				mAnimator.CreateTransition(mWalkWay, [-menuRoom_WidthSide/2-10*SCALE_FACTOR, -0.25*SCALE_FACTOR, +mElevator.GetRoomWidth()/2], [towerPosition.x+towerLevelWidth/2, -0.25*SCALE_FACTOR, mElevator.GetRoomWidth()/2],  3, false);
+				mAnimator.CreateTransition(mCamera, mCamera.GetPosition(), mCamera.GetPosition() + [mWalkDistance-mWalkWaySize.x/2,0,0],  3, false);
+				mAnimator.CreateTransition(mWalkWay, mWalkWay.GetPosition(), mWalkWay.GetPosition() + [mWalkDistance,0,0],  3, false);
 			}
 			
 			range = 25*SCALE_FACTOR;
