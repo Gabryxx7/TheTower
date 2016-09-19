@@ -349,13 +349,14 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [towerPosition.x + 3*SCALE_FACTOR, menuRoom_Height, -2*SCALE_FACTOR];
-	mLight1Position = [towerPosition.x + 3*SCALE_FACTOR, -menuRoom_Height/2, 2*SCALE_FACTOR];
+	mLight0Position = [towerPosition.x + 3*SCALE_FACTOR, menuRoom_Height*2, -2*SCALE_FACTOR];
+	mLight1Position = [towerPosition.x + 3*SCALE_FACTOR, -menuRoom_Height*2, 2*SCALE_FACTOR];
 	mLight2Position = [0, menuRoom_Height/2, -menuRoom_WidthFar];
 	
-	var diffuseFactor = 0.05;
-	mLight0Diffuse = [1, 0, 0];
-	mLight1Diffuse = [0, 0, 1];
+	mLight0Diffuse = [0.5, 0.5, 0.5];
+	mLight1Diffuse = [0.5, 0.5, 0.5];
+//	mLight0Diffuse = [1, 0, 0];
+//	mLight1Diffuse = [0, 0, 1];
 	mLight2Diffuse = [0.8, 0.8, 0.8];
 	
 	mLight0 = lights[0];
@@ -521,8 +522,8 @@ function LevelMenu::UpdateLogic(dt)
 			   cameraPosition.z > mWalkWay.GetPosition().z - mWalkWaySize.z/2 + range/2 && cameraPosition.z < mWalkWay.GetPosition().z + mWalkWaySize.z/2 - range/2 &&
 				!walkwayStarted){
 				walkwayStarted = true;
-				mAnimator.CreateTransition(mCamera, mCamera.GetPosition(), mCamera.GetPosition() + [mWalkDistance-mWalkWaySize.x/2,0,0],  3, false);
-				mAnimator.CreateTransition(mWalkWay, mWalkWay.GetPosition(), mWalkWay.GetPosition() + [mWalkDistance,0,0],  3, false);
+				mAnimator.CreateTransition(mCamera, mCamera.GetPosition(), mCamera.GetPosition() + [mWalkDistance-mWalkWaySize.x/3,0,0],  8, false);
+				mAnimator.CreateTransition(mWalkWay, mWalkWay.GetPosition(), mWalkWay.GetPosition() + [mWalkDistance,0,0],  8, false);
 			}
 			
 			range = 25*SCALE_FACTOR;

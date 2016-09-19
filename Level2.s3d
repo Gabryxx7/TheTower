@@ -204,6 +204,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	testo.AddChild(line,ROOM_FAR_WALL_WIDTH/2-0.1*SCALE_FACTOR, ROOM_HEIGHT/2-2*SCALE_FACTOR, -30*SCALE_FACTOR);
 	// Adding each text to its portal room
 	testo.SetScale([1, 1, 1]);
+	testo.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 	///// NUMBER PAD GENERATION /////
 	var buttonsSize = [0.75 * SCALE_FACTOR, 0.1 * SCALE_FACTOR]; //width x thickness
@@ -213,7 +214,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var wrongColor = [0.8,0.0,0.0];
 	var buttonsTextColor = [0.0,0.0,0.0];
 	var clearingColor = [0.8,0.8,0];
-	numpadObj = VirtualKeyboard(true, mAnimator, "123\n456\n789\nC0 ", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
+	numpadObj = VirtualKeyboard(true, mAnimator, "123\n456\n789\nC0", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
 //	numpadObj = VirtualKeyboard(true, mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null,  numpadPos, numpadHolderSize);	
 /////////////////////////////////////////////////////////
 	
@@ -233,9 +234,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR];
-	mLight1Position =[20.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, -10.0 * SCALE_FACTOR];
-	mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 20.0 * SCALE_FACTOR];
+	mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+	mLight1Position =[20.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, -10.0 * SCALE_FACTOR] + mTranslateFactor;
+	mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 20.0 * SCALE_FACTOR] + mTranslateFactor;
 	mLight0Diffuse = [0.5,0.5,1];
 	mLight1Diffuse = [1,0,0];
 	mLight2Diffuse = [1,1,1];
@@ -270,11 +271,10 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	for(var i = 0; i < len(mElevatorWallMeshes); i++){		
 		AddToonShaderToMesh(mElevatorWallMeshes[i], [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, 0, 2, SCALE_FACTOR, 1.0);
 	}
+	mElevatorWall.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 //	mElevator.SetPosition([mElevator.GetPosition().x, mElevator.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()+0.3*SCALE_FACTOR]);
-//	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset);
-
-	
+	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset + mTranslateFactor);	
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
@@ -305,12 +305,12 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	var tilesSpacing =  0.25 * SCALE_FACTOR;
 	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize.x/2, -tilesSize.y/2, 0], [tilesSize.x/2, tilesSize.y/2, 0], tilesSize.x);
 	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+(tilesSize.x+tilesSpacing*3)];	
-	var startingTilesPos = elevatorFrontPosition + [0, 0, 0];	
+	var startingTilesPos = elevatorFrontPosition + mTranslateFactor + [0, 0, 0];	
 	
 	var randomMeshesLimits = [ROOM_FAR_WALL_WIDTH/2 - 2*SCALE_FACTOR, ROOM_HEIGHT, ROOM_SIDE_WALL_WIDTH/2 - 1*SCALE_FACTOR];
-	var randomMeshesPos = [0,-ROOM_HEIGHT-1*SCALE_FACTOR,-ROOM_SIDE_WALL_WIDTH/2+1*SCALE_FACTOR];
-	var cubeSizes = 0.80 *SCALE_FACTOR;
-	var randomMeshNumber = 100; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	var randomMeshesPos = [0,-ROOM_HEIGHT-1*SCALE_FACTOR,-ROOM_SIDE_WALL_WIDTH/2+1*SCALE_FACTOR] + mTranslateFactor;
+	var cubeSizes = 0.70 *SCALE_FACTOR;
+	var randomMeshNumber = 185; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomShapes = {};
 	paths = {};
@@ -390,7 +390,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 				aadd(codeNumbers, randNumb);	
 			}		
 		}
-		finalPositions = cubeNums.GenerateNumberPositions(codeNumbers[i], numberPosition);
+		finalPositions = cubeNums.GenerateNumberPositions(codeNumbers[i], numberPosition+mTranslateFactor);
 		
 		var j = 0;
 		while(len(randomShapes[i].GetFinalPos()) < len(randomShapes[i].GetObjs())){	
@@ -411,9 +411,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	numpadClearNeeded = 0;
 	/////////////////////////////////////////////////////////
 	
-	musicCircleRadius = 5*SCALE_FACTOR;
+	musicCircleRadius = 4.5*SCALE_FACTOR;
 	musicCircle = CVmObj((CVmNewMesh(VRP_CYLINDER, 20, musicCircleRadius, tilesSize.y,1)));
-	musicCirclePosition = [0, -tilesSize.y*2, 0];
+	musicCirclePosition = [0, -tilesSize.y*2, 0] + mTranslateFactor;
 	musicCircle.SetPosition(musicCirclePosition);
 	musicCircleStepped = false;
 	
@@ -945,7 +945,7 @@ function Level2::UpdateLogic(dt)
 			
 			if(distanceFromCircle  < musicCircleRadius*musicCircleRadius && !musicCircleStepped){
 				musicCircleStepped = true;
-				mAnimator.CreateTransition(musicCircle, musicCirclePosition, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], 0.7, false);
+				mAnimator.CreateTransition(musicCircle, musicCirclePosition, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], 0.25, false);
 				for(var j = 0; j < len(randomShapes); j++){
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
