@@ -524,6 +524,19 @@ function Level3::UpdateLogic(dt)
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
 				
 				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
+				
+				// Hiding the real controllers
+				for(var i = 0; i < len(mControllersArray); i++)
+				{
+					mControllersArray[i].Hide();
+					mControllersDuplicateArray[i].Unhide();
+					
+					// I brutally move away the duplicate controller so that it can't be seen for now; when the player steps out of the elevator,
+					// the real position will be computed
+					mControllersDuplicateArray[i].SetPosition([0, -100 * SCALE_FACTOR, 0]);
+					
+					mCurrentlyVisibleControllersArray[i] = mControllersDuplicateArray[i];
+				}
 			}
 	
 			break;

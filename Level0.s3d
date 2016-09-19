@@ -2,7 +2,7 @@
 // Sizes for the main room
 #define ROOM_FAR_WALL_WIDTH     100.0 * SCALE_FACTOR
 #define ROOM_SIDE_WALL_WIDTH    100.0 * SCALE_FACTOR
-#define ROOM_HEIGHT             25.0 * SCALE_FACTOR
+#define ROOM_HEIGHT             35.0 * SCALE_FACTOR
 
 // Number of portals and sizes for the portals' rooms
 #define PORTALS_NUMBER  4
