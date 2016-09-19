@@ -12,6 +12,8 @@ class Level2
 	var mController2;
 	var debugVrOn;
 	
+	var mTranslateFactor;
+	
 	var mDebugController;
 	var mDebugControllerHidden;
 	var mDebugKeyHit;
@@ -132,6 +134,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	debugVrOn = false;
 	
 	mControllersArray = {};
+	
+	// I need translate the room back (and every object belonging to it) so that the elevator stays in the center of the room; this is that amount
+	mTranslateFactor = [0, 0, 30 * SCALE_FACTOR];
 		
 	if(mIsVRon)
 	{
@@ -168,10 +173,15 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	mPitRoom = Room(ROOM_FAR_WALL_WIDTH , PIT_HEIGHT, ROOM_SIDE_WALL_WIDTH, true, 0, 0, false);	
 	mPitRoom.Rotate(-90, 1, 0, 0);	
 	
+	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
+	
 	var halfWidth = ROOM_FAR_WALL_WIDTH/2;
 	var halfHeight = ROOM_SIDE_WALL_WIDTH/2;
 	
 	mPitRoom.GetObj().SetPosition(0, -PIT_HEIGHT, 0);
+	
+	mPitRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
+	
 	
 	// Instantiating the silhouette shader, to draw outlines
 	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
@@ -261,8 +271,10 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 		AddToonShaderToMesh(mElevatorWallMeshes[i], [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, 0, 2, SCALE_FACTOR, 1.0);
 	}
 	
-	mElevator.SetPosition([mElevator.GetPosition().x, mElevator.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()+0.3*SCALE_FACTOR]);
-	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset);
+//	mElevator.SetPosition([mElevator.GetPosition().x, mElevator.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()+0.3*SCALE_FACTOR]);
+//	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -ROOM_SIDE_WALL_WIDTH/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset);
+
+	
 	
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
@@ -653,8 +665,8 @@ function Level2::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-			if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition) && !mMainRoom.IsPointInRoom(cameraPosition))
-		    	mInputManager.RestoreCameraPosition();
+//			if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition) && !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
 			
 			var stepDistance = pathAnim ? 8*SCALE_FACTOR : 3*SCALE_FACTOR;				
 			var tilePos;
