@@ -5,6 +5,15 @@ class LevelMenu
 {	
 	var mDt;
 	
+	var seaYRange;
+	var seaAmountx;
+	var seaAmounty;
+	var seaViewDistance;
+	var seaSpacing;
+	var seaSize;
+	var seaXPeriod;
+	var seaYPeriod;
+	
 	var cloudDt;
 	var cameraPosition;
 	
@@ -99,7 +108,7 @@ class LevelMenu
 	// Private functions
 	FadeToBlackScreen(fadeIn);
 	DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor);
-	DrawPointCloud(mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed);
+	DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, mTopColor, mBottomColor, speed);
 	
 	// Public functions
 	Init(lights, elevator, openglTranslationOffset);
@@ -123,6 +132,15 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
+	seaYRange = 4;
+	seaAmountx = 150;
+	seaAmounty = 150;
+	seaViewDistance = 25;
+	seaSpacing = 0.0;
+	seaSize = 6;
+	seaXPeriod = 0.15;
+	seaYPeriod = 0.1;
+		
 	mDt = 0;
 	cloudDt = 0;
 		
@@ -379,17 +397,14 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
  */
 function LevelMenu::Render()
 {		
-	var yRange = 6*SCALE_FACTOR;
-	var amountx = 250;
-	var amounty = 350;
-	var viewDistance = 18;
-	var spacing = 1.12*SCALE_FACTOR;
 	switch(mLevelStatus)
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
-			DrawPointCloud(amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*2.5, towerPosition.z-towerLevelWidth/2], yRange, spacing, 40, 0.065, 0.08, [0.5, 0.9, 1], 2.20);
+			DrawPointCloud(1, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, -(seaYRange*SCALE_FACTOR)*3, towerPosition.z-towerLevelWidth/2], seaYRange*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], 2.20);
+//			DrawPointCloud(0, amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*3, towerPosition.z-towerLevelWidth/2], yRange, spacing, size, 0.095, 0.1, [0.5, 0.5, 1], [0.85, 0.85, 1], [0.05, 0.05, 1], 2.20);
+//			DrawPointCloud(-1, 200, 200, 18, [towerPosition.x/2, -6*SCALE_FACTOR*3, towerPosition.z-towerLevelWidth/2], 6*SCALE_FACTOR, 1.12*SCALE_FACTOR, 40, 0.065, 0.08, [0.5, 0.9, 1], [0.5, 0.9, 1], [0.5, 0.9, 1], 2.20);
 
 			mElevatorWall.Draw(VR_NO_CULLING);
 			mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,0,1,1]);			
@@ -520,6 +535,29 @@ function LevelMenu::UpdateLogic(dt)
 		}
 	}
 		
+		
+		
+	if(KeyPressed("1"))
+		seaYRange -= 0.1;
+	if(KeyPressed("2"))
+		seaYRange += 0.1;
+	if(KeyPressed("3"))
+		seaSpacing -= 0.1;
+	if(KeyPressed("4"))
+		seaSpacing += 0.1;
+	if(KeyPressed("5"))
+		seaSize -= 0.1;
+	if(KeyPressed("6"))
+		seaSize += 0.1;
+	if(KeyPressed("7"))
+		seaXPeriod -= 0.01;
+	if(KeyPressed("8"))
+		seaXPeriod += 0.01;
+	if(KeyPressed("9"))
+		seaYPeriod -= 0.01;
+	if(KeyPressed("0"))
+		seaYPeriod += 0.01;
+	
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
@@ -678,7 +716,7 @@ function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight
    glPopAttrib();   
 }
 
-function LevelMenu::DrawPointCloud(mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, speed){
+function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, mTopColor, mBottomColor, speed){
 
 	var a = 0;
 	var b = 0;
@@ -686,34 +724,124 @@ function LevelMenu::DrawPointCloud(mAmountx, mAmounty, viewDistance, mCenter, mY
 	var x = 0;
 	var y = 0;
 	var z = 0;
+	var yDist = 0;
 		
 	if(cloudDt >= 3.14)
 		cloudDt = 0;
 		
 	cloudDt += 0.035/(5-speed);
-	glPointSize(mSize);
-	glBegin(GL_POINTS);
 	//The center is in (mAmount/2, mAmount/2)
-	for(var j = 0; j < mAmountx; j++){
-		a = 0;
-		b += mYPeriod;
-		z = -(j-mAmountx/2)*mSpacing+mCenter.z;
-		if(abs(cameraPosition.z-z) < viewDistance){
-			for(var i = 0; i < mAmounty; i++){
-				x = (i-mAmounty/2)*mSpacing+mCenter.x;
-				if(abs(cameraPosition.x-x) < viewDistance){					
-					y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
-					
-					alpha = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2);
-					
-					glColor(mColor.r, mColor.g, mColor.b, 1-alpha/viewDistance);
-					glVertex(x,y,z);	
-					
-					a += mXPeriod;				
-				}
-			}		
-		}
-	}	
+	if(type == -1){
+		glPointSize(mSize);
+		glBegin(GL_POINTS);
+		for(var j = 0; j < mAmountx; j++){
+			a = 0;
+			b += mYPeriod;
+			z = -(j-mAmountx/2)*mSpacing+mCenter.z;
+			if(abs(cameraPosition.z-z) < viewDistance){
+				for(var i = 0; i < mAmounty; i++){
+					x = (i-mAmounty/2)*mSpacing+mCenter.x;
+					if(abs(cameraPosition.x-x) < viewDistance){					
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+						
+						alpha = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2);
+						
+						glColor(mColor.r, mColor.g, mColor.b, 1-alpha/viewDistance);
+						glVertex(x,y,z);	
+						
+						a += mXPeriod;				
+					}
+				}		
+			}
+		}	
+	}
+	else if(type == 0){
+		glBegin(GL_QUADS);
+		for(var i = 0; i < mAmounty; i++){
+			b = 0;
+			a += mXPeriod;
+					x = (i-mAmounty/2)*(mSpacing+mSize/2)+mCenter.x;	
+			if(abs(cameraPosition.x-x) < viewDistance){
+				for(var j = 0; j < mAmountx; j++){
+					b += mYPeriod;
+					z = -(j-mAmountx/2)*(mSpacing+mSize/2)+mCenter.z;
+					if(abs(cameraPosition.z-z) < viewDistance){		
+						alpha = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2);	
+						glColor(mColor.r, mColor.g, mColor.b, 1-alpha/viewDistance);
+						
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;
+						glVertex(x,y,z);
+						
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;		
+						glVertex(x,y,z+mSize/2);
+						
+						y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;		
+						glVertex(x+mSize/2,y,z+mSize/2);
+						
+						y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;		
+						glVertex(x+mSize/2,y,z);
+					}
+				}			
+			}
+		}		
+	}
+	else if(type == 1){
+		glBegin(GL_QUADS);
+		for(var i = 0; i < mAmounty; i++){
+			b = 0;
+			a += mXPeriod;
+					x = (i-mAmounty/2)*(mSpacing+mSize/2)+mCenter.x;	
+			if(abs(cameraPosition.x-x) < viewDistance){
+				for(var j = 0; j < mAmountx; j++){
+					b += mYPeriod;
+					z = -(j-mAmountx/2)*(mSpacing+mSize/2)+mCenter.z;
+					if(abs(cameraPosition.z-z) < viewDistance){		
+						alpha = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2);	
+						
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;	
+						yDist = (y-mCenter.y)/mYRange;						
+						if(yDist < 0){
+							yDist = -yDist;
+							glColor(yDist*mBottomColor.r + (1-yDist)*mColor.r, yDist*mBottomColor.g + (1-yDist)*mColor.g, yDist*mBottomColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}else{
+							glColor(yDist*mTopColor.r + (1-yDist)*mColor.r, yDist*mTopColor.g + (1-yDist)*mColor.g, yDist*mTopColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}
+						glVertex(x,y,z);
+						
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+						yDist = (y-mCenter.y)/mYRange;
+						if(yDist < 0){
+							yDist = -yDist;
+							glColor(yDist*mBottomColor.r + (1-yDist)*mColor.r, yDist*mBottomColor.g + (1-yDist)*mColor.g, yDist*mBottomColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}else{
+							glColor(yDist*mTopColor.r + (1-yDist)*mColor.r, yDist*mTopColor.g + (1-yDist)*mColor.g, yDist*mTopColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}
+						glVertex(x, y, z+mSize/2);
+						
+						y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
+						yDist = (y-mCenter.y)/mYRange;
+						if(yDist < 0){
+							yDist = -yDist;
+							glColor(yDist*mBottomColor.r + (1-yDist)*mColor.r, yDist*mBottomColor.g + (1-yDist)*mColor.g, yDist*mBottomColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}else{
+							glColor(yDist*mTopColor.r + (1-yDist)*mColor.r, yDist*mTopColor.g + (1-yDist)*mColor.g, yDist*mTopColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}
+						glVertex(x+mSize/2,y,z+mSize/2);
+						
+						y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
+						yDist = (y-mCenter.y)/mYRange;
+						if(yDist < 0){
+							yDist = -yDist;
+							glColor(yDist*mBottomColor.r + (1-yDist)*mColor.r, yDist*mBottomColor.g + (1-yDist)*mColor.g, yDist*mBottomColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}else{
+							glColor(yDist*mTopColor.r + (1-yDist)*mColor.r, yDist*mTopColor.g + (1-yDist)*mColor.g, yDist*mTopColor.b + (1-yDist)*mColor.b, 1-alpha/viewDistance);
+						}
+						glVertex(x+mSize/2, y, z);
+					}
+				}			
+			}
+		}	
+	}
 
 	glEnd();	
 }
