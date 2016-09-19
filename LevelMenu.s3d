@@ -13,6 +13,7 @@ class LevelMenu
 	var seaSize;
 	var seaXPeriod;
 	var seaYPeriod;
+	var seaLevel;
 	
 	var cloudDt;
 	var cameraPosition;
@@ -140,6 +141,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	seaSize = 6;
 	seaXPeriod = 0.15;
 	seaYPeriod = 0.1;
+	seaLevel = -seaYRange*(seaSize/2);
 		
 	mDt = 0;
 	cloudDt = 0;
@@ -403,7 +405,7 @@ function LevelMenu::Render()
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
        		text1.Draw();
-			DrawPointCloud(1, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, -(seaYRange*SCALE_FACTOR)*3, towerPosition.z-towerLevelWidth/2], seaYRange*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], 2.20);
+			DrawPointCloud(1, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaYRange*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], 2.20);
 //			DrawPointCloud(0, amountx, amounty, viewDistance, [towerPosition.x/2, -yRange*3, towerPosition.z-towerLevelWidth/2], yRange, spacing, size, 0.095, 0.1, [0.5, 0.5, 1], [0.85, 0.85, 1], [0.05, 0.05, 1], 2.20);
 //			DrawPointCloud(-1, 200, 200, 18, [towerPosition.x/2, -6*SCALE_FACTOR*3, towerPosition.z-towerLevelWidth/2], 6*SCALE_FACTOR, 1.12*SCALE_FACTOR, 40, 0.065, 0.08, [0.5, 0.9, 1], [0.5, 0.9, 1], [0.5, 0.9, 1], 2.20);
 
@@ -558,6 +560,15 @@ function LevelMenu::UpdateLogic(dt)
 		seaYPeriod -= 0.005;
 	if(KeyPressed("0"))
 		seaYPeriod += 0.005;
+	if(KeyPressed("z"))
+		seaLevel -= 0.1;
+	if(KeyPressed("x"))
+		seaLevel += 0.1;
+	if(KeyPressed("c"))
+		seaViewDistance -= 0.5;
+	if(KeyPressed("v"))
+		seaViewDistance += 0.5;
+	
 	
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
