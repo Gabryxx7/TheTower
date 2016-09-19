@@ -538,25 +538,25 @@ function LevelMenu::UpdateLogic(dt)
 		
 		
 	if(KeyPressed("1"))
-		seaYRange -= 0.1;
+		seaYRange -= 0.05;
 	if(KeyPressed("2"))
-		seaYRange += 0.1;
+		seaYRange += 0.05;
 	if(KeyPressed("3"))
-		seaSpacing -= 0.1;
+		seaSpacing -= 0.01;
 	if(KeyPressed("4"))
-		seaSpacing += 0.1;
+		seaSpacing += 0.01;
 	if(KeyPressed("5"))
-		seaSize -= 0.1;
+		seaSize -= 0.05;
 	if(KeyPressed("6"))
-		seaSize += 0.1;
+		seaSize += 0.05;
 	if(KeyPressed("7"))
-		seaXPeriod -= 0.01;
+		seaXPeriod -= 0.005;
 	if(KeyPressed("8"))
-		seaXPeriod += 0.01;
+		seaXPeriod += 0.005;
 	if(KeyPressed("9"))
-		seaYPeriod -= 0.01;
+		seaYPeriod -= 0.005;
 	if(KeyPressed("0"))
-		seaYPeriod += 0.01;
+		seaYPeriod += 0.005;
 	
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
