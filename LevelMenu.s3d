@@ -222,11 +222,11 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	// Adding each text to its portal room
 	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));	
 	
-	towerLevelHeight = 13*SCALE_FACTOR;
-	towerLevelWidth =  30*SCALE_FACTOR;
+	towerLevelHeight = 20*SCALE_FACTOR;
+	towerLevelWidth =  55*SCALE_FACTOR;
 //	towerConnectionsHeight = towerLevelHeight * 0.6;
 	towerConnectionsHeight = mElevator.GetRoomHeight()+0.005*SCALE_FACTOR;
-	towerConnectionsWidth = towerLevelWidth * 0.65;
+	towerConnectionsWidth = towerLevelWidth * 0.70;
 	
 	towerLevels = CVmObj();
 	numberOfLevels = 27;
@@ -258,11 +258,17 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	
 	var elevSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), mElevator.GetRoomHeight(), 0], wallThickness);
 	var elevBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth());
+	var elevCoverBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], towerConnectionsWidth);
+	var elevCoverFrontMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], towerConnectionsWidth/2-mElevator.GetRoomWidth()/2);
+	var elevCoverSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [towerConnectionsWidth, mElevator.GetRoomHeight()+wallThickness, 0], wallThickness);
 	var elevFloorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), wallThickness, 0], mElevator.GetRoomWidth());	
 	var elevLeftDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR);
 	var elevRightDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
 	elevSideMesh.SetMaterial(towerMaterial);
 	elevBackMesh.SetMaterial(towerMaterial);
+	elevCoverBackMesh.SetMaterial(towerMaterial);
+	elevCoverSideMesh.SetMaterial(towerMaterial);
+	elevCoverFrontMesh.SetMaterial(towerMaterial);
 	elevFloorMesh.SetMaterial(towerMaterial);
 	elevLeftDoorMesh.SetMaterial(towerMaterial);
 	elevRightDoorMesh.SetMaterial(towerMaterial);
@@ -274,11 +280,16 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,-mElevator.GetRoomWidth());
 	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,0);
 	mElevatorCover.AddChild(CvmObj(elevBackMesh),0,0,0);
+	mElevatorCover.AddChild(CvmObj(elevCoverBackMesh), -(mElevator.GetRoomWidth()+towerConnectionsWidth/2), 0, -mElevator.GetRoomWidth()/2 + towerConnectionsWidth/2);
+	mElevatorCover.AddChild(CvmObj(elevCoverSideMesh), -(mElevator.GetRoomWidth()+towerConnectionsWidth/2), 0, -mElevator.GetRoomWidth()/2 + towerConnectionsWidth/2);
+	mElevatorCover.AddChild(CvmObj(elevCoverSideMesh), -(mElevator.GetRoomWidth()+towerConnectionsWidth/2), 0, -mElevator.GetRoomWidth()/2 - towerConnectionsWidth/2);
+	mElevatorCover.AddChild(CvmObj(elevCoverFrontMesh), mElevator.GetRoomDepth(), 0, -mElevator.GetRoomWidth());
+	mElevatorCover.AddChild(CvmObj(elevCoverFrontMesh), mElevator.GetRoomDepth(), 0, towerConnectionsWidth/2-mElevator.GetRoomWidth()/2);
 	mElevatorCover.AddChild(elevLeftDoor,mElevator.GetRoomDepth(),0,0);
 	mElevatorCover.AddChild(elevRightDoor,mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
 	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,0,0);
 	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,mElevator.GetRoomHeight(),0);	
-	mElevatorCover.SetPosition([towerPosition.x, 0, +mElevator.GetRoomWidth()/2]);
+	mElevatorCover.SetPosition([towerPosition.x+mElevator.GetRoomWidth(), 0, +mElevator.GetRoomWidth()/2]);
 	elevatorOpen = false;
 	
 	var mElevatorWallMeshes = {};
@@ -429,16 +440,16 @@ function LevelMenu::Render()
 			mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,0,1,1]);	
 	   		mMenuRoomHolder.Draw(VR_NO_CULLING);
 			
-			glEnable(GL_FOG);
-		 	glFog(GL_FOG_MODE, GL_EXP);
-		 	glFog(GL_FOG_START, 1);
-		 	glFog(GL_FOG_END, 1);
-	 		glFog(GL_FOG_DENSITY, seaLevel <= 0 ? 0.15f : 0.4f);
-	 		glFog(GL_FOG_COLOR, seaLevel <= 0 ? [0.95,0.95,0.95] : [0.4, 0.7, 1]);		
+//			glEnable(GL_FOG);
+//		 	glFog(GL_FOG_MODE, GL_EXP);
+//		 	glFog(GL_FOG_START, 1);
+//		 	glFog(GL_FOG_END, 1);
+//	 		glFog(GL_FOG_DENSITY, seaLevel <= 0 ? 0.15f : 0.4f);
+//	 		glFog(GL_FOG_COLOR, seaLevel <= 0 ? [0.95,0.95,0.95] : [0.4, 0.7, 1]);		
 		   		towerLevels.Draw(VR_NO_CULLING);
 		   		mWalkWay.Draw(VR_NO_CULLING);
 		   		mElevatorCover.Draw();
-			glDisaBle(GL_FOG);
+//			glDisaBle(GL_FOG);
 		
 		for(var i = 0; i < len(levelSelectors); i++){
 			levelSelectors[i].Draw();		
