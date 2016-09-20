@@ -5,7 +5,7 @@ class LevelMenu
 {	
 	var mDt;
 	
-	var seaYRange;
+	var seaAmplitude;
 	var seaAmountx;
 	var seaAmounty;
 	var seaViewDistance;
@@ -135,17 +135,30 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
-	seaYRange = 4;
-	seaAmountx = 150;
-	seaAmounty = 150;
-	seaViewDistance = 25;
+//	seaAmplitude = 4;
+//	seaAmountx = 150;
+//	seaAmounty = 150;
+//	seaViewDistance = 25;
+//	seaSpacing = 0.0;
+//	seaSize = 6;
+//	seaXPeriod = 0.15;
+//	seaYPeriod = 0.1;
+//	seaLevel = -seaAmplitude*(seaSize/2);
+//	seaSmoothFading = true;
+//	seaVelocity = 2.20;
+	
+	//Ampl: 9.69999 spacing: 0 size: 23.9499 xP: 0.515 yp: 0.36 level: -64.6001 viewDist: 94 velocity: 0.7
+	seaAmplitude = 9.7;
+	seaAmountx = 120;
+	seaAmounty = 120;
+	seaViewDistance = 95;
 	seaSpacing = 0.0;
-	seaSize = 6;
-	seaXPeriod = 0.15;
-	seaYPeriod = 0.1;
-	seaLevel = -seaYRange*(seaSize/2);
-	seaSmoothFading = true;
-	seaVelocity = 2.20;
+	seaSize = 24;
+	seaXPeriod = 0.515;
+	seaYPeriod = 0.36;
+	seaLevel = -65;
+	seaSmoothFading = false;
+	seaVelocity = 0.7;
 		
 	mDt = 0;
 	cloudDt = 0;
@@ -408,8 +421,8 @@ function LevelMenu::Render()
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
-			DrawPointCloud(1, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaYRange*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.20, 0.35, 0.9], [0.35, 0.45, 1], [0.0, 0.0, 0.7], seaSmoothFading, seaVelocity);		
-//			DrawPointCloud(0, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaYRange*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
+			DrawPointCloud(0, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.20, 0.35, 0.9], [0.35, 0.45, 1], [0.0, 0.0, 0.7], seaSmoothFading, seaVelocity);		
+//			DrawPointCloud(0, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
 
        		text1.Draw();       		
 			mElevatorWall.Draw(VR_NO_CULLING);
@@ -540,40 +553,58 @@ function LevelMenu::UpdateLogic(dt)
 	}
 			
 		
-	if(KeyPressed("1"))
-		seaYRange -= 0.05;
-	if(KeyPressed("2"))
-		seaYRange += 0.05;
-	if(KeyPressed("3"))
+	if(KeyPressed("1")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaAmplitude -= 0.05;
+	}if(KeyPressed("2")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaAmplitude += 0.05;
+	}if(KeyPressed("3")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaSpacing -= 0.01;
-	if(KeyPressed("4"))
+	}if(KeyPressed("4")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaSpacing += 0.01;
-	if(KeyPressed("5"))
+	}if(KeyPressed("5")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaSize -= 0.05;
-	if(KeyPressed("6"))
+	}if(KeyPressed("6")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaSize += 0.05;
-	if(KeyPressed("7"))
+	}if(KeyPressed("7")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaXPeriod -= 0.005;
-	if(KeyPressed("8"))
+	}if(KeyPressed("8")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaXPeriod += 0.005;
-	if(KeyPressed("9"))
+	}if(KeyPressed("9")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaYPeriod -= 0.005;
-	if(KeyPressed("0"))
+	}if(KeyPressed("0")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaYPeriod += 0.005;
-	if(KeyPressed("z"))
+	}if(KeyPressed("z")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaLevel -= 0.1;
-	if(KeyPressed("x"))
+	}if(KeyPressed("x")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaLevel += 0.1;
-	if(KeyPressed("c"))
+	}if(KeyPressed("c")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaViewDistance -= 0.5;
-	if(KeyPressed("v"))
+	}if(KeyPressed("v")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaViewDistance += 0.5;
-	if(KeyPressed("n"))
+	}if(KeyPressed("n")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaVelocity -= 0.1;
-	if(KeyPressed("m"))
+	}if(KeyPressed("m")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaVelocity += 0.1;
-	if(KeyPressed("b"))
-		seaSmoothFading = !seaSmoothFading;
+	}if(KeyPressed("b")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaSmoothFading = !seaSmoothFading;	
+	}
 	
 	
 	// I update the methods of the managers
@@ -736,6 +767,13 @@ function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight
 
 function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, mTopColor, mBottomColor, smoothFading, speed){
 
+/**A * sin(B * x + C) + D
+
+	A is amplitude
+	B is period
+	C moves the wave along the x-axis
+	D moves the wave along the y-axis
+**/
 	var a = 0;
 	var b = 0;
 	var alpha = 0;
@@ -744,12 +782,13 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 	var z = 0;
 	var yDist = 0;
 	var distFromCamera = 0;
+	var distanceFactor = 0.75;
 	var finalColor = [0,0,0];
 	var fadingColor = [0,0,0];
 	var clearColor = [0.95, 0.95, 0.95];
-		
-	if(cloudDt >= 3.14)
-		cloudDt = 0;
+	if(cloudDt >= 3.14){
+		cloudDt = 0;	
+	}
 		
 	cloudDt += 0.035/(5-speed);
 	//The center is in (mAmount/2, mAmount/2)
@@ -783,12 +822,12 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 			b = 0;
 			a += mXPeriod;
 			x = i*(mSpacing+mSize/2)+mCenter.x;	
-			if(abs(cameraPosition.x-x) < viewDistance){
+			if(abs(cameraPosition.x-x) < viewDistance/distanceFactor){
 				for(var j = mAmountx/2; j > -mAmountx/2; j--){
 					b += mYPeriod;
 					z = j*(mSpacing+mSize/2)+mCenter.z;
-					if(abs(cameraPosition.z-z) < viewDistance){		
-						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance;
+					if(abs(cameraPosition.z-z) < viewDistance/distanceFactor){		
+						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
 						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;								
 //						alpha = 1-distFromCamera;
 						alpha = 1;		
@@ -800,7 +839,7 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 						
 						if(smoothFading){														
 							y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
-							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;		
+							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
 							finalColor.r = mColor.r + (distFromCamera * clearColor.r);
 							finalColor.g = mColor.g + (distFromCamera * clearColor.g);
 							finalColor.b = mColor.b + (distFromCamera * clearColor.b);
@@ -808,7 +847,7 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							glVertex(x,y,z+mSize/2);
 							
 							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;		
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
 							finalColor.r = mColor.r + (distFromCamera * clearColor.r);
 							finalColor.g = mColor.g + (distFromCamera * clearColor.g);
 							finalColor.b = mColor.b + (distFromCamera * clearColor.b);
@@ -816,7 +855,7 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							glVertex(x+mSize/2,y,z+mSize/2);
 							
 							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance;		
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
 							finalColor.r = mColor.r + (distFromCamera * clearColor.r);
 							finalColor.g = mColor.g + (distFromCamera * clearColor.g);
 							finalColor.b = mColor.b + (distFromCamera * clearColor.b);
@@ -844,12 +883,12 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 			b = 0;
 			a += mXPeriod;
 			x = i*(mSpacing+mSize/2)+mCenter.x;	
-			if(abs(cameraPosition.x-x) < viewDistance){
+			if(abs(cameraPosition.x-x) < viewDistance/distanceFactor){
 				for(var j = mAmountx/2; j > -mAmountx/2; j--){
 					b += mYPeriod;
 					z = j*(mSpacing+mSize/2)+mCenter.z;
-					if(abs(cameraPosition.z-z) < viewDistance){
-						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance;
+					if(abs(cameraPosition.z-z) < viewDistance/distanceFactor){
+						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
 						alpha = 1;						
 						
 						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;	
@@ -875,7 +914,7 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							}else{
 								fadingColor = mTopColor;
 							}
-							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
 							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
 							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
 							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
@@ -890,7 +929,7 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							}else{
 								fadingColor = mTopColor;
 							}
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
 							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
 							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
 							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
@@ -905,7 +944,7 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							}else{
 								fadingColor = mTopColor;
 							}
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance;
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
 							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
 							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
 							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
