@@ -5,7 +5,10 @@ class LevelMenu
 {	
 	var mDt;
 	
+	var seaShader;
+	var seaShaderEnabled;
 	var seaAmplitude;
+	var seaPosition;
 	var seaAmountx;
 	var seaAmounty;
 	var seaViewDistance;
@@ -140,20 +143,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	debugVrOn = false;
 	
 	mAnimationTranslate = [0.0, 0.0, 0.0];
-	
-//	seaAmplitude = 4;
-//	seaAmountx = 150;
-//	seaAmounty = 150;
-//	seaViewDistance = 25;
-//	seaSpacing = 0.0;
-//	seaSize = 6;
-//	seaXPeriod = 0.15;
-//	seaYPeriod = 0.1;
-//	seaLevel = -seaAmplitude*(seaSize/2);
-//	seaSmoothFading = true;
-//	seaVelocity = 2.20;
-	
+
 	//Ampl: 9.69999 spacing: 0 size: 23.9499 xP: 0.515 yp: 0.36 level: -64.6001 viewDist: 94 velocity: 0.7
+	seaShaderEnabled = false;
 	seaAmplitude = 9.7;
 	seaAmountx = 120;
 	seaAmounty = 120;
@@ -163,10 +155,12 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	seaXPeriod = 0.515;
 	seaYPeriod = 0.36;
 	seaLevel = -65;
+	seaPosition = [0, seaLevel*SCALE_FACTOR, 0];
 	seaSmoothFading = false;
 	seaVelocity = 0.7;
 	seaType = 0;
 		
+	seaShader = CVmShaderProgram("SeaShader.glsl");
 	mDt = 0;
 	cloudDt = 0;
 		
@@ -203,8 +197,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	menuRoom_Height = 19 * SCALE_FACTOR;
 	
 	menuRoom_BordersThickness =  1*SCALE_FACTOR;
-	mMenuRoom = GlassBox(menuRoom_WidthFar, menuRoom_Height, menuRoom_WidthSide,  menuRoom_BordersThickness);
-	mMenuRoom.SetPosition([0,0,-menuRoom_WidthFar/2]);
+	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 0,2, false, true, true, false, true);
+	mMenuRoom.Rotate(-90,0,1,0);
+	mMenuRoom.SetPosition([menuRoom_WidthSide/2,menuRoom_Height/2,0]);
 	
 	var roomMaterial = CVmMaterial();
 	roomMaterial.Ambient = [0.2, 0.2, 0.2,1];
@@ -213,10 +208,10 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	roomMaterial.Shininess = 0.4;
 	roomMaterial.Specular = [0.02,0.2,0.2,1];
 	mMenuRoom.SetMaterial(roomMaterial);
-	var mMenuRoomHolderMesh = CVmNewMesh(VRP_BOX,1, [-(15*SCALE_FACTOR)/2, 100*SCALE_FACTOR, 0], [(15*SCALE_FACTOR)/2, 0, 0], 15*SCALE_FACTOR);
+	var mMenuRoomHolderMesh = CVmNewMesh(VRP_BOX,1, [-(15*SCALE_FACTOR)/2, 100*SCALE_FACTOR, -15*SCALE_FACTOR/2], [(15*SCALE_FACTOR)/2, 0, 15*SCALE_FACTOR/2]);
 	mMenuRoomHolderMesh.SetMaterial(roomMaterial);
 	mMenuRoomHolder = CVmObj(mMenuRoomHolderMesh);
-	mMenuRoomHolder.SetPosition([0,-100*SCALE_FACTOR-0.005*SCALE_FACTOR, 15*SCALE_FACTOR/2]);
+	mMenuRoomHolder.SetPosition([0,-100*SCALE_FACTOR-0.005*SCALE_FACTOR, 0]);
 	
 	var txt = CVmText();
 	txt.Load("THE TOWER");
@@ -323,7 +318,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	glassWallMaterial.Diffuse = [0.2,0.2,0.8,1];
 	glassWallMaterial.Emission = [0.2,0.2,0.8,1];
 	glassWallMaterial.Shininess = 0.4;
-	glassWallMaterial.Transparency = 0.1;
+	glassWallMaterial.Transparency = 0.3;
 	glassWallMaterial.Specular = [0.02,0.2,0.2,1];
 	mElevatorWallMeshes[0].SetMaterial(glassWallMaterial);
 	mElevatorWallMeshes[1].SetMaterial(glassWallMaterial);
@@ -390,7 +385,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 		
 	mLight0Position = [towerPosition.x + 3*SCALE_FACTOR, menuRoom_Height*2, -2*SCALE_FACTOR];
 	mLight1Position = [towerPosition.x + 3*SCALE_FACTOR, -menuRoom_Height*2, 2*SCALE_FACTOR];
-	mLight2Position = [0, menuRoom_Height/2, -menuRoom_WidthFar];
+	mLight2Position = [0,menuRoom_Height/2,0];
 	
 	mLight0Diffuse = [0.5, 0.5, 0.5];
 	mLight1Diffuse = [0.5, 0.5, 0.5];
@@ -443,12 +438,72 @@ function LevelMenu::Render()
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
-//			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], seaSmoothFading, seaVelocity);		
-			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
-
+			seaPosition = [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2];
+       		if(!seaShaderEnabled){
+	//			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], seaSmoothFading, seaVelocity);		
+				DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
+			}
+			else{
+				var x = 0;
+				var z = 0;	
+				var alpha = 0;
+				var beta = 0;	
+				var mSize = seaSize*SCALE_FACTOR;
+				var mAmplitude = seaAmplitude*SCALE_FACTOR;
+				if(cloudDt >= 3.14){
+					cloudDt = 0;	
+				}
+					
+				cloudDt += 0.035/(5-seaVelocity);
+			
+				seaShader.Start();				
+					seaShader.SetParameter("baseColor", [0.35, 0.5, 1]);
+					seaShader.SetParameter("topColor", [1, 1, 0]);
+					seaShader.SetParameter("bottomColor", [1, 0, 0]);
+					seaShader.SetParameter("clearColor", [0.95, 0.95, 0.95]);
+					seaShader.SetParameter("seaPos", seaPosition);
+					seaShader.SetParameter("camPos", cameraPosition);
+					seaShader.SetParameter("amplitude", mAmplitude);
+					seaShader.SetParameter("viewDistance", seaViewDistance);
+					seaShader.SetParameter("size", mSize);
+					seaShader.SetParameter("phase", cloudDt);
+					outputln(cloudDt);
+					
+					glBegin(GL_QUADS);
+					for(var i = -seaAmounty/2; i < seaAmounty/2; i++){
+						beta = 0;
+						alpha += seaXPeriod;
+						x = i*(seaSpacing+mSize/2)+seaPosition.x;	
+						if(abs(cameraPosition.x-x) < seaViewDistance){ ///if it is not visible here it won't be visibile on the other side e
+							for(var j = seaAmountx/2; j > -seaAmountx/2; j--){
+								beta += seaYPeriod;
+								z = j*(seaSpacing+mSize/2)+seaPosition.z;
+								if(abs(cameraPosition.z-z) < seaViewDistance){
+									seaShader.SetParameter("alpha", alpha);	
+									seaShader.SetParameter("beta", beta+seaYPeriod);
+									glVertex(x,seaPosition.y,z);
+																
+									seaShader.SetParameter("alpha", alpha);	
+									seaShader.SetParameter("beta", beta);	
+									glVertex(x,seaPosition.y,z+mSize/2);
+									
+									seaShader.SetParameter("alpha", alpha+seaXPeriod);	
+									seaShader.SetParameter("beta", beta+seaYPeriod);		
+									glVertex(x+mSize/2,seaPosition.y,z+mSize/2);
+									
+									seaShader.SetParameter("alpha", alpha+seaXPeriod);	
+									seaShader.SetParameter("beta", beta+seaYPeriod);		
+									glVertex(x+mSize/2,seaPosition.y,z);	
+								}
+							}							
+						}				
+					}
+					glEnd();
+				seaShader.Stop();				
+			}
        		text1.Draw();	
 			mElevatorWall.Draw(VR_NO_CULLING);
-			mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,0,1,1]);	
+			mMenuRoom.Draw();
 	   		mMenuRoomHolder.Draw(VR_NO_CULLING);
 			
 			glEnable(GL_FOG);
@@ -651,6 +706,9 @@ function LevelMenu::UpdateLogic(dt)
 		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaType = ++seatype % 2;
 	}
+	if(KeyPressed("h")){
+		seaShaderEnabled = !seaShaderEnabled;
+	}
 	
 	
 	// I update the methods of the managers
@@ -674,7 +732,7 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 	var intersectedPlane = -1;
 
 	if(intersectedPlane == -1){
-//		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 //		intersectedPlane = mWalkWay.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);		
 	}
 		

@@ -72,6 +72,7 @@ class Room
 	Unhide();
 	CheckIntersection(rayOrigin, rayEnd, contactPoint, normal);
 	GetChildren();
+	SetMaterial(material);
 };
 
 /*
@@ -87,11 +88,13 @@ class Room
  * hasFloor: (boolean) true if there is the floor, false otherwise
  * hasBack: (boolean) true if there is a back wall, false otherwise
  */
-function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsRangeMin, lightsRangeMax, hasFront, hasFloor, hasBack)
+function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsRangeMin, lightsRangeMax, hasFront, hasFloor, hasBack, useToonShader, useSilhouette)
 {
 	mFarWallWidth = farWallWidth;
 	mSideWallWidth = sideWallWidth;
 	mRoomHeight = height;
+	useToonShader = valtype(useToonShader) != "B" ? true : useToonShader;
+	useSilhouette = valtype(useSilhouette) != "B" ? true : useSilhouette;
 	
 	mHalfFarWidth = mFarWallWidth / 2.0;
 	mHalfSideWidth = mSideWallWidth / 2.0;
@@ -109,71 +112,11 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	mSideWallMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfSideWidth, -mHalfHeight, 0], [mHalfSideWidth, mHalfHeight, 0], 2, 2);
 	mRoofMesh = CVmNewMesh(VRP_PLANE, 1, [-mHalfFarWidth, -mHalfSideWidth, 0], [mHalfFarWidth, mHalfSideWidth, 0], 2, 2);
 	
-	
-	// Adding the toon shader to the mesh's subset 0 (so the whole mesh in this case) and activating it
-	if(USE_TOON_SHADER == 2){		
-		mFarWallMesh.ShaderAdd("antishader.glsl", 0);
-		mFarWallMesh.ShaderActivate(true);
+	if(useToonShader){
+		AddToonShaderToMesh(mFarWallMesh, [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);	
+		AddToonShaderToMesh(mSideWallMesh, [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);	
+		AddToonShaderToMesh(mRoofMesh, [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);			
 	}
-	else if(USE_TOON_SHADER == 1){
-		mFarWallMesh.ShaderAdd("toonShader.glsl", 0);
-		mFarWallMesh.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		mFarWallMesh.ShaderActivate(false);				
-	}
-	
-	// Passing the material parameters of the mesh to the shader, and also the light number that has to be used to render the lighting on the mesh
-	mFarWallMesh.ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
-	mFarWallMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
-	mFarWallMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-	mFarWallMesh.ShaderSetParameter(0, "shininess", 0, 0);
-	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mFarWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mFarWallMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mFarWallMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	if(USE_TOON_SHADER == 2){		
-		mSideWallMesh.ShaderAdd("antishader.glsl", 0);
-		mSideWallMesh.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		mSideWallMesh.ShaderAdd("toonShader.glsl", 0);
-		mSideWallMesh.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		mSideWallMesh.ShaderActivate(false);				
-	}
-	
-	mSideWallMesh.ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
-	mSideWallMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
-	mSideWallMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-	mSideWallMesh.ShaderSetParameter(0, "shininess", 0, 0);
-	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mSideWallMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mSideWallMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mSideWallMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	if(USE_TOON_SHADER == 2){		
-		mRoofMesh.ShaderAdd("antishader.glsl", 0);
-		mRoofMesh.ShaderActivate(true);
-	}
-	else if(USE_TOON_SHADER == 1){
-		mRoofMesh.ShaderAdd("toonShader.glsl", 0);
-		mRoofMesh.ShaderActivate(true);		
-	}
-	else if(USE_TOON_SHADER == 0){
-		mRoofMesh.ShaderActivate(false);				
-	}
-	
-	mRoofMesh.ShaderSetParameter(0, "ambient", 0, [0.5, 0.5, 0.5]);
-	mRoofMesh.ShaderSetParameter(0, "diffuse", 0, [1, 1, 1]);
-	mRoofMesh.ShaderSetParameter(0, "specular", 0, [0.0, 0.0, 0.0]);
-	mRoofMesh.ShaderSetParameter(0, "shininess", 0, 0);
-	mRoofMesh.ShaderSetParameter(0, "lightsRangeMin", 0, lightsRangeMin);
-	mRoofMesh.ShaderSetParameter(0, "lightsRangeMax", 0, lightsRangeMax);
-	mRoofMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
-	mRoofMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 		
 	// Created the meshes, time to create the CVmObjects
 	mRoofObj = CVmObj(mRoofMesh);
@@ -184,9 +127,11 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	var silhouetteLineWidth = 0.03 * SCALE_FACTOR;
 
 	// Adding the silhouettes lines to every wall in the room, using the function from the "Utils" file
-	AddSilhouetteLinesToPlanarObject(mLeftWallObj, silhouetteLineWidth, mSideWallWidth, mRoomHeight);
-	AddSilhouetteLinesToPlanarObject(mRightWallObj, silhouetteLineWidth, mSideWallWidth, mRoomHeight);
-	AddSilhouetteLinesToPlanarObject(mRoofObj, silhouetteLineWidth, mFarWallWidth, mSideWallWidth);
+	if(useSilhouette){
+		AddSilhouetteLinesToPlanarObject(mLeftWallObj, silhouetteLineWidth, mSideWallWidth, mRoomHeight);
+		AddSilhouetteLinesToPlanarObject(mRightWallObj, silhouetteLineWidth, mSideWallWidth, mRoomHeight);
+		AddSilhouetteLinesToPlanarObject(mRoofObj, silhouetteLineWidth, mFarWallWidth, mSideWallWidth);		
+	}
 	
 	// If the room has a front wall I create that too
 	if(mHasFront){
@@ -196,13 +141,15 @@ function Room::Room(farWallWidth, sideWallWidth, height, centerInOrigin, lightsR
 	
 	if(mHasBack){
 		mBackWallObj = CVmObj(mFarWallMesh);
-		AddSilhouetteLinesToPlanarObject(mBackWallObj, silhouetteLineWidth, mFarWallWidth, mRoomHeight);	
+		if(useSilhouette)
+			AddSilhouetteLinesToPlanarObject(mBackWallObj, silhouetteLineWidth, mFarWallWidth, mRoomHeight);	
 	}
 		
 	if(mHasFloor){
 		mFloorObj = CVmObj(mRoofMesh);
 		mFloorObj.Rotate(90, 1, 0, 0);
-		AddSilhouetteLinesToPlanarObject(mFloorObj, silhouetteLineWidth, mFarWallWidth, mSideWallWidth);
+		if(useSilhouette)
+			AddSilhouetteLinesToPlanarObject(mFloorObj, silhouetteLineWidth, mFarWallWidth, mSideWallWidth);
 	}
 	
 	// Rotating the roof and floor so they get perpendicular to the y axis
@@ -672,4 +619,10 @@ function Room::Unhide()
 function Room::GetChildren()
 {
 	return mChildren;
+}
+
+function Room::SetMaterial(material){
+	mFarWallMesh.SetMaterial(material);
+	mSideWallMesh.SetMaterial(material);
+	mRoofMesh.SetMaterial(material);
 }
