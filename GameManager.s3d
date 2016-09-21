@@ -218,18 +218,19 @@ function GameManager::GameManager(HMD)
 //			aadd(mLevels, i);	
 //		}
  
-//		aadd(mLevels, arrayLevel0);
+		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
 		
 //		var lightsDiffuse = mCurrentLevel.GetLightDiffuse();
 		
-//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 		
 		mFadeToBlackAlpha = 1;
@@ -578,10 +579,27 @@ function GameManager::UpdateLogic(dt)
 			if(mCurrentLevel.IsLevelCompleted())
 			{
 				if(mCurrentLevel.__GetName() == "LEVELMENU"){
-					mCurrentLevelNumber = mCurrentLevel.GetSelectedLevel();
-					mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
-					mCurrentLevel = mLevels[mCurrentLevelNumber];
-					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+					if(!mEnding)
+					{
+						mFadingOut = true;
+						mFadeToBlackAlpha = 0;
+						mEnding = true;
+					}
+					else if(mFadeToBlackAlpha >= 1.0)
+					{
+						mCurrentLevelNumber = mCurrentLevel.GetSelectedLevel();
+						mCurrentLevel = mLevels[mCurrentLevelNumber];
+						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+						
+						mFadingOut = false;
+						mFadingIn = true;
+						mFadeToBlackAlpha = 1;
+						mEnding = false;
+					}
+						
+					
+//					mCurrentLevel = mLevels[mCurrentLevelNumber];
+//					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				}			
 				else if(mCurrentLevelNumber + 1 < len(mLevels))
 				{

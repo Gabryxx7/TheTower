@@ -439,7 +439,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	var leftEventTriggerDepth = mMainRoom.GetRoomDepth() / 2.5;
 	var rightEventTriggerDepth = leftEventTriggerDepth / 2.0;
 
-	mLeftEventTrigger = EventTrigger(eventTriggerWidth,leftEventTriggerDepth, 0);
+	mLeftEventTrigger = EventTrigger(eventTriggerWidth, leftEventTriggerDepth, 0);
 	mLeftEventTrigger.Translate(eventTriggersOffset + mTranslateFactor.x,  mTranslateFactor.y,  mTranslateFactor.z);
 	
 	mRightEventTrigger1 = EventTrigger(eventTriggerWidth, rightEventTriggerDepth, 0);
