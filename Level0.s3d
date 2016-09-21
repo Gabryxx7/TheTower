@@ -399,16 +399,6 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
-	
-	// Sounds when the player steps in the right direction
-	mSoundManager.AddSound("sounds/Mi1.wav", 0);
-	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
-	mSoundManager.AddSound("sounds/Sol3.wav", 2);
-	mSoundManager.AddSound("sounds/La4.wav", 3);
-	mSoundManager.AddSound("sounds/Si5.wav", 4);
-	mSoundManager.AddSound("sounds/Do#6.wav", 5);
-	mSoundManager.AddSound("sounds/Mi7.wav", 6);
-
 
 	// Creating the sphere meshes for the portal rooms
 	var numberOfSegments = 30;

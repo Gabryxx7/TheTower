@@ -885,7 +885,9 @@ function Level2::UpdateLogic(dt)
 			
 			if(pressedButton != "" && pressedButton != " "){
 				if(asc(pressedButton) > 47 && asc(pressedButton) <= 48+9){
-					aadd(typedNumbers, val(pressedButton));
+					aadd(typedNumbers, val(pressedButton));	
+					if(len(typedNumbers) < len(codeNumbers))
+						mSoundManager.PlaySound("numpadBeep", true, 0.85);					
 				}
 				else if(pressedButton == "c"){
 					numpadObj.FadePressedButtonsColor(numpadObj.GetSecondaryColor(), numpadObj.GetUnpressedButtonColor());
@@ -903,6 +905,7 @@ function Level2::UpdateLogic(dt)
 				}
 				
 				if(correctNumbers == len(typedNumbers)){
+					mSoundManager.PlaySound("numpadCorrectCode", true, 0.85);	
 					doorUnlocked = true;
 					outputln("Well done mate! (mofo)");
 					
@@ -917,14 +920,16 @@ function Level2::UpdateLogic(dt)
 					numpadObj.PressAllButtons();
 					numpadObj.AnimatePressedButtons();
 					numpadObj.FadePressedButtonsColor(numpadObj.GetPressedButtonColor(), numpadObj.GetPressedButtonColor() + [0.15, 0.3, 0.15]);
+					
 				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
 					outputln("Wrong Code!! ");
+					mSoundManager.PlaySound("numpadWrongCode", true, 0.85);	
 					numpadObj.FadePressedButtonsColor(numpadObj.GetWrongCodeColor(), numpadObj.GetUnpressedButtonColor());
 					doorUnlocked = false;
 					numpadClearNeeded = 1;
 					numpadClearTime = 0;
 				}
-			}		
+			}	
 			
 			if(numpadClearNeeded > 0 && numpadClearTime == 0){				
 				numpadObj.AnimatePressedButtons();

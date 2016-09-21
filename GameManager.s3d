@@ -159,7 +159,17 @@ function GameManager::GameManager(HMD)
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
-	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true, 7.0);
+	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true, 7.0);	// Sounds when the player steps in the right direction
+	mSoundManager.AddSound("sounds/Mi1.wav", 0);
+	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
+	mSoundManager.AddSound("sounds/Sol3.wav", 2);
+	mSoundManager.AddSound("sounds/La4.wav", 3);
+	mSoundManager.AddSound("sounds/Si5.wav", 4);
+	mSoundManager.AddSound("sounds/Do#6.wav", 5);
+	mSoundManager.AddSound("sounds/Mi7.wav", 6);
+	mSoundManager.AddSound("sounds/numpadBeep.wav", "numpadBeep");
+	mSoundManager.AddSound("sounds/numpadCorrectCode.wav", "numpadCorrectCode");
+	mSoundManager.AddSound("sounds/numpadWrongCode.wav", "numpadWrongCode");
 	
 	if(MUSIC_ON)
 		mSoundManager.PlayMusic();

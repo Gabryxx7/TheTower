@@ -109,10 +109,6 @@ function Numpad::Numpad(codeLength, animator, soundManager, lightsRangeMin, ligh
 	mAnimator = animator;
 	mSoundManager = soundManager;
 	
-	mSoundManager.AddSound("sounds/numpadBeep.wav", "numpadBeep");
-	mSoundManager.AddSound("sounds/numpadCorrectCode.wav", "numpadCorrectCode");
-	mSoundManager.AddSound("sounds/numpadWrongCode.wav", "numpadWrongCode");
-	
 	mChildren = {};
 		
 	mCodeArray = {};

@@ -1522,6 +1522,7 @@ function Level4::UpdateLogic(dt)
 		// Case where we're almost at the end of the level
 		case STATUS_LEVEL_ENDING:
 		{
+			SetClearColor(0,0,0);
 			// I check if the numpad is still visible (remember, there is a scaling transition) and check if the scale reached 0; if that is so, I hide these objects
 			if(mNumpad.IsVisible() && mNumpad.GetScale().x <= 0)
 			{	
