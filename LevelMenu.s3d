@@ -16,6 +16,7 @@ class LevelMenu
 	var seaLevel;
 	var seaSmoothFading;
 	var seaVelocity;
+	var seaType;
 	
 	var cloudDt;
 	var cameraPosition;
@@ -159,6 +160,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	seaLevel = -65;
 	seaSmoothFading = false;
 	seaVelocity = 0.7;
+	seaType = 0;
 		
 	mDt = 0;
 	cloudDt = 0;
@@ -432,8 +434,8 @@ function LevelMenu::Render()
 	{
 		case STATUS_LEVEL_STARTED:
        		DrawGrid([1,1,1], false, false, false, false, true, true);
-			DrawPointCloud(0, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.20, 0.35, 0.9], [0.35, 0.45, 1], [0.0, 0.0, 0.7], seaSmoothFading, seaVelocity);		
-//			DrawPointCloud(0, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
+			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], seaSmoothFading, seaVelocity);		
+//			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
 
        		text1.Draw();       		
 			mElevatorWall.Draw(VR_NO_CULLING);
@@ -615,6 +617,9 @@ function LevelMenu::UpdateLogic(dt)
 	}if(KeyPressed("b")){
 		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
 		seaSmoothFading = !seaSmoothFading;	
+	}if(KeyPressed("t")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaType = ++seatype % 2;
 	}
 	
 	
@@ -793,7 +798,6 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 	var z = 0;
 	var yDist = 0;
 	var distFromCamera = 0;
-	var distanceFactor = 0.75;
 	var finalColor = [0,0,0];
 	var fadingColor = [0,0,0];
 	var clearColor = [0.95, 0.95, 0.95];
@@ -833,44 +837,59 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 			b = 0;
 			a += mXPeriod;
 			x = i*(mSpacing+mSize/2)+mCenter.x;	
-			if(abs(cameraPosition.x-x) < viewDistance/distanceFactor){
+			if(abs(cameraPosition.x-x) < viewDistance){
 				for(var j = mAmountx/2; j > -mAmountx/2; j--){
 					b += mYPeriod;
 					z = j*(mSpacing+mSize/2)+mCenter.z;
-					if(abs(cameraPosition.z-z) < viewDistance/distanceFactor){		
-						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
-						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;								
-//						alpha = 1-distFromCamera;
-						alpha = 1;		
-						finalColor.r = mColor.r + (distFromCamera * clearColor.r);
-						finalColor.g = mColor.g + (distFromCamera * clearColor.g);
-						finalColor.b = mColor.b + (distFromCamera * clearColor.b);
-						glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);
+					if(abs(cameraPosition.z-z) < viewDistance){		
+						alpha = 1;
+						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance;
+						distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;
+						finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+						finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+						finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+						finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+						finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+						finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+						glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 						glVertex(x,y,z);
 						
 						if(smoothFading){														
 							y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
-							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
-							finalColor.r = mColor.r + (distFromCamera * clearColor.r);
-							finalColor.g = mColor.g + (distFromCamera * clearColor.g);
-							finalColor.b = mColor.b + (distFromCamera * clearColor.b);
-							glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);	
+							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 							glVertex(x,y,z+mSize/2);
 							
 							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
-							finalColor.r = mColor.r + (distFromCamera * clearColor.r);
-							finalColor.g = mColor.g + (distFromCamera * clearColor.g);
-							finalColor.b = mColor.b + (distFromCamera * clearColor.b);
-							glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);	
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 							glVertex(x+mSize/2,y,z+mSize/2);
 							
 							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
-							finalColor.r = mColor.r + (distFromCamera * clearColor.r);
-							finalColor.g = mColor.g + (distFromCamera * clearColor.g);
-							finalColor.b = mColor.b + (distFromCamera * clearColor.b);
-							glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);	
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 							glVertex(x+mSize/2,y,z);		
 						}
 						else{							
@@ -894,12 +913,13 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 			b = 0;
 			a += mXPeriod;
 			x = i*(mSpacing+mSize/2)+mCenter.x;	
-			if(abs(cameraPosition.x-x) < viewDistance/distanceFactor){
+			if(abs(cameraPosition.x-x) < viewDistance){
 				for(var j = mAmountx/2; j > -mAmountx/2; j--){
 					b += mYPeriod;
 					z = j*(mSpacing+mSize/2)+mCenter.z;
-					if(abs(cameraPosition.z-z) < viewDistance/distanceFactor){
-						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
+					if(abs(cameraPosition.z-z) < viewDistance){
+						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance;
+						distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
 						alpha = 1;						
 						
 						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;	
@@ -910,10 +930,13 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 						}else{
 							fadingColor = mTopColor;
 						}
-						finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
-						finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
-						finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
-						glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);
+						finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+						finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+						finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+						finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+						finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+						finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+						glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 						glVertex(x,y,z);
 						
 						if(smoothFading){
@@ -925,11 +948,15 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							}else{
 								fadingColor = mTopColor;
 							}
-							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
-							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
-							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
-							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
-							glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);	
+							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 							glVertex(x, y, z+mSize/2);
 							
 							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
@@ -940,11 +967,15 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							}else{
 								fadingColor = mTopColor;
 							}
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance * distanceFactor;
-							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
-							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
-							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
-							glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 							glVertex(x+mSize/2,y,z+mSize/2);
 							
 							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
@@ -955,11 +986,15 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 							}else{
 								fadingColor = mTopColor;
 							}
-							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance * distanceFactor;
-							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r + (distFromCamera * clearColor.r);
-							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g + (distFromCamera * clearColor.g);
-							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b + (distFromCamera * clearColor.b);
-							glColor(finalColor.r < clearColor.r ? finalColor.r: clearColor.r, finalColor.g < clearColor.g ? finalColor.g: clearColor.g, finalColor.b < clearColor.b ? finalColor.b: clearColor.b, alpha);
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
 							glVertex(x+mSize/2, y, z);								
 						}	
 						else{
