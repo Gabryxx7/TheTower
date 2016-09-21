@@ -554,14 +554,9 @@ function LevelMenu::UpdateLogic(dt)
 			if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
 				mIsLevelCompleted = true;
 			}
-			
-//			outputln()
-			
+						
 			var range = 5*SCALE_FACTOR;
 			if(walkWayTrigger.IsPointInside(cameraPosition) && mWalkWay.GetPosition().x >= towerPosition.x + towerLevelWidth/2 + mWalkWaySize.x/2){
-//				mAnimator.CreateTransition(mCamera, mCamera.GetPosition(), mCamera.GetPosition() + [mWalkDistance-mWalkWaySize.x/3,0,0],  8, false);
-//				mAnimator.CreateTransition(mWalkWay, mWalkWay.GetPosition(), mWalkWay.GetPosition() + [mWalkDistance,0,0],  8, false);
-
 				var increment = mWalkDistance / 8.0;
 
 				mAnimationTranslate.x -= increment * dt;

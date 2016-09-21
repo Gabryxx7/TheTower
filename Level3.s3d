@@ -503,11 +503,10 @@ function Level3::UpdateLogic(dt)
 	{
 		case STATUS_ELEVATOR_MOVING: 
 		{			
-			if(mAnimator.HaveTransition(GL_LIGHT1, 5) && mAnimator.HaveTransition(GL_LIGHT2, 5))
-			{
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
 				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
 				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
-			}
 			
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();

@@ -1176,11 +1176,10 @@ function Level4::UpdateLogic(dt)
 		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
-			if(mAnimator.HaveTransition(GL_LIGHT1, 5) && mAnimator.HaveTransition(GL_LIGHT2, 5))
-			{
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
 				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
 				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
-			}
 			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))

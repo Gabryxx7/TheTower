@@ -212,6 +212,8 @@ function GameManager::GameManager(HMD)
 	
 	mLevels = {};
 	var arrayLevel0 = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
+	
+	// This creates an almost white background
 	SetClearColor(0.95,0.95,0.95); 
 
 	if(DEBUG_MODE)
@@ -229,14 +231,12 @@ function GameManager::GameManager(HMD)
 //		}
  
 		aadd(mLevels, arrayLevel0);
-//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
 //		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
-		
-//		var lightsDiffuse = mCurrentLevel.GetLightDiffuse();
 		
 		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
@@ -471,7 +471,7 @@ function GameManager::XVRRendering()
  * Update logic function. It delegates the job to the current level or the menu manager
  */
 function GameManager::UpdateLogic(dt)
-{
+{	
  	switch (mGameStatus) {
 		
 		case STATUS_MENU:
@@ -599,17 +599,13 @@ function GameManager::UpdateLogic(dt)
 					{
 						mCurrentLevelNumber = mCurrentLevel.GetSelectedLevel();
 						mCurrentLevel = mLevels[mCurrentLevelNumber];
-						mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+						mCurrentLevel.Init(mLights, {[1, 1, 1], [1, 1, 1], [1, 1, 1]}, mElevator, mOpenglTranslationOffset);
 						
 						mFadingOut = false;
 						mFadingIn = true;
 						mFadeToBlackAlpha = 1;
 						mEnding = false;
 					}
-						
-					
-//					mCurrentLevel = mLevels[mCurrentLevelNumber];
-//					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
 				}			
 				else if(mCurrentLevelNumber + 1 < len(mLevels))
 				{
