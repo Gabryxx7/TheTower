@@ -1,4 +1,4 @@
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -213,16 +213,14 @@ function GameManager::GameManager(HMD)
 	mLevels = {};
 	var arrayLevel0 = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
 	
+	mElevator = arrayLevel0.GetElevator();
+	mElevator.Unhide();
+	
 	// This creates an almost white background
 	SetClearColor(0.95,0.95,0.95); 
 
 	if(DEBUG_MODE)
 	{
-		// The current level takes as parameter the input manager, which is shared among every level
-		
-		mElevator = arrayLevel0.GetElevator();
-		mElevator.Unhide();
-		
 		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 		
@@ -250,16 +248,16 @@ function GameManager::GameManager(HMD)
 	else 
 	{
 		// The current level takes as parameter the input manager, which is shared among every level
-		mCurrentLevel = arrayLevel0;
 		mCurrentLevelNumber = 0;
-		
-		mElevator = mCurrentLevel.GetElevator();
 		
 		aadd(mLevels, arrayLevel0);
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+		
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
 
 		mFadeToBlackAlpha = 1;
 		mFadingIn = true;

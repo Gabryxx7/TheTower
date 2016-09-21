@@ -467,7 +467,6 @@ function Animator::CreateLightColorTransition(openglLight, startingColor, ending
 	var ySpeed = ((endingColor.y - startingColor.y) / time);
 	var zSpeed = ((endingColor.z - startingColor.z) / time);
 	
-	print({"start", "end", "speed"}, {startingColor, endingColor, [xSpeed, ySpeed, zSpeed]});
 	
 	aadd(mXSpeedArray, xSpeed);
 	aadd(mYSpeedArray, ySpeed);
@@ -829,9 +828,7 @@ function Animator::UpdateTransitions(dt)
 			if(Modulus(startingColor - currentColor) >= Modulus(endingColor - startingColor))
 			{				
 				glLight(object, GL_DIFFUSE, endingColor); 
-				
-				print({"endingColor"}, {endingColor});
-				
+								
 				RemoveTransitionByIndex(i);
 			}
 		}

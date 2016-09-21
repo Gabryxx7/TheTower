@@ -177,9 +177,9 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	
 	// Setting up the lights of the scene. They're both positional lights and this one is used for the portals
 	
-	mLight0Diffuse = [1,1,1];
-	mLight1Diffuse = [1,1,1];
-	mLight2Diffuse = [1,1,1];
+	mLight0Diffuse = [1, 1, 1];
+	mLight1Diffuse = [0.4, 0.4, 0.7];
+	mLight2Diffuse = [0.7, 0.7, 1.0];
 	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
@@ -546,8 +546,8 @@ function Level0::Render()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
- 	
-	
+
+
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
 	DrawAllPortals();
 	
@@ -916,6 +916,25 @@ function Level0::UpdateLogic(dt)
 		// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
 		if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
 			mIsLevelCompleted = true;
+	}
+	
+	// If there is an animation for the color of the light1 used for the room, I get the current diffuse color in the animation; it's the only way
+	// to actually set the color of the animation, since the opengl calls in the Animator class don't have any effect since they're not in the Render() function
+	if(mAnimator.HaveTransition(GL_LIGHT1, 5))
+		mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+	else
+	{	
+		// If there is no transition, I create a new one using a random color; the color components may go above 1; this increases the brightness of the color
+		var color = [Rand(20) / 10.0, Rand(20) / 10.0, Rand(20) / 10.0];
+		mAnimator.CreateLightColorTransition(GL_LIGHT1, mLight1Diffuse, color, 5.0);
+	}
+				
+	if(mAnimator.HaveTransition(GL_LIGHT2, 5))
+		mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+	else
+	{
+		var color = [Rand(20) / 10.0, Rand(20) / 10.0, Rand(20) / 10.0];
+		mAnimator.CreateLightColorTransition(GL_LIGHT2, mLight2Diffuse, color, 5.0);
 	}
 	
 	// I update the methods of the managers
