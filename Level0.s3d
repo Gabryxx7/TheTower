@@ -57,6 +57,9 @@ class Level0
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
@@ -133,6 +136,7 @@ class Level0
 	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
+	GetLightDiffuse();
 	GetLevelPreview();
 };
 
@@ -140,7 +144,7 @@ class Level0
 /*
  * Constructor. Takes as parameter the input manager of the application
  */
-function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTranslationOffset)
+function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTranslationOffset, prevLightDiffuse)
 {
 	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
@@ -172,20 +176,25 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	mLight2Position = [10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + translateFactor;
 	
 	// Setting up the lights of the scene. They're both positional lights and this one is used for the portals
+	
+	mLight0Diffuse = [1,1,1];
+	mLight1Diffuse = [1,1,1];
+	mLight2Diffuse = [1,1,1];
+	
 	mLight0 = lights[0];
 	mLight0.SetPosition(mLight0Position);
-	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
 	mLight0.Enable();	
 	
 	mLight1 = lights[1];
 	mLight1.SetPosition(mLight1Position);
-	mLight1.SetDiffuse(1, 1, 1);
+	mLight1.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
 	mLight1.Enable();	
 		
 	// This light is for the elevator
 	mLight2 = lights[2];
 	mLight2.SetPosition(mLight2Position);
-	mLight2.SetDiffuse(1, 1, 1);
+	mLight2.SetDiffuse(mLight2Diffuse.x, mLight2Diffuse.y, mLight2Diffuse.z);
 	mLight2.Enable();
 	
 	// The current event triggered is nothing, while the next one is the first event trigger in the array
@@ -1011,9 +1020,13 @@ function Level0::SetupOpenglLights()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
  	
-	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
+}
+
+function Level0::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
 }
 
 function Level0::GetLevelPreview(){

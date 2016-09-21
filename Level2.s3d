@@ -111,7 +111,7 @@ class Level2
 	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
 			
 	// Public functions
-	Init(lights, elevator, openglTranslationOffset);
+	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -120,6 +120,7 @@ class Level2
 	GetOpenglTransformOffset();
  	SetOpenglTransformOffset(mOpenglTranslationOffset);
  	SetupOpenglLights();
+	GetLightDiffuse();
 	GetLevelPreview();
 };
 
@@ -227,7 +228,7 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 }
 
  
- function Level2::Init(lights, elevator, openglTranslationOffset)
+ function Level2::Init(lights, elevator, openglTranslationOffset, prevLightDiffuse)
 {	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
@@ -1157,6 +1158,10 @@ function Level2::SetupOpenglLights()
 	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
 	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
 	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
+}
+
+function Level2::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
 }
 
 function Level2::GetLevelPreview(){

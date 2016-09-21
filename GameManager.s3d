@@ -218,14 +218,14 @@ function GameManager::GameManager(HMD)
 //			aadd(mLevels, i);	
 //		}
  
-		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-//		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 		

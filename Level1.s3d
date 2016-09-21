@@ -37,6 +37,9 @@ class Level1
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
@@ -133,7 +136,7 @@ class Level1
 	HandleDrawings();
 	
 	// Public functions
-	Init(lights, elevator, openglTranslationOffset);
+	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -141,6 +144,7 @@ class Level1
 	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
+	GetLightDiffuse();
 	GetLevelPreview();
 };
 
@@ -330,23 +334,27 @@ function Level1::Level1(isVRon, inputManager, soundManager)
  /*
   * Note: it is assumed that the lights used for the room and the elevator are the lights 1 and 2
   */
- function Level1::Init(lights, elevator, openglTransformOffset)
+ function Level1::Init(lights, elevator, openglTransformOffset, prevLightDiffuse)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
 	foreach(var light in lights)
 		light.Disable();
 		
+	mLight0Diffuse = [1,1,1];
+	mLight1Diffuse = [1,1,1];
+	mLight2Diffuse = [1,1,1];
+		
 	mLight0 = lights[0];
-	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
-	mLight1.SetDiffuse(1, 1, 1);
+	mLight1.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
-	mLight2.SetDiffuse(1, 1, 1);
+	mLight2.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
 	mLight2.Enable();
 	
 	mElevator = elevator;
@@ -1030,9 +1038,13 @@ function Level1::SetupOpenglLights()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
  	
-	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT1, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 1, 1]);
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
+}
+
+function Level1::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
 }
 
 function Level1::GetLevelPreview(){
