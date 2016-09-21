@@ -136,7 +136,7 @@ class Level1
 	HandleDrawings();
 	
 	// Public functions
-	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
+	Init(lights, lightsDiffuse, elevator, openglTranslationOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -334,7 +334,7 @@ function Level1::Level1(isVRon, inputManager, soundManager)
  /*
   * Note: it is assumed that the lights used for the room and the elevator are the lights 1 and 2
   */
- function Level1::Init(lights, elevator, openglTransformOffset, prevLightDiffuse)
+ function Level1::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
@@ -396,8 +396,8 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	// I set now the position of a text that needed to know where the elevator was
 	mConnectionsIsNotClearText.SetPosition(mElevatorFinalPosition - [0, 0, 0.1 * SCALE_FACTOR]);
 	
-	mAnimator.CreateLightColorTransition(GL_LIGHT1, [1, 1, 1], [1, 0, 0], mElevatorTravelTime);
-//	mAnimator.CreateLightColorTransition(GL_LIGHT2, [1, 1, 1], [1, 0, 0], mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
 }
 
 
@@ -452,12 +452,7 @@ function Level1::Render()
 	switch(mLevelStatus)
 	{
 		case STATUS_ELEVATOR_MOVING:
-		{
-//			var lightColor1 = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
-//			var lightColor2 = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
-			
 			break;
-		}
 		case STATUS_ELEVATOR_ARRIVED:
 		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
@@ -567,6 +562,13 @@ function Level1::UpdateLogic(dt)
 		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5) && mAnimator.HaveTransition(GL_LIGHT2, 5))
+			{
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			}
+			
+			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();

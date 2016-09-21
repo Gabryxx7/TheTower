@@ -273,7 +273,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 
 
  
- function Level3::Init(lights, elevator, openglTransformOffset, prevLightDiffuse)
+ function Level3::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
@@ -328,6 +328,9 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
 	mBackText.SetPosition(mElevatorFinalPosition + [0.1 * SCALE_FACTOR, 1 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
 	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
+	
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
 }
 
 
@@ -500,6 +503,12 @@ function Level3::UpdateLogic(dt)
 	{
 		case STATUS_ELEVATOR_MOVING: 
 		{			
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5) && mAnimator.HaveTransition(GL_LIGHT2, 5))
+			{
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			}
+			
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			

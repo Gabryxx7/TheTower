@@ -172,7 +172,7 @@ class Level4
 	InvertObject(object);
 	
 	// Public functions
-	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
+	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -669,7 +669,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 }
 
  
- function Level4::Init(lights, elevator, openglTransformOffset, prevLightDiffuse)
+ function Level4::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
 {	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
@@ -732,6 +732,9 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	// The position of the final text is actually not correct; I just want it out of the way for now, otherwise it might appear at the origin. 
 	// It will be moved when needed
 	mTheTowerText.SetPosition([18.0 * SCALE_FACTOR, -mTowerHeight + mMainRoom.GetRoomHeight(), -mMainRoom.GetRoomDepth() / 2.0 - 0.1 * SCALE_FACTOR]);
+	
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
 }
 
 
@@ -1173,6 +1176,12 @@ function Level4::UpdateLogic(dt)
 		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5) && mAnimator.HaveTransition(GL_LIGHT2, 5))
+			{
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			}
+			
 		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();

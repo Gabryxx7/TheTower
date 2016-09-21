@@ -221,12 +221,15 @@ function GameManager::GameManager(HMD)
 //		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
+		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
+		
+//		var lightsDiffuse = mCurrentLevel.GetLightDiffuse();
+		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);			
+		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 		
 		mFadeToBlackAlpha = 1;
@@ -582,8 +585,9 @@ function GameManager::UpdateLogic(dt)
 				}			
 				else if(mCurrentLevelNumber + 1 < len(mLevels))
 				{
+					var lightsDiffuse = mCurrentLevel.GetLightDiffuse();
 					mCurrentLevel = mLevels[mCurrentLevelNumber + 1];
-					mCurrentLevel.Init(mLights, mElevator, mOpenglTranslationOffset);
+					mCurrentLevel.Init(mLights, lightsDiffuse, mElevator, mOpenglTranslationOffset);
 					mCurrentLevelNumber++;
 				}
 				else

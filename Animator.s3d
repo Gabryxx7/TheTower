@@ -836,7 +836,7 @@ function Animator::UpdateTransitions(dt)
 
 function Animator::GetCurrentStateInTransition(object, transitionType)
 {
-	var found;
+	var found = false;
 	
 	for(var i = 0; i < len(mObjects) && !found; i++)
 	{
@@ -1056,7 +1056,7 @@ function Animator::HaveTransition(object, isType)
 	var found = false;
 	for(var i = 0; i < len(mObjects) && !found; i++)
 	{
-		found = mObjects[i] == object;
+		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
 		
 		if(found && mTransitionTypeArray[i] == isType)
 			return true;
