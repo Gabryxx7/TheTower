@@ -39,6 +39,7 @@ class LevelMenu
 	var mWalkdistance;
 	var mWalkWaySize;
 	var walkwayStarted;
+	var walkWayTrigger;
 	
 	var mIsVRon;
 	var debugVrOn;
@@ -327,11 +328,13 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 //	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
 	walkwayStarted = false;	
 	mWalkWaySize = [10*SCALE_FACTOR, 0.5*SCALE_FACTOR, mElevator.GetRoomWidth()];
-	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-mWalkWaySize.x/2, -mWalkWaySize.y/2, 0], [mWalkWaySize.x/2, mWalkWaySize.y/2, 0], mWalkWaySize.z);
+	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-mWalkWaySize.x/2, -mWalkWaySize.y/2, -mWalkWaySize.z/2], [mWalkWaySize.x/2, mWalkWaySize.y/2, mWalkWaySize.z/2]);
 	mWalkWay = CVmObj(walkwayMesh);
 	walkwayMesh.SetMaterial(towerMaterial);
-	mWalkWay.SetPosition(-menuRoom_WidthSide/2-mWalkWaySize.x/2, -mWalkWaySize.y/2, mWalkWaySize.z/2);
+	mWalkWay.SetPosition(-menuRoom_WidthSide/2-mWalkWaySize.x/2, -mWalkWaySize.y/2, 0);
 	mWalkdistance = -abs((-menuRoom_WidthSide/2-mWalkWaySize.x) - (towerPosition.x + towerLevelWidth/2));
+	walkWayTrigger = EventTrigger(mWalkWaySize.x-2*SCALE_FACTOR, mWalkWaySize.z-2*SCALE_FACTOR, 0); 
+	walkWayTrigger.SetPosition(mWalkWay.GetPosition());
 	
 	levelSelectors = {};
 	var elementsPerRow = 2;	
@@ -437,7 +440,7 @@ function LevelMenu::Render()
 //			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], seaSmoothFading, seaVelocity);		
 			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2], seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
 
-       		text1.Draw();       		
+       		text1.Draw();	
 			mElevatorWall.Draw(VR_NO_CULLING);
 			mMenuRoom.Draw([1,1,1,0,1,1], [1,1,1,0,1,1]);	
 	   		mMenuRoomHolder.Draw(VR_NO_CULLING);
@@ -546,20 +549,30 @@ function LevelMenu::UpdateLogic(dt)
 				mIsLevelCompleted = true;
 			}
 			
-			var range = 1*SCALE_FACTOR;
-			if(cameraPosition.x > mWalkWay.GetPosition().x - mWalkWaySize.z/2 + range/2 && cameraPosition.x < mWalkWay.GetPosition().x + mWalkWaySize.z/2 - range/2 &&
-			   cameraPosition.z > mWalkWay.GetPosition().z - mWalkWaySize.z/2 + range/2 && cameraPosition.z < mWalkWay.GetPosition().z + mWalkWaySize.z/2 - range/2 &&
-				!walkwayStarted){
+			var range = 5*SCALE_FACTOR;
+			if(walkWayTrigger.IsPointInside(cameraPosition) && !walkwayStarted){
 				walkwayStarted = true;
 				mAnimator.CreateTransition(mCamera, mCamera.GetPosition(), mCamera.GetPosition() + [mWalkDistance-mWalkWaySize.x/3,0,0],  8, false);
 				mAnimator.CreateTransition(mWalkWay, mWalkWay.GetPosition(), mWalkWay.GetPosition() + [mWalkDistance,0,0],  8, false);
 			}
 			
 			range = 25*SCALE_FACTOR;
-			if(cameraPosition.x <= towerPosition.x+towerLevelWidth/2+range/2 && cameraPosition.x >= towerPosition.x+towerLevelWidth/2-range/2 && !elevatorOpen){
+			if(cameraPosition.x <= towerPosition.x+towerLevelWidth/2+range/2 && cameraPosition.x >= towerPosition.x+towerLevelWidth/2-range/2  && !elevatorOpen){
 				elevatorOpen = true;
 				mAnimator.CreateTransition(mElevatorCoverDoors[0],[mElevator.GetRoomDepth(),0,0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], 1, false);
 				mAnimator.CreateTransition(mElevatorCoverDoors[1],[mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], 1, false);
+			}
+			
+			range = 5*SCALE_FACTOR;
+			if(cameraPosition.x <= mElevatorCover.GetPosition().x + mElevator.GetRoomWidth() - range/2 &&
+			   cameraPosition.x >= mElevatorCover.GetPosition().x + range/2 &&
+			   cameraPosition.z <= mElevatorCover.GetPosition().z + mElevator.GetRoomWidth()/2 - range/2 &&
+			   cameraPosition.z >= mElevatorCover.GetPosition().z - mElevator.GetRoomWidth()/2 + range/2){
+				elevatorOpen = false;
+				mIsLevelCompleted = true;
+				mAnimator.CreateTransition(mElevatorCoverDoors[0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], [mElevator.GetRoomDepth(),0,0], 1, false);
+				mAnimator.CreateTransition(mElevatorCoverDoors[1], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], 1, false);
+			
 			}
 			break;
 		}
