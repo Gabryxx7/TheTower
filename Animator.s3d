@@ -4,6 +4,7 @@
 #define SCALING_TRANSITION 2
 #define ROTATION_AROUND_POINT_TRANSITION 3
 #define COLOR_TRANSITION 4
+#define LIGHT_COLOR_TRANSITION 5
 
 /*
  * This class handles simple transitions and rotations of CVmObj objects.
@@ -83,6 +84,9 @@ class Animator
 	CreateScalingTransition(object, startingScale, endingScale, time, loop);
 	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise);
 	CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop);
+	CreateLightColorTransition(openglLight, startingColor, endingColor, time);
+	
+	GetCurrentStateInTransition(object, transitionType);
 	
 	// Private functions
 	InvertTransitions();
@@ -436,6 +440,46 @@ function Animator::CreateToonShaderColorTransition(mesh, startingColor, endingCo
 }
 
 
+function Animator::CreateLightColorTransition(openglLight, startingColor, endingColor, time)
+{
+	RemoveTransitionByObject(openglLight, LIGHT_COLOR_TRANSITION);
+	
+	// First off, I'm setting the starting color
+	glLight(openglLight, GL_DIFFUSE, startingColor); 
+	
+	aadd(mObjects, openglLight);
+	aadd(mStartingPositions, startingColor);
+	aadd(mEndPositions, endingColor);
+	aadd(mIsLoopArray, false);
+	aadd(mTimeArray, time);
+	aadd(mScaleFactorArray, 1.0);
+	
+	// I state that this object has a color transition
+	aadd(mTransitionTypeArray, LIGHT_COLOR_TRANSITION);
+	
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, startingColor);
+	aadd(mWaypointsCounterArray, 0);
+
+	aadd(mDistanceArray, endingColor);	
+	
+	var xSpeed = ((endingColor.x - startingColor.x) / time);
+	var ySpeed = ((endingColor.y - startingColor.y) / time);
+	var zSpeed = ((endingColor.z - startingColor.z) / time);
+	
+	aadd(mXSpeedArray, xSpeed);
+	aadd(mYSpeedArray, ySpeed);
+	aadd(mZSpeedArray, zSpeed);
+	
+	// Arrays not used; filled with useless stuff
+	aadd(mDirectionsArray, 0);
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+}
+
+
 /*
  * This method as to be called by the caller in its "update" function, so that the objects' positions will be constantly updated
  * 
@@ -758,6 +802,50 @@ function Animator::UpdateTransitions(dt)
 					RemoveTransitionByIndex(i);
 			}
 		}
+		else if(mTransitionTypeArray[i] == LIGHT_COLOR_TRANSITION)
+		{
+			// I get the current color, which is saved in the waypoint array to save space (since in this type of transition there are no waypoints);
+			// I could get the current color from the shader, but the XVR method to do so doesn't work	
+			var currentColor = mWaypointsArray[i];
+			
+			// Getting some useful information from the arrays
+			var startingColor = mStartingPositions[i];
+			var endingColor = mDistanceArray[i];
+			var xSpeed = mXSpeedArray[i];
+			var ySpeed = mYSpeedArray[i];
+			var zSpeed = mZSpeedArray[i];
+			
+			currentColor.x += dt * xSpeed * mScaleFactorArray[i];
+			currentColor.y += dt * ySpeed * mScaleFactorArray[i];
+			currentColor.z += dt * zSpeed * mScaleFactorArray[i];
+			
+			// Saving the current color
+			mWaypointsArray[i] = currentColor;
+			
+			glLight(object, GL_DIFFUSE, currentColor); 
+	
+			if(Modulus(startingColor - currentColor) >= Modulus(endingColor - startingColor))
+			{				
+				glLight(object, GL_DIFFUSE, endingColor); 
+				
+				RemoveTransitionByIndex(i);
+			}
+		}
+	}
+}
+
+function Animator::GetCurrentStateInTransition(object, transitionType)
+{
+	var found;
+	
+	for(var i = 0; i < len(mObjects) && !found; i++)
+	{
+		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
+		
+		if(found && mTransitionTypeArray[i] == transitionType)
+			return mWaypointsArray[i];
+		else
+			found = false;
 	}
 }
 
@@ -954,7 +1042,7 @@ function Animator::RemoveTransitionByObject(object, isType)
 	
 	for(var i = 0; i < len(mObjects) && !found; i++)
 	{
-		found = mObjects[i] == object;
+		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
 		
 		if(found && mTransitionTypeArray[i] == isType)
 			RemoveTransitionByIndex(i);

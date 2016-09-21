@@ -395,6 +395,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	
 	// I set now the position of a text that needed to know where the elevator was
 	mConnectionsIsNotClearText.SetPosition(mElevatorFinalPosition - [0, 0, 0.1 * SCALE_FACTOR]);
+	
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, [1, 1, 1], [1, 0, 0], mElevatorTravelTime);
+//	mAnimator.CreateLightColorTransition(GL_LIGHT2, [1, 1, 1], [1, 0, 0], mElevatorTravelTime);
 }
 
 
@@ -449,7 +452,12 @@ function Level1::Render()
 	switch(mLevelStatus)
 	{
 		case STATUS_ELEVATOR_MOVING:
+		{
+//			var lightColor1 = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+//			var lightColor2 = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			
 			break;
+		}
 		case STATUS_ELEVATOR_ARRIVED:
 		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
