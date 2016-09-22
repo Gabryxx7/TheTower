@@ -152,7 +152,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 {
 	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
-	viveControllerTesting = true;
+	viveControllerTesting = false;
 	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
@@ -803,7 +803,6 @@ function Level0::UpdateLogic(dt)
 			viveTestParam[6] -= 1;
 		}
 		viveTestObj.UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5]);
-		outputln(viveTestParam[0]);
 		viveTestObj.SetRotation(viveTestParam[6],1,0,0);
 	}
 	

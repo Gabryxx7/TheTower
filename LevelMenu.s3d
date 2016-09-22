@@ -149,7 +149,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	seaAmplitude = 9.7;
 	seaAmountx = 120;
 	seaAmounty = 120;
-	seaViewDistance = 95;
+//	seaViewDistance = 95;
+	seaViewDistance = 15;
 	seaSpacing = 0.0;
 	seaSize = 24;
 	seaXPeriod = 0.515;
@@ -527,9 +528,19 @@ function LevelMenu::Render()
 	}
 	
 	if(mIsVRon || debugVrOn){
-		mDebugController.Draw();
-		var raycastOrigin = mDebugController.GetPosition();
-		var raycastEnd = mDebugController.GetPosition() + mDebugController.GetDirection() * mCamera.GetZFar();
+		var raycastOrigin;
+		var raycastEnd;
+		if(mIsVRon){
+			mController1.Draw();
+			mController2.Draw();
+			raycastOrigin = mController1.GetPosition();
+			raycastEnd = mController1.GetPosition() + mController1.GetDirection() * mCamera.GetZFar();
+		}
+		else{
+			mDebugController.Draw();
+			raycastOrigin = mDebugController.GetPosition();
+			raycastEnd = mDebugController.GetPosition() + mDebugController.GetDirection() * mCamera.GetZFar();
+		}
 //		if(mInputManager.IsPressingPrimaryButton()){			
 			glLineWidth(4); 		
 			glColor([1,1,0]); 
@@ -587,7 +598,7 @@ function LevelMenu::UpdateLogic(dt)
 				}
 			}
 			
-			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton()){
+			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton(1)){
 				levelPreviewFrame.ChangeImage(levelSelectors[pointedLevel].GetImage());
 				if(mSelectedLevel >= 0)
 					levelSelectors[mSelectedLevel].IsSelected(false);	
@@ -606,7 +617,7 @@ function LevelMenu::UpdateLogic(dt)
 			else
 				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
 			
-			if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
+			if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(1)){
 				mIsLevelCompleted = true;
 			}
 						
@@ -731,10 +742,12 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 {
 	var intersectedPlane = -1;
 
-	if(intersectedPlane == -1){
-		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	
+	intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 //		intersectedPlane = mWalkWay.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);		
-	}
+	
+	outputln(intersectedPlane);
+	
 		
 	isWall = true;
 	

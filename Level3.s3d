@@ -770,7 +770,7 @@ function Level3::CheckActiveConnector()
 			var controllerIndex = controller.GetIndex();
 			var controllerAlreadyInLight = mControllersInLightArray[controllerIndex - 1];
 			
-			var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(controller.GetObj()) && !controllerAlreadyInLight;
+			var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(controller.GetBBoxObj()) && !controllerAlreadyInLight;
 			
 			if(connector.HasConnectionsAvailable() && isControllerInside || mIsDrawing && isControllerInside && connector.HasLinksAvailable())
 			{
@@ -783,7 +783,7 @@ function Level3::CheckActiveConnector()
 					mCurrentActiveConnector = connector;
 				}
 			}
-			else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(controller.GetObj()))
+			else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(controller.GetBBoxObj()))
 			{
 				mControllersInLightArray[controllerIndex - 1] = false;
 				
@@ -823,7 +823,7 @@ function Level3::HandleDrawings()
 			mIsDrawing = true;
 			
 			// I get the first point in the drawing; I obtain the controller in the array that holds the currently visible controllers
-			mPreviousPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetPosition();
+			mPreviousPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetControllerTipCoordinates();
 				
 			var vertexArray = {};
 			
@@ -854,7 +854,7 @@ function Level3::HandleDrawings()
 		{
 			var currentPoint;
 
-			currentPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetPosition();
+			currentPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetControllerTipCoordinates();
 					
 			var vertexArray = mDrawingsArray[len(mDrawingsArray) - 1];
 			

@@ -792,7 +792,7 @@ function Level1::CheckActiveConnector()
     		// 3) there is actually a controller in the light cone;
     		// 4) the controller wasn't there before 
     		// Also, another case is when the above is true but the controller doesn't have connections available, but it's still linked to a connector
-			var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(controller.GetObj()) && !controllerAlreadyInLight;
+			var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(controller.GetBBoxObj()) && !controllerAlreadyInLight;
 			
 			if(connector.HasConnectionsAvailable() && isControllerInside || mIsDrawing && isControllerInside && connector.HasLinksAvailable())
 			{
@@ -814,7 +814,7 @@ function Level1::CheckActiveConnector()
 			// 2) this connector is the one currently active;
 			// 3) there actually was a controller inside;
 			// 4) now the controller isn't inside anymore
-			else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(controller.GetObj()))
+			else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(controller.GetBBoxObj()))
 			{
 				// I save the fact that this controller is outside of the light
 				mControllersInLightArray[controllerIndex - 1] = false;
@@ -863,7 +863,7 @@ function Level1::HandleDrawings()
 			
 			// I get the first point in the drawing
 			if(mIsVRon)
-				mPreviousPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
+				mPreviousPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
 			else
 				mPreviousPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
 				
@@ -913,7 +913,7 @@ function Level1::HandleDrawings()
 			var currentPoint;
 			
 			if(mIsVRon)
-				currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
+				currentPoint = mInputManager.GetController(mControllerBeingUsedIndex).GetControllerTipCoordinates();
 			else
 				currentPoint = mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR;
 					
