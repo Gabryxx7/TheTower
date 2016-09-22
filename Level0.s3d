@@ -180,7 +180,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 		viveTestObj = ViveController(1);		
 		viveTestObj.SetPosition([-10*SCALE_FACTOR, 5*SCALE_FACTOR, 10*SCALE_FACTOR] + translateFactor);
 		viveTestObj.SetScale(SCALE_FACTOR*3, SCALE_FACTOR*3, SCALE_FACTOR*3);
-		viveTestParam = {{0,0}, {0,0}, false, false, false, false};	
+		viveTestParam = {{0,0}, {0,0}, false, false, false, false, 0};	
 	}
 
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
@@ -770,16 +770,24 @@ function Level0::UpdateLogic(dt)
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	if(viveControllerTesting){
 		if(KeyPressed("1")){
-			viveTestParam[0][0] -= 0.01;
-			viveTestParam[0][0] -= 0.01;
+			if(viveTestParam[0][0] > -1)
+				viveTestParam[0][0] -= 0.01;
 		}if(KeyPressed("2")){
-			viveTestParam[0][0] += 0.01;
-			viveTestParam[0][0] += 0.01;
+			if(viveTestParam[0][0] < 1)
+				viveTestParam[0][0] += 0.01;
+		}if(KeyPressed("9")){
+			if(viveTestParam[0][1] > -1)
+				viveTestParam[0][1] -= 0.01;
+		}if(KeyPressed("0")){
+			if(viveTestParam[0][1] < 1)
+				viveTestParam[0][1] += 0.01;
 		}if(KeyPressed("3")){
-			viveTestParam[1][1] -= 0.1;
-			viveTestParam[1][1] -= 0.1;
+			viveTestParam[1][0] -= 0.1;
 		}if(KeyPressed("4")){
-			viveTestParam[1][1] += 0.1;
+			viveTestParam[1][0] += 0.1;
+		}if(KeyPressed("e")){
+			viveTestParam[1][1] -= 0.1;
+		}if(KeyPressed("r")){
 			viveTestParam[1][1] += 0.1;
 		}if(KeyPressed("5")){
 			viveTestParam[2] = !viveTestParam[2];
@@ -789,9 +797,14 @@ function Level0::UpdateLogic(dt)
 			viveTestParam[4] = !viveTestParam[4];
 		}if(KeyPressed("8")){
 			viveTestParam[5] = !viveTestParam[5];
+		}if(KeyPressed("n")){
+			viveTestParam[6] += 1;
+		}if(KeyPressed("m")){
+			viveTestParam[6] -= 1;
 		}
 		viveTestObj.UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5]);
-		viveTestObj.SetRotation(20,1,0,0);
+		outputln(viveTestParam[0]);
+		viveTestObj.SetRotation(viveTestParam[6],1,0,0);
 	}
 	
 	// Getting the camera position, minus the opengl offset used for teleporting
