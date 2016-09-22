@@ -121,6 +121,10 @@ class Level0
 	// Vive controllers
 	var mController1;
 	var mController2;
+	
+	var viveControllerTesting;
+	var viveTestObj;
+	var viveTestParam;
 
 	// Private functions
 	DrawAllPortals();
@@ -148,7 +152,8 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 {
 	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
-			
+	viveControllerTesting = true;
+	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
 	// Updating the booleans, the level is now starting
@@ -171,6 +176,13 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	var translateFactor = [0, 0, -20 * SCALE_FACTOR];
 //	var translateFactor = [0, 0, 0];
 	
+	if(viveControllerTesting){
+		viveTestObj = ViveController(1);		
+		viveTestObj.SetPosition([-10*SCALE_FACTOR, 5*SCALE_FACTOR, 10*SCALE_FACTOR] + translateFactor);
+		viveTestObj.SetScale(SCALE_FACTOR*3, SCALE_FACTOR*3, SCALE_FACTOR*3);
+		viveTestParam = {{0,0}, {0,0}, false, false, false, false};	
+	}
+
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
 	mLight1Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
 	mLight2Position = [10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + translateFactor;
@@ -547,7 +559,6 @@ function Level0::Render()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
 
-
 	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
 	DrawAllPortals();
 	
@@ -555,6 +566,8 @@ function Level0::Render()
 	if(!mEnding || mElevator.IsElevatorOpen())
 		mMainRoom.Draw();
 		
+	if(viveControllerTesting)
+		viveTestObj.Draw(VR_NO_CULLING);
 	// Drawing the glass walls for the frames
 	foreach(var glassWall in mPortalFramesGlassWalls)
 		glassWall.Draw();
@@ -755,22 +768,47 @@ function Level0::UpdateLogic(dt)
 	// First off, let's update the player's position and orientation and the controllers (if they're not present nothing will be done)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
+	if(viveControllerTesting){
+		if(KeyPressed("1")){
+			viveTestParam[0][0] -= 0.01;
+			viveTestParam[0][0] -= 0.01;
+		}if(KeyPressed("2")){
+			viveTestParam[0][0] += 0.01;
+			viveTestParam[0][0] += 0.01;
+		}if(KeyPressed("3")){
+			viveTestParam[1][1] -= 0.1;
+			viveTestParam[1][1] -= 0.1;
+		}if(KeyPressed("4")){
+			viveTestParam[1][1] += 0.1;
+			viveTestParam[1][1] += 0.1;
+		}if(KeyPressed("5")){
+			viveTestParam[2] = !viveTestParam[2];
+		}if(KeyPressed("6")){
+			viveTestParam[3] = !viveTestParam[3];
+		}if(KeyPressed("7")){
+			viveTestParam[4] = !viveTestParam[4];
+		}if(KeyPressed("8")){
+			viveTestParam[5] = !viveTestParam[5];
+		}
+		viveTestObj.UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5]);
+		viveTestObj.SetRotation(20,1,0,0);
+	}
 	
 	// Getting the camera position, minus the opengl offset used for teleporting
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 	// I restore the previous porision. Very badly written code
-	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
-		mInputManager.RestoreCameraPosition();
-	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
-       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
-       	    !mIsElevatorPresent)
-   	    mInputManager.RestoreCameraPosition();
+//	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
+//		mInputManager.RestoreCameraPosition();
+//	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
+//       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
+//       	    !mIsElevatorPresent)
+//   	    mInputManager.RestoreCameraPosition();
 
     // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
-    	mInputManager.RestoreCameraPosition();
+//    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
+//    	mInputManager.RestoreCameraPosition();
     	
 	// For each portal, I need to update the position of its light
 	for(var i = 0; i < PORTALS_NUMBER; i++)

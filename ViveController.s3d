@@ -22,6 +22,39 @@ class ViveController
 	
 	var mBorderShader;
 	
+	var controllerMesh;
+	var buttonMesh;
+	var ledMesh;
+	var leftGripMesh;
+	var rightGripMesh;
+	var systemButtonMesh;
+	var trackpadMesh;
+	var triggerMesh;
+	
+	var bodyObj;
+	var buttonObj;
+	var ledObj;
+	var leftGripObj;
+	var rightGripObj;
+	var systemButtonObj;
+	var trackpadObj;
+	var triggerObj;
+	
+	var trackpadPointPos;
+	var trackpadPointMesh;
+	var trackpadPointObj;
+	
+	var buttonDepth;
+	var trackpadDepth;
+	var gripDepth;
+	var leftGripPos;
+	var rightGripPos;
+	var systemButtonPos;
+	var trackpadPos;
+	var buttonPos;
+	var triggerRange;
+	var trackpadPointRange;
+	
 	// Public functions
 	Draw();
 	GetObj();
@@ -45,6 +78,7 @@ class ViveController
 	GetHeight();
 	GetDepth();
 	IsCollidingBBox(object);
+	UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed);
 };
 
 
@@ -52,17 +86,51 @@ function ViveController::ViveController(controllerIndex)
 {
 	mControllerIndex = controllerIndex;
 	
-	var controllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Body/body.aam");
+	controllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Body/body.aam");
+	buttonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Button/button.aam");
+	ledMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Led/led.aam");
+	leftGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");
+	rightGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
+	systemButtonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
+	trackpadMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
+	triggerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trigger/trigger.aam");
 	
-
-	mViveController = CVmObj(controllerMesh);
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Button/button.aam")));
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Led/led.aam")));
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam")));
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam")));
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam")));
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam")));
-	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Trigger/trigger.aam")));
+	
+	bodyObj = CVmObj(controllerMesh);
+	buttonObj = CVmObj(buttonMesh);
+	ledObj = CVmObj(ledMesh);
+	leftGripObj = CVmObj(leftGripMesh);
+	rightGripObj = CVmObj(rightGripMesh);
+	systemButtonObj = CVmObj(systemButtonMesh);
+	trackpadObj = CVmObj(trackpadMesh);
+	triggerObj = CVmObj(triggerMesh);
+	
+	buttonPos = buttonObj.GetPosition();
+	leftGripPos = leftGripObj.GetPosition();
+	rightGripPos = rightGripObj.GetPosition();
+	systemButtonPos = systemButtonObj.GetPosition();
+	trackpadPos = trackpadObj.GetPosition();
+	triggerRange = [3,3];
+	trackpadPointRange = [3,3];
+	
+	buttonDepth = 0.0075*SCALE_FACTOR;
+	trackpadDepth = 0.015*SCALE_FACTOR;
+	gripDepth = 0.004*SCALE_FACTOR;
+	
+	trackpadPointMesh = CVmNewMesh(VRP_CIRCLE, 30, 0.008*SCALE_FACTOR, 1);
+	trackpadPointObj = CVmObj(trackpadPointMesh);
+	trackpadPointPos = trackpadPos+[0, 0.05*SCALE_FACTOR, 0];
+	trackpadObj.AddChild(trackpadPointObj);
+	
+	mViveController = CVmObj();
+	mViveController.AddChild(bodyObj);
+	mViveController.AddChild(buttonObj);
+	mViveController.AddChild(ledObj);
+	mViveController.AddChild(leftGripObj);
+	mViveController.AddChild(rightGripObj);
+	mViveController.AddChild(systemButtonObj);
+	mViveController.AddChild(trackpadObj);
+	mViveController.AddChild(triggerObj);
 
 	mBoundingBox = controllerMesh.GetBoundingBox();
 	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
@@ -81,6 +149,48 @@ function ViveController::ViveController(controllerIndex)
 	mIsVisible = true;
 	
 	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.8, 0.8, 0.0, 1.0); }", true);
+}
+
+/*
+ * This method updates the visual status of the vive controller
+ */
+function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed){
+	if(touchPadCoord[0] < 0){
+		trackpadPointObj.Hide();		
+	}
+	else{
+		trackpadPointObj.Unhide();
+		trackpadPointPos = trackpadPos+[touchPadCoord[0]/trackpadPointRange[0], trackpadPointPos.y, touchPadCoord[1]/trackpadPointRange[1]];	
+		trackpadPointObj.SetPosition(trackpadPointPos);
+	}
+	
+	if(triggerCoord[0] > 0){
+		triggerObj.SetRotation(triggerCoord[0],0,0,1);
+		//Rotate trigger around tip point
+	}
+	
+	if(isMenuPressed){
+		buttonObj.SetPosition(buttonPos - [0, buttonDepth, 0]);
+	}
+	else{
+		buttonObj.SetPosition(buttonPos);		
+	}
+	
+	if(isGripPressed){
+		leftGripObj.SetPosition(leftGripPos + [gripDepth, 0, 0]);
+		rightGripObj.SetPosition(rightGripPos - [gripDepth, 0, 0]);
+	}
+	else{
+		leftGripObj.SetPosition(leftGripPos);
+		rightGripObj.SetPosition(rightGripPos);		
+	}
+	
+	if(isTouchpadPressed){
+		trackpadObj.SetPosition(trackpadPos - [0, trackpadDepth, 0]);
+	}
+	else{
+		trackpadObj.SetPosition(trackpadPos);		
+	}
 }
 
 /*

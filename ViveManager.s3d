@@ -84,7 +84,10 @@ function ViveManager::UpdateControllers(openglTranslationOffset)
 	controller2Matrix[14] = 0;
 	
 	mController1.SetRotationMatrix(controller1Matrix);
-	mController2.SetRotationMatrix(controller2Matrix);
+	mController2.SetRotationMatrix(controller2Matrix);	
+	
+	mController1.UpdateStatus(mHMD.GetTouchPadCoord(mController1Index), mHMD.GetTriggerCoord(mController1Index), mHMD.IsMenuPressed(mController1Index), mHMD.IsTriggerPressed(mController1Index), mHMD.IsGripPressed(mController1Index), mHMD.IsTouchpadPressed(mController1Index));
+	mController2.UpdateStatus(mHMD.GetTouchPadCoord(mController2Index), mHMD.GetTriggerCoord(mController2Index), mHMD.IsMenuPressed(mController2Index), mHMD.IsTriggerPressed(mController2Index), mHMD.IsGripPressed(mController2Index), mHMD.IsTouchpadPressed(mController2Index));
 }
 
 

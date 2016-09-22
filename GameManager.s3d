@@ -1,4 +1,4 @@
-global var DEBUG_MODE = false;
+global var DEBUG_MODE = true;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -228,17 +228,18 @@ function GameManager::GameManager(HMD)
 //			aadd(mLevels, i);	
 //		}
  
-		aadd(mLevels, arrayLevel0);
-		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+//		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-//		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = arrayLevel0;
 		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 		
 		mFadeToBlackAlpha = 1;
