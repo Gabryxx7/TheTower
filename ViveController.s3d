@@ -52,9 +52,17 @@ function ViveController::ViveController(controllerIndex)
 {
 	mControllerIndex = controllerIndex;
 	
-	var controllerMesh = CVmNewMesh("viveControllerModel.AAM");
+	var controllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Body/body.aam");
+	
 
 	mViveController = CVmObj(controllerMesh);
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Button/button.aam")));
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Led/led.aam")));
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam")));
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam")));
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam")));
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam")));
+	mViveController.AddChild(CVmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Trigger/trigger.aam")));
 
 	mBoundingBox = controllerMesh.GetBoundingBox();
 	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
@@ -98,7 +106,7 @@ function ViveController::Draw()
 		mViveController.SetScale(1.0, 1.0, 1.0);
 	}
 	
-	mViveController.Draw();
+	mViveController.Draw(VR_NO_CULLING);
 }
 
 function ViveController::GetObj()

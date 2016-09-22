@@ -4,11 +4,11 @@ Mat# 0
 {
 	Name: material_0_None
 	Class: Blender Material
-	Am: 0.7000 0.7000 0.7000
-	Di: 0.6024 1.0000 0.6024
+	Am: 0.0000 0.0000 0.0000
+	Di: 1.0000 1.0000 1.0000
 	Sp: 0.5000 0.5000 0.5000
 	Tr: 0.0000
-	Sh: 0.0500
+	Sh: 0.0020
 	Tx: Y
 	{
 		FN: onepointfive_texture.png

@@ -37,7 +37,6 @@ function OnDownload()
 	FileDownload("colorModulatorShader.glsl");
 	FileDownload("provaMesh.AAM");
 	FileDownload("data.zip");
-	FileDownload("viveControllerModel.AAM");
 	FileDownload("Sci-fi-thing.aam");
 	FileDownload("thetower.png");
 	FileDownload("Level0Prev.png");
@@ -45,6 +44,20 @@ function OnDownload()
 	FileDownload("Level2Prev.png");
 	FileDownload("Level3Prev.png");
 	FileDownload("Level4Prev.png");
+	
+	/** VIVE MESH LOADING */	
+	FileDownload("Vive_Controller_Mesh/Exported/Body/body.aam");	
+	FileDownload("Vive_Controller_Mesh/Exported/Button/button.aam");
+	FileDownload("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam.aam");	
+	FileDownload("Vive_Controller_Mesh/Exported/Led/led.aam");	
+	FileDownload("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");	
+	FileDownload("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
+	FileDownload("Vive_Controller_Mesh/Exported/Scroll_Wheel/scroll_wheel.aam");	
+	FileDownload("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
+	FileDownload("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
+	FileDownload("Vive_Controller_Mesh/Exported/Trackpad_Scroll_Cut/trackpad_scroll_cut.aam");
+	FileDownload("Vive_Controller_Mesh/Exported/Trackpad_touch/trackpad_touch.aam");
+	FileDownload("Vive_Controller_Mesh/Exported/Trigger/trigger.aam");
 }
 
 /* Init system - Start GameManager */
