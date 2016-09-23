@@ -178,9 +178,9 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	
 	if(viveControllerTesting){
 		viveTestObj = ViveController(1);		
-		viveTestObj.SetPosition([-10*SCALE_FACTOR, 5*SCALE_FACTOR, 10*SCALE_FACTOR] + translateFactor);
+		viveTestObj.SetPosition([-10*SCALE_FACTOR, 6*SCALE_FACTOR, 10*SCALE_FACTOR] + translateFactor);
 		viveTestObj.SetScale(SCALE_FACTOR*3, SCALE_FACTOR*3, SCALE_FACTOR*3);
-		viveTestParam = {{0,0}, {0,0}, false, false, false, false, 0};	
+		viveTestParam = {{0,0}, {0,0}, -1, -1, -1, -1, 0};	
 	}
 
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
@@ -782,21 +782,19 @@ function Level0::UpdateLogic(dt)
 			if(viveTestParam[0][1] < 1)
 				viveTestParam[0][1] += 0.01;
 		}if(KeyPressed("3")){
+			if(viveTestParam[1][0] > 0)
 			viveTestParam[1][0] -= 0.1;
 		}if(KeyPressed("4")){
+			if(viveTestParam[1][0] < 1)
 			viveTestParam[1][0] += 0.1;
-		}if(KeyPressed("e")){
-			viveTestParam[1][1] -= 0.1;
-		}if(KeyPressed("r")){
-			viveTestParam[1][1] += 0.1;
 		}if(KeyPressed("5")){
-			viveTestParam[2] = !viveTestParam[2];
+			viveTestParam[2] = -viveTestParam[2];
 		}if(KeyPressed("6")){
-			viveTestParam[3] = !viveTestParam[3];
+			viveTestParam[3] = -viveTestParam[3];
 		}if(KeyPressed("7")){
-			viveTestParam[4] = !viveTestParam[4];
+			viveTestParam[4] = -viveTestParam[4];
 		}if(KeyPressed("8")){
-			viveTestParam[5] = !viveTestParam[5];
+			viveTestParam[5] = -viveTestParam[5];
 		}if(KeyPressed("n")){
 			viveTestParam[6] += 1;
 		}if(KeyPressed("m")){

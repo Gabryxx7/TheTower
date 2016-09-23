@@ -469,10 +469,13 @@ function VirtualKeyboard::TouchedButton(objPos){
 	var buttonPos;
 	var maxDepth = mButtonsThickness * 0.8;
 	var offsets = [mButtonsWidth/2, mButtonsWidth/2, mButtonsThickness];
+	var checkingRange = 0.1*SCALE_FACTOR;
+	
 	for(var i = 0; i < len(mButtonsObjs); i++){
 		buttonPos = mOriginalButtonPos[i];
-		if(objPos.x >= buttonPos.x - offsets.x && objPos.x <= buttonPos.x + offsets.x
+		if(objPos.x >= buttonPos.x - offsets.x - checkingRange && objPos.x <= buttonPos.x + offsets.x + checkingRange
 		&& objPos.y >= buttonPos.y - offsets.y && objPos.y <= buttonPos.y + offsets.y){
+			
 			if(objPos.z >= buttonPos.z - maxDepth && objPos.z <= buttonPos.z){
 				mButtonsObjs[i].SetPosition([buttonPos.x, buttonPos.y, objPos.z]);
 				if(objPos.z < buttonPos.z)

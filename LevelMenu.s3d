@@ -47,10 +47,7 @@ class LevelMenu
 	var mIsVRon;
 	var debugVrOn;
 	var mControllersArray;
-	var mController1;
-	var mController2;
 	
-	var mDebugController;
 	var mDebugControllerHidden;
 	var mDebugKeyHit;
 	
@@ -175,10 +172,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	else if(debugVrOn)
 	{
 		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
-		mDebugController = ViveController(1);
 		mDebugControllerHidden = false;
 		mDebugKeyHit = false;
-		aadd(mControllersArray, mDebugController);
+		aadd(mControllersArray, ViveController(1));
 	}
 	
 	mSelectedLevel = -1;
@@ -368,11 +364,6 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	var previewSize = [15*SCALE_FACTOR, 15*SCALE_FACTOR, 0.5*SCALE_FACTOR];
 	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, [1,0,0], [0,0,1], 1);
 	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.x/2 -offset.x, previewSize.y/2+previewSize.z + offset.y, -menuRoom_WidthSide/2+offset.z);
-
-	if(mIsVRon){
-		mController1 = mInputManager.GetController(1);
-		mController2 = mInputManager.GetController(2);
-	}
 }
 
 
@@ -530,27 +521,22 @@ function LevelMenu::Render()
 	if(mIsVRon || debugVrOn){
 		var raycastOrigin;
 		var raycastEnd;
-		if(mIsVRon){
-			mController1.Draw();
-			mController2.Draw();
-			raycastOrigin = mController1.GetPosition();
-			raycastEnd = mController1.GetPosition() + mController1.GetDirection() * mCamera.GetZFar();
+		foreach(var controller in mControllersArray){
+			controller.Draw();
+			raycastOrigin = controller.GetPosition();
+			raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
+			if(mInputManager.IsPressingPrimaryButton()){			
+				glLineWidth(2); 		
+				glColor([0.5,0.5,1]); 
+				
+				// I draw the ray as a simple opengl line
+				glBegin(GL_LINES);
+					glVertex(raycastOrigin);
+					glVertex(raycastEnd);		
+				glEnd();
+			}
 		}
-		else{
-			mDebugController.Draw();
-			raycastOrigin = mDebugController.GetPosition();
-			raycastEnd = mDebugController.GetPosition() + mDebugController.GetDirection() * mCamera.GetZFar();
-		}
-//		if(mInputManager.IsPressingPrimaryButton()){			
-			glLineWidth(4); 		
-			glColor([1,1,0]); 
-			
-			// I draw the ray as a simple opengl line
-			glBegin(GL_LINES);
-				glVertex(raycastOrigin);
-				glVertex(raycastEnd);		
-			glEnd();
-//		}		
+		
 	}
 }
 
@@ -580,16 +566,16 @@ function LevelMenu::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{					
 			if(debugVrOn)			
-				mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);	
+				mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);	
 				
 			var pointedLevel = -1;
 			for(var i = 0; i < len(levelSelectors); i++){
 				var res = false;
-				if(mIsVrOn)
-					res = levelSelectors[i].IsBeingPointedBy(mController1, mController1.GetPosition(), mCamera.GetZFar());
-				else if(debugVrOn)	
-					res = levelSelectors[i].IsBeingPointedBy(mDebugController, mDebugController.GetPosition(), mCamera.GetZFar());
-				else						
+				if(mIsVrOn || debugVrOn){
+					foreach(var controller in mControllersArray){
+						res = levelSelectors[i].IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());						
+					}
+				}else						
 					res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
 				
 				if(res){
@@ -610,16 +596,20 @@ function LevelMenu::UpdateLogic(dt)
 			}
 			
 			var res = false;
-			if(mIsVrOn)
-				res = levelPreviewFrame.IsBeingPointedBy(mController1, mController1.GetPosition(), mCamera.GetZFar());	
-			else if(debugVrOn)
-				res = levelPreviewFrame.IsBeingPointedBy(mDebugController, mDebugController.GetPosition(), mCamera.GetZFar());
-			else
+			if(mIsVrOn || debugVrOn){
+				foreach(var controller in mControllersArray){
+					res = levelPreviewFrame.IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
+					if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+						mIsLevelCompleted = true;
+					}						
+				}					
+			}else{
 				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
+				if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
+						mIsLevelCompleted = true;
+					}				
+			}			
 			
-			if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(1)){
-				mIsLevelCompleted = true;
-			}
 						
 			var range = 5*SCALE_FACTOR;
 			if(walkWayTrigger.IsPointInside(cameraPosition) && mWalkWay.GetPosition().x >= towerPosition.x + towerLevelWidth/2 + mWalkWaySize.x/2){

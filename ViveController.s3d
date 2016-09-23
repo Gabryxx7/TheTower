@@ -56,6 +56,7 @@ class ViveController
 	var trackpadCenterOffset;
 	var buttonPos;
 	var triggerRange;
+	var triggerMax;
 	var trackpadPointRange;
 	
 	var timeSinceLastTouch;
@@ -116,23 +117,25 @@ function ViveController::ViveController(controllerIndex)
 	systemButtonObj = CVmObj(systemButtonMesh);
 	trackpadObj = CVmObj(trackpadMesh);
 	triggerObj = CVmObj(triggerMesh);
+	triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.21*SCALE_FACTOR);
 	
 	buttonPos = buttonObj.GetPosition();
 	leftGripPos = leftGripObj.GetPosition();
 	rightGripPos = rightGripObj.GetPosition();
 	systemButtonPos = systemButtonObj.GetPosition();
 	trackpadPos = trackpadObj.GetPosition();
-	trackpadCenterOffset = [0, 0, 0.25*SCALE_FACTOR];
-	triggerRange = [1,0];
-	trackpadPointRange = [0.095*SCALE_FACTOR, -0.095*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
+	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.036*SCALE_FACTOR, 0.25*SCALE_FACTOR];
+	triggerRange = -23;
+	triggerMax = -29;
+	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
 	
 	buttonDepth = 0.0075*SCALE_FACTOR;
-	trackpadDepth = 0.015*SCALE_FACTOR;
+	trackpadDepth = 0.012*SCALE_FACTOR;
 	gripDepth = 0.007*SCALE_FACTOR;
 	
-	trackpadPointMesh = CVmNewMesh(VRP_CIRCLE, 30, 0.008*SCALE_FACTOR, 1);
+	trackpadPointMesh = CVmNewMesh(VRP_SPHERE, 30, 0.008*SCALE_FACTOR, 1);
 	trackpadPointObj = CVmObj(trackpadPointMesh);
-	trackpadPointPos = trackpadPos + trackpadCenterOffset + [0, 0.035*SCALE_FACTOR, 0];
+	trackpadPointPos = trackpadPos + trackpadCenterOffset;
 	trackpadObj.AddChild(trackpadPointObj);
 	
 	mViveController = CVmObj();
@@ -178,12 +181,16 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 	else{
 		timeSinceLastTouch = GetTime();
 		trackpadPointObj.Unhide();
-		trackpadPointPos = trackpadPos + trackpadCenterOffset + [touchPadCoord[0] * trackpadPointRange[0], trackpadPointPos.y, touchPadCoord[1] * trackpadPointRange[1]];	
+		trackpadPointPos = trackpadPos + trackpadCenterOffset + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
 		trackpadPointObj.SetPosition(trackpadPointPos);
 	}
 
 	if(triggerCoord[0] > 0){
-		triggerObj.SetRotation(-4 * triggerCoord[0], 1, 0, 0);
+		if(isTriggerPressed < 0){
+			triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
+		}else{
+			triggerObj.SetRotation(triggerMax, 1, 0, 0);			
+		}
 	}
 	else
 		triggerObj.SetRotation(0, 1, 0, 0);

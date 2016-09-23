@@ -12,13 +12,10 @@ class Level2
 	var mTexture;
 	var mIsVRon;
 	var mControllersArray;
-	var mController1;
-	var mController2;
 	var debugVrOn;
 	
 	var mTranslateFactor;
 	
-	var mDebugController;
 	var mDebugControllerHidden;
 	var mDebugKeyHit;
 	
@@ -153,10 +150,9 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	else if(debugVrOn)
 	{
 		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
-		mDebugController = ViveController(1);
+		aadd(mControllersArray, ViveController(1));
 		mDebugControllerHidden = false;
 		mDebugKeyHit = false;
-		aadd(mControllersArray, mDebugController);
 	}
 	
 	mEnding = false;
@@ -220,13 +216,6 @@ function Level2::Level2(isVRon, inputManager, soundManager)
 	numpadObj = VirtualKeyboard(true, mAnimator, "123\n456\n789\nC0", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
 //	numpadObj = VirtualKeyboard(true, mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null,  numpadPos, numpadHolderSize);	
 /////////////////////////////////////////////////////////
-	
-	
-	if(mIsVRon)
-	{
-		mController1 = mInputManager.GetController(1);
-		mController2 = mInputManager.GetController(2);
-	}
 }
 
  
@@ -450,7 +439,7 @@ function Level2::Render()
 	if(!mIsVRon)
 	{
 		if(debugVrOn)
-			mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+			mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
 		
 		// I also check if Y is pressed: this hides/unhides the debug controller
 		if(KeyPressed("Y"))
@@ -458,9 +447,9 @@ function Level2::Render()
 			if(!mDebugKeyHit)
 			{
 				if(mDebugControllerHidden)
-					mDebugController.Unhide();
+					mControllersArray[0].Unhide();
 				else
-					mDebugController.Hide();
+					mControllersArray[0].Hide();
 					
 				mDebugControllerHidden = !mDebugControllerHidden;
 				mDebugKeyHit = true;
@@ -560,11 +549,6 @@ function Level2::Render()
 	numpadObj.DrawScreen();			
 	numpadObj.DrawPressedButtons();
 	numpadObj.DrawUnpressedButtons();
-	
-	if(mIsVRon){
-		mController1.Draw();
-		mController2.Draw();
-	}
 }
 
 
@@ -800,51 +784,32 @@ function Level2::UpdateLogic(dt)
 			//If the player is close to the numpad
 			if(!doorUnlocked && numpadObj.IsCameraInKeyboardRange(cameraPosition, 5 * SCALE_FACTOR) && numpadClearNeeded == 0){			   	
 			   	
-				if(mIsVRon){
-					mControllersArray[0].SetActionAvailable(true);	
-					mControllersArray[1].SetActionAvailable(true);	
-					if(numpadClearNeeded == 0 && !doorUnlocked){
-						var vrPressedButton1 = pressedButton = numpadObj.TouchedButton(mControllersArray[0].GetPosition());
-						var vrPressedButton2 = pressedButton = numpadObj.TouchedButton(mControllersArray[1].GetPosition());						
-					 	var vrPointedButton1 = numpadObj.PointedButton(mControllersArray[0], mControllersArray[0].GetPosition(), false);											
-					 	var vrPointedButton2 = numpadObj.PointedButton(mControllersArray[1], mControllersArray[1].GetPosition(), false);	
-						var vrPressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;
-						if(mInputManager.IsPressingPrimaryButton(1) && timeFromLastClick > 0.25){
-							timeFromLastClick = 0;	
-							pressedButton = (vrPointedButton1 == "") ? vrPointedButton2 : vrPointedButton1;
-							if(pressedButton != "" && pressedButton != " "){
-								numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
-								numpadObj.AnimateButton(pressedButton);	
-								mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);						
+				if(mIsVRon || debugVrOn){
+					foreach(var controller in mControllersArray){
+						controller.SetActionAvailable(true);
+						
+						if(numpadClearNeeded == 0 && !doorUnlocked){
+							var vrPressedButton = numpadObj.TouchedButton(controller.GetControllerTipCoordinates());				
+						 	var vrPointedButton = numpadObj.PointedButton(controller, controller.GetPosition(), false);
+						 	
+							if(mInputManager.IsPressingPrimaryButton(controller.GetIndex()) && timeFromLastClick > 0.13){
+								timeFromLastClick = 0;	
+								pressedButton = vrPointedButton;
+								if(pressedButton != "" && pressedButton != " "){
+									numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
+									numpadObj.AnimateButton(pressedButton);	
+									mInputManager.VibrateController(100);						
+								}
 							}
-						}
-						else if(timeFromLastClick > 0.4){
-							timeFromLastClick = 0;
-							pressedButton = (vrPressedButton1 == "") ? vrPressedButton2 : vrPressedButton1;	
-							numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);	
-							mInputManager.VibrateController((vrPointedButton1 == "") ? 1 : 0, 100);								
-						}
-					}			
-				}
-				else if(debugVrOn){
-					mDebugController.SetActionAvailable(true);
-					if(numpadClearNeeded == 0 && !doorUnlocked){
-						var vrPressedButton = numpadObj.TouchedButton(mDebugController.GetPosition(), dt);	
-						var pointed = numpadObj.PointedButton(mDebugController, mDebugController.GetPosition(), false);	
-						if(mInputManager.IsPressingPrimaryButton(1) && timeFromLastClick > 0.25){
-							timeFromLastClick = 0;
-							pressedButton = pointed;
-							if(pressedButton != "" && pressedButton != " "){
-								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);		
-								numpadObj.AnimateButton(pressedButton);								
-							}						
-						}
-						else if(timeFromLastClick > 0.4){	
-							timeFromLastClick = 0;	
-							pressedButton = vrPressedButton;	
-							numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);						
-						}	
-					}
+							else if(timeFromLastClick > 0.4){
+								timeFromLastClick = 0;
+								pressedButton = vrPressedButton;	
+								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);	
+								mInputManager.VibrateController(100);								
+							}
+						}						
+					}		
+								
 				}
 				else {
 					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true);
@@ -855,7 +820,7 @@ function Level2::UpdateLogic(dt)
 							pressedButton = pressedKey;				
 						}
 					}
-					else if(mInputManager.IsPressingPrimaryButton(1) && timeFromLastClick > 0.25){
+					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
 						timeFromLastClick = 0;
 						pressedButton = pointedButton;	
 					}
@@ -867,12 +832,9 @@ function Level2::UpdateLogic(dt)
 				}
 			}
 			else{
-				if(mIsVRon){
-					mControllersArray[0].SetActionAvailable(false);	
-					mControllersArray[1].SetActionAvailable(false);						
-				}			
-				else if(debugVrOn){
-					mDebugController.SetActionAvailable(false);	
+				if(mIsVRon || debugVrOn){
+					foreach(var controller in mControllersArray)
+						controller.SetActionAvailable(false);					
 				}
 				Keyboard(); //Needed to process the input even when not close to the numpad. Otherwise it will go in a queue and will be processed as soon as I get closer to the numpad
 			}	
