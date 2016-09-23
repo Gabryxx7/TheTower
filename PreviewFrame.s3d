@@ -4,24 +4,32 @@ class PreviewFrame{
 	var verticalBorderMesh;
 	var horizzontalBorderMesh;
 	
+	var mIsPointed;
+	var mIsSelected;
 	
 	var mMaterial;
 	var mPreviewFrameMaterial;
 	var mColor;
 	var mSelectedColor;
+	var mAnimator;
 	
 	GetObj();
 	ChangeImage(tex);
 	Draw();
 	SetPosition(x,y,z);
 	IsBeingPointedBy(mObject, objectPosition, distance);
+	IsSelected(selection);
 	ChangeMeshesColor(color, previewColor);
 };
 
-function PreviewFrame::PreviewFrame(wallWidth, wallHeight, borderThickness, lightsRangeMin, lightsRangeMax, color, selectedColor, glassAlpha){
+function PreviewFrame::PreviewFrame(animator, wallWidth, wallHeight, borderThickness, lightsRangeMin, lightsRangeMax, color, selectedColor, glassAlpha){
+	mAnimator = animator;
 	var halfWidth = wallWidth / 2.0;
 	var halfHeight = wallHeight / 2.0;
 	var halfThickness = borderThickness / 2.0;
+	
+	mIsPointed = false;
+	mIsSelected = false;
 	
 	mColor = color;
 	mSelectedColor = selectedColor;
@@ -90,12 +98,30 @@ function PreviewFrame::IsBeingPointedBy(mObject, objectPosition, distance){
 	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mGlassWallObj);
 	
 	if(contactPoint != Void){
-		ChangeMeshesColor(mSelectedColor, [1,1,1]);
+		if(!mIsPointed && !mIsSelected){
+			mIsPointed = true;
+			ChangeMeshesColor(mSelectedColor, [1,1,1]);		
+			mAnimator.CreateScalingTransition(mGlassWallObj, mGlassWallObj.GetScale(), [1.35,1.35,1.35], 0.1, false);	
+		}
 		return true;		
 	}
 	
-	ChangeMeshesColor(mColor, [0.8, 0.8, 0.8]);		
+	if(mIsPointed && !mIsSelected){
+		mIsPointed = false;
+		mAnimator.CreateScalingTransition(mGlassWallObj, mGlassWallObj.GetScale(), [1,1,1], 0.1, false);	
+	}	
+	
+	if(!mIsSelected)
+		ChangeMeshesColor(mColor, [0.5, 0.5, 0.5]);	 //Without this, the texture won't show immediately
+		
 	return false;	
+}
+
+function PreviewFrame::IsSelected(selection){
+	if(valtype(selection) != "B")	
+		return mIsSelected;
+		
+	mIsSelected = selection;
 }
 
 function PreviewFrame::ChangeMeshesColor(color, previewColor){

@@ -116,6 +116,7 @@ class Level3
 	SetupOpenglLights();
 	GetLightDiffuse();
 	GetLevelPreview();
+	GetLevelName();
 };
 
 function Level3::Level3(isVRon, inputManager, soundManager)
@@ -1004,4 +1005,8 @@ function Level3::GetLightDiffuse(){
 
 function Level3::GetLevelPreview(){
 	return mTexture;
+}
+
+function Level3::GetLevelName(){
+	return "Ghost";
 }

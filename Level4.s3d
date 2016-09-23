@@ -182,6 +182,7 @@ class Level4
 	SetupOpenglLights();
 	GetLightDiffuse();
 	GetLevelPreview();
+	GetLevelName();
 };
 
 
@@ -1980,7 +1981,10 @@ function Level4::GetLightDiffuse(){
 	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
 }
 
-function Level4::GetLevelPreview()
-{
+function Level4::GetLevelPreview(){
 	return mTexture;
+}
+
+function Level4::GetLevelName(){
+	return "Timing";
 }

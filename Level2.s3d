@@ -122,6 +122,7 @@ class Level2
  	SetupOpenglLights();
 	GetLightDiffuse();
 	GetLevelPreview();
+	GetLevelName();
 };
 
 
@@ -1137,4 +1138,8 @@ function Level2::GetLightDiffuse(){
 
 function Level2::GetLevelPreview(){
 	return mTexture;
+}
+
+function Level2::GetLevelName(){
+	return "Chaos";
 }

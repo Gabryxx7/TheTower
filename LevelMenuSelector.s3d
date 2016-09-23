@@ -7,12 +7,13 @@ class LevelMenuSelector{
 	var mSelectedColor;
 	var mPos;
 	var mFont;
-	var mLevelNumber;
+	var mLevelName;
 	var mTxtSize;
 	var mWidth;
 	var mHeight;
 	var mThickness;
 	var mIsSelected;
+	var mIsPointed;
 	
 	var mAlpha;
 	var mRelatedImage;
@@ -35,12 +36,13 @@ class LevelMenuSelector{
 	ChangeMeshesColor(color);
 };
 
-function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImage, pos, length, height, thickness, textColor, color, selectedColor, pApha, txtSize, font){
+function LevelMenuSelector::LevelMenuSelector(animator, levelName, relatedImage, pos, length, height, thickness, textColor, color, selectedColor, pApha, txtSize, font){
 	mObj = CVmObj();
 	mIsSelected = false;	
+	mIsPointed = false;
 	mRelatedImage = relatedImage;
 	mAnimator = animator;
-	mLevelNumber = levelNumber;
+	mLevelName = levelName;
 	mTextColor = valtype(textColor) != "" ? textColor : [1,1,1];
 	mAlpha = valtype(pApha) != "" ? pApha : 1.0;
 	mColor = valtype(color) != "" ? color : [1,1,1];
@@ -76,7 +78,7 @@ function LevelMenuSelector::LevelMenuSelector(animator, levelNumber, relatedImag
 	mBackgroundMesh.SetMaterial(mMaterial);
 	ChangeMeshesColor(mColor);
 	
-	var levelString = "Level " + char(levelNumber+48);
+	var levelString = levelName;
 	var txt = CVmText(levelString,0,0,mFont, 0);		
 	txt.SetScale(mTxtSize);
 	txt.SetColor(mTextColor.r, mTextColor.g, mTextColor.b);		
@@ -136,11 +138,19 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, distance){
 	var contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mObj);
 	
 	if(contactPoint != Void){
-		ChangeMeshesColor(mSelectedColor);
+		if(!mIsPointed && !mIsSelected){
+			mIsPointed = true;
+			ChangeMeshesColor(mSelectedColor);
+			mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1.35,1.35,1.35], 0.1, false);			
+		}
 		return true;		
 	}
 	
-	ChangeMeshesColor(mColor);
+	if(mIsPointed && !mIsSelected){
+		mIsPointed = false;
+		ChangeMeshesColor(mColor);
+		mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1,1,1], 0.1, false);
+	}
 		
 	return false;	
 }
@@ -148,17 +158,8 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, distance){
 function LevelMenuSelector::IsSelected(selection){
 	if(valtype(selection) != "B")	
 		return mIsSelected;
-	
-	if(selection){
-		mIsSelected = true;
-		ChangeMeshesColor(mSelectedColor);
-		return true;
-	}
-	else{
-		mIsSelected = false;
-		ChangeMeshesColor(mColor);
-		return false;
-	}
+		
+	mIsSelected = selection;
 }
 
 function LevelMenuSelector::ChangeMeshesColor(color){

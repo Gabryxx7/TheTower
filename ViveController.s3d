@@ -186,7 +186,6 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 		}
 		else{			
 			trackpointAlpha -= 0.025; //1/400 = 0.025, I don't know why but the floats are not working, I cannot use like trackPointTime/elapsedTime, no idea why
-			outputln(trackpointAlpha);
 		}
 	}
 	else{

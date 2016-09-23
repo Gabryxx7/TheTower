@@ -142,6 +142,7 @@ class Level0
 	SetupOpenglLights();
 	GetLightDiffuse();
 	GetLevelPreview();
+	GetLevelName();
 };
 
 
@@ -1091,4 +1092,8 @@ function Level0::GetLightDiffuse(){
 
 function Level0::GetLevelPreview(){
 	return mTexture;
+}
+
+function Level0::GetLevelName(){
+	return "Start";
 }

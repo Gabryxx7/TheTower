@@ -146,6 +146,7 @@ class Level1
 	SetupOpenglLights();
 	GetLightDiffuse();
 	GetLevelPreview();
+	GetLevelName();
 };
 
 
@@ -1124,4 +1125,8 @@ function Level1::GetLightDiffuse(){
 
 function Level1::GetLevelPreview(){
 	return mTexture;
+}
+
+function Level1::GetLevelName(){
+	return "Colors";
 }

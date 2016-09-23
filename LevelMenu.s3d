@@ -335,35 +335,37 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	levelSelectors = {};
 	var elementsPerRow = 2;	
 	var objScale = 2.5;
-	var txtSize = 0.135*objScale;
-	var spacing = 0.65*SCALE_FACTOR*objScale;
-	var width = 3.7*SCALE_FACTOR*objScale;
-	var height = 1.2*SCALE_FACTOR*objScale;
+	var txtSize = 0.145*objScale;
+	var spacingx = 1.65*SCALE_FACTOR*objScale;
+	var spacingy = 0.8*SCALE_FACTOR*objScale;
+	var width = 3.4*SCALE_FACTOR*objScale;
+	var height = 1.3*SCALE_FACTOR*objScale;
 	var thickness = 0.1*SCALE_FACTOR*objScale;	
-	var pos = [-menuRoom_WidthSide/2 + (width+thickness*2)/2, (height + spacing)/2, -menuRoom_WidthSide/2];
-	var offset = [2*SCALE_FACTOR, 1.5*SCALE_FACTOR, 0.01*SCALE_FACTOR];
+	var pos = [-menuRoom_WidthSide/2 + (width+thickness*2)/2, (height + spacingy)/2, -menuRoom_WidthSide/2];
+	var offset = [2.65*SCALE_FACTOR, 1.35*SCALE_FACTOR, 0.01*SCALE_FACTOR];
 	
 	for(var i = 0; i < len(mLevels); i++){		
 		if( i > 0 && (i % elementsPerRow) == 0){
-			pos.y += (height+thickness*2) + spacing;
+			pos.y += (height+thickness*2) + spacingy;
 			
 			if(i >= len(mLevels) - elementsPerRow && len(mLevels) % elementsPerRow != 0)
-				pos.x = -menuRoom_WidthSide/2 + (width+thickness*2) + spacing/2;
+				pos.x = -menuRoom_WidthSide/2 + (width+thickness*2) + spacingx/2;
 			else
 				pos.x = -menuRoom_WidthSide/2 + (width+thickness*2)/2;
 		}	
 		
 		if(i % elementsPerRow != 0)
-			pos.x += width + thickness*2 + spacing;	
+			pos.x += width + thickness*2 + spacingx;	
 			
-		var selector = LevelMenuSelector(mAnimator, i, mLevels[i].GetLevelPreview(), pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
-//		var selector = LevelMenuSelector(mAnimator, i, "thetower.png", pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
+		var selector = LevelMenuSelector(mAnimator, mLevels[i].GetLevelName(), mLevels[i].GetLevelPreview(), pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
+//		var selector = LevelMenuSelector(mAnimator, "Level " + char(i+48), "thetower.png", pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
 		aadd(levelSelectors, selector);
 	}
 	
-	var previewSize = [15*SCALE_FACTOR, 15*SCALE_FACTOR, 0.5*SCALE_FACTOR];
-	levelPreviewFrame = PreviewFrame(previewSize.x, previewSize.y, previewSize.z, 0, 2, [1,0,0], [0,0,1], 1);
-	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.x/2 -offset.x, previewSize.y/2+previewSize.z + offset.y, -menuRoom_WidthSide/2+offset.z);
+	var previewSize = [13*SCALE_FACTOR, 13*SCALE_FACTOR, 0.30*SCALE_FACTOR];
+	var previewOffset = [3*SCALE_FACTOR, 0*SCALE_FACTOR, 0.01*SCALE_FACTOR];
+	levelPreviewFrame = PreviewFrame(mAnimator, previewSize.x, previewSize.y, previewSize.z, 0, 2, [1,0,0], [0,0,1], 1);
+	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.x/2 -previewOffset.x, menuRoom_Height/2 + previewOffset.y, -menuRoom_WidthSide/2+previewOffset.z);
 }
 
 
@@ -599,12 +601,14 @@ function LevelMenu::UpdateLogic(dt)
 				foreach(var controller in mControllersArray){
 					res = levelPreviewFrame.IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
 					if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+						levelPreviewFrame.IsSelected(true);
 						mIsLevelCompleted = true;
 					}						
 				}					
 			}else{
 				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
 				if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
+						levelPreviewFrame.IsSelected(true);
 						mIsLevelCompleted = true;
 					}				
 			}			
