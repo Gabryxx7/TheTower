@@ -141,22 +141,22 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	
 	mAnimationTranslate = [0.0, 0.0, 0.0];
 
-	//Ampl: 9.69999 spacing: 0 size: 23.9499 xP: 0.515 yp: 0.36 level: -64.6001 viewDist: 94 velocity: 0.7
+	//Ampl: 28.3498 spacing: 0 size: 117.953 xP: 0.795 yp: 0.645 level: -144.3 viewDist: 255 velocity: 0.7
+	//Ampl: 49.5997 spacing: 0 size: 185.604 xP: 0.775 yp: 0.67 level: -209.304 viewDist: 437.5 velocity: -1.9
 	seaShaderEnabled = false;
-	seaAmplitude = 9.7;
-	seaAmountx = 120;
-	seaAmounty = 120;
-//	seaViewDistance = 95;
-	seaViewDistance = 15;
+	seaAmplitude = 40;
+	seaAmountx = 75;
+	seaAmounty = 75;
+	seaViewDistance = 450;
 	seaSpacing = 0.0;
-	seaSize = 24;
-	seaXPeriod = 0.515;
-	seaYPeriod = 0.36;
-	seaLevel = -65;
+	seaSize = 180;
+	seaXPeriod = 0.8;
+	seaYPeriod = 0.8;
+	seaLevel = -200;
 	seaPosition = [0, seaLevel*SCALE_FACTOR, 0];
 	seaSmoothFading = false;
-	seaVelocity = 0.7;
-	seaType = 0;
+	seaVelocity = -6.2;
+	seaType = 1;
 		
 	seaShader = CVmShaderProgram("SeaShader.glsl");
 	mDt = 0;
@@ -194,9 +194,9 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	menuRoom_Height = 19 * SCALE_FACTOR;
 	
 	menuRoom_BordersThickness =  1*SCALE_FACTOR;
-	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 0,2, false, true, true, false, true);
-	mMenuRoom.Rotate(-90,0,1,0);
-	mMenuRoom.SetPosition([menuRoom_WidthSide/2,menuRoom_Height/2,0]);
+	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 0,2, true, true, true, false, true, false, true);
+//	mMenuRoom.Rotate(-90,0,1,0);
+//	mMenuRoom.SetPosition([menuRoom_WidthSide/2,menuRoom_Height/2,0]);
 	
 	var roomMaterial = CVmMaterial();
 	roomMaterial.Ambient = [0.2, 0.2, 0.2,1];
@@ -432,8 +432,8 @@ function LevelMenu::Render()
        		DrawGrid([1,1,1], false, false, false, false, true, true);
 			seaPosition = [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2];
        		if(!seaShaderEnabled){
-	//			DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.35, 0.5, 1], [0.5, 0.75, 1], [0.0, 0.15, 1], seaSmoothFading, seaVelocity);		
-				DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
+				DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.25, 0.40, 1], [0.4, 0.55, 1], [0.1, 0.25, 1], seaSmoothFading, seaVelocity);		
+//				DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
 			}
 			else{
 				var x = 0;

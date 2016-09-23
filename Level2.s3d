@@ -654,8 +654,8 @@ function Level2::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{
 			// I make sure that the player stay's inside the room and outside of the elevator
-//			if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition) && !mMainRoom.IsPointInRoom(cameraPosition))
-//		    	mInputManager.RestoreCameraPosition();
+			if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition) && !mMainRoom.IsPointInRoom(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
 			
 			var stepDistance = pathAnim ? 8*SCALE_FACTOR : 3*SCALE_FACTOR;				
 			var tilePos;
