@@ -5,6 +5,7 @@ uniform bool stepped;
 uniform float offset;
 uniform vec3 color;
 uniform vec3 outlineColor;
+uniform float viewDistance;
 
 void main()
 {	
@@ -26,6 +27,7 @@ void main()
 
 varying float distToCamera;
 uniform float SCALE_FACTOR;
+uniform float viewDistance;
 uniform vec3 color;
 uniform vec3 outlineColor;
 uniform bool outline;
@@ -33,7 +35,6 @@ uniform bool stepped;
 
 void main()
 {
-	float viewDistance = 8 * SCALE_FACTOR;
     float alphaValue = 1;
     if(!stepped)
     	alphaValue = 0.9 - smoothstep(viewDistance-(6*SCALE_FACTOR), viewDistance+(6*SCALE_FACTOR), distToCamera);
