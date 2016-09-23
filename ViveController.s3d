@@ -124,19 +124,20 @@ function ViveController::ViveController(controllerIndex)
 	rightGripPos = rightGripObj.GetPosition();
 	systemButtonPos = systemButtonObj.GetPosition();
 	trackpadPos = trackpadObj.GetPosition();
-	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.036*SCALE_FACTOR, 0.25*SCALE_FACTOR];
+	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
 	triggerRange = -23;
 	triggerMax = -29;
 	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
 	
 	buttonDepth = 0.0075*SCALE_FACTOR;
-	trackpadDepth = 0.012*SCALE_FACTOR;
+	trackpadDepth = 4.5;
 	gripDepth = 0.007*SCALE_FACTOR;
 	
 	trackpadPointMesh = CVmNewMesh(VRP_SPHERE, 30, 0.008*SCALE_FACTOR, 1);
 	trackpadPointObj = CVmObj(trackpadPointMesh);
 	trackpadPointPos = trackpadPos + trackpadCenterOffset;
 	trackpadObj.AddChild(trackpadPointObj);
+	trackpadObj.SetPivotPoint(trackpadCenterOffset);
 	
 	mViveController = CVmObj();
 	mViveController.AddChild(bodyObj);
@@ -173,15 +174,16 @@ function ViveController::ViveController(controllerIndex)
  * This method updates the visual status of the vive controller
  */
 function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed){
-	if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) 
-	{
+	if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
 		if(GetTime() - timeSinceLastTouch > 400)
 			trackpadPointObj.Hide();
 	}
 	else{
 		timeSinceLastTouch = GetTime();
 		trackpadPointObj.Unhide();
-		trackpadPointPos = trackpadPos + trackpadCenterOffset + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
+		var yOffsetFactor = (touchPadCoord[1] > 0 ? touchPadCoord[1]: touchPadCoord[1]*0.4);
+		yOffsetFactor += abs(touchPadCoord[0])*0.3;
+		trackpadPointPos = trackpadPos + [trackpadCenterOffset.x, trackpadCenterOffset.y*yOffsetFactor+0.026*SCALE_FACTOR, trackpadCenterOffset.z] + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
 		trackpadPointObj.SetPosition(trackpadPointPos);
 	}
 
@@ -212,10 +214,14 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 	}
 	
 	if(isTouchpadPressed > 0){
-		trackpadObj.SetPosition(trackpadPos - [0, trackpadDepth, 0]);
+//		trackpadObj.SetPosition(trackpadPos - [0, 0.012*SCALE_FACTOR, 0]);
+		trackpadObj.SetRotation(-trackpadDepth*touchPadCoord[1], 1, 0, 0);
+		trackpadObj.Rotate(-trackpadDepth*touchPadCoord[0], 0, 0, 1);
 	}
 	else{
-		trackpadObj.SetPosition(trackpadPos);		
+//		trackpadObj.SetPosition(trackpadPos);	
+		trackpadObj.SetRotation(0,1,0,0);		
+		trackpadObj.SetRotation(0,0,0,1);	
 	}
 }
 
