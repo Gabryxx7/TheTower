@@ -1,17 +1,25 @@
+//#include <Utils.s3d>
 
-#define STATUS_ELEVATOR_MOVING 0
-#define STATUS_ELEVATOR_ARRIVED 1
-#define STATUS_LEVEL_STARTED 2
-#define STATUS_LEVEL_ENDING 3
+#define PIT_WIDTH 25.0 * SCALE_FACTOR
+#define PIT_HEIGHT 1000.0 * SCALE_FACTOR
 
-/*
- * This level is strictly related to Level1; most of the things were copied and pasted. Comments will be on the parts that are different
- */
 class Level3
 {
+	var roomWidthFar;
+	var roomWidthSide;
+	var roomHeight;
+	
 	var mTexture;
 	var mIsVRon;
+	var mControllersArray;
+	var debugVrOn;
 	
+	var mTranslateFactor;
+	
+	var mDebugControllerHidden;
+	var mDebugKeyHit;
+	
+	// Booleans that indicate if the level is starting or ending
 	var mEnding;
 	var mIsLevelCompleted;
 	var mEndTimer;
@@ -19,259 +27,198 @@ class Level3
 	
 	var mLevelStatus;
 	
+	// Manager for user inputs
 	var mInputManager;
+	
+	// "Animator" object; used to create transitions and rotations for the objects
 	var mAnimator;
+	
+	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
 	var mSoundManager;
 	
+	// Active camera
 	var mCamera;
 	
+	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
 	var mLight0;
 	var mLight1;
 	var mLight2;
+	
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
+	
 	var mLight0Diffuse;
 	var mLight1Diffuse;
 	var mLight2Diffuse;
+
 	
+	// "Room" object that contains the whole room
 	var mMainRoom;
+	var mElevatorWall;
+	
+	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
+	// draw the silhouettes for the portals' frames
+	var mSilhouetteShader;
+	var mSpotShader;
+	var mToonShader;
+	
+	// Booleans that indicate whether the elevator has appeared and if it's already open or not
+	var mIsElevatorPresent;
+	var mIsElevatorOpen;
+	
+	// "Room" object that represent the elevator
 	var mElevator;
+	var mPitRoom;
+	
+	var pathAnim;
+	var testo1;
+	var testo2;
+	
+	var paths;
+	var musicCircle;
+	var musicCircleStepped;
+	var musicCircleRadius;
+	var musicCirclePosition;
+	var randomShapes;
 	
 	var mElevatorFinalPosition;
 	var mElevatorTravelDistance;
 	var mElevatorTravelTime;
-	var mCameraYoffset;
-	
-	var mOpenglTranslationOffset;
+	var mCameraYoffset;	
+	var mOpenglTranslationOffset;	
 	var mPreviousOpenglTranslationOffset;
 	
-	// Array containing the Vive controllers (ViveController objects), if VR is on; also, array containing duplicates and the currently 
-	// visible controllers (among real ones and duplicates)
-	var mControllersArray;
-	var mControllersDuplicateArray;
-	var mCurrentlyVisibleControllersArray;
+	var floorObj;	
+	var numpadObj;
+	var numpadPos;
+	var codeNumbers;
+	var typedNumbers;
+	var numpadClearTime;
+	var numpadClearNeeded;
+	var doorUnlocked;
 	
-	var mIsDrawing;
-	var mDrawingShader;
-	var mLinesTimeVariable;
-	var mPreviousPoint;
-	var mKeepEveryLine;
-
-	var mDrawingsArray;
-	var mDrawingsAlphaArray;
-	var mIsDrawingConnectedArray;
-	
-	var mControllerBeingUsedIndex;
-	var mControllersInLightArray;
-	var mIsControllerInLight;
-	
-	var mConnectors;
-	var mConnectorsGroups;
-	
-	// This variable contains the index of the currently active group among the ones in the mConnectorsGroups array 
-	var mCurrentActiveGroup;
-	
-	var mStartingConnectorsArray;
-	var mStartingActiveConnector;
-	var mGoodStartingPoint;
-	var mCurrentActiveConnector;
-	
-	var mConnectorsGroupLinkedCounter;
-	
-	// Text objects used in the level
-	var mFrontText;
-	var mBackText; 
-	var mLeftText; 
+	var box;
 	
 	
-	// This float holds the value that is the threshold used to fade things out from one side or the other of the level
-	var mDistanceToZaxisThreshold;
+	var animStarted;
 	
-	// Previous alpha value for the connectors; used to make them disappear/appear when you walk to/away from them
-	var mPreviousAlpha;
-			
-	// This boolean is true if the left side of the room is being mirrored, or false if it's the opposite side being mirrored
-	var mMirrorSideIsLeft;
+	var timeFromLastSound;
+	var timeFromLastClick;
+	var musicPlaying;
 		
-	// Debug controller when no VR is available; a controller is needed to find collisions with the DrawingConnector objects
-	var mDebugController;
-	var mDebugControllerHidden;
-	var mDebugKeyHit;
-	
-	var mTranslateFactor;
-	
 	// Private functions
-	CheckActiveConnector();
-	HandleDrawings();
-	
+	ResetNumpad();
+	GenerateFloorTiles(tilesSize, spaceSize, tilesThickness);
+			
 	// Public functions
-	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
+	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
+	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	GetOpenglTransformOffset();
-	SetOpenglTransformOffset(mOpenglTranslationOffset);
-	SetupOpenglLights();
+ 	SetOpenglTransformOffset(mOpenglTranslationOffset);
+ 	SetupOpenglLights();
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
 };
 
+
+/*
+ * Constructor. Takes as parameter the input manager of the application
+ */
 function Level3::Level3(isVRon, inputManager, soundManager)
-{		
+{
 	mTexture = CVmTexture("Level3Prev.png");
-	mIsVRon = isVRon;
+	mIsVRon = isVRon;	
+	debugVrOn = false;
 	
-	mInputManager = inputManager;
-	mSoundManager = soundManager;
+	mControllersArray = {};
 	
-	mTranslateFactor = [0, 0, -20 * SCALE_FACTOR];
-//	mTranslateFactor = [0, 0, 0];
+	roomWidthFar = ROOM_FAR_WALL_WIDTH*0.5;
+	roomWidthSide = ROOM_SIDE_WALL_WIDTH*0.5;
+	roomHeight = ROOM_HEIGHT*0.8;
+	// I need translate the room back (and every object belonging to it) so that the elevator stays in the center of the room; this is that amount
+	mTranslateFactor = [0, 0, 5*SCALE_FACTOR];
+		
+	if(mIsVRon)
+	{
+		aadd(mControllersArray, inputManager.GetController(1));
+		aadd(mControllersArray, inputManager.GetController(2));
+	}
+	else if(debugVrOn)
+	{
+		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
+		aadd(mControllersArray, ViveController(1));
+		mDebugControllerHidden = false;
+		mDebugKeyHit = false;
+	}
 	
 	mEnding = false;
 	mIsLevelCompleted = false;
 	mTimeToEnd = 2500;
-		
-	mIsDrawing = false;
-	mGoodStartingPoint = false;
-		
+	
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 3.0;
+	
+	mInputManager = inputManager;
+	mSoundManager = soundManager;
+	// Retrieving the input manager and setting the initial camera's position
+	mCamera = mInputManager.GetActiveCamera();
+	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
 	
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
+	mIsElevatorPresent = false;
+	
+	// Creating the main room
+	mMainRoom = Room(roomWidthFar, roomWidthSide, roomHeight, true, 1, 2, true, false, false);
+	mPitRoom = Room(roomWidthFar , PIT_HEIGHT, roomWidthSide, true, 0, 0, false);	
+	mPitRoom.Rotate(-90, 1, 0, 0);	
 	
 	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
-	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
-	mLinesTimeVariable = 0;
+	mPitRoom.GetObj().SetPosition(0, -PIT_HEIGHT, 0);
 	
-	var offsetFromFarWall = mMainRoom.GetRoomDepth()/2 - 20.0 * SCALE_FACTOR;
-	var offset = 20 * SCALE_FACTOR;
-	
-	// The first 2 connectors that appear
-	var connector1 = DrawingsConnector([1.0, 0, 0], 1, 2);
-	connector1.SetPosition([-offset, 0.05, -offsetFromFarWall] + mTranslateFactor);
-	connector1.Rotate(15, 0, 1, 0);
-	
-	var connector2 = DrawingsConnector([0, 0, 1], 1, 2);
-	connector2.SetPosition([offset, 0.05, -offsetFromFarWall] + mTranslateFactor);
-	connector2.Rotate(203, 0, 1, 0);
-	
-	// This is group 1: the connectors in front of the elevator
-	connector1.SetLinkedConnector(connector2);
-	connector2.SetLinkedConnector(connector1);
-	
-	// The second group of connectors
-	var connector3 = DrawingsConnector([1.0, 1.0, 0.0], 1, 2);
-	connector3.SetPosition([-offset, 0.05, offsetFromFarWall] + mTranslateFactor);
-	connector3.Rotate(15, 0, 1, 0);
-	
-	var connector4 = DrawingsConnector([0.0, 1.0, 1.0], 1, 2);
-	connector4.SetPosition([offset, 0.05, offsetFromFarWall] + mTranslateFactor);
-	connector4.Rotate(203, 0, 1, 0);
-	
-	connector4.SetLinkedConnector(connector3);
-    connector3.SetLinkedConnector(connector4);
-    
-    // Initially these connectors are hidden
-    connector3.Hide();
-    connector4.Hide();
-
-	mConnectors = {};
-	
-	aadd(mConnectors, connector1);
-	aadd(mConnectors, connector2);
-	aadd(mConnectors, connector3);
-	aadd(mConnectors, connector4);
-	
-	mConnectorsGroups = {};
-	
-	aadd(mConnectorsGroups, {connector1, connector2});
-	aadd(mConnectorsGroups, {connector3, connector4});
-	
-	mConnectorsGroupLinkedCounter = 0;
-	mCurrentActiveGroup = 0;
-	
-	// Initially the mirror side is the left one
-	mMirrorSideIsLeft = true;
-	
-	mIsControllerInLight = false;
-	mControllersInLightArray = {false, false};
-	
-	mControllerBeingUsedIndex = 0;
-	
-	mControllersArray = {};
-	mControllersDuplicateArray = {};
-	mCurrentlyVisibleControllersArray = {};
-		
-	if(mIsVRon)
-	{
-		var controller1 = mInputManager.GetController(1);
-		var controller2 = mInputManager.GetController(2);
-		
-		aadd(mControllersArray, controller1);
-		aadd(mControllersArray, controller2);
-		
-		aadd(mCurrentlyVisibleControllersArray, controller1);
-		aadd(mCurrentlyVisibleControllersArray, controller2);
-		
-		// I create the duplicates of the controllers so that I can move them around in the mirrored side
-		var controllerDuplicate1 = ViveController(1);
-		var controllerDuplicate2 = ViveController(2);
-		
-		// Initially the duplicates are invisible
-		controllerDuplicate1.Hide();
-		controllerDuplicate2.Hide();
-		
-		// Initially these controllers are the visible ones
-		aadd(mControllersDuplicateArray, controllerDuplicate1);
-		aadd(mControllersDuplicateArray, controllerDuplicate2);
-	}
-	else
-	{
-		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
-		mDebugController = ViveController(1);
-		mDebugControllerHidden = false;
-		mDebugKeyhit = false;
-		mDebugController.SetRotation(90, 0, 1, 0);
-
-		aadd(mControllersArray, mDebugController);
-		aadd(mCurrentlyVisibleControllersArray, mDebugController);
-		
-		// I need to create the second controller too so that I don't have differentiate the rest of the code when VR is on or off, but I hide it
-		var controllerDuplicate2 = ViveController(2);
-		controllerDuplicate2.Hide();
-		
-		var controllerDuplicate1 = ViveController(1);
-		aadd(mControllersDuplicateArray, controllerDuplicate1);
-		aadd(mControllersDuplicateArray, controllerDuplicate2);
-		
-		controllerDuplicate1.Hide();
-	}
+	mPitRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 	
-	mDrawingsArray = {};
-	mDrawingsAlphaArray = {};
-	mIsDrawingConnectedArray = {};
-	mStartingConnectorsArray = {};
+	// Instantiating the silhouette shader, to draw outlines
+	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	mSpotShader = CVmShaderProgram("spotShader.glsl");	
+	mToonShader = CVmShaderProgram("toonShader.glsl");		
 	
-	mKeepEveryLine = false;
+//	testo = Text("Chaos cannot exist without order\nWhere order, cannot exist without chaos");
 	
-	mDistanceToZaxisThreshold = 10.0 * SCALE_FACTOR;
-	mPreviousAlpha = 0;
+	var textScale = 2.5;
+	var txt = CVmText("Chaos cannot exist without order...",0,0,"Walkway bold", 0);
+	testo1 = CVmObj();	
+	testo1.LinkToText(txt);	
+	testo1.SetScale([textScale*SCALE_FACTOR, textScale*SCALE_FACTOR, textScale*SCALE_FACTOR]);
+	testo1.SetRotation(90,0,1,0);
+	testo1.SetPosition(-roomWidthFar/2+0.05*SCALE_FACTOR, roomHeight/2-1*SCALE_FACTOR, roomWidthSide/2);
 	
-	// Creating texts object for the scene
-	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
-	mFrontText.Rotate(180, 0, 1, 0);
-
-	mBackText = Text(" If you need to connect things together but can't\nreach them, maybe you don't really need to", 1.0);
-	mBackText.Rotate(180, 0, 1, 0);
+	txt = CVmText("Order cannot exist without chaos...",0,0,"Walkway bold", 0);
+	testo2 = CVmObj();
+	testo2.LinkToText(txt);
+	testo2.SetScale([textScale*SCALE_FACTOR, textScale*SCALE_FACTOR, textScale*SCALE_FACTOR]);
+	testo2.SetRotation(-90,0,1,0);
+	testo2.SetPosition(roomWidthFar/2-0.05*SCALE_FACTOR, roomHeight/2-1*SCALE_FACTOR, -roomWidthSide/2+11*SCALE_FACTOR);
 	
-	mLeftText = Text("Not all connections need to be made physically", 2.0);
-	mLeftText.Rotate(270, 0, 1, 0);
+	///// NUMBER PAD GENERATION /////
+	var buttonsSize = [0.75 * SCALE_FACTOR, 0.07 * SCALE_FACTOR]; //width x thickness
+	var buttonsSpacing = 0.04 * SCALE_FACTOR;
+	var unpressedColor = [0.7,0.7,0.7];
+	var pressedColor = [0,0.8,0.0];
+	var wrongColor = [0.8,0.0,0.0];
+	var buttonsTextColor = [0.0,0.0,0.0];
+	var clearingColor = [0.8,0.8,0];
+	numpadObj = VirtualKeyboard(true, mAnimator, "123\n456\n789\nC0", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null, null);	
+//	numpadObj = VirtualKeyboard(true, mAnimator, "qwertyuiop\nasdfghjkl\nzxcvbnm ", 1.2, buttonsSize.x, buttonsSpacing, buttonsSize.y, unpressedColor, pressedColor, wrongColor, clearingColor, buttonsTextColor, null, null, null,  numpadPos, numpadHolderSize);	
+/////////////////////////////////////////////////////////
 }
-
 
  
  function Level3::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
@@ -281,31 +228,30 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Diffuse = [1,1,1];
-	mLight1Diffuse = [1,1,1];
+//	mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+//	mLight1Position =[20.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, -10.0 * SCALE_FACTOR] + mTranslateFactor;
+//	mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 20.0 * SCALE_FACTOR] + mTranslateFactor;
+	
+	mLight0Diffuse = [0.5,0.5,1];
+	mLight1Diffuse = [1,0,0];
 	mLight2Diffuse = [1,1,1];
 	
+	// Setting up the lights of the scene. They're both positional lights
 	mLight0 = lights[0];
+	mLight0.SetPosition(mLight0Position);
 	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
-	mLight0.Enable();
+	mLight0.Enable();	
 	
+	// This second light is used only to render the portal's rooms, so it gets moved around. The initial position isn't really relevant
 	mLight1 = lights[1];
+//	mLight1.SetPosition(mLight1Position);
 	mLight1.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
+//	mLight2.SetPosition(mLight2Position);
 	mLight2.SetDiffuse(mLight2Diffuse.x, mLight2Diffuse.y, mLight2Diffuse.z);
-	mLight2.Enable();
-	
-		
-	mElevator = elevator;
-	
-	mCamera = mInputManager.GetActiveCamera();
-	
-	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
-	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
-	
-	mElevatorFinalPosition = mElevator.GetPosition();
+	mLight2.Enable();	
 	
 	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
 	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
@@ -313,22 +259,171 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mLight0Position = mLight0.GetPosition();
 	mLight1Position = mLight1.GetPosition();
 	mLight2Position = mLight2.GetPosition();
+		
+	mElevator = elevator;
+	mElevator.SetLightsRange(0,2);
+	
+	var mElevatorWallMeshes = {};
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-roomWidthFar/2, -(roomHeight/2 - mElevator.GetRoomHeight()/2), 0], [roomWidthFar/2, +(roomHeight/2 - mElevator.GetRoomHeight()/2), 0], 2, 2));
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-(roomWidthFar/2-mElevator.GetRoomWidth()/2)/2, -(mElevator.GetRoomHeight())/2, 0], [(roomWidthFar/2-mElevator.GetRoomWidth()/2)/2, +(mElevator.GetRoomHeight())/2, 0], 2, 2));
+	mElevatorWall = CVmObj();
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[0]), 0, (roomHeight/2 + mElevator.GetRoomHeight()/2),-roomWidthSide/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), (roomWidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -roomWidthSide/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), -(roomWidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -roomWidthSide/2);
+	for(var i = 0; i < len(mElevatorWallMeshes); i++){		
+		AddToonShaderToMesh(mElevatorWallMeshes[i], [0.5, 0.5, 0.5], [1, 1, 1], [0.0, 0.0, 0.0], 0, 0, 2, SCALE_FACTOR, 1.0);
+	}
+	mElevatorWall.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
+	
+//	mElevator.SetPosition([mElevator.GetPosition().x, mElevator.GetPosition().y, -roomWidthSide/2-mElevator.GetRoomHeight()+0.3*SCALE_FACTOR]);
+//	mCamera.SetPosition([mCamera.GetPosition().x, mCamera.GetPosition().y, -roomWidthSide/2-mElevator.GetRoomHeight()/2] - mOpenglTranslationOffset + mTranslateFactor);	
+	
+	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	var lightPos = mLight1.GetPosition();
 	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
+//	mAnimator.CreateTransition(mLight1, lightPos + [0, -100, 0], lightPos, 20.0, false);
 	
 	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+
 	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+
 	mOpenglTranslationOffset.y += mElevatorTravelDistance;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
+//	///// CONTAINER BOX GENERATION /////
+//	var boxBordersThickness =  0.5*SCALE_FACTOR;
+//	var boxWidth = roomWidthSide/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
+//	var boxHeight = roomHeight/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
+//	var boxThickness = 10*SCALE_FACTOR;
+//	var boxPosition = [0, 0, mMainRoom.GetPosition().z + roomWidthSide - boxThickness*2 - boxBordersThickness - (0.1*SCALE_FACTOR)];
+//	box = GlassBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
+//	box.SetPosition(boxPosition);
+	/////////////////////////////////////////////////////////
 	
-	// I move the room a bit so that the elevator is completely in the center of the room
-	mMainRoom.Translate(-mElevator.GetRoomDepth() / 2.0 + 3.0 * SCALE_FACTOR, 0, -mElevator.GetRoomWidth() / 2.0);
+	///// PATHS + RANDOM MESHES GENERATION /////
+	var tilesSize = [roomWidthSide*0.0245, roomWidthSide*0.003]; //width x height
+	var tilesSpacing =  0.25 * SCALE_FACTOR;
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize.x/2, -tilesSize.y/2, 0], [tilesSize.x/2, tilesSize.y/2, 0], tilesSize.x);
+	var elevatorFrontPosition = [mElevatorFinalPosition.x, mElevatorFinalPosition.y - mElevator.GetRoomHeight()/2, mElevatorFinalPosition.z+mElevator.GetRoomWidth()+(tilesSize.x+tilesSpacing*3)];	
+	var startingTilesPos = elevatorFrontPosition + mTranslateFactor + [0, 0, 0];	
 	
-	// I set now the position of a text that needed to know where the elevator was
-	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
-	mBackText.SetPosition(mElevatorFinalPosition + [0.1 * SCALE_FACTOR, 1 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
-	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
+	var randomMeshesLimits = [roomWidthFar/2 - 2*SCALE_FACTOR, roomHeight, roomWidthSide/2 - 1*SCALE_FACTOR];
+	var randomMeshesPos = [0,-roomHeight-1*SCALE_FACTOR,-roomWidthSide/2+1*SCALE_FACTOR] + mTranslateFactor;
+	var cubeSizes = 0.70 *SCALE_FACTOR;
+	var randomMeshNumber = 60; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
+	
+	randomShapes = {};
+	paths = {};
+	
+	var soundsRange = [0, 6];
+	
+	//From leftmost to rightmost		
+	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [-1,4,-2,5,-1,5,-1,4,-2,4,-2,8,-2,6,-1,5,-1,7,-2,5,-2,6,-1,7,-2,2,-1,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.0], [0,1,0], soundsRange));	 //GREEN
+	
+	startingTilesPos = elevatorFrontPosition + [(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [2,-1,1,-2,5,-1,4,-2,17,-2,2,-1,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.65,0.65], [0,1,1], soundsRange));//LIGHT BLUE
+	
+	startingTilesPos = elevatorFrontPosition + [0, 0, 0];
+	aadd(paths, TilesPath(tileMesh, [10,-1,4,-2,12,-2,4,-1,7,-2,-2,7,-1,4,-2,12,-2,3], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.0,0.0], [1,0,0], soundsRange));//RED
+	
+	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [2,-2,1,-1,5,-2,4,-1,17,-1,2,-2,4], tilesSize.x, tilesSpacing, startingTilesPos, [0.65,0.65,0.65], [1,1,1], soundsRange));//WHITE;
+	
+	startingTilesPos = elevatorFrontPosition + [-(tilesSize.x+tilesSpacing), 0, 0];
+	aadd(paths, TilesPath(tileMesh, [-2,4,-1,5,-2,5,-2,4,-1,4,-1,8,-1,6,-2,5,-2,7,-1,5,-1,6,-2,7,-1,2,-2,1], tilesSize.x, tilesSpacing, startingTilesPos, [0.0,0.0,0.65], [0,0,1], soundsRange)); //BLUE
+	
+	//Adding as many randomObjects as the number of tilesPaths
+	for(var i = 0; i < len(paths); i++){
+		var selectedMesh = Rand(3);
+		var mesh;
+		switch(selectedMesh){
+			case 0: mesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+				break;
+			case 1: mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
+				break;
+			case 2: mesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes * 0.80, 1);
+				break;
+			case 3: mesh = CVmNewMesh(VRP_CYLINDER, 10, cubeSizes * 0.70, cubeSizes,1);
+				break;
+		}
+		
+		
+		aadd(randomShapes, RandomMeshes(mesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
+	}
+	
+	/////// NUMPAD SCREEN SETTING AND POSITIONING /////
+	var numpadButtonsSize = numpadObj.GetButtonsSize();
+	var numpadButtonsThickness = numpadObj.GetButtonsThickness();
+	numpadPos = [(mElevatorFinalPosition.x + mElevator.GetRoomWidth()/2) + (numpadButtonsSize*1.5), mElevatorFinalPosition.y + 4*numpadButtonsSize, mElevatorFinalPosition.z + mElevator.GetRoomWidth()+(numpadButtonsThickness*1.4)];
+ 	var numpadHolderSize = [numpadButtonsSize*len(paths), mElevator.GetRoomHeight()+0.15*SCALE_FACTOR, numpadButtonsThickness*1.5];
+	numpadObj.CreateHolder(numpadHolderSize);
+	numpadObj.SetMaxCharOnScreen(len(paths));
+	numpadObj.SetPosition(numpadPos);
+	/////////////////////////////////////////////////////////7
+	
+	codeNumbers = {};
+	var finalPositions;
+	var cubeNums = CubeNumbers();
+	var numPosOffset = len(randomShapes)/2;
+	var numberPosition;
+	for(var i = 0; i < len(randomShapes); i++){
+		numberPosition = [(13*cubeSizes)*(numPosOffset--), roomHeight/2-3.5*SCALE_FACTOR, roomWidthFar/2 - 3*SCALE_FACTOR];
+		for(var j = 0; j < randomMeshNumber; j++){
+			aadd(randomShapes[i].GetFinalAngles(),[0, 0, 0]);
+			aadd(randomShapes[i].GetAnimationsVector(),[0, 0, 0]);	
+		}
+		
+		var randNumb;
+		var alreadyPresent = true;
+		while(alreadyPresent){
+			randNumb = Rand(9);
+			alreadyPresent = false;
+			for(var k = 0; k < len(codeNumbers); k++){
+				if(randNumb == codeNumbers[k]){
+					alreadyPresent = true;
+					break;					
+				}	
+			}	
+			
+			if(!alreadyPresent){				
+				aadd(codeNumbers, randNumb);	
+			}		
+		}
+		finalPositions = cubeNums.GenerateNumberPositions(codeNumbers[i], numberPosition+mTranslateFactor);
+		
+		var j = 0;
+		while(len(randomShapes[i].GetFinalPos()) < len(randomShapes[i].GetObjs())){	
+			aadd(randomShapes[i].GetFinalPos(),[finalPositions[j].x, finalPositions[j].y, finalPositions[j].z]);	
+					
+			if(j+1 == len(finalPositions))
+				j = 0;
+			else
+				j += 1;
+		}		
+	}	
+	
+	output("\n\n\nCodice:  ");
+	outputln(codeNumbers);
+	
+	typedNumbers = {};
+	doorUnlocked = false;
+	numpadClearNeeded = 0;
+	/////////////////////////////////////////////////////////
+	
+	musicCircleRadius = 2.5*SCALE_FACTOR;
+	musicCircle = CVmObj((CVmNewMesh(VRP_CYLINDER, 20, musicCircleRadius, tilesSize.y,1)));
+	musicCirclePosition = [0, -tilesSize.y*2, 0] + mTranslateFactor;
+	musicCircle.SetPosition(musicCirclePosition);
+	musicCircleStepped = false;
+	
+	timeFromLastSound = 0;
+	timeFromLastClick = 0;
+	musicPlaying = false;
+	pathAnim = true;
+	animStarted = false;
 	
 	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
 	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
@@ -339,24 +434,43 @@ function Level3::Level3(isVRon, inputManager, soundManager)
  * **************** RENDER METHODS ********************** *
  * ****************************************************** */
 
-
 /*
  * Render method
  */
 function Level3::Render()
-{	
+{				
+	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
- 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
-	
-	mElevator.Draw();
-
-	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
-	for(var i = 0; i < len(mControllersArray); i++)
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+ 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
+	if(!mIsVRon)
 	{
-		mControllersArray[i].Draw();
-		mControllersDuplicateArray[i].Draw();
+		if(debugVrOn)
+			mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+		
+		// I also check if Y is pressed: this hides/unhides the debug controller
+		if(KeyPressed("Y"))
+		{
+			if(!mDebugKeyHit)
+			{
+				if(mDebugControllerHidden)
+					mControllersArray[0].Unhide();
+				else
+					mControllersArray[0].Hide();
+					
+				mDebugControllerHidden = !mDebugControllerHidden;
+				mDebugKeyHit = true;
+			}
+		}
+		else
+			mDebugKeyHit = false;
 	}
+	
+
+	foreach(var controller in mControllersArray)
+		controller.Draw();
 	
 	switch(mLevelStatus)
 	{
@@ -366,72 +480,86 @@ function Level3::Render()
 		case STATUS_LEVEL_ENDING:
 		case STATUS_LEVEL_STARTED:
 		{
+			// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
+//			DrawAllPortals();
+			mPitRoom.Draw();
+			
 			mMainRoom.Draw();
-
-			glLineWidth(5);
+			mElevatorWall.Draw();
 			
-			mDrawingShader.Start();	
-				mDrawingShader.SetParameter("time", mLinesTimeVariable);
-
-				for(var i = 0; i < len(mDrawingsArray); i++)
-				{
-					var vertexArray = mDrawingsArray[i];
-
-					if(mIsDrawingConnectedArray[i])
-					{
-						var startingConnector = mStartingConnectorsArray[i];
-						var linkedConnector = startingConnector.GetLinkedConnector();
+			var tilesObjs;
+			var steppedTilesObjs;
+			
+			mSpotShader.Start();							
+				mSpotShader.SetParameter("offset", 0.02 * SCALE_FACTOR);
+				mSpotShader.SetParameter("SCALE_FACTOR", SCALE_FACTOR);
+				mSpotShader.SetParameter("viewDistance", 6*SCALE_FACTOR);
+				mSpotShader.SetParameter("color", [0.0, 0.0, 0.0]);	
 						
-						mDrawingShader.SetParameter("lineIsConnected", true);
-						mDrawingShader.SetParameter("startColor", startingConnector.GetDefaultLightColor());
-						mDrawingShader.SetParameter("finalColor", linkedConnector.GetDefaultLightColor());
-						mDrawingShader.SetParameter("startPoint", startingConnector.GetPosition());
-						mDrawingShader.SetParameter("endPoint", linkedConnector.GetPosition());
-					}
-					else
-					{
-						var alpha = mDrawingsAlphaArray[i];
-						mDrawingShader.SetParameter("alpha", alpha);
-						mDrawingShader.SetParameter("lineIsConnected", false);
-					}
+				for(var j = 0; j < len(paths); j++){
+					tilesObjs = paths[j].GetTilesObjs();
+					steppedTilesObjs = paths[j].GetSteppedTilesObjs();
 					
-					for(var i = 0; i < len(vertexArray); i += 2)
-					{
-						var point0 = vertexArray[i];
-						var point1 = vertexArray[i+1];
+					mSpotShader.SetParameter("outlineColor", paths[j].GetColor());														
+						for(var i = 0; i < len(tilesObjs); i++){
+							if(!pathAnim){
+								mSpotShader.SetParameter("stepped", false);
+								mSpotShader.SetParameter("outline", false);
+								tilesObjs[i].Draw();
+								
+								mSpotShader.SetParameter("outline", true);
+								tilesObjs[i].Draw();
+							}
+						}
+						mSpotShader.SetParameter("outlineColor", paths[j].GetSteppedColor());
+						for(var i = 0; i < len(steppedTilesObjs); i++){
+							mSpotShader.SetParameter("stepped", true);	
+							mSpotShader.SetParameter("outline", false);						
+							steppedTilesObjs[i].Draw();
+							
+							mSpotShader.SetParameter("outline", true);						
+							steppedTilesObjs[i].Draw();
+						}	
 						
-						glBegin(GL_LINES);
-							glVertex(point0);
-							glVertex(point1);		
-						glEnd();
-					}
+						if(musicCircleStepped)
+							mSpotShader.SetParameter("outlineColor", [1,1,0]);
+						else
+							mSpotShader.SetParameter("outlineColor", [0.7,0.7,0]);
+						mSpotShader.SetParameter("stepped", true);	
+						mSpotShader.SetParameter("outline", false);
+						musicCircle.Draw();	
+						mSpotShader.SetParameter("outline", true);
+						musicCircle.Draw();					
 				}
-			mDrawingShader.Stop();
-			
-			mLinesTimeVariable += 0.01;
-			
-			
-			// Drawing the texts
-			mFrontText.Draw();
-			mBackText.Draw();
-			mLeftText.Draw();
-			
-			foreach(var connector in mConnectors)
-			{
-				connector.UpdateTimeVariable();
-				connector.Draw();
-			}
-			
-			glDepthMask(GL_FALSE); 
-			
-			foreach(var connector in mConnectors)
-				connector.DrawLightCone(false);
-			
-			glDepthMask(GL_TRUE); 
-
-			break;
+				
+				var cubesObjs;
+				for(var j = 0; j < len(randomShapes); j++){
+					cubesObjs = randomShapes[j].GetObjs();
+						
+					mSpotShader.SetParameter("outlineColor", randomShapes[j].GetColor());
+					mSpotShader.SetParameter("offset", 0.01 * SCALE_FACTOR);		
+					for(var i = 0; i < len(cubesObjs); i++){
+						mSpotShader.SetParameter("stepped", true);	
+						mSpotShader.SetParameter("outline", false);
+						cubesObjs[i].Draw();
+						
+						mSpotShader.SetParameter("outline", true);
+						cubesObjs[i].Draw();
+					}			
+				}
+			mSpotShader.Stop();	
 		}
 	}
+
+	// The elevator is always present, so it's always drawn
+	mElevator.Draw();
+	testo1.Draw();
+	testo2.Draw();
+	numpadObj.DrawHolder();
+	numpadObj.DrawScreenText();	
+	numpadObj.DrawScreen();			
+	numpadObj.DrawPressedButtons();
+	numpadObj.DrawUnpressedButtons();
 }
 
 
@@ -446,93 +574,48 @@ function Level3::Render()
  */
 function Level3::UpdateLogic(dt)
 {
+	// First off, let's update the player's position and orientation
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
-	// Debug function used to change the color of the lights in the room when certain keys are pressed
-	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
-	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
-	
-	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
-	if(!mIsVRon)
-	{
-		mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
-		
-		if(KeyPressed("Y"))
-		{
-			if(!mDebugKeyHit)
-			{
-				if(mDebugControllerHidden)
-					mDebugController.Unhide();
-				else
-					mDebugController.Hide();
-					
-				mDebugControllerHidden = !mDebugControllerHidden;
-				mDebugKeyHit = true;
-			}
-		}
-		else
-			mDebugKeyHit = false;
-		
-		static var rotX = 0;
-		static var rotY = 0;
-		static var rotZ = 0;
-			
-		if(KeyPressed("J"))
-			rotX += 1;
-		
-		if(KeyPressed("L"))
-			rotX -= 1;
-			
-		if(KeyPressed("I"))
-			rotY += 1;
-		
-		if(KeyPressed("K"))
-			rotY -= 1;
-			
-		if(KeyPressed("U"))
-			rotZ += 1;
-		
-		if(KeyPressed("O"))
-			rotZ -= 1;
-		
-		mDebugController.SetRotation(0, 1, 0, 0);
-		mDebugController.Rotate(rotY, 1, 0, 0);
-		mDebugController.Rotate(rotX, 0, 1, 0);
-		mDebugController.Rotate(rotZ, 0, 0, 1);
-	}
 	
 	switch(mLevelStatus)
 	{
+		// This is the case where the level is starting and the elevator is moving up
 		case STATUS_ELEVATOR_MOVING: 
 		{			
 			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
 				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
 			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
 				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+
 			
+		    // I make sure that the camera doesn't go out of the elevator while it's going up
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
 			var elevatorPos = mElevator.GetPosition();
-
+			
+				
 			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0)
 			{
-				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
-				mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
-				mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight0Position = [-10.0 * SCALE_FACTOR, -50 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position =[20.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, -10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position =[-10.0 * SCALE_FACTOR, 6 * SCALE_FACTOR, 20.0 * SCALE_FACTOR] + mTranslateFactor;
 				
 				mLight0.SetPosition(mLight0Position);
 				mLight1.SetPosition(mLight1Position);
 				mLight2.SetPosition(mLight2Position);
 			}
 			
+			
 			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
 			
 		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
 		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
 			
+			// I check if the elevator reached its destination, and if this is so I open the door and change status
 			if(elevatorPos.y >= mElevatorFinalPosition.y)
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
@@ -544,26 +627,19 @@ function Level3::UpdateLogic(dt)
 				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
 				
 				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
-				
-				// Hiding the real controllers
-				for(var i = 0; i < len(mControllersArray); i++)
-				{
-					mControllersArray[i].Hide();
-					mControllersDuplicateArray[i].Unhide();
-					
-					// I brutally move away the duplicate controller so that it can't be seen for now; when the player steps out of the elevator,
-					// the real position will be computed
-					mControllersDuplicateArray[i].SetPosition([0, -100 * SCALE_FACTOR, 0]);
-					
-					mCurrentlyVisibleControllersArray[i] = mControllersDuplicateArray[i];
-				}
 			}
 	
 			break;
 		}		
+		// This is the case where the elevator arrived, BUT the player is still inside
 		case STATUS_ELEVATOR_ARRIVED:
 		{
-			if(!mElevator.IsPointInElevator(cameraPosition))
+			// I check if the player goes out from the elevator. Note: I'm not checking that he exits from the doors; he can pass through walls right now.
+			// If the player comes out, I close the doors and change status
+			//Since the elevator is outside of the room, I must be sure that the level start when he is actually insie the main room
+			//otherwise he would be stuck in the space between the elevator exit and the main room. which is considered outside of the room
+			var elevatorEntrancePos = mElevator.GetPosition().z + mElevator.GetRoomWidth();
+			if(!mElevator.IsPointInElevator(cameraPosition) && !(cameraPosition.z > elevatorEntrancePos - 2*SCALE_FACTOR && cameraPosition.z < elevatorEntrancePos + 2*SCALE_FACTOR))
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
@@ -574,162 +650,333 @@ function Level3::UpdateLogic(dt)
 				mLevelStatus = STATUS_LEVEL_STARTED;
 			}
 			
+			if(!animStarted){
+				var time;
+				animStarted = true;
+				var cubePos;
+				
+				for(var j = 0; j < len(randomShapes); j++){		
+					for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
+						time = (Rand(13)+ 11) / 5;
+						mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+						time = (Rand(13)+ 11) / 5;	
+						cubePos	= randomShapes[j].GetObjs()[i].GetPosition();	
+						mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true, Rand(1) == 1);
+					}	
+				}
+			}
+			
+			
 			break;
 		}
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
 		{
-//			if(!mIsVRon && mElevator.IsPointInElevator(cameraPosition) || !mMainRoom.IsPointInRoom(cameraPosition))
-//		    	mInputManager.RestoreCameraPosition();			    
-
-		    	
-	    	// Now I have to change the position of the duplicates controller so that they mirror the real ones
-	    	for(var i = 0; i < len(mControllersArray); i++)
-    		{
-    			var controller = mControllersArray[i];
-    			var controllerDuplicate = mControllersDuplicateArray[i];
-	
-				/*
-				  This code below is to rotate the duplicate so that it mirrors exactly the real controllers; it's not being used anymore but
-				  I leave it here because it took me a while to figure it out and it might be useful in the future
-				
-				var matrix3 = [ rotationMatrix[0], rotationMatrix[1], rotationMatrix[2],
-							    rotationMatrix[4], rotationMatrix[5], rotationMatrix[6], 
-							    rotationMatrix[8], rotationMatrix[9], rotationMatrix[10] ];
-							    
-			    var quaternion = Matrix3ToQuaternion(matrix3);
-				var euler = QuaternionToEuler(quaternion);
-				    			
-    			mControllersDuplicateArray[i].SetRotationMatrix(rotationMatrix);
-
-				var angle = 180 - euler[1] * 2.0;
-				
-				mControllersDuplicateArray[i].Rotate(angle, 0, 1, 0);
-				*/
-
-    			var controllerPos = controller.GetPosition();
-    			
-    			// This is the z coordinate where the side ends. It's basically 0 plus the translation factor and half the elevator depth, so that
-    			// the side ends at half the length of the elevator
-    			var threshold = mTranslateFactor.z - mElevator.GetRoomDepth() / 2.0;
-    			
-    			// Depending on what is the mirror side, in order to check if the controller has changed side
-    			// I need to check if its z coordinate is below or above the threshold
-    			var isNotInMirrorSide = mMirrorSideIsLeft ? controllerPos.z >= threshold: controllerPos.z <= threshold;
-				    			    			
-    			// If the real controller is NOT in the mirror side and it was visible, I need to hide it and show the duplicate    	
-		    	if(isNotInMirrorSide && controller.IsVisible())
-    			{
-    				controller.Hide();
-    				controllerDuplicate.Unhide();
-    				
-    				// I set that the duplicate is visible now
-    				mCurrentlyVisibleControllersArray[i] = controllerDuplicate;
-    			}
-    			// If the real controller is in the mirror side and wasn't visible before, I unhide it
-    			else if(!isNotInMirrorSide && !controller.IsVisible())
-    			{
-    				controller.Unhide();
-    				controllerDuplicate.Hide();
-    				mCurrentlyVisibleControllersArray[i] = controller;
-    			}
-    			
-    			// If the duplicate controller is visible, I change its position to mirror the real one
-    			if(controllerDuplicate.IsVisible())
-    			{
-    				// I set the rotation matrix
-	    			var rotationMatrix = controller.GetRotationMatrix();
-	    			controllerDuplicate.SetRotationMatrix(rotationMatrix);
-	    			
-	    			// I only need to change the z coordinates of the real controller's position so that it has the opposite sign, but I need
-	    			// to take into account the threshold
-					controllerPos.z = -controllerPos.z + threshold * 2.0;
-
-	    			controllerDuplicate.SetPosition(controllerPos);
-    			}
-    		}
-    		
-    		 // Now I have to check if the player is near the threshold around the z = 0 axis, and in that case change the alpha of the connectors accordingly.
-		    // Depending on which is the side that works as a mirror, I take the z position of the camera, taking into account the translation factor
-    		var distanceFromZaxis = mMirrorSideIsLeft ? cameraPosition.z  - mTranslateFactor.z: -cameraPosition.z + mTranslateFactor.z;
-    			
-			// I compute the alpha value. Basically to compute it I normalize the current distance with the threshold distance
-    		var alphaValue = distanceFromZaxis / mDistanceToZaxisThreshold;
-    		
-    		// I make sure that the range is always between 0 and 1
-    		if(alphaValue >= 1.0)
-    			alphaValue = 1.0;
-			else if(alphaValue <= 0)
-				alphaValue = 0.0;
-				    		
-    		// Now depending on the alpha value I need to hide/unhide or modify the alpha of the connectors in the currently active group
-			foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
-    		{
-    			// If the player crossed the axis and before the alpha wasn't zero then it's the first time he's crossing, so I hide the connector
-				if(alphaValue <= 0 && mPreviousAlpha > 0)
-					connector.Hide();
-				// Same thing but going to the other side
-				else if(alphaValue > 0 && mPreviousAlpha <= 0)
-					connector.Unhide();
-
-				// If the connector is visible, I change its alpha value
-				if(!connector.IsHidden())
-    				connector.SetAlpha(alphaValue);
-    		}
-    		
-    		// Now I can update the previous alpha value
-			mPreviousAlpha = alphaValue;
-    		
-	    	// Now I can handle the connectors and the drawings
-			CheckActiveConnector();
-    		HandleDrawings();
+			// I make sure that the player stay's inside the room and outside of the elevator
+//			if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition) && !mMainRoom.IsPointInRoom(cameraPosition))
+//		    	mInputManager.RestoreCameraPosition();
 			
-			// Now I have to check if the current active group has been connected. The check is a little bit different than the one in Level1, since I need
-			// to check only 1 group at the time; a difference is that I don't remove groups from the array, even if they're all connected
-			var currentConnectors = mConnectorsGroups[mCurrentActiveGroup];
-			var allConnected = true;
-			
-			for(var i = 0; i < len(currentConnectors) && allConnected; i++)
-				allConnected = currentConnectors[i].IsConnected();
+			var stepDistance = pathAnim ? 5.5*SCALE_FACTOR : 3.5*SCALE_FACTOR;				
+			var tilePos;
+			var tilesObjs;
+			var steppedTilesObjs;
+			var originaLength;
+			for(var j = 0; j < len(paths); j++){
+				tilesObjs = paths[j].GetTilesObjs();
+				steppedTilesObjs = paths[j].GetSteppedTilesObjs();
+
+				originaLength = len(tilesObjs);
+				
+				for(var i = 0; i < len(tilesObjs); i++){			
+					tilePos = tilesObjs[i].GetPosition();
+					var distance = sqrt((cameraPosition.x-tilePos.x)^2 + (cameraPosition.z - tilePos.z)^2);
+					if(distance < stepDistance){
+						if(pathAnim)
+							mAnimator.CreateTransition(tilesObjs[i], tilesObjs[i].GetPosition() + [0, -50*SCALE_FACTOR, 0], tilesObjs[i].GetPosition(), 0.6, false);
 							
-			// If every connector in the group is connected, I switch to the next one which is currently the last group
-			if(allConnected)
-			{
-				mSoundManager.PlaySound(mConnectorsGroupLinkedCounter, true, 1);
-				mConnectorsGroupLinkedCounter++;
+						aadd(steppedTilesObjs, tilesObjs[i]);
+						if(timeFromLastSound > 0.25 && MUSICFX_ON){
+							mSoundManager.PlaySound(paths[j].GetNextSoundIndex(), true, 1);
+							timeFromLastSound = 0;
+						}
+
+						adel(tilesObjs, i);
+						i = 0;
+					}
+				}
+						
+				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
+					randomShapes[j].StartAnimation();
+					if(j == 0){		
+							outputln("\nGREEN ANIMATION STARTED");				
+						}
+						else if(j == 1){
+							outputln("\nLIGHT BLUE  ANIMATION STARTED");					
+						}
+						else if(j == 2){
+							outputln("\nRED ANIMATION STARTED");				
+						}
+						else if(j == 3){
+							outputln("\nWHITE ANIMATION STARTED");				
+						}
+						else if(j == 4){
+							outputln("\nBLUE ANIMATION STARTED");				
+						}
+				}
 				
-				// I update the counter and reset the alpha value, used to hide/unhide the connectors
-				mCurrentActiveGroup++;
-				mPreviousAlpha = 0;
-				
-				// I change the text behind the elevator
-				mBackText.LoadString("When connections are created,\nthe world around you might change");
-				
-				// I set that the side that is mirrored is the opposite one now
-				mMirrorSideIsLeft = !mMirrorSideIsLeft;
+				//Workaround for the mAnimator diagonal transition bug
+				//I'll start first the animation on the x axis, then the one on the Y axis and in the end the one on the z axis
+				//so that the movement are computed correctly for every direction
+				if(paths[j].HasBeenWalked() && j < len(randomShapes) && randomShapes[j].IsAnimating()){	
+					var time;
+					var cubesObjs = randomShapes[j].GetObjs();
+					var objsAnimations = randomShapes[j].GetAnimationsVector();
+					var startAngle = randomShapes[j].GetOriginalAngles();
+					var finalAngle = randomShapes[j].GetFinalAngles();
+					var finalPos = randomShapes[j].GetFinalPos();
+					var objPos;
+					var checkOffs = 0.5*SCALE_FACTOR; //The position is never perfect
+					var completedAnimations = 0;
+					
+					for(var i = 0; i < len(cubesObjs); i++){
+						objPos = cubesObjs[i].GetPosition();
+						time = (Rand(10)+ 11) / 5;
+												
+						if(objsAnimations[i].x == 0){	
+//							mAnimator.RemoveTransitionByObject(randomShapes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
+							objsAnimations[i].x = 1;
+							mAnimator.CreateTransition(cubesObjs[i], [objPos.x, objPos.y, objPos.z], [finalPos[i].x, objPos.y, objPos.z], time, false);
+							cubesObjs[i].SetRotation(startAngle[i].x, 1,0,0);
+							time = (Rand(10)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
+						}
+						else if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
+							objsAnimations[i].y = 1;
+							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, objPos.y, objPos.z], [finalPos[i].x, finalPos[i].y, objPos.z], time, false);
+							cubesObjs[i].SetRotation(startAngle[i].y, 0,1,0);
+							time = (Rand(10)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
+						}						
+						else if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
+							objsAnimations[i].z = 1;
+							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, finalPos[i].y, objPos.z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
+							cubesObjs[i].SetRotation(startAngle[i].z, 0,0,1);
+							time = (Rand(10)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
+						}						
+						else if(objPos.z < finalPos[i].z + checkOffs && objPos.z > finalPos[i].z - checkOffs && objsAnimations[i].z == 1){
+							completedAnimations++;
+						}
+					}
+					
+					
+					if(completedAnimations >= len(cubesObjs)){
+						randomShapes[j].StopAnimation();						
+						if(j == 0){		
+							outputln("\nGREEN ANIMATION COMPLETED");				
+						}
+						else if(j == 1){
+							outputln("\nLIGHT BLUE  ANIMATION COMPLETED");					
+						}
+						else if(j == 2){
+							outputln("\nRED ANIMATION COMPLETED");				
+						}
+						else if(j == 3){
+							outputln("\nWHITE ANIMATION COMPLETED");				
+						}
+						else if(j == 4){
+							outputln("\nBLUE ANIMATION COMPLETED");				
+						}
+					}
+				}
+			}				
+			
+			if(numpadClearNeeded > 0){
+				numpadClearTime += dt;
+				if(numpadClearTime > 0.5){
+					numpadClearTime = 0;
+					ResetNumpad();
+					numpadClearNeeded = 0;					
+				}
+			}				
+			
+			var pressedButton = "";
+			//If the player is close to the numpad
+			if(!doorUnlocked && numpadObj.IsCameraInKeyboardRange(cameraPosition, 5 * SCALE_FACTOR) && numpadClearNeeded == 0){			   	
+			   	
+				if(mIsVRon || debugVrOn){
+					foreach(var controller in mControllersArray){
+						controller.SetActionAvailable(true);
+						
+						if(numpadClearNeeded == 0 && !doorUnlocked){
+							var vrPressedButton = numpadObj.TouchedButton(controller.GetControllerTipCoordinates());				
+						 	var vrPointedButton = numpadObj.PointedButton(controller, controller.GetPosition(), false);
+						 	
+							if(mInputManager.IsPressingPrimaryButton(controller.GetIndex()) && timeFromLastClick > 0.13){
+								timeFromLastClick = 0;	
+								pressedButton = vrPointedButton;
+								if(pressedButton != "" && pressedButton != " "){
+									numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
+									numpadObj.AnimateButton(pressedButton);	
+									mInputManager.VibrateController(100);						
+								}
+							}
+							else if(timeFromLastClick > 0.4){
+								timeFromLastClick = 0;
+								pressedButton = vrPressedButton;	
+								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);	
+								mInputManager.VibrateController(100);								
+							}
+						}						
+					}		
+								
+				}
+				else {
+					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true);
+					 var pressedKey = Keyboard();
+					
+					if(pressedKey != "" && pressedKey != " "){
+						if(asc(pressedKey) > 47 && asc(pressedKey) <= 48+9 || pressedKey == "c"){	
+							pressedButton = pressedKey;				
+						}
+					}
+					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
+						timeFromLastClick = 0;
+						pressedButton = pointedButton;	
+					}
+					
+					if(pressedButton != "" && pressedButton != " "){		
+						numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);
+						numpadObj.AnimateButton(pressedButton);				
+					}
+				}
+			}
+			else{
+				if(mIsVRon || debugVrOn){
+					foreach(var controller in mControllersArray)
+						controller.SetActionAvailable(false);					
+				}
+				Keyboard(); //Needed to process the input even when not close to the numpad. Otherwise it will go in a queue and will be processed as soon as I get closer to the numpad
+			}	
+			
+			
+			if(pressedButton != "" && pressedButton != " "){
+				if(asc(pressedButton) > 47 && asc(pressedButton) <= 48+9){
+					aadd(typedNumbers, val(pressedButton));	
+					if(len(typedNumbers) < len(codeNumbers))
+						mSoundManager.PlaySound("numpadBeep", true, 0.85);					
+				}
+				else if(pressedButton == "c"){
+					numpadObj.FadePressedButtonsColor(numpadObj.GetSecondaryColor(), numpadObj.GetUnpressedButtonColor());
+					numpadClearNeeded = 2;
+					numpadClearTime = 0;
+				}			
 			}
 			
-			// I check if every connector has been connected
-			if(len(mConnectorsGroups) == mConnectorsGroupLinkedCounter)
-			{
-				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+			//If all the numbers have been typed 		
+			if(len(typedNumbers) == len(codeNumbers)){
+				var correctNumbers = 0;
+				for(var i = 0; i < len(typedNumbers); i++){
+					if(typedNumbers[i] == codeNumbers[i])
+						correctNumbers++;
+				}
 				
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-				
-				mLevelStatus = STATUS_LEVEL_ENDING;
-				
-				// Now I have to unhide the controllers and hide the duplicate ones
-				for(var i = 0; i < len(mControllersArray); i++)
-				{
-					mControllersArray[i].Unhide();
-					mControllersDuplicateArray[i].Hide();
+				if(correctNumbers == len(typedNumbers)){
+					mSoundManager.PlaySound("numpadCorrectCode", true, 0.85);	
+					doorUnlocked = true;
+					outputln("Well done mate! (mofo)");
+					
+					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+					
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+					
+					// I switch status
+					mLevelStatus = STATUS_LEVEL_ENDING;
+					numpadObj.PressAllButtons();
+					numpadObj.AnimatePressedButtons();
+					numpadObj.FadePressedButtonsColor(numpadObj.GetPressedButtonColor(), numpadObj.GetPressedButtonColor() + [0.15, 0.3, 0.15]);
+					
+				}else if(numpadClearNeeded == 0){ //If the code was wrong and the numpad is NOT already being cleared, I'll set it as needed to clear
+					outputln("Wrong Code!! ");
+					mSoundManager.PlaySound("numpadWrongCode", true, 0.85);	
+					numpadObj.FadePressedButtonsColor(numpadObj.GetWrongCodeColor(), numpadObj.GetUnpressedButtonColor());
+					doorUnlocked = false;
+					numpadClearNeeded = 1;
+					numpadClearTime = 0;
+				}
+			}	
+			
+			if(numpadClearNeeded > 0 && numpadClearTime == 0){				
+				numpadObj.AnimatePressedButtons();
+			}
+						
+			var time = (Rand(10)+ 11) / 5;
+			var objPos;
+			var musicRadius = musicCircleRadius*1.7; 
+			var distanceFromCircle = sqrt((cameraPosition.x-musicCirclePosition.x)*(cameraPosition.x-musicCirclePosition.x) + (cameraPosition.z-musicCirclePosition.z)*(cameraPosition.z-musicCirclePosition.z));
+			//Distance from circle, if it is close to circles I switch music starting with volume = 0
+			if(distanceFromCircle  < musicRadius*musicRadius){
+				if(!musicPlaying){
+					musicPlaying = true;
+					mSoundManager.SetMusic("sounds/Deadmau5 Ft Rob Swire - Ghosts n Stuff.mp3", 0, false);
+					mSoundManager.PlayMusic();
+				}
+				var volume = musicRadius*musicRadius - distanceFromCircle;
+				mSoundManager.SetMusicVolume(volume);
+			}else if(distanceFromCircle  < musicRadius*musicRadius*1.5){ //If it's further I'll switch to the calm music with high volume that gets lower when getting closer to the outer circle
+				if(musicPlaying){				
+					musicPlaying = false;
+					mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 1, true, 1.0);
+					mSoundManager.PlayMusic();	
+				}			
+				var volume = 1-(musicRadius*musicRadius*1.5 - distanceFromCircle);
+				mSoundManager.SetMusicVolume(volume);
+			} 
+			
+			if(distanceFromCircle  < musicCircleRadius*musicCircleRadius && !musicCircleStepped){
+				musicCircleStepped = true;
+				mAnimator.CreateTransition(musicCircle, musicCirclePosition, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], 0.25, false);
+				for(var j = 0; j < len(randomShapes); j++){
+					if(!paths[j].HasBeenWalked()){
+						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
+							objPos = randomShapes[j].GetObjs()[i].GetPosition();
+							time = (Rand(13)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+							time = (Rand(100)+ 50) / 7;
+							var randomSpeed = (Rand(9)+1);
+							var rotationRadius = 10*SCALE_FACTOR;
+							var startingPosx = objPos.x;
+							var startingPosz = objPos.z;
+							if(Modulus(objPos - [musicCirclePosition.x, objPos.y, musicCirclePosition.z]) > roomWidthSide/2-5*SCALE_FACTOR){
+								startingPosx = objPos.x > 0 ? objPos.x - rotationRadius : objPos.x + rotationRadius;
+								startingPosz = objPos.z > 0 ? objPos.z - rotationRadius : objPos.z + rotationRadius;								
+							}
+							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], [startingPosx, objPos.y, startingPosz], [musicCirclePosition.x, objPos.y, musicCirclePosition.z], time*randomSpeed, true, true, Rand(1) == 1);
+						}					
+					}
 				}
 			}
 			
+			if(distanceFromCircle > musicCircleRadius*musicCircleRadius && musicCircleStepped){
+				musicCircleStepped = false;
+				mAnimator.CreateTransition(musicCircle, musicCirclePosition - [0,0.5*SCALE_FACTOR,0], musicCirclePosition, 0.7, false);
+				for(var j = 0; j < len(randomShapes); j++){
+					if(!paths[j].HasBeenWalked()){
+						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
+							objPos = randomShapes[j].GetObjs()[i].GetPosition();
+							time = (Rand(13)+ 11) / 5;
+							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
+							time = (Rand(9)+ 11) / 5;			
+							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true, Rand(1) == 1);
+						}						
+					}
+				}
+			}
 			break;
 		}
+		
 		// Case where the level is ending: the only thing missing is the player inside the elevator
 		case STATUS_LEVEL_ENDING:
 		{
@@ -754,217 +1001,20 @@ function Level3::UpdateLogic(dt)
 			break;
 		}
 	}
-		
+	
+	timeFromLastClick = (timeFromLastClick > 1) ? timeFromLastClick : timeFromLastClick += dt;
+	timeFromLastSound = (timeFromLastSound > 1) ? timeFromLastSound : timeFromLastSound += dt;
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
 }
 
-/*
- * This method works the same as the one in Level1, except for the array of connectors used for the check
- */
-function Level3::CheckActiveConnector()
-{
-	// I check only the connectors in the currently active group
-	foreach(var connector in mConnectorsGroups[mCurrentActiveGroup])
-	{
-		// I have to check if any of the available controllers (the visible ones) is going inside or outside of a connector
-		foreach(var controller in mCurrentlyVisibleControllersArray)
-		{
-			var controllerIndex = controller.GetIndex();
-			var controllerAlreadyInLight = mControllersInLightArray[controllerIndex - 1];
+function Level3::ResetNumpad(){		
+	numpadObj.UnpressAllButtons();	
 			
-			var isControllerInside = connector != mStartingActiveConnector && connector.IsObjectInCone(controller.GetBBoxObj()) && !controllerAlreadyInLight;
-			
-			if(connector.HasConnectionsAvailable() && isControllerInside || mIsDrawing && isControllerInside && connector.HasLinksAvailable())
-			{
-				mControllersInLightArray[controllerIndex - 1] = true;
-				
-				if(!mIsControllerInLight)
-				{
-					connector.UpdateColor();
-					mIsControllerInLight = true;
-					mCurrentActiveConnector = connector;
-				}
-			}
-			else if(!connector.IsConnected() && connector == mCurrentActiveConnector && mIsControllerInLight  && !connector.IsObjectInCone(controller.GetBBoxObj()))
-			{
-				mControllersInLightArray[controllerIndex - 1] = false;
-				
-				var noControllersLeftInLight = !mControllersInLightArray[0] && !mControllersInLightArray[1];
-
-				if(noControllersLeftInLight)
-				{
-					if(mCurrentActiveConnector != mStartingActiveConnector)
-						connector.ResetLightColor();
-						
-					mIsControllerInLight = false;
-					mCurrentActiveConnector = Void;
-				}
-			}
-		}
-	}
-}
-
-/*
- * This method works the same as the one in Level1, except for the array of controllers used to check the points
- */
-function Level3::HandleDrawings()
-{
-	// Now I check if the player is drawing; I first check if he pressed a button
-	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
-	var usingController2 = mInputManager.IsPressingPrimaryButton(2);
-	
-	var firstTimeUsingController = (usingController1 || usingController2) && mControllerBeingUsedIndex == 0;
-	var wasUsingController1 = (usingController1 && mControllerBeingUsedIndex == 1);
-	var wasUsingController2 = (usingController2 && mControllerBeingUsedIndex == 2);
-		 
-	if(firstTimeUsingController || wasUsingController1 || wasUsingController2)
-	{				
-		if(firstTimeUsingController)
-		{
-			mControllerBeingUsedIndex = usingController1 ? 1 : 2;
-			mIsDrawing = true;
-			
-			// I get the first point in the drawing; I obtain the controller in the array that holds the currently visible controllers
-			mPreviousPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetControllerTipCoordinates();
-				
-			var vertexArray = {};
-			
-			aadd(mDrawingsArray, vertexArray);
-			aadd(mDrawingsAlphaArray, 1.0);
-						
-			// Now I have to check if the controller's index is the same as one of the controllers that is currently inside a connector (if there is any);
-			// so, the first thing I need to do is get the index of this controller (from the array of the currently visible ones)
-			var controllerIndex = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetIndex();
-				
-			var controllerWasInsideLight = mControllersInLightArray[controllerIndex - 1];
-			
-			if(mCurrentActiveConnector != Void && controllerWasInsideLight)
-			{	    				
-				aadd(mIsDrawingConnectedArray, true);
-				
-				mGoodStartingPoint = true;
-				mStartingActiveConnector = mCurrentActiveConnector;
-				aadd(mStartingConnectorsArray, mCurrentActiveConnector);
-			}
-			else
-			{
-				aadd(mIsDrawingConnectedArray, false);
-				aadd(mStartingConnectorsArray, Void);
-			}
-		}
-		else
-		{
-			var currentPoint;
-
-			currentPoint = mCurrentlyVisibleControllersArray[mControllerBeingUsedIndex - 1].GetControllerTipCoordinates();
-					
-			var vertexArray = mDrawingsArray[len(mDrawingsArray) - 1];
-			
-			aadd(vertexArray, mPreviousPoint);
-			aadd(vertexArray, currentPoint);
-			
-			mPreviousPoint = currentPoint;
-		}
-	}
-	// Case where the user is not drawing
-	else
-	{
-		// If the user was drawing until now, I need to check where he stopped
-		if(mControllerBeingUsedIndex != 0)
-		{
-			var isControllerInLight = mControllersInLightArray[mControllerBeingUsedIndex - 1];
-			
-			if(mCurrentActiveConnector != Void && !mCurrentActiveConnector.IsConnected() && mGoodStartingPoint && isControllerInLight)
-			{
-				if(mStartingActiveConnector.GetLinkedConnector() == mCurrentActiveConnector)
-				{
-					mStartingActiveConnector.ConnectionFound(true);
-					mCurrentActiveConnector.ConnectionFound(false);
-					
-					var linkedConnector = mCurrentActiveConnector.GetLinkedConnector();
-					
-					if(linkedConnector != Void && linkedConnector == mStartingActiveConnector)
-					{
-						mStartingActiveConnector.ConnectionFound(false);
-						mCurrentActiveConnector.ConnectionFound(true);
-					}
-					
-					mStartingActiveConnector = Void;
-					mCurrentActiveConnector = Void;
-					mIsControllerInLight = false;
-					mControllersInLightArray[0] = false;
-					mControllersInLightArray[1] = false;
-				}
-				else
-				{
-					mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
-					mStartingActiveConnector.ResetLightColor();
-					mStartingActiveConnector = Void;
-				}
-			}	
-			else
-			{    					
-				if(mStartingActiveConnector != Void)
-				{
-					mIsDrawingConnectedArray[len(mIsDrawingConnectedArray) - 1] = false;
-					mStartingActiveConnector.ResetLightColor();
-					mStartingActiveConnector = Void;
-				}
-			}
-				
-			mGoodStartingPoint = false;
-			mControllerBeingUsedIndex = 0;
-			mIsDrawing = false;
-		}
-	}
-	
-
-	if(mInputManager.HasPressedMenuButton(1) || mInputManager.HasPressedMenuButton(2))
-		mKeepEveryLine = !mKeepEveryLine;
-	
-	var startingPoint = mIsDrawing ? len(mDrawingsAlphaArray) - 2 : len(mDrawingsAlphaArray) - 1;
-		
-	for(var i = startingPoint; i >= 0; i--)
-	{
-		if(!mIsDrawingConnectedArray[i] && !mKeepEveryLine)
-		{
-			if(mDrawingsAlphaArray[i] > -1.0)
-				mDrawingsAlphaArray[i] -= 0.01;
-			else
-			{
-				adel(mDrawingsArray, i);
-				adel(mDrawingsAlphaArray, i);
-				adel(mIsDrawingConnectedArray, i);
-				adel(mStartingConnectorsArray, i);
-			}
-		}
-	}
-}
-
-
-/*
- * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
- * 
- * rayOrigin: (vector) starting point of the ray
- * rayEnd: (vector) starting point of the ray
- * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
- * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
- * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
- */
-function Level3::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
-{
-	var intersectedPlane = -1;
-
-	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
-
-	if(intersectedPlane == -1)
-		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
-		
-	isWall = true;
-	
-	return intersectedPlane == 0;
+	while(len(typedNumbers) > 0){
+		adel(typedNumbers,0);
+	}							
 }
 
 
@@ -984,6 +1034,105 @@ function Level3::GetOpenglTransformOffset()
 function Level3::SetOpenglTransformOffset(openglTransformOffset)
 {
 	mOpenglTranslationOffset = openglTransformOffset;
+}
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function Level3::GetElevator()
+{
+	return mElevator;
+}
+
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
+function Level3::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+{
+	var intersectedPlane = -1;
+
+	// Checking intersections with the main room
+	intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+	// If no valid intersection was found, I check the floor, but since it's not present in the room I check collisions with the plane that has as normal
+	// the one that points up from the ground
+	if(intersectedPlane == -1)
+	{
+		normal = [0, 1, 0];
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, [0, 0, 0], normal);
+		
+		// If a in intersection was found, I procede
+		if(contactPoint != Void)
+		{
+			// I need to check if the position found is in the room; since the plane is infinite, the intersection could be anywhere. To make sure that
+			// we check the point correctly, I move the point up a little bit for the check
+			contactPoint.y += 1 * SCALE_FACTOR;
+			
+			// If the point is in the room, it's a valid point
+			if(mMainRoom.IsPointInRoom(contactPoint))
+			{
+				intersectedPlane = 0;
+				contactPoint.y -= 1 * SCALE_FACTOR;
+			}
+		}
+	}
+		
+	// Checking collision with the back wall; like the floor, it's not present in the room object, so I check intersection with the plane that is in that position
+	if(intersectedPlane == -1)
+	{
+		var pos = mElevatorWall.GetPosition();
+		pos.z = -mMainRoom.GetRoomDepth() / 2.0;
+		
+		normal = [0, 0, 1];
+		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, pos, normal);
+		
+		// If the intersection was found, the point is not valid
+		if(contactPoint != Void)
+			intersectedPlane = 1;
+	}
+		
+	isWall = true;
+	
+	return intersectedPlane == 0;
+}
+
+function Level3::GenerateFloorTiles(tilesSize, spaceSize, tilesThickness)
+{
+	var returnObj = CVmObj();
+	var tileMesh = CVmNewMesh(VRP_BOX, 1, [-tilesSize/2, -tilesSize/2, 0], [tilesSize/2, tilesSize/2, 0], tilesThickness);
+	var lastLength = 0;
+	var totalLength = tilesSize + spaceSize;
+	var totalHeight = tilesSize + spaceSize;
+	
+	returnObj.AddChild(CVmObj(tileMesh), totalLength, totalHeight, 0);	
+	
+	while(true){
+		totalLength += (tilesSize + spaceSize);
+		
+		if(totalLength >= roomWidthFar){
+			totalHeight += tilesSize + spaceSize;	
+			lastLength = totalLength;
+			totalLength = tilesSize + spaceSize;
+		}	
+		
+		if(totalHeight >= roomWidthFar){
+			break;			
+		}
+		else{		
+			returnObj.AddChild(CVmObj(tileMesh), totalLength, totalHeight, 0);	
+		}
+	}
+	
+	returnObj.rotate(90, 1, 0, 0);
+	returnObj.SetPosition(-lastLength/2,0.3 * SCALE_FACTOR,-totalHeight/2);
+	
+	return returnObj;
 }
 
 function Level3::SetupOpenglLights()
@@ -1011,5 +1160,5 @@ function Level3::GetLevelPreview(){
 }
 
 function Level3::GetLevelName(){
-	return "Ghost";
+	return "Chaos";
 }

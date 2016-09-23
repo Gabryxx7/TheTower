@@ -735,10 +735,21 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 {
 	var intersectedPlane = -1;
 
+	if(mSelectedLevel != -1)
+	{
+		contactPoint = IsObjectSelected(rayOrigin, rayEnd, mWalkWay);
+		
+		if(contactPoint != Void)
+		{
+			intersectedPlane = 0;
+			normal = [0, 1, 0];
+		}
+	}
 	
-	intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	if(intersectedPlane == -1)
+		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	
 //		intersectedPlane = mWalkWay.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);		
-	
 	
 		
 	isWall = true;
