@@ -152,7 +152,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 {
 	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
-	viveControllerTesting = false;
+	viveControllerTesting = true;
 	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	

@@ -56,7 +56,6 @@ class ViveController
 	var trackpadCenterOffset;
 	var buttonPos;
 	var triggerRange;
-	var triggerMax;
 	var trackpadPointRange;
 	
 	var timeSinceLastTouch;
@@ -113,11 +112,15 @@ function ViveController::ViveController(controllerIndex)
 	buttonObj = CVmObj(buttonMesh);
 	ledObj = CVmObj(ledMesh);
 	leftGripObj = CVmObj(leftGripMesh);
+	leftGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
+	
 	rightGripObj = CVmObj(rightGripMesh);
+	rightGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
+	
 	systemButtonObj = CVmObj(systemButtonMesh);
 	trackpadObj = CVmObj(trackpadMesh);
 	triggerObj = CVmObj(triggerMesh);
-	triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.21*SCALE_FACTOR);
+	triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.22*SCALE_FACTOR);
 	
 	buttonPos = buttonObj.GetPosition();
 	leftGripPos = leftGripObj.GetPosition();
@@ -125,8 +128,7 @@ function ViveController::ViveController(controllerIndex)
 	systemButtonPos = systemButtonObj.GetPosition();
 	trackpadPos = trackpadObj.GetPosition();
 	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
-	triggerRange = -23;
-	triggerMax = -29;
+	triggerRange = -20;
 	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
 	
 	buttonDepth = 0.0075*SCALE_FACTOR;
@@ -190,8 +192,10 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 	if(triggerCoord[0] > 0){
 		if(isTriggerPressed < 0){
 			triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
+			triggerObj.SetPosition(0,0, 0.009 * triggerCoord[0]*SCALE_FACTOR);
 		}else{
-			triggerObj.SetRotation(triggerMax, 1, 0, 0);			
+			triggerObj.SetPosition(0,0,0.012*SCALE_FACTOR);
+			triggerObj.SetRotation(triggerRange-9, 1, 0, 0);			
 		}
 	}
 	else
@@ -205,12 +209,16 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 	}
 	
 	if(isGripPressed > 0){
-		leftGripObj.SetPosition(leftGripPos + [gripDepth, 0, 0]);
-		rightGripObj.SetPosition(rightGripPos - [gripDepth, 0, 0]);
+//		leftGripObj.SetPosition(leftGripPos + [gripDepth, 0, 0]);
+//		rightGripObj.SetPosition(rightGripPos - [gripDepth, 0, 0]);
+		leftGripObj.SetRotation(2.5,0,1,0);
+		rightGripObj.SetRotation(-2.5,0,1,0);
 	}
 	else{
-		leftGripObj.SetPosition(leftGripPos);
-		rightGripObj.SetPosition(rightGripPos);		
+//		leftGripObj.SetPosition(leftGripPos);
+//		rightGripObj.SetPosition(rightGripPos);	
+		leftGripObj.SetRotation(0,0,1,0);
+		rightGripObj.SetRotation(0,0,1,0);
 	}
 	
 	if(isTouchpadPressed > 0){
