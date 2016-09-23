@@ -781,6 +781,9 @@ function Level0::UpdateLogic(dt)
 		}if(KeyPressed("0")){
 			if(viveTestParam[0][1] < 1)
 				viveTestParam[0][1] += 0.01;
+		}if(KeyPressed("o")){
+			viveTestParam[0][1] = 0;
+			viveTestParam[0][0] = 0;
 		}if(KeyPressed("3")){
 			if(viveTestParam[1][0] > 0)
 			viveTestParam[1][0] -= 0.1;
