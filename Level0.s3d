@@ -119,11 +119,9 @@ class Level0
 	var mOpenglTranslationOffset;
 	
 	// Vive controllers
-	var mController1;
-	var mController2;
+	var mControllersArray;
 	
-	var viveControllerTesting;
-	var viveTestObj;
+	var debugVrOn;
 	var viveTestParam;
 
 	// Private functions
@@ -153,7 +151,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 {
 	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
-	viveControllerTesting = true;
+	debugVrOn = true;
 	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
@@ -176,12 +174,14 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	// I translate the room and everything else by this amount, because I'm too lazy to redo the positions of the objects
 	var translateFactor = [0, 0, -20 * SCALE_FACTOR];
 //	var translateFactor = [0, 0, 0];
-	
-	if(viveControllerTesting){
-		viveTestObj = ViveController(1);		
-		viveTestObj.SetPosition([-10*SCALE_FACTOR, 6*SCALE_FACTOR, 10*SCALE_FACTOR] + translateFactor);
-		viveTestObj.SetScale(SCALE_FACTOR*3, SCALE_FACTOR*3, SCALE_FACTOR*3);
-		viveTestParam = {{0,0}, {0,0}, -1, -1, -1, -1, 0};	
+	mControllersArray = {};
+	if(debugVrOn){
+		aadd(mControllersArray, ViveController(1));
+		viveTestParam = {{0,0}, {0,0}, -1, -1, -1, -1, 0, 0};	
+	}
+	else if(isVrOn){		
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
 	}
 
 	mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + translateFactor;
@@ -527,14 +527,6 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter2);
 	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter3);
 	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter4);
-
-
-	// If the Vive is on, I get the reference to the controllers
-	if(mIsVRon)
-	{
-		mController1 = mInputManager.GetController(1);
-		mController2 = mInputManager.GetController(2);
-	}
 }
 
 function Level0::Init(){	
@@ -566,9 +558,7 @@ function Level0::Render()
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
 		mMainRoom.Draw();
-		
-	if(viveControllerTesting)
-		viveTestObj.Draw(VR_NO_CULLING);
+	
 	// Drawing the glass walls for the frames
 	foreach(var glassWall in mPortalFramesGlassWalls)
 		glassWall.Draw();
@@ -576,10 +566,10 @@ function Level0::Render()
 	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
 	
-	if(mIsVRon)
+	if(mIsVRon || debugVrOn)
 	{
-		mController1.Draw();
-		mController2.Draw();
+		foreach(var controller in mControllersArray)
+			controller.Draw(VR_NO_CULLING);
 	}
 }
 
@@ -769,7 +759,9 @@ function Level0::UpdateLogic(dt)
 	// First off, let's update the player's position and orientation and the controllers (if they're not present nothing will be done)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
-	if(viveControllerTesting){
+	if(debugVrOn && !mIsVrOn){
+			mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.5 * SCALE_FACTOR);
+			
 		if(KeyPressed("1")){
 			if(viveTestParam[0][0] > -1)
 				viveTestParam[0][0] -= 0.01;
@@ -800,12 +792,17 @@ function Level0::UpdateLogic(dt)
 		}if(KeyPressed("8")){
 			viveTestParam[5] = -viveTestParam[5];
 		}if(KeyPressed("n")){
-			viveTestParam[6] += 1;
-		}if(KeyPressed("m")){
 			viveTestParam[6] -= 1;
+		}if(KeyPressed("m")){
+			viveTestParam[6] += 1;
+		}if(KeyPressed("j")){
+			viveTestParam[7] -= 1;
+		}if(KeyPressed("k")){
+			viveTestParam[7] += 1;
 		}
-		viveTestObj.UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5]);
-		viveTestObj.SetRotation(viveTestParam[6],1,0,0);
+		mControllersArray[0].UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5]);
+		mControllersArray[0].SetRotation(viveTestParam[6],1,0,0);
+		mControllersArray[0].Rotate(viveTestParam[7],0,0,1);
 	}
 	
 	// Getting the camera position, minus the opengl offset used for teleporting
