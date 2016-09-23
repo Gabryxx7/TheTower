@@ -107,8 +107,8 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	clockMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	// Not really sure what to put in the third parameter. If it's 0, it uses Vive controller's texture. It seems it depends on the order textures
-	//  are loaded in the game, so it's a little precarious leaving the code like this, but who cares
-	clockMesh.ShaderSetParameter(0, "tex", 0, 1, "clock_face.png");	 
+	// are loaded in the game, so it's a little precarious leaving the code like this, but who cares
+	clockMesh.ShaderSetParameter(0, "tex", 0, 2.0, "clock_face.png");	 
 	
 	
 	mClockObj = CVmObj(clockMesh);

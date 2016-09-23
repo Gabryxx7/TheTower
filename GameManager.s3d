@@ -222,24 +222,19 @@ function GameManager::GameManager(HMD)
 
 	if(DEBUG_MODE)
 	{
-		// Sposto la camera in modo che sia dentro l'ascensore
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
-		
-//		for(var i = 0; i < 5; i++){
-//			aadd(mLevels, i);	
-//		}
  
 		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-//		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
-		mCurrentLevel = arrayLevel0;
+		mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
 		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 		

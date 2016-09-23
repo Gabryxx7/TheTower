@@ -449,6 +449,9 @@ function Level3::UpdateLogic(dt)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
+	// Debug function used to change the color of the lights in the room when certain keys are pressed
+	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
+	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on

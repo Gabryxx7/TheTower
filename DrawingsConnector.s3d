@@ -134,15 +134,10 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mConnectorMesh.ShaderSetParameter(0, "SCALE_FACTOR", 0, SCALE_FACTOR);
 	mConnectorMesh.ShaderSetParameter(0, "alpha", 0, mConnectorAlpha);
 	
-	var color = lightColor - [0.9, 0.9, 0.9];
-	color.r = color.r < 0 ? 0 : color.r;
-	color.g = color.g < 0 ? 0 : color.g;
-	color.b = color.b < 0 ? 0 : color.b;
-	
 	// Parameters for subset 1 (the column of the object)
 	mConnectorMesh.ShaderSetParameter(1, "ambient", 0, [0.2, 0.2, 0.2]);
-	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, [0.3, 0.3, 0.3]);
-//	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, color);
+//	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, [0.3, 0.3, 0.3]);
+	mConnectorMesh.ShaderSetParameter(1, "diffuse", 0, lightColor);
 	mConnectorMesh.ShaderSetParameter(1, "specular", 0, [0.0, 0.0, 0.0]);
 	mConnectorMesh.ShaderSetParameter(1, "shininess", 0, 0);
 	mConnectorMesh.ShaderSetParameter(1, "lightsRangeMin", 0, lightsRangeMin);

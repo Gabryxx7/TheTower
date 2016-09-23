@@ -1116,9 +1116,13 @@ function Level4::UpdateLogic(dt)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
+	// Debug function used to change the color of the lights in the room when certain keys are pressed
+	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
+	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	
+	// Updating the position of the mask for the mirror
 	mMaskObj.SetPosition(cameraPosition);
 	mMaskObj.SetRotationMatrix(mCamera.GetRotationMatrix());
 	mMaskObj.Rotate(180, 0, 1, 0);

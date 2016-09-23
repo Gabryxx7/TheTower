@@ -442,8 +442,82 @@ function CreateGlassWall(wallWidth, wallHeight, borderThickness, lightsRangeMin,
 	return glassWallObj;
 }
 
+/*
+ * Util function that changes the lights color when the user presses certain keys; the parameters must be passed as reference
+ */
+function UpdateLightsColor(light1Diffuse, light2Diffuse)
+{
+	// First light
+	if(keypressed("U"))
+	{
+		light1Diffuse.x += 0.01;
+		print("light1Diffuse", light1Diffuse);
+	}
+	if(keypressed("J"))
+	{
+		light1Diffuse.x -= 0.01;
+		print("light1Diffuse", light1Diffuse);
+	}
+	if(keypressed("I"))
+	{
+		light1Diffuse.y += 0.01;
+		print("light1Diffuse", light1Diffuse);
+	}
+	if(keypressed("K"))
+	{
+		light1Diffuse.y -= 0.01;
+		print("light1Diffuse", light1Diffuse);
+	}
+	if(keypressed("O"))
+	{
+		light1Diffuse.z += 0.01;
+		print("light1Diffuse", light1Diffuse);
+	}
+	if(keypressed("L"))
+	{
+		light1Diffuse.z -= 0.01;
+		print("light1Diffuse", light1Diffuse);
+	}
+	
 
-function GenerateNumberPositions(number, offset) {
+	// Second light
+	if(keypressed("F"))
+	{
+		light2Diffuse.x += 0.01;
+		print("light2Diffuse", light2Diffuse);
+	}
+	if(keypressed("V"))
+	{
+		light2Diffuse.x -= 0.01;
+		print("light2Diffuse", light2Diffuse);
+	}
+	if(keypressed("G"))
+	{
+		light2Diffuse.y += 0.01;
+		print("light2Diffuse", light2Diffuse);
+	}
+	if(keypressed("B"))
+	{
+		light2Diffuse.y -= 0.01;
+		print("light2Diffuse", light2Diffuse);
+	}
+	if(keypressed("H"))
+	{
+		light2Diffuse.z += 0.01;
+		print("light2Diffuse", light2Diffuse);
+	}
+	if(keypressed("N"))
+	{
+		light2Diffuse.z -= 0.01;
+		print("light2Diffuse", light2Diffuse);
+	}
+}
+
+/*
+ * Function to create the positions of the objects to form numbers
+ */
+function GenerateNumberPositions(number, offset) 
+{
 	var ret = {};
 	switch(number){	
 		case 0:

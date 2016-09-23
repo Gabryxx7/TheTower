@@ -556,73 +556,10 @@ function Level1::UpdateLogic(dt)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
+	// Debug function used to change the color of the lights in the room when certain keys are pressed
+	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
+	
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
-	
-	
-	if(keypressed("U"))
-	{
-		mLight1Diffuse.x += 0.01;
-		print("mLight1Diffuse", mLight1Diffuse);
-	}
-	if(keypressed("J"))
-	{
-		mLight1Diffuse.x -= 0.01;
-		print("mLight1Diffuse", mLight1Diffuse);
-	}
-	if(keypressed("I"))
-	{
-		mLight1Diffuse.y += 0.01;
-		print("mLight1Diffuse", mLight1Diffuse);
-	}
-	if(keypressed("K"))
-	{
-		mLight1Diffuse.y -= 0.01;
-		print("mLight1Diffuse", mLight1Diffuse);
-	}
-	if(keypressed("O"))
-	{
-		mLight1Diffuse.z += 0.01;
-		print("mLight1Diffuse", mLight1Diffuse);
-	}
-	if(keypressed("L"))
-	{
-		mLight1Diffuse.z -= 0.01;
-		print("mLight1Diffuse", mLight1Diffuse);
-	}
-	
-	
-
-
-	if(keypressed("F"))
-	{
-		mLight2Diffuse.x += 0.01;
-		print("mLight2Diffuse", mLight2Diffuse);
-	}
-	if(keypressed("V"))
-	{
-		mLight2Diffuse.x -= 0.01;
-		print("mLight2Diffuse", mLight2Diffuse);
-	}
-	if(keypressed("G"))
-	{
-		mLight2Diffuse.y += 0.01;
-		print("mLight2Diffuse", mLight2Diffuse);
-	}
-	if(keypressed("B"))
-	{
-		mLight2Diffuse.y -= 0.01;
-		print("mLight2Diffuse", mLight2Diffuse);
-	}
-	if(keypressed("H"))
-	{
-		mLight2Diffuse.z += 0.01;
-		print("mLight2Diffuse", mLight2Diffuse);
-	}
-	if(keypressed("N"))
-	{
-		mLight2Diffuse.z -= 0.01;
-		print("mLight2Diffuse", mLight2Diffuse);
-	}
 	
 	switch(mLevelStatus)
 	{
