@@ -459,7 +459,6 @@ function LevelMenu::Render()
 					seaShader.SetParameter("viewDistance", seaViewDistance);
 					seaShader.SetParameter("size", mSize);
 					seaShader.SetParameter("phase", cloudDt);
-					outputln(cloudDt);
 					
 					glBegin(GL_QUADS);
 					for(var i = -seaAmounty/2; i < seaAmounty/2; i++){
@@ -627,13 +626,13 @@ function LevelMenu::UpdateLogic(dt)
 					mIsLevelCompleted = true;
 			}
 			
-			range = 25*SCALE_FACTOR;
+			range = 170*SCALE_FACTOR;
 			if(cameraPosition.x <= towerPosition.x+towerLevelWidth/2+range/2 && 
 			   cameraPosition.x >= towerPosition.x+towerLevelWidth/2-range/2  && !elevatorOpen
 			){
 				elevatorOpen = true;
-				mAnimator.CreateTransition(mElevatorCoverDoors[0],[mElevator.GetRoomDepth(),0,0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], 1, false);
-				mAnimator.CreateTransition(mElevatorCoverDoors[1],[mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], 1, false);
+				mAnimator.CreateTransition(mElevatorCoverDoors[0],[mElevator.GetRoomDepth(),0,0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], 2, false);
+				mAnimator.CreateTransition(mElevatorCoverDoors[1],[mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], 2, false);
 			}
 			
 			range = 5*SCALE_FACTOR;
@@ -736,7 +735,6 @@ function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, norm
 	intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 //		intersectedPlane = mWalkWay.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);		
 	
-	outputln(intersectedPlane);
 	
 		
 	isWall = true;
