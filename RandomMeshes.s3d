@@ -6,7 +6,6 @@ class RandomMeshes{
 	var mObjsFinalPos;
 	var mObjsAnimations;
 	var mColor;
-	var mIsAnimating;
 	
 	GetObjs();
 	GetAnimationsVector();
@@ -16,9 +15,7 @@ class RandomMeshes{
 	GetFinalAngles();
 	GetColor();	
 	
-	StartAnimation();
- 	StopAnimation();
-	IsAnimating();
+	MoveToFinalPosition(animator);
 };
 
 
@@ -30,7 +27,6 @@ function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color){
 	mObjsFinalAngles = {};	
 	mObjsAnimations = {};
 	mColor = color;
-	mIsAnimating = false;
 	
 	var offset = [1*SCALE_FACTOR, 0.5*SCALE_FACTOR, 1*SCALE_FACTOR];
 	var randomx = 0;
@@ -84,14 +80,20 @@ function RandomMeshes::GetColor(){
 	return mColor;
 }
 
-function RandomMeshes::StartAnimation(){
-	mIsAnimating = true;
-}
-
-function RandomMeshes::StopAnimation(){
-	mIsAnimating = false;
-}
-
-function RandomMeshes::IsAnimating(){
-	return mIsAnimating;
+function RandomMeshes::MoveToFinalPosition(mAnimator){
+	var time = 0;
+	var objPos;
+	for(var i = 0; i < len(mObjsArray); i++){
+		objPos = mObjsArray[i].GetPosition();
+		time = (Rand(10)+ 11) / 5;
+		mAnimator.RemoveTransitionByObject(mObjsArray[i], 3);	//The animation is starting so I remove the rotation around a point animation
+		mAnimator.CreateTransition(mObjsArray[i], objPos, {[mObjsFinalPos[i].x, objPos.y, objPos.z], [mObjsFinalPos[i].x, mObjsFinalPos[i].y, objPos.z], [mObjsFinalPos[i].x, mObjsFinalPos[i].y, mObjsFinalPos[i].z]}, time, false);
+		mObjsArray[i].SetRotation(mObjsOrigAngles[i].x, 1,0,0);
+		mObjsArray[i].SetRotation(mObjsOrigAngles[i].y, 0,1,0);
+		mObjsArray[i].SetRotation(mObjsOrigAngles[i].z, 0,0,1);
+		
+		mAnimator.CreateRotatingTransition(mObjsArray[i], mObjsOrigAngles[i].x, mObjsFinalAngles[i].x, [1,0,0], time*3, false, false);
+		mAnimator.CreateRotatingTransition(mObjsArray[i], mObjsOrigAngles[i].y, mObjsFinalAngles[i].y, [0,1,0], time*3, false, false);
+		mAnimator.CreateRotatingTransition(mObjsArray[i], mObjsOrigAngles[i].z, mObjsFinalAngles[i].z, [0,0,1], time*3, false, false);
+	}
 }
