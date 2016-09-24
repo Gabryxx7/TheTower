@@ -2,6 +2,7 @@ class Level5
 {
 	var mTexture;
 	var mIsVRon;
+	var debugVrOn;
 	
 	// Booleans that indicate if the level is starting or ending
 	var mStarting;
@@ -99,13 +100,17 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 {
 	mTexture = CVmTexture("Level2Prev.png"); ///TO CHANGE
 	mIsVRon = isVRon;
+	debugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
 	mTranslateFactor = [0.0, 0.0, -20.0 * SCALE_FACTOR];
-	
-	if(mIsVRon){
+	mControllersArray = {};
+	if(debugVrOn){
+		aadd(mControllersArray, ViveController(1));
+	}
+	else if(isVrOn){		
 		aadd(mControllersArray, mInputManager.GetController(1));
 		aadd(mControllersArray, mInputManager.GetController(2));
 	}
@@ -122,22 +127,25 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	mIsElevatorOpen = false;
 	
-	var wallSize = [4*SCALE_FACTOR, 4*SCALE_FACTOR, 10*SCALE_FACTOR];
+	var wallSize = [2*SCALE_FACTOR, 2*SCALE_FACTOR, 10*SCALE_FACTOR];
 	var spacing = 1*SCALE_FACTOR;
-	var amount = [18,7];
+	var amount = [30, 10];
 	mWalls = {};
 	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
 	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*2.35)];
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,0));
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
 
 	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (wallSize.z*3.3)];
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,0));
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-1));
 	
 	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x*0.7)];
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,2));
 
 	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x*0.7)];
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-2));
+	
+	foreach(var wall in mWalls)
+		wall.ComputeAnimations(1);
 	
 	timeFromLastKey = 0;
 	mAnimations = {false, false, false, false};
@@ -225,7 +233,7 @@ function Level5::Render()
 	mElevator.Draw();
 	
 	
-	if(mIsVRon){
+	if(mIsVRon || debugVrOn){
 		foreach(var controller in mControllersArray)
 			controller.Draw();
 	}
@@ -250,6 +258,11 @@ function Level5::UpdateLogic(dt)
 	
 	// Getting the camera position, minus the opengl offset used for teleporting
 	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	
+	if(debugVrOn && !mIsVrOn){
+		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 2.5 * SCALE_FACTOR);	
+	}
+	
 	
 //	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
 //	// I restore the previous porision. Very badly written code
@@ -341,7 +354,9 @@ function Level5::UpdateLogic(dt)
 			
 			for(var i = 0; i < len(mWalls); i++){
 				if(mAnimations[i])
-					mWalls[i].Animate(mAnimator);
+					mWalls[i].StartAnimation(mAnimator);
+				else
+					mWalls[i].StopAnimation(mAnimator);					
 			}
 			break;
 		}

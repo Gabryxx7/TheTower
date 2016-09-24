@@ -8,11 +8,15 @@ class ButtonsWall{
 	var mObjs;
 	var mMeshes;
 	var mSpacing;	
-	
-	var mStartAnimationTime;
+	var mDirection;
+	var mInitialPos;
+	var mWaypoints;
+	var mIsAnimating;
 	
 	Draw();
-	Animate(animator);
+	ComputeAnimations(num);
+	StartAnimation(animator);
+	StopAnimation(animator);
 };
 
 function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction){
@@ -22,10 +26,13 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 	mAmountx = valtype(amount) == "V" ? amount.x : amount;
 	mAmounty = valtype(amount) == "V" ? amount.y : amount;
 	mSpacing = spacing;
-	mStartAnimationTime = 0;
+	mDirection = direction;
+	mIsAnimating = false;
 	
+	mInitialPos = {};
 	mObjs = {};
 	mMeshes = {};
+	
 	
 	var obj;
 	var mesh;
@@ -37,12 +44,22 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 		for(var j = 0; j < mAmountx; j++){
 			buttonPos.x += spacing+size.x;			
 			
-			if(direction == 0){
+			if(direction == 1){
 				mesh = CvmNewMesh(VRP_BOX, 1, [-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]);	
 				obj = CvmObj(mesh);		
 				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);
 			}	
-			else{
+			else if(direction == 2){
+				mesh = CvmNewMesh(VRP_BOX, 1, [-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]);	
+				obj = CvmObj(mesh);		
+				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
+			}
+			else if(direction == -1){
+				mesh = CvmNewMesh(VRP_BOX, 1, [-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]);	
+				obj = CvmObj(mesh);		
+				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);			
+			}
+			else if(direction == -2){
 				mesh = CvmNewMesh(VRP_BOX, 1, [-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]);	
 				obj = CvmObj(mesh);		
 				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
@@ -51,6 +68,7 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 			AddToonShaderToMesh(mesh, [1, 1, 1], [0.8, 0.8, 0.8], [0.1, 0.1, 0.1], 20, 0, 2, SCALE_FACTOR, 1.0);
 //			AddSilhouetteLinesToPlanarObject(obj, 0.02 * SCALE_FACTOR, size.x, size.y);
 			
+			aadd(mInitialPos, obj.GetPosition());
 			aadd(mObjs, obj);
 			aadd(mMeshes, mesh);
 		}
@@ -63,15 +81,54 @@ function ButtonsWall::Draw(){
 	}
 }
 
-function ButtonsWall::Animate(animator){
-	var mAnimationTime = Rand(200)/(100);
-	mAnimationTime += 0.7;	
+function ButtonsWall::ComputeAnimations(num){
+	mWaypoints = {};	
 	
-	if(animator.HaveTransition(mObjs[len(mObjs)-1],0))
-		return;
-	
-	foreach(var obj in mObjs){
-		var offset = Rand(8)+2;
-		animator.CreateTransition(obj, obj.GetPosition(), {obj.GetPosition() + [0,0,offset*SCALE_FACTOR], obj.GetPosition()}, mAnimationTime, false);	
-	}	
+	for(var i = 0; i < len(mObjs); i++){
+		var objWaypoints = {};
+		for(var j = 0; j < num; j++){			
+			var offset = Rand(8)+2;		
+			var finalOffset = [0,0,0];
+			if(mDirection == 1){
+				finalOffset = [0,0,offset*SCALE_FACTOR];		
+			}
+			else if(mDirection == -1){
+				finalOffset = [0,0,-offset*SCALE_FACTOR];
+			}
+			else if(mDirection == 2){
+				finalOffset = [offset*SCALE_FACTOR, 0,0];			
+			}
+			else if(mDirection == -2){
+				finalOffset = [-offset*SCALE_FACTOR, 0,0];			
+			}
+			
+			aadd(objWaypoints, mInitialPos[i]+finalOffset);
+			aadd(objWaypoints, mInitialPos[i]);
+		}
+		aadd(mWaypoints, objWaypoints);
+	}
+}
+
+function ButtonsWall::StartAnimation(animator){	
+	if(!mIsAnimating){
+		mIsAnimating = true;
+		for(var i = 0; i < len(mObjs); i++){					
+			var mAnimationTime = Rand(200)/(100);
+			mAnimationTime += 0.7;	
+						
+			animator.CreateTransition(mObjs[i], mInitialPos[i], mWaypoints[i], mAnimationTime, true);
+		}		
+	}
+}
+
+function ButtonsWall::StopAnimation(animator){	
+	if(mIsAnimating){
+		mIsAnimating = false;
+		for(var i = 0; i < len(mObjs); i++){					
+			var mAnimationTime = Rand(200)/(100);
+			mAnimationTime += 0.7;	
+			animator.RemoveTransitionByObject(mObjs[i], 0);
+			animator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mInitialPos[i], mAnimationTime, false);
+		}	
+	}
 }
