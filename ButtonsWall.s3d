@@ -12,11 +12,13 @@ class ButtonsWall{
 	var mInitialPos;
 	var mWaypoints;
 	var mIsAnimating;
+	var mCodePositions;
 	
 	Draw();
 	ComputeAnimations(num);
 	StartAnimation(animator);
 	StopAnimation(animator);
+	ComputeCode(amount, maxRow);
 };
 
 function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction){
@@ -32,6 +34,7 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 	mInitialPos = {};
 	mObjs = {};
 	mMeshes = {};
+	mCodePositions = {};
 	
 	
 	var obj;
@@ -81,6 +84,27 @@ function ButtonsWall::Draw(){
 	}
 }
 
+function ButtonsWall::ComputeCode(amount, maxRow){
+	for(var i = 0; i < amount; i++){
+		var randomNum = Rand(maxRow*mAmountx);
+		aadd(mCodePositions, randomNum);
+		mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [1,0,0]);
+		
+		if(mDirection == 1){
+			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[0,0,mSize.z*0.5]);
+		}
+		else if(mDirection == -1){
+			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[0,0,-mSize.z*0.5]);
+		}
+		else if(mDirection == 2){
+			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[mSize.z*0.5,0,0]);
+		}
+		else if(mDirection == -2){
+			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[-mSize.z*0.5,0,0]);
+		}
+	}
+}
+
 function ButtonsWall::ComputeAnimations(num){
 	mWaypoints = {};	
 	
@@ -127,7 +151,6 @@ function ButtonsWall::StopAnimation(animator){
 		for(var i = 0; i < len(mObjs); i++){					
 			var mAnimationTime = Rand(200)/(100);
 			mAnimationTime += 0.7;	
-			animator.RemoveTransitionByObject(mObjs[i], 0);
 			animator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mInitialPos[i], mAnimationTime, false);
 		}	
 	}

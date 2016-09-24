@@ -127,25 +127,28 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	mIsElevatorOpen = false;
 	
-	var wallSize = [2*SCALE_FACTOR, 2*SCALE_FACTOR, 10*SCALE_FACTOR];
-	var spacing = 1*SCALE_FACTOR;
-	var amount = [30, 10];
+	var wallSize = [1.4*SCALE_FACTOR, 1.4*SCALE_FACTOR, 10*SCALE_FACTOR];
+	var spacing = 0.7*SCALE_FACTOR;
+	var amount = [36, 15];
+	
 	mWalls = {};
 	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
-	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*2.35)];
+	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
 
-	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (wallSize.z*3.3)];
+	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-1));
 	
-	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x*0.7)];
+	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x)/2] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,2));
 
-	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x*0.7)];
+	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2)] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-2));
 	
-	foreach(var wall in mWalls)
-		wall.ComputeAnimations(1);
+	foreach(var wall in mWalls){
+		wall.ComputeAnimations(5);
+		wall.ComputeCode(15, 6);
+	}
 	
 	timeFromLastKey = 0;
 	mAnimations = {false, false, false, false};
