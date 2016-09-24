@@ -405,8 +405,8 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	
 	// Retrieving the input manager and setting the initial camera's position
 	mCamera = mInputManager.GetActiveCamera();	
-	mCamera.SetPosition(-menuRoom_WidthSide/2 +(2*SCALE_FACTOR), 6.0 * SCALE_FACTOR, 0 * SCALE_FACTOR);
-	mCamera.SetDirection(1,0,0);
+//	mCamera.SetPosition(-menuRoom_WidthSide/2 +(2*SCALE_FACTOR), 6.0 * SCALE_FACTOR, 0 * SCALE_FACTOR);
+//	mCamera.SetDirection(1,0,0);
 	
 	mEnding = false;
 	mIsLevelCompleted = false;

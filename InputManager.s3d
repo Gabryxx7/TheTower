@@ -33,6 +33,7 @@ class InputManager
 	GetActiveCamera();
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
+	IsGripPressed(controllerIndex);
 	GetController(controllerIndex);
 	HasPressedMenuButton(controllerIndex);
 	VibrateController(controllerIndex, microseconds);
@@ -110,6 +111,11 @@ function InputManager::IsPressingPrimaryButton(controllerIndex)
 function InputManager::IsPressingSecondaryButton(controllerIndex)
 {
 	return mManager.IsPressingSecondaryButton(controllerIndex);
+}
+
+function InputManager::IsGripPressed(controllerIndex)
+{
+	return mManager.IsGripPressed(controllerIndex);
 }
 
 function InputManager::HasPressedMenuButton(controllerIndex)

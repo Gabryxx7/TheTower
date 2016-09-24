@@ -46,6 +46,7 @@ class GameManager
 {
 	// This variable has access to the DLL functions to control the Vive
 	var mHMD;
+	
 	var mJoystick;
 	
 	// Boolean, set to true if the Vive was detected at start; false otherwise
@@ -109,6 +110,12 @@ class GameManager
 	var mPlayAreaBox;
 	var mPlayAreaBoxHeight;
 	var mPlayAreaBoxShader;
+	
+	var mPlayAreaPlane;
+	var mPlayAreaPlaneShader;
+	var mPlayAreaPlaneAlpha;
+	var mPlayAreaPlaneAlphaIncrement;
+	var mIsPlayAreaPlaneVisible;
 	
 	// Boolean that indicates if the current position of the circle is a valid position for teleportation
 	var mIsPositionValid;
@@ -280,6 +287,7 @@ function GameManager::GameManager(HMD)
 	mDashedLineShader = CVmShaderProgram("dashedLineShader.glsl");
 	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
 	mPlayAreaBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
+	mPlayAreaPlaneShader = CVmShaderProgram("playAreaPlaneShader.glsl");
 	
 	// Offset used for the teleportation feature rendering
 	mDashedLinesOffset = 0;
@@ -293,6 +301,15 @@ function GameManager::GameManager(HMD)
 	// Creating the play area box
 	var playAreaBoxMesh = CVmNewMesh(VRP_BOX, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaBoxHeight/2.0, -mPlayAreaRec.y / 2.0], [mPlayAreaRec.x/2.0, mPlayAreaBoxHeight/2, mPlayAreaRec.y / 2.0]);
 	mPlayAreaBox = CVmObj(playAreaBoxMesh);
+	
+	var playAreaPlaneMesh = CVmNewMesh(VRP_PLANE, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaRec.y/2.0, 0], [mPlayAreaRec.x / 2.0, mPlayAreaRec.y/2.0, 0], 2, 2);
+	mPlayAreaPlane = CVmObj(playAreaPlaneMesh);
+	mPlayAreaPlane.SetRotation(90, 1, 0, 0);
+	mPlayAreaPlane.Translate(0, 0.1 * SCALE_FACTOR, 0);
+	
+	mPlayAreaPlaneAlpha = 1.0;
+	mPlayAreaPlaneAlphaIncrement = 0.004;
+	mIsPlayAreaPlaneVisible = false;
 }
 
 /*
@@ -444,7 +461,28 @@ function GameManager::XVRRendering()
 	// If we don't have to draw the ray, I reset its offset, so that it doesn't increment too much in the course of the game
 	else
 		mDashedLinesOffset = 0;
-	
+		
+		
+	if(mIsPlayAreaPlaneVisible)
+	{
+		mPlayAreaPlaneShader.Start();
+			mPlayAreaPlaneShader.SetParameter("primaryColor", [0.0, 1.0, 0.0]);
+			mPlayAreaPlaneShader.SetParameter("secondaryColor", [1.0, 0.0, 0.0]);
+			mPlayAreaPlaneShader.SetParameter("colorAlpha", mPlayAreaPlaneAlpha);
+			mPlayAreaPlaneShader.SetParameter("width", mPlayAreaRec.x);
+			mPlayAreaPlaneShader.SetParameter("depth", mPlayAreaRec.y);
+			mPlayAreaPlaneShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
+			mPlayAreaPlaneShader.SetParameter("playerPosition", mCamera.GetPosition());
+			mPlayAreaPlaneShader.SetParameter("modelMatrix", mPlayAreaPlane.GetModelMatrix());
+			
+			if(mPlayAreaPlaneAlpha >= 1.0 && mPlayAreaPlaneAlphaIncrement > 0 || mPlayAreaPlaneAlpha <= 0.4 && mPlayAreaPlaneAlphaIncrement < 0)
+				mPlayAreaPlaneAlphaIncrement = -mPlayAreaPlaneAlphaIncrement;
+				
+			mPlayAreaPlaneAlpha += mPlayAreaPlaneAlphaIncrement;
+			
+			mPlayAreaPlane.Draw();		
+		mPlayAreaPlaneShader.Stop();
+	}
 	
 	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
 	if(!mIsVRon)
@@ -570,16 +608,29 @@ function GameManager::UpdateLogic(dt)
 						// The new offset is the difference between the player's position and the new position of the circle;
 						// I'm only udpating the x and y values since the y should stay the same
 						var cameraPosition = mCamera.GetPosition();
-						mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
-						mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
+						mOpenglTranslationOffset.x = cameraPosition.x - mPositionCircleObj.GetPosition().x;
+						mOpenglTranslationOffset.z = cameraPosition.z - mPositionCircleObj.GetPosition().z;
 						
 						// I notify the current level that the offset has changed
 						mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
+						
+						var playAreaPlanePos = mPlayAreaPlane.GetPosition();
+						
+						playAreaPlanePos.x = cameraPosition.x - mOpenglTranslationOffset.x;
+						playAreaPlanePos.z = cameraPosition.z - mOpenglTranslationOffset.z;
+						
+						mPlayAreaPlane.SetPosition(playAreaPlanePos);
+						mPlayAreaPlane.Translate(-cameraPosition.x, 0, -cameraPosition.z);
 					}
 					
 					mControllerBeingUsedIndex = 0;
 				}
 			}
+			
+			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2))
+				mIsPlayAreaPlaneVisible = true;
+			else
+				mIsPlayAreaPlaneVisible = false;
 			
 			if(mCurrentLevel.IsLevelCompleted())
 			{

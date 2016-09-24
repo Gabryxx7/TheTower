@@ -52,6 +52,7 @@ class KeyboardManager
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton();
 	IsPressingSecondaryButton();
+	IsGripPressed();
 	HasPressedMenuButton();
 	GetController(controllerIndex);
 };
@@ -273,6 +274,11 @@ function KeyboardManager::IsPressingPrimaryButton()
 function KeyboardManager::IsPressingSecondaryButton()
 {
 	return Mouse.ButtonR;
+}
+
+function KeyboardManager::IsGripPressed()
+{
+	return KeyPressed(VK_CONTROL);
 }
 
 function KeyboardManager::HasPressedMenuButton()
