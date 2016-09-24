@@ -1,0 +1,77 @@
+class ButtonsWall{
+	var mSize;
+	var mPos;
+	var mOffset;
+	var mAmountx;
+	var mAmounty;
+	var mMesh;
+	var mObjs;
+	var mMeshes;
+	var mSpacing;	
+	
+	var mStartAnimationTime;
+	
+	Draw();
+	Animate(animator);
+};
+
+function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction){
+	mSize = size;
+	mPos = pos;
+	mOffset = offset;
+	mAmountx = valtype(amount) == "V" ? amount.x : amount;
+	mAmounty = valtype(amount) == "V" ? amount.y : amount;
+	mSpacing = spacing;
+	mStartAnimationTime = 0;
+	
+	mObjs = {};
+	mMeshes = {};
+	
+	var obj;
+	var mesh;
+	var buttonPos = [0,0,0];
+	
+	for(var i = 0; i < mAmounty; i++){
+		buttonPos.y = (spacing+size.y)*i;
+		buttonPos.x = 0;
+		for(var j = 0; j < mAmountx; j++){
+			buttonPos.x += spacing+size.x;			
+			
+			if(direction == 0){
+				mesh = CvmNewMesh(VRP_BOX, 1, [-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]);	
+				obj = CvmObj(mesh);		
+				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);
+			}	
+			else{
+				mesh = CvmNewMesh(VRP_BOX, 1, [-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]);	
+				obj = CvmObj(mesh);		
+				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
+			}
+			
+			AddToonShaderToMesh(mesh, [1, 1, 1], [0.8, 0.8, 0.8], [0.1, 0.1, 0.1], 20, 0, 2, SCALE_FACTOR, 1.0);
+//			AddSilhouetteLinesToPlanarObject(obj, 0.02 * SCALE_FACTOR, size.x, size.y);
+			
+			aadd(mObjs, obj);
+			aadd(mMeshes, mesh);
+		}
+	}	
+}
+
+function ButtonsWall::Draw(){
+	foreach(var obj in mObjs){
+		obj.Draw(VR_NO_CULLING);
+	}
+}
+
+function ButtonsWall::Animate(animator){
+	var mAnimationTime = Rand(200)/(100);
+	mAnimationTime += 0.7;	
+	
+	if(animator.HaveTransition(mObjs[len(mObjs)-1],0))
+		return;
+	
+	foreach(var obj in mObjs){
+		var offset = Rand(8)+2;
+		animator.CreateTransition(obj, obj.GetPosition(), {obj.GetPosition() + [0,0,offset*SCALE_FACTOR], obj.GetPosition()}, mAnimationTime, false);	
+	}	
+}

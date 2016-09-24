@@ -33,6 +33,9 @@ class Level5
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
 	
 	// "Room" object that contains the whole room
 	var mMainRoom;
@@ -64,19 +67,17 @@ class Level5
 	var mPreviousOpenglTranslationOffset;
 	
 	// Vive controllers
-	var mController1;
-	var mController2;
+	var mControllersArray;
 	
 	var mTranslateFactor;
 
-	var mProvaObj;
-	var mMaskObj;
-	// Private functions
-	DrawAllPortals();
-	DrawPortal(portalFrame1, portalFrameNormal1, portalFrame2, portalFrameNormal2);
+	var mWalls;
+	var timeFromLastKey;
+	var mAnimations;
 	
+	// Private functions	
 	// Public functions
-	Init(lights, elevator, openglTransformOffset);
+	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -86,6 +87,8 @@ class Level5
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
 	GetLevelPreview();
+	GetLevelName();
+	GetLightDiffuse();
 };
 
 
@@ -94,20 +97,24 @@ class Level5
  */
 function Level5::Level5(isVRon, inputManager, soundManager)
 {
-	mTexture = CVmTexture("Level5Prev.png");
+	mTexture = CVmTexture("Level2Prev.png"); ///TO CHANGE
 	mIsVRon = isVRon;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
 	mTranslateFactor = [0.0, 0.0, -20.0 * SCALE_FACTOR];
-//	mTranslateFactor = [0.0, 0.0, 0.0];
+	
+	if(mIsVRon){
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
+	}
 		
 	// Creating the object that will handle transitions and rotations of objects
 	mAnimator = Animator();
 	
 	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, false);
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, true);
 	
 	mMainRoom.Translate(mTranslateFactor.x,  mTranslateFactor.y, mTranslateFactor.z);
 		
@@ -115,149 +122,51 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mIsElevatorPresent = false;
 	mIsElevatorOpen = false;
 	
-	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2);
-	
-	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
-	// Sizes of the portal frames, i.e. the rectangles from where the portal rooms can be seen
-	var halfWidth = PORTAL_ROOM_FAR_WALL_WIDTH/2.0;
-	var halfHeight = PORTAL_ROOM_HEIGHT/2.0;
-	
-	// Creating the mesh for the frames; it's the same for every portal room, since they all have the same size
-	var portalFrameMesh = CVmNewMesh(VRP_PLANE, 1, [-halfWidth, -halfHeight, 0], [halfWidth, halfHeight, 0], 2, 2);
-	
-	// Linking the frame objects to the mesh
-	var portalFrameObj1 = CVmObj(portalFrameMesh);
-	var portalFrameObj2 = CVmObj(portalFrameMesh);
-	var portalFrameObj3 = CVmObj(portalFrameMesh);
-	var portalFrameObj4 = CVmObj(portalFrameMesh);
-	
-	// Moving the frames so that they form a sort of cube
-	portalFrameObj1.Translate(0, halfHeight, 0);	
-	portalFrameObj2.Translate(halfWidth, halfHeight, -halfWidth);
-	portalFrameObj3.Translate(0, halfHeight, -halfWidth * 2.0);
-	portalFrameObj4.Translate(-halfWidth, halfHeight, -halfWidth);
-		
-	// Translate the frames again to move away from the origin
-	portalFrameObj1.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
-	var maskMesh = CVmNewMesh("GuyFawkesMask.aam");
-	maskMesh.Scale(SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR);
-	mMaskObj = CVmObj(maskMesh);
-	mMaskObj.SetRotation(180, 0,1,0);
-	mMaskObj.SetPosition(portalFrameObj1.GetPosition()+[0,0,3*SCALE_FACTOR]);
-	
-	portalFrameObj2.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);	
-	var provaMesh = CVmNewMesh("provaMesh.AAM");
-	provaMesh.Scale(SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR, SCALE_FACTOR - 0.8 * SCALE_FACTOR);
-	mProvaObj = CVmObj(provaMesh);
-	mProvaObj.SetPosition(portalFrameObj2.GetPosition());
-	portalFrameObj3.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
-	portalFrameObj4.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
-	
-	// Rotating the frames, so that each one reflects its portal's room orientation
-	portalFrameObj2.Rotate(90, 0, 1, 0);
-	portalFrameObj3.Rotate(180, 0, 1, 0);
-	portalFrameObj4.Rotate(-90, 0, 1, 0);
-	
-	// Normals for each frame; used to check which frames are visible from the player position in a given moment
-	var frameNormal1 = [0, 0, 1];
-	var frameNormal2 = [1, 0, 0];
-	var frameNormal3 = [0, 0, -1];
-	var frameNormal4 = [-1, 0, 0];
-	
-	// I compute the world coordinates of the bounding box of the frames by exploiting the positions of the first and third (which are opposite)
-	var frame1Pos = portalFrameObj1.GetPosition();
-	var frame3Pos = portalFrameObj3.GetPosition();
-	mPortalsBoxLowerCorner = portalFrameObj1.GetPosition() - [halfWidth, halfHeight, 0];
-	mPortalsBoxUpperCorner = portalFrameObj3.GetPosition() + [halfWidth, halfHeight, 0];
-	
-	var glassWall1 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
-	var glassWall2 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
-	var glassWall3 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
-	var glassWall4 = CreateGlassWall(PORTAL_ROOM_FAR_WALL_WIDTH, PORTAL_ROOM_HEIGHT, 0.5 * SCALE_FACTOR, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
-	
-	glassWall1.Rotate(180, 0, 1, 0);
-	glassWall2.Rotate(-90, 0, 1, 0);
-	glassWall3.Rotate(0, 0, 1, 0);
-	glassWall4.Rotate(90, 0, 1, 0);
-	
-	glassWall1.SetPosition(portalFrameObj1.GetPosition() + [0, 0, 0.003 * SCALE_FACTOR]);
-	glassWall2.SetPosition(portalFrameObj2.GetPosition() + [0.003 * SCALE_FACTOR, 0, 0]);
-	glassWall3.SetPosition(portalFrameObj3.GetPosition() + [0, 0, -0.003 * SCALE_FACTOR]);
-	glassWall4.SetPosition(portalFrameObj4.GetPosition() + [-0.003 * SCALE_FACTOR, 0, 0]);
-	
-	mPortalFrames = {};
-	mPortalFramesNormals = {};
-	mPortalFramesGlassWalls = {};
-	
-	aadd(mPortalFrames, portalFrameObj1);
-	aadd(mPortalFrames, portalFrameObj2);
-	
-	aadd(mPortalFramesNormals, frameNormal1);
-	aadd(mPortalFramesNormals, frameNormal2);
-	aadd(mPortalFramesNormals, frameNormal3);
-	aadd(mPortalFramesNormals, frameNormal4);
-	
-	aadd(mPortalFramesGlassWalls, glassWall1);
-	aadd(mPortalFramesGlassWalls, glassWall2);
-	aadd(mPortalFramesGlassWalls, glassWall3);
-	aadd(mPortalFramesGlassWalls, glassWall4);
-		
-	// Now I create the elevator, as a "Elevator" object; the width and depth are a little less than the size of the frames, otherwise we get z-buffer problems
-	var elevatorWidth = PORTAL_ROOM_FAR_WALL_WIDTH - 0.01 * SCALE_FACTOR;
-	var elevatorDepth = PORTAL_ROOM_SIDE_WALL_WIDTH - 0.16 * SCALE_FACTOR;
-	var elevatorHeight = PORTAL_ROOM_HEIGHT;
-	
-	mElevator = Elevator(elevatorWidth, elevatorDepth, elevatorHeight, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
-		
-	// Positioning the room so that is right behind the first portal frame
-	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, elevatorDepth - 0.04 * SCALE_FACTOR]);
-				
-	// At start I hide the elevator; it will appear later
-	mElevator.Hide();
-	
-	// Text for the elevator
-	var elevatorText = Text("The Tower");
-	mElevator.AddObject(elevatorText.GetObj(), -0.2 * SCALE_FACTOR, 0, 0.001);
-	
-	// Creating the object that will handle transitions and rotations of objects
-	// Sounds when the player steps in the right direction
-	mSoundManager.AddSound("sounds/Mi1.wav", 0);
-	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
-	mSoundManager.AddSound("sounds/Sol3.wav", 2);
-	mSoundManager.AddSound("sounds/La4.wav", 3);
-	mSoundManager.AddSound("sounds/Si5.wav", 4);
-	mSoundManager.AddSound("sounds/Do#6.wav", 5);
-	mSoundManager.AddSound("sounds/Mi7.wav", 6);
+	var wallSize = [4*SCALE_FACTOR, 4*SCALE_FACTOR, 10*SCALE_FACTOR];
+	var spacing = 1*SCALE_FACTOR;
+	var amount = [18,7];
+	mWalls = {};
+	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
+	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*2.35)];
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,0));
 
-	// If the Vive is on, I get the reference to the controllers
-	if(mIsVRon)
-	{
-		mController1 = mInputManager.GetController(1);
-		mController2 = mInputManager.GetController(2);
-	}
+	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (wallSize.z*3.3)];
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,0));
+	
+	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x*0.7)];
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
+
+	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x*0.7)];
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
+	
+	timeFromLastKey = 0;
+	mAnimations = {false, false, false, false};
+	
 }
 
-function Level5::Init(lights, elevator, openglTransformOffset){
+function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset){
 	
 	mOpenglTranslationOffset = openglTransformOffset;
 	
 	foreach(var light in lights)
 		light.Disable();
 	
+	mLight0Diffuse = [1,1,1];
+	mLight1Diffuse = [1,1,1];
+	mLight2Diffuse = [1,1,1];
+	
 	mLight0 = lights[0];
-	mLight0.SetDiffuse(1, 1, 1);
+	mLight0.SetDiffuse(mLight0Diffuse);
 	mLight0.Enable();
 	
 	mLight1 = lights[1];
-	mLight1.SetDiffuse(1, 1, 1);
+	mLight1.SetDiffuse(mLight1Diffuse);
 	mLight1.Enable();
 	
 	mLight2 = lights[2];
-	mLight2.SetDiffuse(1, 1, 1);
+	mLight2.SetDiffuse(mLight2Diffuse);
 	mLight2.Enable();
 	
-		
 	mElevator = elevator;
 	
 	mCamera = mInputManager.GetActiveCamera();
@@ -271,8 +180,8 @@ function Level5::Init(lights, elevator, openglTransformOffset){
 
 	mElevatorFinalPosition = mElevator.GetPosition();
 	
-	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
-	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
 	
 	mLight0Position = mLight0.GetPosition();
 	mLight1Position = mLight1.GetPosition();
@@ -285,6 +194,10 @@ function Level5::Init(lights, elevator, openglTransformOffset){
 	mOpenglTranslationOffset.y += mElevatorTravelDistance;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
+	
 }
 
 /* ****************************************************** *
@@ -301,181 +214,22 @@ function Level5::Render()
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
- 	
-	
-	// The first thing we need to do is draw the portals. Since they are peculiar, it is best to draw them first, otherwise there might be glitches
-	DrawAllPortals();
-	
+
+	foreach(var wall in mWalls)
+		wall.Draw();
 	// We draw the main room
 	if(!mEnding || mElevator.IsElevatorOpen())
 		mMainRoom.Draw();
-		
-	// Drawing the glass walls for the frames
-	foreach(var glassWall in mPortalFramesGlassWalls)
-		glassWall.Draw();
-	
-	// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
+
+// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
 	
-	mProvaObj.Draw();
-	mMaskObj.Draw();
 	
-	if(mIsVRon)
-	{
-		mController1.Draw();
-		mController2.Draw();
+	if(mIsVRon){
+		foreach(var controller in mControllersArray)
+			controller.Draw();
 	}
 }
-
-/*
- * This method draws every portal in the scene. This function MUST be called after the opening of a SceneBegin()/SceneEnd() block, 
- * otherwise it won't give out any results
- */
-function Level5::DrawAllPortals()
-{	
-	// We need to find out which portals are visible from the player's perspective, so we need its position.
-	// Note: to get the ACTUAL position I need to subtract the opengl offset, in case the user has teleported previously
-	var currentCameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
-	
-	// To render the portal we need the stencil buffer
-	glEnable(GL_STENCIL_TEST);
-	
-	// I empty at each frame the array with the currently visible frames, so that I can re-fill it
-	mCurrentlyVisiblePortalFrames = {};
-		
-	// I iterate over all the portals to check which one is visible by the user
-	for(var i = 0; i < len(mPortalFrames); i++) 
-	{
-		// I get the normal to the portal's frame, which was set manually; I also get the position of the frame
-		var normal = mPortalFramesNormals[i];
-		var framePos = mPortalFrames[i].GetPosition();
-		
-		// I compute the scalar product between the normal and the direction vector between the camera's position and the frame's position.
-		var dotProduct = normal * ((currentCameraPosition) - framePos);
-		
-		// If the dot product is positive, the portal is visible.
-		// Note: in reality, if for example I move the camera around so that it gives its back to the portal, this one is still considered visible. For simplicity, 
-		// I don't check the direction where the camera is facing; in any case even though it is considered visible, in the end the portal won't be rendered
-		// because  XVR will know that the portal isn't actually visible from the camera perspective
-		if(dotProduct >= 0)
-		{
-			// I render the portal, passing also the information about the light's color and position
-			if(i == 0)
-				DrawPortal(mPortalFrames[0], mPortalFramesNormals[0], mPortalFrames[1], mPortalFramesNormals[1]);
-			else
-				DrawPortal(mPortalFrames[1], mPortalFramesNormals[1], mPortalFrames[0], mPortalFramesNormals[0]);
-			
-			// Since it's visible, I add this to the array
-			aadd(mCurrentlyVisiblePortalFrames, mPortalFrames[i]);
-
-			// While drawing the portal, the camera was moved in order to render the portal's room. So I put it back where it was before proceding
-			// Note: I need to add the opengl offset otherwise the position would not be correct
-			mCamera.SetPosition(currentCameraPosition + mOpenglTranslationOffset);
-		}
-	}
-	
-	
-	// A very important thing to note is that when the portals are drawn, the camera is moved to where the portals' rooms are located. Basically what happened
-	// was that the light was somehow moved to the position of the camera when it was moved, and it stayed there. So basically the rest of the scene was rendered
-	// as if the light was far away to the last portal's room rendered. To avoid this problem (which took a while to solve), we need to take back the light
-	// used to render the main room where it was. We can't do it using XVR method SetPosition() because it won't have effect until the next frame (and it will
-	// be too late, since the process will restart), so we need to force it to apply NOW using opengl functions and directly accessing at the light.
-	// So I pass the old position; the 1.0 in the end signify that it is a position light (if it were 0.0 it would be considered a directional light)
-	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]);
-
-
-	// After drawing the portals, the stencil test is no longer needed
-	glDisable(GL_STENCIL_TEST);
-	
-	// Now the portals are drawn, but NOT in the depth buffer. This means that when we'll draw the rest of the scene, the computed depth will be wrong.
-	// To solve this, I re-draw the portal's frame, but without actually applying colors, and I do it while the depth buffer is active and clear, so that
-	// the frames will be put in there and will be taken into account when drawing the rest of the scene.
-	// So, first off, I dsable the color buffer
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	
-	// I enable writing to the depth buffer, enable the depth test and clear the buffer
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	
-	// Now I draw each portal, even the ones that weren't actually visible, because they still need to "occupy space"
-	for(var i = 0; i < len(mPortalFrames); i++)
-		mPortalFrames[i].Draw();
-
-	// I enable the color buffer again for the rest of the scene
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-}
-
- /*
-  * Method for drawing a single portal room in a single portal frame.
-  * Note: this method modifyes the currently active SceneBegin/SceneEnd block, meaning that it closes the currently active block and opens a new one without
-  * closing it. So, this function MUST be called after the opening of a SceneBegin() block, and it assures that at the end of the method a block will
-  * be still open for further use (so that outside this function we still have to call SceneEnd())
-  * 
-  * portalFrame: (CVmObj) the frame from which the portal's room will be visible
-  * portalRoom: (Room) the room that needs to be rendered and that is seen from the portal
-  */
-function Level5::DrawPortal(portalFrame1, portalFrameNormal1, portalFrame2, portalFrameNormal2)
-{
-	glPushMatrix();
-	
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
-	
-	glStencilFunc(GL_NEVER, 1, 0xFF);	
-	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-	glStencilMask(0xFF);
-	
-	glClear(GL_STENCIL_BUFFER_BIT);
-	portalFrame1.Draw();	
-	
-	var framePos = portalFrame2.GetPosition();	
-	var translation = [framePos.x, 0, framePos.z];		
-		
-	// Now I move the world where the camera should be rendering the portal room (it's "minus" translation, because the glTranslate pushes the world away)
-	glRotate(180, 0, 1, 0);
-	glTranslate(-mOpenglTranslationOffset);
-	glTranslate(-translation);
-//	if(portalFrameNormal1 == [0,0,1])
-		
-	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
- 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
- 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
-	// Setting the light to its defined position
-//	glLight(GL_LIGHT0, GL_POSITION, [lightPosition.x, lightPosition.y, lightPosition.z, 1.0]); 
-	
-	// Changing the light's color
-//	glLight(GL_LIGHT0, GL_DIFFUSE, lightColor); 
-					
-	// Since the portal's room as to be rendered "normally", I enable the usual things (color and depth buffer, which is emptied)
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	
-	// I disable writing to the stencil buffer, and I make sure that a pixel passes the stencil test ONLY if its value in the buffer is 1. That is,
-	// only the pixels belonging to the previously rendered portal's frame will pass the test, so the portal's room will be rendered there and olny there
-	glStencilMask(0x00);
-	glStencilFunc(GL_EQUAL, 1, 0xFF);
-	
-	// Drawing the actual portal's room where the stencil is 1
-	mMainRoom.Draw(true);
-	mProvaObj.Draw(true);
-	
-	glCullFace(GL_BACK);
-	mMaskObj.Draw(true);
-	
-	// I'm done with this portal, so I pop the matrix from the stack. This way the glTranslsate() that I did above will be undone, bringing the world
-	// back the way it was before rendering the portal room, which is what I want
-	glPopMatrix();
-	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
- 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
- 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
-}
-
-
-
 
 /* ****************************************************** *
  * **************** LOGIC METHODS ********************** *
@@ -569,20 +323,26 @@ function Level5::UpdateLogic(dt)
 		
 		case STATUS_LEVEL_STARTED:
 		{
-			var checkRange = 2*SCALE_FACTOR;
-			if(   cameraPosition.x >= mPortalFrames[0].GetPosition().x - checkRange && cameraPosition.x <= mPortalFrames[0].GetPosition().x + checkRange
-			   && cameraPosition.z >= mPortalFrames[0].GetPosition().z - checkRange && cameraPosition.z <= mPortalFrames[0].GetPosition().z + checkRange){
-				outputln("\nTRESPASSING PORTAL 1");
-				mCamera.SetPosition(mPortalFrames[1].GetPosition().x+checkRange*2, cameraPosition.y, mPortalFrames[1].GetPosition().z+checkRange*2);
+			if(GetTime() - timeFromLastKey > 250){
+				if(KeyPressed("1")){
+					timeFromLastKey = GetTime();
+					mAnimations[0] = !mAnimations[0];			
+				}if(KeyPressed("2")){
+					timeFromLastKey = GetTime();
+					mAnimations[1] = !mAnimations[1];			
+				}if(KeyPressed("3")){
+					timeFromLastKey = GetTime();
+					mAnimations[2] = !mAnimations[2];			
+				}if(KeyPressed("4")){
+					timeFromLastKey = GetTime();
+					mAnimations[3] = !mAnimations[3];			
+				}			
+			}		
+			
+			for(var i = 0; i < len(mWalls); i++){
+				if(mAnimations[i])
+					mWalls[i].Animate(mAnimator);
 			}
-			else if(   cameraPosition.x >= mPortalFrames[1].GetPosition().x - checkRange && cameraPosition.x <= mPortalFrames[1].GetPosition().x + checkRange
-			   && cameraPosition.z >= mPortalFrames[1].GetPosition().z - checkRange && cameraPosition.z <= mPortalFrames[1].GetPosition().z + checkRange){
-				outputln("\nTRESPASSING PORTAL 2");
-				mCamera.SetPosition(mPortalFrames[0].GetPosition().x +checkRange*2, cameraPosition.y, mPortalFrames[0].GetPosition().z+checkRange*2);			   	
-			 }
-			// At start I hide the elevator; it will appear later
-			mElevator.Hide();
-			// For each portal, I need to update the position of its light
 			break;
 		}
 		
@@ -712,12 +472,22 @@ function Level5::SetupOpenglLights()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
  	
-	glLight(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1]); 
-	glLight(GL_LIGHT1, GL_DIFFUSE, [0, 0, 1]); 
-	glLight(GL_LIGHT2, GL_DIFFUSE, [1, 0, 0]);
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
 }
 
 
 function Level5::GetLevelPreview(){
 	return mTexture;
 }
+
+function Level5::GetLevelName(){
+	return "Wall";
+}
+
+function Level5::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
+}
+
+

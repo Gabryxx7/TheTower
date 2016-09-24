@@ -22,6 +22,7 @@ global var SCALE_FACTOR = 0.2;
 #include "PreviewFrame.s3d"
 #include "CubeNumbers.s3d"
 #include "RandomMeshes.s3d"
+#include "ButtonsWall.s3d"
 #include "MarcelloUtils.s3d"
 #include "Level0.s3d"
 #include "LevelMenu.s3d"
@@ -224,13 +225,13 @@ function GameManager::GameManager(HMD)
 	{
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
  
-		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
