@@ -135,19 +135,23 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
 	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
+	mWalls[0].SetDefaultColor([1, 0.7, 0.7]);
 
 	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-1));
+	mWalls[0].SetDefaultColor([0.7, 1, 0.7]);
 	
 	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x)/2] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,2));
+	mWalls[0].SetDefaultColor([0.7, 0.7, 1]);
 
 	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2)] + mTranslateFactor;
 	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-2));
+	mWalls[0].SetDefaultColor([0.7, 1, 1]);
 	
 	foreach(var wall in mWalls){
 		wall.ComputeAnimations(5);
-		wall.ComputeCode(15, 4);
+		wall.ComputeCode(5, 3);
 	}
 	
 	timeFromLastKey = 0;

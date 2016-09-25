@@ -9,17 +9,23 @@ class ButtonsWall{
 	var mMeshes;
 	var mSpacing;	
 	var mDirection;
-	var mInitialPos;
+	var mMinimumPos;
+	var mMaximumPos;
 	var mWaypoints;
 	var mIsAnimating;
 	var mCodePositions;
 	var mBorderShader;
 	var mMeshSizes;
+	var mBaseColor;
+	var mCodeColor;
+	var mActiveColor;
+	var mMovingColor;
 	
 	var mActiveObjIndex;
 	var mActiveButtonBorderObj;
 	var mIsMoving;
 	var mDistance;
+	var mExtrudeFactor;
 	
 	Draw();
 	ComputeAnimations(num);
@@ -30,6 +36,10 @@ class ButtonsWall{
 	IsInRange(objPos, range);
 	MoveButtonInRange(movingObjPos);
 	StopMoving();
+	SetActiveCOlor(color);
+	SetCodeColor(color);
+	SetDefaultColor(color);
+	SetMovingColor(color);
 };
 
 function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction){
@@ -44,10 +54,18 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 	mActiveObjIndex = -1;
 	mIsMoving = false;
 	mDistance = -1;
-		
-	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec4 color; void main (void) { gl_FragColor = color; }", true);
+	mExtrudeFactor = 0.95;
 	
-	mInitialPos = {};
+	
+	mBaseColor = [1,1,1];
+	mCodeColor = [1,0,0];
+	mActiveColor = [1,1,0];
+	mMovingColor = [0,0,1];
+		
+	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
+	
+	mMaximumPos = {};
+	mMinimumPos = {};
 	mObjs = {};
 	mMeshes = {};
 	mCodePositions = {};
@@ -80,21 +98,28 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 			
 			if(mDirection == 1){	
 				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);
+				aadd(mMinimumPos, obj.GetPosition());
+				aadd(mMaximumPos, obj.GetPosition() + [0,0,mSize.z*mExtrudeFactor]);
 			}	
 			else if(mDirection == 2){
-				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
+				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);	
+				aadd(mMinimumPos, obj.GetPosition());
+				aadd(mMaximumPos, obj.GetPosition() + [mSize.z*mExtrudeFactor,0,0]);	
 			}
 			else if(mDirection == -1){
-				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);			
+				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);	
+				aadd(mMinimumPos, obj.GetPosition());
+				aadd(mMaximumPos, obj.GetPosition() + [0,0,-mSize.z*mExtrudeFactor]);		
 			}
 			else if(mDirection == -2){	
-				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
+				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);
+				aadd(mMinimumPos, obj.GetPosition());
+				aadd(mMaximumPos, obj.GetPosition() + [-mSize.z*mExtrudeFactor,0,0]);			
 			}
 			
-			AddToonShaderToMesh(mesh, [1, 1, 1], [0.8, 0.8, 0.8], [0.1, 0.1, 0.1], 20, 0, 2, SCALE_FACTOR, 1.0);
+			AddToonShaderToMesh(mesh, [1, 1, 1], mBaseColor, [0.1, 0.1, 0.1], 20, 0, 2, SCALE_FACTOR, 1.0);
 //			AddSilhouetteLinesToPlanarObject(obj, 0.02 * SCALE_FACTOR, size.x, size.y);
 			
-			aadd(mInitialPos, obj.GetPosition());
 			aadd(mObjs, obj);
 			aadd(mMeshes, mesh);
 		}
@@ -113,7 +138,7 @@ function ButtonsWall::Draw(){
     	glCullFace (GL_FRONT);
     	
     	mBorderShader.Start();
-    		mBorderShader.SetParameter("color", mIsMoving ? [0,0,1,1] : [1,1,0,1]);
+    		mBorderShader.SetParameter("color", mIsMoving ? mMovingColor : mActiveColor);
 			mActiveButtonBorderObj.Draw();
 		mBorderShader.Stop();
 	
@@ -122,21 +147,29 @@ function ButtonsWall::Draw(){
 }
 
 function ButtonsWall::ComputeCode(amount, maxRow){
+	var distance = 0;
 	for(var i = 0; i < amount; i++){
 		var randomNum = Rand(maxRow*mAmountx);
-		mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [1,0,0]);
-		
+		mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, mCodeColor);
 		if(mDirection == 1){
-			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[0,0,mSize.z*0.5]);
+			mObjs[randomNum].SetPosition(mMinimumPos[randomNum]+[0,0,mSize.z*mExtrudeFactor]);
+			distance = abs(mObjs[randomNum].GetPosition().z - mMinimumPos[randomNum].z)/(abs(mMinimumPos[randomNum].z-mMaximumPos[randomNum].z));	
+			mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
 		}
 		else if(mDirection == -1){
-			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[0,0,-mSize.z*0.5]);
+			mObjs[randomNum].SetPosition(mMinimumPos[randomNum]+[0,0,-mSize.z*mExtrudeFactor]);
+			distance = abs(mObjs[randomNum].GetPosition().z - mMinimumPos[randomNum].z)/(abs(mMinimumPos[randomNum].z-mMaximumPos[randomNum].z));	
+			mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
 		}
 		else if(mDirection == 2){
-			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[mSize.z*0.5,0,0]);
+			mObjs[randomNum].SetPosition(mMinimumPos[randomNum]+[mSize.z*mExtrudeFactor,0,0]);
+			distance = abs(mObjs[randomNum].GetPosition().x - mMinimumPos[randomNum].x)/(abs(mMinimumPos[randomNum].x-mMaximumPos[randomNum].x));	
+			mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
 		}
 		else if(mDirection == -2){
-			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[-mSize.z*0.5,0,0]);
+			mObjs[randomNum].SetPosition(mMinimumPos[randomNum]+[-mSize.z*mExtrudeFactor,0,0]);
+			distance = abs(mObjs[randomNum].GetPosition().x - mMinimumPos[randomNum].x)/(abs(mMinimumPos[randomNum].x-mMaximumPos[randomNum].x));	
+			mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
 		}
 		
 		aadd(mCodePositions, randomNum);
@@ -164,8 +197,8 @@ function ButtonsWall::ComputeAnimations(num){
 				finalOffset = [-offset*SCALE_FACTOR, 0,0];			
 			}
 			
-			aadd(objWaypoints, mInitialPos[i]+finalOffset);
-			aadd(objWaypoints, mInitialPos[i]);
+			aadd(objWaypoints, mMinimumPos[i]+finalOffset);
+			aadd(objWaypoints, mMinimumPos[i]);
 		}
 		aadd(mWaypoints, objWaypoints);
 	}
@@ -178,7 +211,7 @@ function ButtonsWall::StartAnimation(animator){
 			var mAnimationTime = Rand(200)/(100);
 			mAnimationTime += 0.7;	
 						
-			animator.CreateTransition(mObjs[i], mInitialPos[i], mWaypoints[i], mAnimationTime, true);
+			animator.CreateTransition(mObjs[i], mMinimumPos[i], mWaypoints[i], mAnimationTime, true);
 		}		
 	}
 }
@@ -189,7 +222,7 @@ function ButtonsWall::StopAnimation(animator){
 		for(var i = 0; i < len(mObjs); i++){					
 			var mAnimationTime = Rand(200)/(100);
 			mAnimationTime += 0.7;	
-			animator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mInitialPos[i], mAnimationTime, false);
+			animator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mMinimumPos[i], mAnimationTime, false);
 		}	
 	}
 }
@@ -201,18 +234,49 @@ function ButtonsWall::FindClosestButton(){
 function ButtonsWall::MoveButtonInRange(movingObjPos){
 	mIsMoving = true;
 	var pos = mObjs[mActiveObjIndex].GetPosition();
+	var minPos = mMinimumPos[mActiveObjIndex];
+	var maxPos = mMaximumPos[mActiveObjIndex];
+	var newPos = [0,0,0];
+	var maxDistance = 0;
+	var distance = 0;
+	
 	if(mDirection == 1){
-		mObjs[mActiveObjIndex].SetPosition([pos.x, pos.y, movingObjPos.z-mSize.z*0.5-mDistance]);	
+		newPos = [pos.x, pos.y, movingObjPos.z-mSize.z*0.5-mDistance];
+		if(newPos.z >= minPos.z && newPos.z <= maxPos.z){
+			mObjs[mActiveObjIndex].SetPosition(newPos);	
+			maxDistance = abs(maxPos.z - minPos.z);
+			distance = abs(newPos.z - minPos.z)/maxDistance;	
+			mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);			
+		}
 	}
 	else if(mDirection == 2){
-		mObjs[mActiveObjIndex].SetPosition([movingObjPos.x-mSize.z*0.5-mDistance, pos.y, pos.z]);		
+		newPos = [movingObjPos.x-mSize.z*0.5-mDistance, pos.y, pos.z];
+		if(newPos.x >= minPos.x && newPos.x <= maxPos.x){
+			mObjs[mActiveObjIndex].SetPosition(newPos);	
+			maxDistance = abs(maxPos.x - minPos.x);
+			distance = abs(newPos.x - minPos.x)/maxDistance;	
+			mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);			
+		}
 	}
 	else if(mDirection == -1){
-		mObjs[mActiveObjIndex].SetPosition([pos.x, pos.y, movingObjPos.z+mSize.z*0.5-mDistance]);		
+		newPos = [pos.x, pos.y, movingObjPos.z+mSize.z*0.5-mDistance];
+		if(newPos.z >= maxPos.z && newPos.z <= minPos.z){
+			mObjs[mActiveObjIndex].SetPosition(newPos);	
+			maxDistance = abs(maxPos.z - minPos.z);
+			distance = abs(newPos.z - minPos.z)/maxDistance;	
+			mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
+		}
 	}
 	else if(mDirection == -2){
-		mObjs[mActiveObjIndex].SetPosition([movingObjPos.x+mSize.z*0.5-mDistance, pos.y, pos.z]);		
+		newPos = [movingObjPos.x+mSize.z*0.5-mDistance, pos.y, pos.z];
+		if(newPos.x >= maxPos.x && newPos.x <= minPos.x){
+			mObjs[mActiveObjIndex].SetPosition(newPos);	
+			maxDistance = abs(maxPos.x - minPos.x);
+			distance = abs(newPos.x - minPos.x)/maxDistance;	
+			mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
+		}	
 	}
+		
 }
 
 function ButtonsWall::StopMoving(){
@@ -245,7 +309,7 @@ function ButtonsWall::IsInRange(objPos, range){
 //			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2 + (objPos.y-buttonPos.y)^2);
 			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2);
 			if(distance <= range && distance < minDistance){
-				outputln(str(distance) +" " +str(range));
+//				outputln(str(distance) +" " +str(range));
 				
 				if(abs(mDirection) == 1 ){
 					mDistance = objPos.z-buttonPos.z;				
@@ -266,3 +330,20 @@ function ButtonsWall::IsInRange(objPos, range){
 		return true;
 	}
 }
+
+function ButtonsWall::SetDefaultColor(color){
+	mBaseColor = color;
+}
+
+function ButtonsWall::SetActiveColor(color){
+	 mActiveColor = color;
+}
+
+function ButtonsWall::SetMovingCOlor(color){
+	 mMovingColor = color;
+}
+
+function ButtonsWall::SetCodeColor(color){
+	 mCodeColor = color;
+}
+
