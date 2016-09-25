@@ -704,90 +704,10 @@ function Level3::UpdateLogic(dt)
 						i = 0;
 					}
 				}
-						
-				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
-					randomShapes[j].StartAnimation();
-					if(j == 0){		
-							outputln("\nGREEN ANIMATION STARTED");				
-						}
-						else if(j == 1){
-							outputln("\nLIGHT BLUE  ANIMATION STARTED");					
-						}
-						else if(j == 2){
-							outputln("\nRED ANIMATION STARTED");				
-						}
-						else if(j == 3){
-							outputln("\nWHITE ANIMATION STARTED");				
-						}
-						else if(j == 4){
-							outputln("\nBLUE ANIMATION STARTED");				
-						}
-				}
 				
-				//Workaround for the mAnimator diagonal transition bug
-				//I'll start first the animation on the x axis, then the one on the Y axis and in the end the one on the z axis
-				//so that the movement are computed correctly for every direction
-				if(paths[j].HasBeenWalked() && j < len(randomShapes) && randomShapes[j].IsAnimating()){	
-					var time;
-					var cubesObjs = randomShapes[j].GetObjs();
-					var objsAnimations = randomShapes[j].GetAnimationsVector();
-					var startAngle = randomShapes[j].GetOriginalAngles();
-					var finalAngle = randomShapes[j].GetFinalAngles();
-					var finalPos = randomShapes[j].GetFinalPos();
-					var objPos;
-					var checkOffs = 0.5*SCALE_FACTOR; //The position is never perfect
-					var completedAnimations = 0;
-					
-					for(var i = 0; i < len(cubesObjs); i++){
-						objPos = cubesObjs[i].GetPosition();
-						time = (Rand(10)+ 11) / 5;
-												
-						if(objsAnimations[i].x == 0){	
-//							mAnimator.RemoveTransitionByObject(randomShapes[j].GetObjs()[i], 3);	//The animation is starting so I remove the rotation around a point animation
-							objsAnimations[i].x = 1;
-							mAnimator.CreateTransition(cubesObjs[i], [objPos.x, objPos.y, objPos.z], [finalPos[i].x, objPos.y, objPos.z], time, false);
-							cubesObjs[i].SetRotation(startAngle[i].x, 1,0,0);
-							time = (Rand(10)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].x, finalAngle[i].x, [1,0,0], time-0.5, false, false);
-						}
-						else if(objPos.x < finalPos[i].x + checkOffs && objPos.x > finalPos[i].x - checkOffs && objsAnimations[i].y == 0){
-							objsAnimations[i].y = 1;
-							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, objPos.y, objPos.z], [finalPos[i].x, finalPos[i].y, objPos.z], time, false);
-							cubesObjs[i].SetRotation(startAngle[i].y, 0,1,0);
-							time = (Rand(10)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].y, finalAngle[i].y, [0,1,0], time-0.5, false, false);
-						}						
-						else if(objPos.y < finalPos[i].y + checkOffs && objPos.y > finalPos[i].y - checkOffs && objsAnimations[i].z == 0){
-							objsAnimations[i].z = 1;
-							mAnimator.CreateTransition(cubesObjs[i], [finalPos[i].x, finalPos[i].y, objPos.z], [finalPos[i].x, finalPos[i].y, finalPos[i].z], time, false);
-							cubesObjs[i].SetRotation(startAngle[i].z, 0,0,1);
-							time = (Rand(10)+ 11) / 5;
-							mAnimator.CreateRotatingTransition(cubesObjs[i], startAngle[i].z, finalAngle[i].z, [0,0,1], time-0.5, false, false);
-						}						
-						else if(objPos.z < finalPos[i].z + checkOffs && objPos.z > finalPos[i].z - checkOffs && objsAnimations[i].z == 1){
-							completedAnimations++;
-						}
-					}
-					
-					
-					if(completedAnimations >= len(cubesObjs)){
-						randomShapes[j].StopAnimation();						
-						if(j == 0){		
-							outputln("\nGREEN ANIMATION COMPLETED");				
-						}
-						else if(j == 1){
-							outputln("\nLIGHT BLUE  ANIMATION COMPLETED");					
-						}
-						else if(j == 2){
-							outputln("\nRED ANIMATION COMPLETED");				
-						}
-						else if(j == 3){
-							outputln("\nWHITE ANIMATION COMPLETED");				
-						}
-						else if(j == 4){
-							outputln("\nBLUE ANIMATION COMPLETED");				
-						}
-					}
+				//If the path has been walked I start the animation
+				if(originaLength != len(tilesObjs) && len(tilesObjs) < 1){
+					randomShapes[j].MoveToFinalPosition(mAnimator);
 				}
 			}				
 			

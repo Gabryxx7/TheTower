@@ -241,6 +241,8 @@ function ButtonsWall::IsInRange(objPos, range){
 				buttonPos += [-mSize.z*0.5,0,0];
 			}
 			
+			//If I check the y, the lowest or highest blocks will never be counted
+//			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2 + (objPos.y-buttonPos.y)^2);
 			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2);
 			if(distance <= range && distance < minDistance){
 				outputln(str(distance) +" " +str(range));
