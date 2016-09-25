@@ -674,7 +674,7 @@ function Level2::UpdateLogic(dt)
 				
 				for(var i = 0; i < len(tilesObjs); i++){			
 					tilePos = tilesObjs[i].GetPosition();
-					var distance = sqrt((cameraPosition.x-tilePos.x)^2 + (cameraPosition.z - tilePos.z)^2);
+					var distance = sqrt((cameraPosition.x-tilePos.x)^2 + (cameraPosition.z - tilePos.z)^2 + (cameraPosition.y - tilePos.y)^2);
 					if(distance < stepDistance){
 						if(pathAnim)
 							mAnimator.CreateTransition(tilesObjs[i], tilesObjs[i].GetPosition() + [0, -50*SCALE_FACTOR, 0], tilesObjs[i].GetPosition(), 0.6, false);

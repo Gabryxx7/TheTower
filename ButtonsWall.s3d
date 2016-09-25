@@ -13,12 +13,23 @@ class ButtonsWall{
 	var mWaypoints;
 	var mIsAnimating;
 	var mCodePositions;
+	var mBorderShader;
+	var mMeshSizes;
+	
+	var mActiveObjIndex;
+	var mActiveButtonBorderObj;
+	var mIsMoving;
+	var mDistance;
 	
 	Draw();
 	ComputeAnimations(num);
 	StartAnimation(animator);
 	StopAnimation(animator);
 	ComputeCode(amount, maxRow);
+	FindClosestButton();
+	IsInRange(objPos, range);
+	MoveButtonInRange(movingObjPos);
+	StopMoving();
 };
 
 function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction){
@@ -30,12 +41,30 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 	mSpacing = spacing;
 	mDirection = direction;
 	mIsAnimating = false;
+	mActiveObjIndex = -1;
+	mIsMoving = false;
+	mDistance = -1;
+		
+	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec4 color; void main (void) { gl_FragColor = color; }", true);
 	
 	mInitialPos = {};
 	mObjs = {};
 	mMeshes = {};
 	mCodePositions = {};
+	mMeshSizes = {};
 	
+	if(mDirection == 1){
+		mMeshSizes = {[-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]};
+	}	
+	else if(mDirection == 2){
+		mMeshSizes = {[-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]};	
+	}
+	else if(mDirection == -1){
+		mMeshSizes = {[-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]};
+	}
+	else if(mDirection == -2){
+		mMeshSizes = {[-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]};	
+	}
 	
 	var obj;
 	var mesh;
@@ -45,26 +74,20 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 		buttonPos.y = (spacing+size.y)*i;
 		buttonPos.x = 0;
 		for(var j = 0; j < mAmountx; j++){
-			buttonPos.x += spacing+size.x;			
+			buttonPos.x += spacing+size.x;	
+			mesh = CvmNewMesh(VRP_BOX, 1, mMeshSizes[0], mMeshSizes[1]);				
+			obj = CvmObj(mesh);	
 			
-			if(direction == 1){
-				mesh = CvmNewMesh(VRP_BOX, 1, [-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]);	
-				obj = CvmObj(mesh);		
+			if(mDirection == 1){	
 				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);
 			}	
-			else if(direction == 2){
-				mesh = CvmNewMesh(VRP_BOX, 1, [-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]);	
-				obj = CvmObj(mesh);		
+			else if(mDirection == 2){
 				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
 			}
-			else if(direction == -1){
-				mesh = CvmNewMesh(VRP_BOX, 1, [-size.x/2, -size.y/2, -size.z/2], [size.x/2, size.y/2, size.z/2]);	
-				obj = CvmObj(mesh);		
+			else if(mDirection == -1){
 				obj.SetPosition(mPos + mOffset + [buttonPos.x, buttonPos.y, buttonPos.z]);			
 			}
-			else if(direction == -2){
-				mesh = CvmNewMesh(VRP_BOX, 1, [-size.z/2, -size.y/2, -size.x/2], [size.z/2, size.y/2, size.x/2]);	
-				obj = CvmObj(mesh);		
+			else if(mDirection == -2){	
 				obj.SetPosition(mPos + mOffset + [buttonPos.z, buttonPos.y, buttonPos.x]);				
 			}
 			
@@ -76,18 +99,31 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction)
 			aadd(mMeshes, mesh);
 		}
 	}	
+	mActiveButtonBorderObj = CvmObj(CvmNewMesh(VRP_BOX, 1, mMeshSizes[0], mMeshSizes[1]));
+	mActiveButtonBorderObj.SetScale(1.02, 1.02, 1.02);
 }
 
 function ButtonsWall::Draw(){
-	foreach(var obj in mObjs){
-		obj.Draw(VR_NO_CULLING);
+	for(var i = 0; i < len(mObjs); i++){
+			mObjs[i].Draw(VR_NO_CULLING);			
+	}
+	
+	if(mActiveObjIndex > 0){
+		mActiveButtonBorderObj.SetPosition(mObjs[mActiveObjIndex].GetPosition());
+    	glCullFace (GL_FRONT);
+    	
+    	mBorderShader.Start();
+    		mBorderShader.SetParameter("color", mIsMoving ? [0,0,1,1] : [1,1,0,1]);
+			mActiveButtonBorderObj.Draw();
+		mBorderShader.Stop();
+	
+		glCullFace (GL_BACK);		
 	}
 }
 
 function ButtonsWall::ComputeCode(amount, maxRow){
 	for(var i = 0; i < amount; i++){
 		var randomNum = Rand(maxRow*mAmountx);
-		aadd(mCodePositions, randomNum);
 		mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, [1,0,0]);
 		
 		if(mDirection == 1){
@@ -102,6 +138,8 @@ function ButtonsWall::ComputeCode(amount, maxRow){
 		else if(mDirection == -2){
 			mObjs[randomNum].SetPosition(mInitialPos[randomNum]+[-mSize.z*0.5,0,0]);
 		}
+		
+		aadd(mCodePositions, randomNum);
 	}
 }
 
@@ -153,5 +191,76 @@ function ButtonsWall::StopAnimation(animator){
 			mAnimationTime += 0.7;	
 			animator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mInitialPos[i], mAnimationTime, false);
 		}	
+	}
+}
+
+function ButtonsWall::FindClosestButton(){
+	
+}
+
+function ButtonsWall::MoveButtonInRange(movingObjPos){
+	mIsMoving = true;
+	var pos = mObjs[mActiveObjIndex].GetPosition();
+	if(mDirection == 1){
+		mObjs[mActiveObjIndex].SetPosition([pos.x, pos.y, movingObjPos.z-mSize.z*0.5-mDistance]);	
+	}
+	else if(mDirection == 2){
+		mObjs[mActiveObjIndex].SetPosition([movingObjPos.x-mSize.z*0.5-mDistance, pos.y, pos.z]);		
+	}
+	else if(mDirection == -1){
+		mObjs[mActiveObjIndex].SetPosition([pos.x, pos.y, movingObjPos.z+mSize.z*0.5-mDistance]);		
+	}
+	else if(mDirection == -2){
+		mObjs[mActiveObjIndex].SetPosition([movingObjPos.x+mSize.z*0.5-mDistance, pos.y, pos.z]);		
+	}
+}
+
+function ButtonsWall::StopMoving(){
+	mIsMoving = false;
+}
+
+function ButtonsWall::IsInRange(objPos, range){
+	if(!mIsMoving){
+		var distance = 0;
+		var buttonPos = 0;
+		var minDistance = range*1000;
+		var foundIndex = -1;
+		
+		foreach(var index in mCodePositions){
+			buttonPos = mObjs[index].GetPosition();
+			if(mDirection == 1){
+				buttonPos += [0,0,mSize.z*0.5];
+			}
+			else if(mDirection == -1){
+				buttonPos += [0,0,-mSize.z*0.5];
+			}
+			else if(mDirection == 2){
+				buttonPos += [mSize.z*0.5,0,0];
+			}
+			else if(mDirection == -2){
+				buttonPos += [-mSize.z*0.5,0,0];
+			}
+			
+			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2);
+			if(distance <= range && distance < minDistance){
+				outputln(str(distance) +" " +str(range));
+				
+				if(abs(mDirection) == 1 ){
+					mDistance = objPos.z-buttonPos.z;				
+				}else if(abs(mDirection) == 2){
+					mDistance = objPos.x-buttonPos.x;						
+				}
+				
+				minDistance = distance;
+				foundIndex = index;
+			}
+		}
+		
+		mActiveObjIndex = foundIndex;
+		
+		return mActiveObjIndex > -1;	
+	}
+	else{
+		return true;
 	}
 }
