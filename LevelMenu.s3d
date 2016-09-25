@@ -107,9 +107,7 @@ class LevelMenu
 	var mSpotShader;
 	var mToonShader;
 	var mAlphaShader;
-	
-	var mAnimationTranslate;
-		
+			
 	var mOpenglTranslationOffset;
 	
 	// Private functions
@@ -139,8 +137,6 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
-	mAnimationTranslate = [0.0, 0.0, 0.0];
-
 	//Ampl: 28.3498 spacing: 0 size: 117.953 xP: 0.795 yp: 0.645 level: -144.3 viewDist: 255 velocity: 0.7
 	//Ampl: 49.5997 spacing: 0 size: 185.604 xP: 0.775 yp: 0.67 level: -209.304 viewDist: 437.5 velocity: -1.9
 	seaShaderEnabled = false;
@@ -426,7 +422,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
  */
 function LevelMenu::Render()
 {		
-	glTranslate(mAnimationTranslate);
+//	glTranslate(mOpenglTranslationOffset);
 	
 	switch(mLevelStatus)
 	{
@@ -557,7 +553,7 @@ function LevelMenu::UpdateLogic(dt)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
-	cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset - mAnimationTranslate;
+	cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	switch(mLevelStatus)
 	{
@@ -618,7 +614,7 @@ function LevelMenu::UpdateLogic(dt)
 			if(walkWayTrigger.IsPointInside(cameraPosition) && mWalkWay.GetPosition().x >= towerPosition.x + towerLevelWidth/2 + mWalkWaySize.x/2){
 				var increment = mWalkDistance / 8.0;
 
-				mAnimationTranslate.x -= increment * dt;
+				mOpenglTranslationOffset.x -= increment * dt;
 				
 				var walkwayPos = mWalkWay.GetPosition();
 				

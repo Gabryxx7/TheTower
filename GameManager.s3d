@@ -1,4 +1,4 @@
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -37,16 +37,12 @@ global var SCALE_FACTOR = 0.2;
 /*
  * This class manages the whole game and the transition between levels.
  * It also manages the rendering and the integration of the HTC Vive, so that levels don't need to be aware of it (too much).
- * 
- * NOTE: The controller's CVmObj should be created in the GameManager but passed to each level's class. The level should handle rendering them, but
- * NOT updating their position, sinceit's better that the GameManger does that, so that the levels have no idea of the HTC Vive being used.
- * The ideal would be to update their position in the UpdateLogic of the GameManager (at start) and then setting the new position to the level's controller
- * (using a method like "mCurrentLevel.SetControllerPosition(pos)".
  */
 class GameManager
 {
 	// This variable has access to the DLL functions to control the Vive
 	var mHMD;
+	
 	var mJoystick;
 	
 	// Boolean, set to true if the Vive was detected at start; false otherwise
@@ -110,6 +106,12 @@ class GameManager
 	var mPlayAreaBox;
 	var mPlayAreaBoxHeight;
 	var mPlayAreaBoxShader;
+	
+	var mPlayAreaPlane;
+	var mPlayAreaPlaneShader;
+	var mPlayAreaPlaneAlpha;
+	var mPlayAreaPlaneAlphaIncrement;
+	var mIsPlayAreaPlaneVisible;
 	
 	// Boolean that indicates if the current position of the circle is a valid position for teleportation
 	var mIsPositionValid;
@@ -227,11 +229,11 @@ function GameManager::GameManager(HMD)
  
 //		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
@@ -281,6 +283,7 @@ function GameManager::GameManager(HMD)
 	mDashedLineShader = CVmShaderProgram("dashedLineShader.glsl");
 	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
 	mPlayAreaBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
+	mPlayAreaPlaneShader = CVmShaderProgram("playAreaPlaneShader.glsl");
 	
 	// Offset used for the teleportation feature rendering
 	mDashedLinesOffset = 0;
@@ -294,6 +297,17 @@ function GameManager::GameManager(HMD)
 	// Creating the play area box
 	var playAreaBoxMesh = CVmNewMesh(VRP_BOX, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaBoxHeight/2.0, -mPlayAreaRec.y / 2.0], [mPlayAreaRec.x/2.0, mPlayAreaBoxHeight/2, mPlayAreaRec.y / 2.0]);
 	mPlayAreaBox = CVmObj(playAreaBoxMesh);
+	
+	// Creating the play area plane (the green one); I rotate it so that it's parallel to the floor, and I move it up a bit to avoid z-fighting
+	var playAreaPlaneMesh = CVmNewMesh(VRP_PLANE, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaRec.y/2.0, 0], [mPlayAreaRec.x / 2.0, mPlayAreaRec.y/2.0, 0], 2, 2);
+	mPlayAreaPlane = CVmObj(playAreaPlaneMesh);
+	mPlayAreaPlane.SetRotation(90, 1, 0, 0);
+	mPlayAreaPlane.Translate(0, 0.2 * SCALE_FACTOR, 0);
+	
+	// Variables for the play area plane
+	mPlayAreaPlaneAlpha = 1.0;
+	mPlayAreaPlaneAlphaIncrement = 0.004;
+	mIsPlayAreaPlaneVisible = false;
 }
 
 /*
@@ -309,6 +323,7 @@ function GameManager::Render()
 		case STATUS_ENDGAME:
 		case STATUS_INGAME:{
 				
+			// I setup the opengl lights for this level; I do it using opengl functions to avoid problems with the rendering of the vive
 			mCurrentLevel.SetupOpenglLights();
 				
 				
@@ -445,7 +460,34 @@ function GameManager::XVRRendering()
 	// If we don't have to draw the ray, I reset its offset, so that it doesn't increment too much in the course of the game
 	else
 		mDashedLinesOffset = 0;
-	
+
+	// If the green play area plane is visible (i.e. the user is pressing the grip buttons), I need to render it too
+	if(mIsPlayAreaPlaneVisible)
+	{
+		// Since the plane has to be always centered in the origin, I translate back with the opengl offset before rendering. By doing this I assure that
+		// the plane always "follows" the player when he teleports, uses the elevator or stuff like that
+		glTranslate(-mOpenglTranslationOffset);
+		
+		// I render it with its shader
+		mPlayAreaPlaneShader.Start();
+			mPlayAreaPlaneShader.SetParameter("primaryColor", [0.0, 1.0, 0.0]);
+			mPlayAreaPlaneShader.SetParameter("secondaryColor", [1.0, 0.0, 0.0]);
+			mPlayAreaPlaneShader.SetParameter("colorAlpha", mPlayAreaPlaneAlpha);
+			mPlayAreaPlaneShader.SetParameter("width", mPlayAreaRec.x);
+			mPlayAreaPlaneShader.SetParameter("depth", mPlayAreaRec.y);
+			mPlayAreaPlaneShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
+			mPlayAreaPlaneShader.SetParameter("playerPosition", mCamera.GetPosition());
+			mPlayAreaPlaneShader.SetParameter("modelMatrix", mPlayAreaPlane.GetModelMatrix());
+			
+			// To create the alpha animation of the plane I increment its alpha value; if it reaches the threshold bounds I invert the sign of the increment
+			if(mPlayAreaPlaneAlpha >= 1.0 && mPlayAreaPlaneAlphaIncrement > 0 || mPlayAreaPlaneAlpha <= 0.4 && mPlayAreaPlaneAlphaIncrement < 0)
+				mPlayAreaPlaneAlphaIncrement = -mPlayAreaPlaneAlphaIncrement;
+				
+			mPlayAreaPlaneAlpha += mPlayAreaPlaneAlphaIncrement;
+			
+			mPlayAreaPlane.Draw();		
+		mPlayAreaPlaneShader.Stop();
+	}
 	
 	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
 	if(!mIsVRon)
@@ -468,8 +510,8 @@ function GameManager::XVRRendering()
  */
 function GameManager::UpdateLogic(dt)
 {	
- 	switch (mGameStatus) {
-		
+ 	switch (mGameStatus) 
+ 	{
 		case STATUS_MENU:
 		
 			break;
@@ -571,8 +613,8 @@ function GameManager::UpdateLogic(dt)
 						// The new offset is the difference between the player's position and the new position of the circle;
 						// I'm only udpating the x and y values since the y should stay the same
 						var cameraPosition = mCamera.GetPosition();
-						mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
-						mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
+						mOpenglTranslationOffset.x = cameraPosition.x - mPositionCircleObj.GetPosition().x;
+						mOpenglTranslationOffset.z = cameraPosition.z - mPositionCircleObj.GetPosition().z;
 						
 						// I notify the current level that the offset has changed
 						mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
@@ -582,9 +624,17 @@ function GameManager::UpdateLogic(dt)
 				}
 			}
 			
+			// If the user presses the grip buttons of the controllers, I show the play area plane
+			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2))
+				mIsPlayAreaPlaneVisible = true;
+			else
+				mIsPlayAreaPlaneVisible = false;
+			
+			
 			if(mCurrentLevel.IsLevelCompleted())
 			{
-				if(mCurrentLevel.__GetName() == "LEVELMENU"){
+				if(mCurrentLevel.__GetName() == "LEVELMENU")
+				{
 					if(!mEnding)
 					{
 						mFadingOut = true;
