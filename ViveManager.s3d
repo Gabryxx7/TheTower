@@ -23,6 +23,7 @@ class ViveManager
 	SetActiveCamera(camera);
 	IsPressingPrimaryButton(controllerIndex);
 	IsPressingSecondaryButton(controllerIndex);
+	IsGripPressed(controllerIndex);
 	HasPressedMenuButton(controllerIndex);
 	VibrateController(controllerIndex, microseconds);
 	GetController(controllerIndex);
@@ -104,6 +105,11 @@ function ViveManager::IsPressingPrimaryButton(controllerIndex)
 function ViveManager::IsPressingSecondaryButton(controllerIndex)
 {
 	return mHMD.IsTouchpadPressed(controllerIndex + 2) == 1;
+}
+
+function ViveManager::IsGripPressed(controllerIndex)
+{
+	return mHMD.IsGripPressed(controllerIndex + 2) == 1;
 }
 
 

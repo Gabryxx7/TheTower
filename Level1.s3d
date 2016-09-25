@@ -342,9 +342,9 @@ function Level1::Level1(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
-	mLight0Diffuse = [1,1,1];
-	mLight1Diffuse = [1,1,1];
-	mLight2Diffuse = [1,1,1];
+	mLight0Diffuse = [1, 1, 1];
+	mLight1Diffuse = [0.998, 0.96, 2.898];
+	mLight2Diffuse = [0.508, 1.03, 0.338001];
 		
 	mLight0 = lights[0];
 	mLight0.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
