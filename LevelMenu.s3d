@@ -531,16 +531,14 @@ function LevelMenu::Render()
 			controller.Draw();
 			raycastOrigin = controller.GetPosition();
 			raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
-			if(mInputManager.IsPressingPrimaryButton(controller.GetIndex())){			
 				glLineWidth(2); 		
-				glColor([0.5,0.5,1]); 
+				glColor([0.2,0.2,1]); 
 				
 				// I draw the ray as a simple opengl line
 				glBegin(GL_LINES);
 					glVertex(raycastOrigin);
 					glVertex(raycastEnd);		
 				glEnd();
-			}
 		}
 		
 	}
@@ -574,32 +572,41 @@ function LevelMenu::UpdateLogic(dt)
 			if(debugVrOn)			
 				mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);	
 				
-			var pointedLevel = -1;
 			for(var i = 0; i < len(levelSelectors); i++){
 				var res = false;
 				if(mIsVrOn || debugVrOn){
 					foreach(var controller in mControllersArray){
-						res = levelSelectors[i].IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());						
+						res = levelSelectors[i].IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());		
+						if(res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+							levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
+							if(mSelectedLevel >= 0)
+								levelSelectors[mSelectedLevel].IsSelected(false);	
+												
+							levelSelectors[i].IsSelected(true);
+							mSelectedLevel = i;
+							mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+							mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+			
+							break;								
+						}			
 					}
-				}else						
-					res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
-				
-				if(res){
-					pointedLevel = i;
-					break;
+				}else{					
+					res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());		
+					if(res && mInputManager.IsPressingPrimaryButton()){
+						levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
+						if(mSelectedLevel >= 0)
+							levelSelectors[mSelectedLevel].IsSelected(false);	
+											
+						levelSelectors[i].IsSelected(true);
+						mSelectedLevel = i;
+						mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+						mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+		
+						break;								
+					}				
 				}
 			}
 			
-			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton(mControllersArray[0].GetIndex())){
-				levelPreviewFrame.ChangeImage(levelSelectors[pointedLevel].GetImage());
-				if(mSelectedLevel >= 0)
-					levelSelectors[mSelectedLevel].IsSelected(false);	
-									
-				levelSelectors[pointedLevel].IsSelected(true);
-				mSelectedLevel = pointedLevel;
-				mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
-				mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
-			}
 			
 			var res = false;
 			if(mIsVrOn || debugVrOn){
@@ -613,11 +620,10 @@ function LevelMenu::UpdateLogic(dt)
 			}else{
 				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
 				if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
-						levelPreviewFrame.IsSelected(true);
-						mIsLevelCompleted = true;
-					}				
-			}			
-			
+					levelPreviewFrame.IsSelected(true);
+					mIsLevelCompleted = true;
+				}				
+			}					
 						
 			var range = 5*SCALE_FACTOR;
 			if(walkWayTrigger.IsPointInside(cameraPosition) && mWalkWay.GetPosition().x >= towerPosition.x + towerLevelWidth/2 + mWalkWaySize.x/2){

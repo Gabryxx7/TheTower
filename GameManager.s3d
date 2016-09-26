@@ -232,11 +232,11 @@ function GameManager::GameManager(HMD)
 	{
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
  
-		aadd(mLevels, arrayLevel0);
-		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
 //		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
@@ -336,11 +336,11 @@ function GameManager::Render()
 				
 			SceneBegin(mCamera);
 			
-//			glEnable(GL_NORMALIZE);
-//			glEnable (GL_BLEND);
-//			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glEnable(GL_NORMALIZE);
+			glEnable (GL_BLEND);
+			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-//			XVRRendering();
+			XVRRendering();
 
 			if(mIsVRon)
 			{		

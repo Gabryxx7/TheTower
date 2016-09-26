@@ -136,7 +136,7 @@ function ButtonsWall::Draw(){
 			mObjs[i].Draw(VR_NO_CULLING);			
 	}
 	
-	if(mActiveObjIndex > 0){
+	if(mActiveObjIndex >= 0){
 		mActiveButtonBorderObj.SetPosition(mObjs[mActiveObjIndex].GetPosition());
     	glCullFace (GL_FRONT);
     	
@@ -264,7 +264,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 //		}
 //	}
 	
-	if(mActiveObjIndex > 0 && vrCheck){
+	if(mActiveObjIndex >= 0 && vrCheck){
 		mIsMoving = true;
 		var pos = mObjs[mActiveObjIndex].GetPosition();
 		var minPos = mMinimumPos[mActiveObjIndex];
@@ -279,6 +279,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [pos.x, pos.y, movingObjPos.z-mSize.z*0.5];
 			else
 				newPos = [pos.x, pos.y, movingObjPos.z-mSize.z*0.5-mDistance];
+				
 			if(newPos.z >= minPos.z && newPos.z <= maxPos.z){
 				mObjs[mActiveObjIndex].SetPosition(newPos);	
 				maxDistance = abs(maxPos.z - minPos.z);
@@ -294,6 +295,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [movingObjPos.x-mSize.z*0.5, pos.y, pos.z];
 			else
 				newPos = [movingObjPos.x-mSize.z*0.5-mDistance, pos.y, pos.z];
+				
 			if(newPos.x >= minPos.x && newPos.x <= maxPos.x){
 				mObjs[mActiveObjIndex].SetPosition(newPos);	
 				maxDistance = abs(maxPos.x - minPos.x);
@@ -309,6 +311,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [pos.x, pos.y, movingObjPos.z+mSize.z*0.5];
 			else
 				newPos = [pos.x, pos.y, movingObjPos.z+mSize.z*0.5-mDistance];
+				
 			if(newPos.z >= maxPos.z && newPos.z <= minPos.z){
 				mObjs[mActiveObjIndex].SetPosition(newPos);	
 				maxDistance = abs(maxPos.z - minPos.z);
@@ -324,6 +327,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [movingObjPos.x+mSize.z*0.5, pos.y, pos.z];
 			else
 				newPos = [movingObjPos.x+mSize.z*0.5-mDistance, pos.y, pos.z];
+				
 			if(newPos.x >= maxPos.x && newPos.x <= minPos.x){
 				mObjs[mActiveObjIndex].SetPosition(newPos);	
 				maxDistance = abs(maxPos.x - minPos.x);

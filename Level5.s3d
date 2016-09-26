@@ -445,28 +445,28 @@ function Level5::UpdateLogic(dt)
 				else{
 					for(var i = 0; i < len(mWalls); i++){
 						if(mIsVrOn || debugVrOn){
-						var range = 2; //I check whether the camera or the vive is in the range of an active button or not
-						var minDistance = range;
-						var closerControllerIndex = -1;
-						
-						for(var j = 0; j < len(mControllersArray); j++){
-							var controllerDistance = mWalls[i].ActivateClosestButton(mControllersArray[j].GetPosition(), range);
-
-							if(controllerDistance < minDistance){
-								minDistance = controllerDistance;
-								closerControllerIndex = j;								
-							}							
-						}	
-						
-						if(closerControllerIndex != -1){
-							if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
-								mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex]);						
-							}
-							else{						
-								mWalls[i].StopMoving();	
-							}						
-						}		
-					}
+							var range = 2; //I check whether the camera or the vive is in the range of an active button or not
+							var minDistance = range;
+							var closerControllerIndex = -1;
+							
+							for(var j = 0; j < len(mControllersArray); j++){
+								var controllerDistance = mWalls[i].ActivateClosestButton(mControllersArray[j].GetPosition(), range);
+	
+								if(controllerDistance < minDistance){
+									minDistance = controllerDistance;
+									closerControllerIndex = j;								
+								}							
+							}	
+							
+							if(closerControllerIndex != -1){
+								if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
+									mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex]);						
+								}
+								else{						
+									mWalls[i].StopMoving();	
+								}						
+							}		
+						}
 						else{
 							var range = 1; //I check whether the camera or the vive is in the range of an active button or not
 							if(mWalls[i].ActivateClosestButton(cameraPosition, range) <= range){
