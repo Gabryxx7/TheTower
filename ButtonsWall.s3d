@@ -166,7 +166,6 @@ function ButtonsWall::ComputeCode(amount, rowRange){
 					break;
 				}		
 		}
-		outputln("EXTRACTED: " +str(randomNum));
 		aadd(mCodePositions, randomNum);
 			
 		mObjs[randomNum].GetMesh().ShaderSetParameter(0, "diffuse", 0, mCodeColor);
