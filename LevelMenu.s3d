@@ -461,6 +461,7 @@ function LevelMenu::Render()
 					seaShader.SetParameter("viewDistance", seaViewDistance);
 					seaShader.SetParameter("size", mSize);
 					seaShader.SetParameter("phase", cloudDt);
+				seaShader.Stop();	
 					
 					glBegin(GL_QUADS);
 					for(var i = -seaAmounty/2; i < seaAmounty/2; i++){
@@ -472,21 +473,29 @@ function LevelMenu::Render()
 								beta += seaYPeriod;
 								z = j*(seaSpacing+mSize/2)+seaPosition.z;
 								if(abs(cameraPosition.z-z) < seaViewDistance){
+									seaShader.Start();	
 									seaShader.SetParameter("alpha", alpha);	
 									seaShader.SetParameter("beta", beta+seaYPeriod);
+									seaShader.Stop();	
 									glVertex(x,seaPosition.y,z);
-																
+															
+									seaShader.Start();		
 									seaShader.SetParameter("alpha", alpha);	
 									seaShader.SetParameter("beta", beta);	
 									glVertex(x,seaPosition.y,z+mSize/2);
+									seaShader.Stop();	
 									
+									seaShader.Start();	
 									seaShader.SetParameter("alpha", alpha+seaXPeriod);	
 									seaShader.SetParameter("beta", beta+seaYPeriod);		
 									glVertex(x+mSize/2,seaPosition.y,z+mSize/2);
+									seaShader.Stop();	
 									
+									seaShader.Start();	
 									seaShader.SetParameter("alpha", alpha+seaXPeriod);	
 									seaShader.SetParameter("beta", beta+seaYPeriod);		
 									glVertex(x+mSize/2,seaPosition.y,z);	
+									seaShader.Stop();	
 								}
 							}							
 						}				

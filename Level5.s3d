@@ -75,6 +75,8 @@ class Level5
 	var mWalls;
 	var timeFromLastKey;
 	var mAnimations;
+	var mAnimatingWalls;
+	var mWallsAnimationTime;
 	
 	// Private functions	
 	// Public functions
@@ -100,7 +102,7 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 {
 	mTexture = CVmTexture("Level2Prev.png"); ///TO CHANGE
 	mIsVRon = isVRon;
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -134,28 +136,26 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mWalls = {};
 	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
 	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1));
-	mWalls[0].SetDefaultColor([1, 0.7, 0.7]);
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1, [1, 0.7, 0.7], [0,0,1]));
 
 	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-1));
-	mWalls[0].SetDefaultColor([0.7, 1, 0.7]);
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-1, [0.7, 1, 0.7], [1,0,1]));
 	
 	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x)/2] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,2));
-	mWalls[0].SetDefaultColor([0.7, 0.7, 1]);
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,2, [0.7, 0.7, 1], [1,0,0]));
 
 	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-2));
-	mWalls[0].SetDefaultColor([0.7, 1, 1]);
+	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-2, [0.7, 1, 1], [1,1,0]));
 	
 	foreach(var wall in mWalls){
 		wall.ComputeAnimations(5);
-		wall.ComputeCode(5, 3);
+		wall.ComputeCode(1, [2,4]); //first param: number of buttons to press, second param: row range
 	}
 	
 	timeFromLastKey = 0;
 	mAnimations = {false, false, false, false};
+	mWallsAnimationTime = -1;
+	mAnimatingWalls = 0;
 	
 }
 
@@ -363,59 +363,121 @@ function Level5::UpdateLogic(dt)
 				}			
 			}		
 			
+			//For each wall
 			for(var i = 0; i < len(mWalls); i++){
-				if(mWalls[i].IsInRange(cameraPosition, 5*SCALE_FACTOR)){
-					if( mInputManager.IsPressingPrimaryButton()){
-						mWalls[i].MoveButtonInRange(cameraPosition);						
+				if(!mWalls[i].IsCompleted()){ //If it is not completed
+					if(mIsVrOn || debugVrOn){
+						var range = 2; //I check whether the camera or the vive is in the range of an active button or not
+						foreach(var controller in mControllersArray){
+							if(mWalls[i].IsInRangeOfActiveButton(controller.GetPosition(), range)){
+								if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
+									mWalls[i].MoveButtonInRange(controller.GetPosition(), true, controller);						
+								}
+								else{						
+									mWalls[i].StopMoving();
+								}
+							}							
+						}				
 					}
-					else{						
-						mWalls[i].StopMoving(cameraPosition);
+					else{
+						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
+						if(mWalls[i].IsInRangeOfActiveButton(cameraPosition, range)){
+							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
+								mWalls[i].MoveButtonInRange(cameraPosition, false);						
+							}
+							else{						
+								mWalls[i].StopMoving();
+							}
+						}	
+					}
+					
+					if(mAnimations[i])
+						mWalls[i].StartAnimation(mAnimator);
+					else
+						mWalls[i].StopAnimation(mAnimator);
+						
+					if(mWalls[i].IsCompleted()){
+						outputln("Wall " + str(i) +" COMPLETED");
 					}
 				}
-				
-				if(mAnimations[i])
-					mWalls[i].StartAnimation(mAnimator);
-				else
-					mWalls[i].StopAnimation(mAnimator);					
+				else{
+					if(!mWalls[i].IsAnimating()){
+						if(mWalls[i].IsNotInWallRange(cameraPosition, 5*SCALE_FACTOR)){
+							mWalls[i].StartAnimation(mAnimator);	
+							mAnimatingWalls += 1;	
+							if(mAnimatingWalls == len(mWalls))
+								mWallsAnimationTime = GetTime();	
+						}	
+					}
+				}			
 			}
-			break;
-		}
-		
-		case STATUS_LEVEL_ENDING:
-		{
-			// If the elevator isn't open and the player steps in front of it, I create transitions to make the doors open, play a sound and save the fact that now it's open
-			if(!mIsElevatorOpen)
-			{
+			
+			if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 2000){
+				foreach(var wall in mWalls){
+					wall.StopAnimation(mAnimator);
+				}
+				
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
 				
 				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
 				
-				mIsElevatorOpen = true;
-				mSoundManager.PlaySound(6, true, 1);
+				// I switch status
+				mLevelStatus = STATUS_LEVEL_ENDING;
 			}
-			// Otherwise, if it's already open and the player steps inside, I close the door and prepare for the ending of the level
-			else if(mIsElevatorOpen && mElevator.IsPointInElevator(cameraPosition))
+			break;
+		}
+		
+		case STATUS_LEVEL_ENDING:
+		{
+			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
+			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
 			{
 				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
 				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-				
+
 				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
 				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
-				
-				mIsElevatorOpen = false;
-				
-				// I signal that the game is about to end and get the time; I need that the transitions of the doors end before actually ending the level,
-				// so I need to save the time the animations started
+								
+				// If the player is in, I start the timer to end the level
 				mEnding = true;
 				mEndTimer = GetTime();
+			}
+			else{
+				for(var i = 0; i < len(mWalls); i++){
+					if(mIsVrOn || debugVrOn){
+						var range = 2; //I check whether the camera or the vive is in the range of an active button or not
+						foreach(var controller in mControllersArray){
+							if(mWalls[i].ActivateClosestButton(controller.GetPosition(), range)){
+								if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
+									mWalls[i].MoveButtonInRange(controller.GetPosition(), true, controller);						
+								}
+								else{						
+									mWalls[i].StopMoving();
+								}
+							}							
+						}				
+					}
+					else{
+						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
+						if(mWalls[i].ActivateClosestButton(cameraPosition, range)){
+							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
+								mWalls[i].MoveButtonInRange(cameraPosition, false);						
+							}
+							else{						
+								mWalls[i].StopMoving();
+							}
+						}	
+					}				
+				}
 			}
 			
 			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
 			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
 				mIsLevelCompleted = true;
-			
+				
+							
 			break;
 		}
 	}
