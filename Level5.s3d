@@ -405,26 +405,31 @@ function Level5::UpdateLogic(dt)
 						if(mWalls[i].IsNotInWallRange(cameraPosition, 5*SCALE_FACTOR)){
 							mWalls[i].StartAnimation(mAnimator);	
 							mAnimatingWalls += 1;	
-							if(mAnimatingWalls == len(mWalls))
-								mWallsAnimationTime = GetTime();	
-						}	
-					}
-				}			
-			}
+							if(mAnimatingWalls == len(mWalls)){
+								mWallsAnimationTime = GetTime();
+								mAnimatingWalls = 0;	
+							}	
+						}
+					}			
+				}
 			
-			if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 2000){
-				foreach(var wall in mWalls){
-					wall.StopAnimation(mAnimator);
+				if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 500){
+						mWalls[mAnimatingWalls].StopAnimation(mAnimator);
+						mAnimatingWalls++;
+						mWallsAnimationTime = GetTime();
+						if(mAnimatingWalls >= len(mWalls)){
+							var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+							var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+							
+							mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+							mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+							
+							// I switch status
+							mLevelStatus = STATUS_LEVEL_ENDING;
+						}
 				}
 				
-				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-				
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-				
-				// I switch status
-				mLevelStatus = STATUS_LEVEL_ENDING;
+			
 			}
 			break;
 		}
