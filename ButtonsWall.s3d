@@ -449,7 +449,7 @@ function ButtonsWall::ActivateClosestButton(objPos, range){
 		var minDistance = range*1000;
 		var foundIndex = -1;
 		
-		foreach(var index in mCodePositions){
+		for(var index = 0; index < len(mObjs); index++){
 			buttonPos = mObjs[index].GetPosition();
 			if(mDirection == 1){
 				buttonPos += [0,0,mSize.z*0.5];

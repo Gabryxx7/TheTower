@@ -103,7 +103,7 @@ function Elevator::Elevator(elevatorWidth, sideWallWidth, height, lightsRangeMin
 	mElevatorRoom.AddObject(mElevatorDoorRightObj, mRightDoorClosedPosition.x, mRightDoorClosedPosition.y, mRightDoorClosedPosition.z);
 	
 	mDistanceBetweenClosedDoors = Modulus(mElevatorDoorLeftObj.GetPosition() - mElevatorDoorRightObj.GetPosition());
-	
+		
 	mLowerCornerPosition = [-elevatorWidth/2.0, -height/2.0, sideWallWidth];
 	mUpperCornerPosition = [elevatorWidth/2.0, height/2.0, 0];
 	
