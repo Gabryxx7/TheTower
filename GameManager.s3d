@@ -103,14 +103,15 @@ class GameManager
 	// Objects that represent the play area rectangle (that is displayed as a box to create a cool shading effect). The play area is defined by the Vive's lighthouse
 	// system and it's basically the area that the player can move in safely
 	var mPlayAreaRec;
+	var mPlayAreaTeleportBox;
+	var mPlayAreaTeleportBoxHeight;
+	var mPlayAreaTeleportBoxShader;
+	
 	var mPlayAreaBox;
 	var mPlayAreaBoxHeight;
 	var mPlayAreaBoxShader;
-	
-	var mPlayAreaPlane;
-	var mPlayAreaPlaneShader;
-	var mPlayAreaPlaneAlpha;
-	var mPlayAreaPlaneAlphaIncrement;
+	var mPlayAreaBoxAlpha;
+	var mPlayAreaBoxAlphaIncrement;
 	var mIsPlayAreaPlaneVisible;
 	
 	// Boolean that indicates if the current position of the circle is a valid position for teleportation
@@ -163,7 +164,7 @@ function GameManager::GameManager(HMD)
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
-	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true, 7.0);	// Sounds when the player steps in the right direction
+	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true, 7.0);	
 	mSoundManager.AddSound("sounds/Mi1.wav", 0);
 	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
 	mSoundManager.AddSound("sounds/Sol3.wav", 2);
@@ -251,10 +252,10 @@ function GameManager::GameManager(HMD)
 		mCurrentLevelNumber = 0;
 		
 		aadd(mLevels, arrayLevel0);
-		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
 		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
@@ -282,8 +283,8 @@ function GameManager::GameManager(HMD)
 	// Shaders used to render the dashed line and the circle for the teleportation feature
 	mDashedLineShader = CVmShaderProgram("dashedLineShader.glsl");
 	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
-	mPlayAreaBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
-	mPlayAreaPlaneShader = CVmShaderProgram("playAreaPlaneShader.glsl");
+	mPlayAreaTeleportBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
+	mPlayAreaBoxShader = CVmShaderProgram("playAreaPlaneShader.glsl");
 	
 	// Offset used for the teleportation feature rendering
 	mDashedLinesOffset = 0;
@@ -292,21 +293,22 @@ function GameManager::GameManager(HMD)
 	mPlayAreaRec = mInputManager.GetPlayAreaSize();
 	
 	// Height of the play area box
-	mPlayAreaBoxHeight = 4.0 * SCALE_FACTOR;
+	mPlayAreaTeleportBoxHeight = 4.0 * SCALE_FACTOR;
 	
 	// Creating the play area box
-	var playAreaBoxMesh = CVmNewMesh(VRP_BOX, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaBoxHeight/2.0, -mPlayAreaRec.y / 2.0], [mPlayAreaRec.x/2.0, mPlayAreaBoxHeight/2, mPlayAreaRec.y / 2.0]);
-	mPlayAreaBox = CVmObj(playAreaBoxMesh);
+	var playAreaTeleportBoxMesh = CVmNewMesh(VRP_BOX, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaTeleportBoxHeight/2.0, -mPlayAreaRec.y / 2.0], [mPlayAreaRec.x/2.0, mPlayAreaTeleportBoxHeight/2, mPlayAreaRec.y / 2.0]);
+	mPlayAreaTeleportBox = CVmObj(playAreaTeleportBoxMesh);
+	
+	mPlayAreaBoxHeight = 20.0 * SCALE_FACTOR;
 	
 	// Creating the play area plane (the green one); I rotate it so that it's parallel to the floor, and I move it up a bit to avoid z-fighting
-	var playAreaPlaneMesh = CVmNewMesh(VRP_PLANE, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaRec.y/2.0, 0], [mPlayAreaRec.x / 2.0, mPlayAreaRec.y/2.0, 0], 2, 2);
-	mPlayAreaPlane = CVmObj(playAreaPlaneMesh);
-	mPlayAreaPlane.SetRotation(90, 1, 0, 0);
-	mPlayAreaPlane.Translate(0, 0.2 * SCALE_FACTOR, 0);
+	var playAreaBoxMesh = CVmNewMesh(VRP_BOX, 1, [-mPlayAreaRec.x / 2.0, -mPlayAreaBoxHeight / 2.0, -mPlayAreaRec.y/2.0], [mPlayAreaRec.x / 2.0, mPlayAreaBoxHeight / 2.0, mPlayAreaRec.y/2.0]);
+	mPlayAreaBox = CVmObj(playAreaBoxMesh);
+	mPlayAreaBox.Translate(0, mPlayAreaBoxHeight / 2.0 + 0.2 * SCALE_FACTOR, 0);
 	
 	// Variables for the play area plane
-	mPlayAreaPlaneAlpha = 1.0;
-	mPlayAreaPlaneAlphaIncrement = 0.004;
+	mPlayAreaBoxAlpha = 1.0;
+	mPlayAreaBoxAlphaIncrement = 0.004;
 	mIsPlayAreaPlaneVisible = false;
 }
 
@@ -436,21 +438,21 @@ function GameManager::XVRRendering()
 			// If the position is valid I also draw the play area box
 			if(mIsPositionValid)
 			{
-				mPlayAreaBoxShader.Start();
-					mPlayAreaBoxShader.SetParameter("color", color);
-					mPlayAreaBoxShader.SetParameter("width", mPlayAreaRec.x);
-					mPlayAreaBoxShader.SetParameter("depth", mPlayAreaRec.y);
-					mPlayAreaBoxShader.SetParameter("height", mPlayAreaBoxHeight);
-					mPlayAreaBoxShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
+				mPlayAreaTeleportBoxShader.Start();
+					mPlayAreaTeleportBoxShader.SetParameter("color", color);
+					mPlayAreaTeleportBoxShader.SetParameter("width", mPlayAreaRec.x);
+					mPlayAreaTeleportBoxShader.SetParameter("depth", mPlayAreaRec.y);
+					mPlayAreaTeleportBoxShader.SetParameter("height", mPlayAreaTeleportBoxHeight);
+					mPlayAreaTeleportBoxShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
 					
 					// In order to render the box correctly with the shader, I have to render first the back faces and then the front faces.
 					// If I only draw the front faces, some fragments will have transparency, but behind there wouldn't be anything since the back
 					// faces wouldn't be drawn. By drawing them first, I can assure that the transparencies of the fragments will be consistent
 					glCullFace(GL_FRONT);
-					mPlayAreaBox.Draw();
+					mPlayAreaTeleportBox.Draw();
 					glCullFace(GL_BACK);
-					mPlayAreaBox.Draw();
-				mPlayAreaBoxShader.Stop();
+					mPlayAreaTeleportBox.Draw();
+				mPlayAreaTeleportBoxShader.Stop();
 			}
 		}
 		
@@ -469,24 +471,29 @@ function GameManager::XVRRendering()
 		glTranslate(-mOpenglTranslationOffset);
 		
 		// I render it with its shader
-		mPlayAreaPlaneShader.Start();
-			mPlayAreaPlaneShader.SetParameter("primaryColor", [0.0, 1.0, 0.0]);
-			mPlayAreaPlaneShader.SetParameter("secondaryColor", [1.0, 0.0, 0.0]);
-			mPlayAreaPlaneShader.SetParameter("colorAlpha", mPlayAreaPlaneAlpha);
-			mPlayAreaPlaneShader.SetParameter("width", mPlayAreaRec.x);
-			mPlayAreaPlaneShader.SetParameter("depth", mPlayAreaRec.y);
-			mPlayAreaPlaneShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
-			mPlayAreaPlaneShader.SetParameter("playerPosition", mCamera.GetPosition());
-			mPlayAreaPlaneShader.SetParameter("modelMatrix", mPlayAreaPlane.GetModelMatrix());
+		mPlayAreaBoxShader.Start();
+			mPlayAreaBoxShader.SetParameter("primaryColor", [0.0, 1.0, 0.0]);
+			mPlayAreaBoxShader.SetParameter("secondaryColor", [1.0, 0.0, 0.0]);
+			mPlayAreaBoxShader.SetParameter("colorAlpha", mPlayAreaBoxAlpha);
+			mPlayAreaBoxShader.SetParameter("width", mPlayAreaRec.x);
+			mPlayAreaBoxShader.SetParameter("height", mPlayAreaBoxHeight);
+			mPlayAreaBoxShader.SetParameter("depth", mPlayAreaRec.y);
+			mPlayAreaBoxShader.SetParameter("outerEdgesTickness", 0.06 * SCALE_FACTOR);
+			mPlayAreaBoxShader.SetParameter("playerPosition", mCamera.GetPosition());
+			mPlayAreaBoxShader.SetParameter("modelMatrix", mPlayAreaBox.GetModelMatrix());
+			mPlayAreaBoxShader.SetParameter("scaleFactor", SCALE_FACTOR);
 			
 			// To create the alpha animation of the plane I increment its alpha value; if it reaches the threshold bounds I invert the sign of the increment
-			if(mPlayAreaPlaneAlpha >= 1.0 && mPlayAreaPlaneAlphaIncrement > 0 || mPlayAreaPlaneAlpha <= 0.4 && mPlayAreaPlaneAlphaIncrement < 0)
-				mPlayAreaPlaneAlphaIncrement = -mPlayAreaPlaneAlphaIncrement;
+			if(mPlayAreaBoxAlpha >= 0.5 && mPlayAreaBoxAlphaIncrement > 0 || mPlayAreaBoxAlpha <= 0.1 && mPlayAreaBoxAlphaIncrement < 0)
+				mPlayAreaBoxAlphaIncrement = -mPlayAreaBoxAlphaIncrement;
 				
-			mPlayAreaPlaneAlpha += mPlayAreaPlaneAlphaIncrement;
+			mPlayAreaBoxAlpha += mPlayAreaBoxAlphaIncrement;
 			
-			mPlayAreaPlane.Draw();		
-		mPlayAreaPlaneShader.Stop();
+			glCullFace(GL_FRONT);
+			mPlayAreaBox.Draw();	
+			glCullFace(GL_BACK);
+			mPlayAreaBox.Draw();	
+		mPlayAreaBoxShader.Stop();
 	}
 	
 	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
@@ -597,8 +604,8 @@ function GameManager::UpdateLogic(dt)
 					// I also position the play area box in that point, lifting it a bit so that it's completely above the ground (remember, the box
 					// has the origin in its center). I then translate the box, moving it so that it shows where the player is in the world with respect
 					// to the play area; where the player is can be seen directly by looking at the position of the camera
-					mPlayAreaBox.SetPosition(contactPoint + [0, mPlayAreaBoxHeight / 2.0 + 0.02 * SCALE_FACTOR, 0]);
-					mPlayAreaBox.Translate(-mCamera.GetPosition().x, 0, -mCamera.GetPosition().z);
+					mPlayAreaTeleportBox.SetPosition(contactPoint + [0, mPlayAreaTeleportBoxHeight / 2.0 + 0.02 * SCALE_FACTOR, 0]);
+					mPlayAreaTeleportBox.Translate(-mCamera.GetPosition().x, 0, -mCamera.GetPosition().z);
 				}
 			}
 			// If the user isn't pressing the button...
