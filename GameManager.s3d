@@ -37,12 +37,16 @@ global var SCALE_FACTOR = 0.2;
 /*
  * This class manages the whole game and the transition between levels.
  * It also manages the rendering and the integration of the HTC Vive, so that levels don't need to be aware of it (too much).
+ * 
+ * NOTE: The controller's CVmObj should be created in the GameManager but passed to each level's class. The level should handle rendering them, but
+ * NOT updating their position, sinceit's better that the GameManger does that, so that the levels have no idea of the HTC Vive being used.
+ * The ideal would be to update their position in the UpdateLogic of the GameManager (at start) and then setting the new position to the level's controller
+ * (using a method like "mCurrentLevel.SetControllerPosition(pos)".
  */
 class GameManager
 {
 	// This variable has access to the DLL functions to control the Vive
 	var mHMD;
-	
 	var mJoystick;
 	
 	// Boolean, set to true if the Vive was detected at start; false otherwise
@@ -108,9 +112,9 @@ class GameManager
 	var mPlayAreaTeleportBoxShader;
 	
 	var mPlayAreaBox;
+	var mPlayAreaBoxAlpha;
 	var mPlayAreaBoxHeight;
 	var mPlayAreaBoxShader;
-	var mPlayAreaBoxAlpha;
 	var mPlayAreaBoxAlphaIncrement;
 	var mIsPlayAreaPlaneVisible;
 	
@@ -228,13 +232,14 @@ function GameManager::GameManager(HMD)
 	{
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
  
-//		aadd(mLevels, arrayLevel0);
-//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, arrayLevel0);
+		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));	
+		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
@@ -285,6 +290,7 @@ function GameManager::GameManager(HMD)
 	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
 	mPlayAreaTeleportBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
 	mPlayAreaBoxShader = CVmShaderProgram("playAreaPlaneShader.glsl");
+
 	
 	// Offset used for the teleportation feature rendering
 	mDashedLinesOffset = 0;
@@ -325,7 +331,6 @@ function GameManager::Render()
 		case STATUS_ENDGAME:
 		case STATUS_INGAME:{
 				
-			// I setup the opengl lights for this level; I do it using opengl functions to avoid problems with the rendering of the vive
 			mCurrentLevel.SetupOpenglLights();
 				
 				
@@ -495,7 +500,7 @@ function GameManager::XVRRendering()
 			mPlayAreaBox.Draw();	
 		mPlayAreaBoxShader.Stop();
 	}
-	
+		
 	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
 	if(!mIsVRon)
 		DrawCrosshair();
@@ -517,8 +522,8 @@ function GameManager::XVRRendering()
  */
 function GameManager::UpdateLogic(dt)
 {	
- 	switch (mGameStatus) 
- 	{
+ 	switch (mGameStatus) {
+		
 		case STATUS_MENU:
 		
 			break;
@@ -620,8 +625,8 @@ function GameManager::UpdateLogic(dt)
 						// The new offset is the difference between the player's position and the new position of the circle;
 						// I'm only udpating the x and y values since the y should stay the same
 						var cameraPosition = mCamera.GetPosition();
-						mOpenglTranslationOffset.x = cameraPosition.x - mPositionCircleObj.GetPosition().x;
-						mOpenglTranslationOffset.z = cameraPosition.z - mPositionCircleObj.GetPosition().z;
+						mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
+						mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
 						
 						// I notify the current level that the offset has changed
 						mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
@@ -637,11 +642,9 @@ function GameManager::UpdateLogic(dt)
 			else
 				mIsPlayAreaPlaneVisible = false;
 			
-			
 			if(mCurrentLevel.IsLevelCompleted())
 			{
-				if(mCurrentLevel.__GetName() == "LEVELMENU")
-				{
+				if(mCurrentLevel.__GetName() == "LEVELMENU"){
 					if(!mEnding)
 					{
 						mFadingOut = true;

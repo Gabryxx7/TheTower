@@ -141,7 +141,7 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, distance){
 		if(!mIsPointed && !mIsSelected){
 			mIsPointed = true;
 			ChangeMeshesColor(mSelectedColor);
-			mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1.35,1.35,1.35], 0.1, false);			
+			mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1.35,1.35,1], 0.1, false);			
 		}
 		return true;		
 	}
