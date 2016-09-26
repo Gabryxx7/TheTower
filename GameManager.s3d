@@ -1,4 +1,4 @@
-global var DEBUG_MODE = false;
+global var DEBUG_MODE = true;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -239,12 +239,12 @@ function GameManager::GameManager(HMD)
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
-//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 		
 		mFadeToBlackAlpha = 1;
@@ -336,11 +336,11 @@ function GameManager::Render()
 				
 			SceneBegin(mCamera);
 			
-			glEnable(GL_NORMALIZE);
-			glEnable (GL_BLEND);
-			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//			glEnable(GL_NORMALIZE);
+//			glEnable (GL_BLEND);
+//			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-			XVRRendering();
+//			XVRRendering();
 
 			if(mIsVRon)
 			{		

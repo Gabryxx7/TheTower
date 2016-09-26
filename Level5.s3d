@@ -49,10 +49,6 @@ class Level5
 	// This array contains the reference to the currently visible portal's frames
 	var mCurrentlyVisiblePortalFrames;
 		
-	// World coordinates for the bounding box that contains the "square" of portals' frames
-	var mPortalsBoxLowerCorner;
-	var mPortalsBoxUpperCorner;
-	
 	// Booleans that indicate whether the elevator has appeared and if it's already open or not
 	var mIsElevatorPresent;
 	var mIsElevatorOpen;
@@ -131,7 +127,8 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	
 	var wallSize = [1.4*SCALE_FACTOR, 1.4*SCALE_FACTOR, 10*SCALE_FACTOR];
 	var spacing = 0.7*SCALE_FACTOR;
-	var amount = [36, 15];
+	var amount = [10, 10];
+//	var amount = [36, 15];
 	
 	mWalls = {};
 	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
@@ -243,8 +240,10 @@ function Level5::Render()
 	
 	
 	if(mIsVRon || debugVrOn){
-		foreach(var controller in mControllersArray)
+		foreach(var controller in mControllersArray){
 			controller.Draw();
+//			controller.DrawBoundingBox();			
+		}
 	}
 }
 
@@ -347,41 +346,38 @@ function Level5::UpdateLogic(dt)
 		{
 			mLight1Position = mLight1.GetPosition();
 			mLight2Position = mLight2.GetPosition();
-			if(GetTime() - timeFromLastKey > 250){
-				if(KeyPressed("1")){
-					timeFromLastKey = GetTime();
-					mAnimations[0] = !mAnimations[0];			
-				}if(KeyPressed("2")){
-					timeFromLastKey = GetTime();
-					mAnimations[1] = !mAnimations[1];			
-				}if(KeyPressed("3")){
-					timeFromLastKey = GetTime();
-					mAnimations[2] = !mAnimations[2];			
-				}if(KeyPressed("4")){
-					timeFromLastKey = GetTime();
-					mAnimations[3] = !mAnimations[3];			
-				}			
-			}		
 			
 			//For each wall
 			for(var i = 0; i < len(mWalls); i++){
+				
+				
 				if(!mWalls[i].IsCompleted()){ //If it is not completed
 					if(mIsVrOn || debugVrOn){
 						var range = 2; //I check whether the camera or the vive is in the range of an active button or not
-						foreach(var controller in mControllersArray){
-							if(mWalls[i].IsInRangeOfActiveButton(controller.GetPosition(), range)){
-								if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
-									mWalls[i].MoveButtonInRange(controller.GetPosition(), true, controller);						
-								}
-								else{						
-									mWalls[i].StopMoving();
-								}
+						var minDistance = range;
+						var closerControllerIndex = -1;
+						
+						for(var j = 0; j < len(mControllersArray); j++){
+							var controllerDistance = mWalls[i].IsInRangeOfActiveButton(mControllersArray[j].GetPosition(), range);
+
+							if(controllerDistance < minDistance){
+								minDistance = controllerDistance;
+								closerControllerIndex = j;								
 							}							
-						}				
+						}	
+						
+						if(closerControllerIndex != -1){
+							if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
+								mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex]);						
+							}
+							else{						
+								mWalls[i].StopMoving();	
+							}						
+						}		
 					}
 					else{
 						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
-						if(mWalls[i].IsInRangeOfActiveButton(cameraPosition, range)){
+						if(mWalls[i].IsInRangeOfActiveButton(cameraPosition, range) <= range){
 							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
 								mWalls[i].MoveButtonInRange(cameraPosition, false);						
 							}
@@ -390,11 +386,6 @@ function Level5::UpdateLogic(dt)
 							}
 						}	
 					}
-					
-					if(mAnimations[i])
-						mWalls[i].StartAnimation(mAnimator);
-					else
-						mWalls[i].StopAnimation(mAnimator);
 						
 					if(mWalls[i].IsCompleted()){
 						outputln("Wall " + str(i) +" COMPLETED");
@@ -403,79 +394,92 @@ function Level5::UpdateLogic(dt)
 				else{
 					if(!mWalls[i].IsAnimating()){
 						if(mWalls[i].IsNotInWallRange(cameraPosition, 5*SCALE_FACTOR)){
-							mWalls[i].StartAnimation(mAnimator);	
+							mWalls[i].StartAnimation(mAnimator);
 							mAnimatingWalls += 1;	
 							if(mAnimatingWalls == len(mWalls)){
 								mWallsAnimationTime = GetTime();
 								mAnimatingWalls = 0;	
+								// I switch status
+								mLevelStatus = STATUS_LEVEL_ENDING;
 							}	
 						}
 					}			
 				}
-			
-				if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 500){
-						mWalls[mAnimatingWalls].StopAnimation(mAnimator);
-						mAnimatingWalls++;
-						mWallsAnimationTime = GetTime();
-						if(mAnimatingWalls >= len(mWalls)){
-							var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-							var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-							
-							mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-							mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-							
-							// I switch status
-							mLevelStatus = STATUS_LEVEL_ENDING;
-						}
-				}
-				
-			
 			}
 			break;
 		}
-		
 		case STATUS_LEVEL_ENDING:
 		{
-			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
-			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
-			{
-				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-
-				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
-				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
-								
-				// If the player is in, I start the timer to end the level
-				mEnding = true;
-				mEndTimer = GetTime();
+			
+			if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 500 && mAnimatingWalls < len(mWalls)){
+//				foreach(var wall in mWalls){
+//					wall.StopAnimation(mAnimator);
+//				}
+				mWalls[mAnimatingWalls].StopAnimation(mAnimator);
+				mAnimatingWalls++;
+				mWallsAnimationTime = GetTime();
+				
+				if(mAnimatingWalls >= len(mWalls)-1){
+					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+					
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+					
+				}
 			}
-			else{
-				for(var i = 0; i < len(mWalls); i++){
-					if(mIsVrOn || debugVrOn){
+			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
+			if(mAnimatingWalls >= len(mWalls)-1){
+				if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+				{
+					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+	
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+									
+					// If the player is in, I start the timer to end the level
+					mEnding = true;
+					mEndTimer = GetTime();
+				}
+				else{
+					for(var i = 0; i < len(mWalls); i++){
+						if(mIsVrOn || debugVrOn){
 						var range = 2; //I check whether the camera or the vive is in the range of an active button or not
-						foreach(var controller in mControllersArray){
-							if(mWalls[i].ActivateClosestButton(controller.GetPosition(), range)){
+						var minDistance = range;
+						var closerControllerIndex = -1;
+						
+						for(var j = 0; j < len(mControllersArray); j++){
+							var controllerDistance = mWalls[i].ActivateClosestButton(mControllersArray[j].GetPosition(), range);
+
+							if(controllerDistance < minDistance){
+								minDistance = controllerDistance;
+								closerControllerIndex = j;								
+							}							
+						}	
+						
+						if(closerControllerIndex != -1){
+							if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
+								mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex]);						
+							}
+							else{						
+								mWalls[i].StopMoving();	
+							}						
+						}		
+					}
+						else{
+							var range = 1; //I check whether the camera or the vive is in the range of an active button or not
+							if(mWalls[i].ActivateClosestButton(cameraPosition, range) <= range){
 								if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
-									mWalls[i].MoveButtonInRange(controller.GetPosition(), true, controller);						
+									mWalls[i].MoveButtonInRange(cameraPosition, false);						
 								}
 								else{						
 									mWalls[i].StopMoving();
 								}
-							}							
+							}	
 						}				
 					}
-					else{
-						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
-						if(mWalls[i].ActivateClosestButton(cameraPosition, range)){
-							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
-								mWalls[i].MoveButtonInRange(cameraPosition, false);						
-							}
-							else{						
-								mWalls[i].StopMoving();
-							}
-						}	
-					}				
-				}
+				}			
 			}
 			
 			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
@@ -503,36 +507,15 @@ function Level5::UpdateLogic(dt)
  */
 function Level5::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
 {
-	// I'm stating that there is no intersection
 	var intersectedPlane = -1;
 
-	// I scan each of the currently visible portal's frames, to find any interception
-	foreach(var portalFrame in mCurrentlyVisiblePortalFrames)
-	{
-		// Check collision
-		var flag = portalFrame.IsColliding(rayOrigin, rayEnd, &contactPoint, &normal);
-		
-		if(flag)
-		{
-			isWall = true;
-			return false;
-		}
-	}
-		
-	// If there was no collision with the frames, I check the elevator if it's present. The method will return -1 if no interception was found,
-	// 0 if a good intercetpion was found (i.e. the floor, with the elevator open), or a value > 1 indicating which part of the elevator was found (which
-	// one is not relevant in this case)
-	if(mIsElevatorPresent)
-		intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 
-	// If still no interception was found, I check the boundaries of the room
 	if(intersectedPlane == -1)
 		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 		
-	// If I'm here, I definitely found a wall
 	isWall = true;
 	
-	// If the intersection value is 0, a good point was found
 	return intersectedPlane == 0;
 }
 

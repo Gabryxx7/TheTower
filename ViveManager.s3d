@@ -41,8 +41,8 @@ function ViveManager::ViveManager(HMD)
 	
 	mHMD = HMD;
 	
-	mController1Index = 3;
-	mController2Index = 4;
+	mController1Index = 1;
+	mController2Index = 2;
 	
 	mController1 = ViveController(1);
 	mController2 = ViveController(2);
@@ -99,23 +99,23 @@ function ViveManager::SetActiveCamera(camera)
 
 function ViveManager::IsPressingPrimaryButton(controllerIndex)
 {
-	return mHMD.IsTriggerPressed(controllerIndex + 2) == 1;
+	return mHMD.IsTriggerPressed(controllerIndex) == 1;
 }
 
 function ViveManager::IsPressingSecondaryButton(controllerIndex)
 {
-	return mHMD.IsTouchpadPressed(controllerIndex + 2) == 1;
+	return mHMD.IsTouchpadPressed(controllerIndex) == 1;
 }
 
 function ViveManager::IsGripPressed(controllerIndex)
 {
-	return mHMD.IsGripPressed(controllerIndex + 2) == 1;
+	return mHMD.IsGripPressed(controllerIndex) == 1;
 }
 
 
 function ViveManager::HasPressedMenuButton(controllerIndex)
 {	
-	if(mHMD.IsMenuPressed(controllerIndex + 2) == 1)
+	if(mHMD.IsMenuPressed(controllerIndex) == 1)
 	{
 		if(!mIsPressingMenuButton)
 		{
@@ -131,7 +131,7 @@ function ViveManager::HasPressedMenuButton(controllerIndex)
 
 function ViveManager::VibrateController(controllerIndex, microseconds)
 {
-	return mHMD.VibrateController(controllerIndex + 2, microseconds);
+	return mHMD.VibrateController(controllerIndex, microseconds);
 }
 
 function ViveManager::GetController(controllerIndex)

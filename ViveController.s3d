@@ -64,6 +64,7 @@ class ViveController
 	
 	// Public functions
 	Draw();
+	DrawBoundingBox();
 	GetObj();
 	GetBBoxObj();
 	GetIndex();
@@ -129,7 +130,7 @@ function ViveController::ViveController(controllerIndex)
 	systemButtonPos = systemButtonObj.GetPosition();
 	trackpadPos = trackpadObj.GetPosition();
 	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
-	triggerRange = -20;
+	triggerRange = -45;
 	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
 	
 	buttonDepth = 0.0075*SCALE_FACTOR;
@@ -144,6 +145,11 @@ function ViveController::ViveController(controllerIndex)
 	trackpadObj.AddChild(trackpadPointObj);
 	trackpadObj.SetPivotPoint(trackpadCenterOffset);
 	
+	trackpadPointMesh.ShaderAdd("alphaShader.glsl", 0);
+	trackpadPointMesh.ShaderActivate(true);
+	
+	
+	
 	mViveController = CVmObj();
 	mViveController.AddChild(bodyObj);
 	mViveController.AddChild(buttonObj);
@@ -151,8 +157,9 @@ function ViveController::ViveController(controllerIndex)
 	mViveController.AddChild(leftGripObj);
 	mViveController.AddChild(rightGripObj);
 	mViveController.AddChild(systemButtonObj);
-	mViveController.AddChild(trackpadObj);
 	mViveController.AddChild(triggerObj);
+	mViveController.AddChild(trackpadObj);
+	
 	
 	mBoundingBox = fullControllerMesh.GetBoundingBox();
 	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
@@ -171,7 +178,7 @@ function ViveController::ViveController(controllerIndex)
 	mIsVisible = true;
 	
 	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.8, 0.8, 0.0, 1.0); }", true);
-	
+		
 	timeSinceLastTouch = 0;
 }
 
@@ -184,11 +191,14 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 		if(elapsedTime > trackPointTime){
 			trackpointAlpha = 0;	
 		}
-		else{			
+		else if(trackpointAlpha > 0){	
 			trackpointAlpha -= 0.025; //1/400 = 0.025, I don't know why but the floats are not working, I cannot use like trackPointTime/elapsedTime, no idea why
 		}
+		else
+			trackpadPointObj.Hide();
 	}
 	else{
+		trackpadPointObj.Unhide();
 		timeSinceLastTouch = GetTime();
 		trackpointAlpha = 1;
 		var yOffsetFactor = (touchPadCoord[1] > 0 ? touchPadCoord[1]: touchPadCoord[1]*0.4);
@@ -196,15 +206,16 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 		trackpadPointPos = trackpadPos + [trackpadCenterOffset.x, trackpadCenterOffset.y*yOffsetFactor+0.026*SCALE_FACTOR, trackpadCenterOffset.z] + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
 		trackpadPointObj.SetPosition(trackpadPointPos);
 	}
-	trackpadPointMesh.ModulateMaterials(1,1,1,trackpointAlpha);
+//	trackpadPointMesh.ModulateMaterials(1,1,1,trackpointAlpha);
+	trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, trackpointAlpha);
 
 	if(triggerCoord[0] > 0){
-		if(isTriggerPressed < 0){
+		if(isTriggerPressed < 1){
 			triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
 			triggerObj.SetPosition(0,0, 0.009 * triggerCoord[0]*SCALE_FACTOR);
 		}else{
 			triggerObj.SetPosition(0,0,0.012*SCALE_FACTOR);
-			triggerObj.SetRotation(triggerRange-9, 1, 0, 0);			
+			triggerObj.SetRotation(triggerRange-2, 1, 0, 0);			
 		}
 	}
 	else
@@ -270,6 +281,10 @@ function ViveController::Draw()
 	mInvisibleShader.Stop();
 	
 	mViveController.Draw(VR_NO_CULLING);
+}
+
+function ViveController::DrawBoundingBox(){
+	mBoundingBoxControllerObj.DrawBoundingBox();
 }
 
 function ViveController::GetObj()

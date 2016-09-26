@@ -531,7 +531,7 @@ function LevelMenu::Render()
 			controller.Draw();
 			raycastOrigin = controller.GetPosition();
 			raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
-			if(mInputManager.IsPressingPrimaryButton()){			
+			if(mInputManager.IsPressingPrimaryButton(controller.GetIndex())){			
 				glLineWidth(2); 		
 				glColor([0.5,0.5,1]); 
 				
@@ -590,7 +590,7 @@ function LevelMenu::UpdateLogic(dt)
 				}
 			}
 			
-			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton(1)){
+			if(pointedLevel >= 0 && mInputManager.IsPressingPrimaryButton(mControllersArray[0].GetIndex())){
 				levelPreviewFrame.ChangeImage(levelSelectors[pointedLevel].GetImage());
 				if(mSelectedLevel >= 0)
 					levelSelectors[mSelectedLevel].IsSelected(false);	

@@ -142,10 +142,13 @@ function ButtonsWall::Draw(){
     	
     	mBorderShader.Start();
     		mBorderShader.SetParameter("color", mIsMoving ? mMovingColor : mActiveColor);
+//    		mBorderShader.SetParameter("color", mMovingColor);
 			mActiveButtonBorderObj.Draw();
 		mBorderShader.Stop();
 	
-		glCullFace (GL_BACK);		
+		glCullFace (GL_BACK);	
+		
+//		mObjs[mActiveObjIndex].DrawBoundingBox();	
 	}
 }
 
@@ -254,11 +257,13 @@ function ButtonsWall::IsCompleted(){
 
 function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 	var vrCheck = true;
-	if(isVr){
-		if(!controller.IsCollidingBBox(mObjs[mActiveObjIndex])){
-			vrCheck = false;
-		}
-	}
+//	if(isVr){
+//		outputln(controller.IsCollidingBBox(mObjs[mActiveObjIndex]));
+//		if(!controller.IsCollidingBBox(mObjs[mActiveObjIndex])){
+//			vrCheck = false;
+//		}
+//	}
+	
 	if(mActiveObjIndex > 0 && vrCheck){
 		mIsMoving = true;
 		var pos = mObjs[mActiveObjIndex].GetPosition();
@@ -343,7 +348,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 		return false;		
 	}
 	else{		
-		mIsMoving = false;
+//		mIsMoving = false;
 		return false;
 	}
 		
@@ -353,52 +358,44 @@ function ButtonsWall::StopMoving(){
 	mIsMoving = false;
 }
 
-function ButtonsWall::IsInRangeOfActiveButton(objPos, range){
-	if(!mIsMoving){
-		var distance = 0;
-		var buttonPos = 0;
-		var minDistance = range*1000;
-		var foundIndex = -1;
+function ButtonsWall::IsInRangeOfActiveButton(objPos, range){ 
+	var distance = 0;
+	var buttonPos = 0;
+	var minDistance = range*1000;
+	var foundIndex = -1;
+	
+	foreach(var index in mCodePositions){
+		buttonPos = mObjs[index].GetPosition();
+		if(mDirection == 1){
+			buttonPos += [0,0,mSize.z*0.5];
+		}
+		else if(mDirection == -1){
+			buttonPos += [0,0,-mSize.z*0.5];
+		}
+		else if(mDirection == 2){
+			buttonPos += [mSize.z*0.5,0,0];
+		}
+		else if(mDirection == -2){
+			buttonPos += [-mSize.z*0.5,0,0];
+		}
+
+		distance = Modulus(objPos - buttonPos);
 		
-		foreach(var index in mCodePositions){
-			buttonPos = mObjs[index].GetPosition();
-			if(mDirection == 1){
-				buttonPos += [0,0,mSize.z*0.5];
-			}
-			else if(mDirection == -1){
-				buttonPos += [0,0,-mSize.z*0.5];
-			}
-			else if(mDirection == 2){
-				buttonPos += [mSize.z*0.5,0,0];
-			}
-			else if(mDirection == -2){
-				buttonPos += [-mSize.z*0.5,0,0];
+		if(distance <= range && distance < minDistance){			
+			if(abs(mDirection) == 1 ){
+				mDistance = objPos.z-buttonPos.z;				
+			}else if(abs(mDirection) == 2){
+				mDistance = objPos.x-buttonPos.x;						
 			}
 			
-			//If I check the y, the lowest or highest blocks will never be counted
-			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2 + (objPos.y-buttonPos.y)^2);
-//			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2);
-			if(distance <= range && distance < minDistance){
-//				outputln(str(distance) +" " +str(range));
-				
-				if(abs(mDirection) == 1 ){
-					mDistance = objPos.z-buttonPos.z;				
-				}else if(abs(mDirection) == 2){
-					mDistance = objPos.x-buttonPos.x;						
-				}
-				
-				minDistance = distance;
-				foundIndex = index;
-			}
+			minDistance = distance;
+			foundIndex = index;
 		}
-		
-		mActiveObjIndex = foundIndex;
-		
-		return mActiveObjIndex > -1;	
 	}
-	else{
-		return true;
-	}
+	
+	mActiveObjIndex = foundIndex;
+	
+	return minDistance;	
 }
 
 function ButtonsWall::SetDefaultColor(color){
@@ -442,50 +439,42 @@ function ButtonsWall::IsNotInWallRange(pos, range){
 }
 
 function ButtonsWall::ActivateClosestButton(objPos, range){
-	if(!mIsMoving){
-		var distance = 0;
-		var buttonPos = 0;
-		var minDistance = range*1000;
-		var foundIndex = -1;
+	var distance = 0;
+	var buttonPos = 0;
+	var minDistance = range*1000;
+	var foundIndex = -1;
+	
+	for(var index = 0; index < len(mObjs); index++){
+		buttonPos = mObjs[index].GetPosition();
+		if(mDirection == 1){
+			buttonPos += [0,0,mSize.z*0.5];
+		}
+		else if(mDirection == -1){
+			buttonPos += [0,0,-mSize.z*0.5];
+		}
+		else if(mDirection == 2){
+			buttonPos += [mSize.z*0.5,0,0];
+		}
+		else if(mDirection == -2){
+			buttonPos += [-mSize.z*0.5,0,0];
+		}
+
+		distance = Modulus(objPos - buttonPos);
 		
-		for(var index = 0; index < len(mObjs); index++){
-			buttonPos = mObjs[index].GetPosition();
-			if(mDirection == 1){
-				buttonPos += [0,0,mSize.z*0.5];
-			}
-			else if(mDirection == -1){
-				buttonPos += [0,0,-mSize.z*0.5];
-			}
-			else if(mDirection == 2){
-				buttonPos += [mSize.z*0.5,0,0];
-			}
-			else if(mDirection == -2){
-				buttonPos += [-mSize.z*0.5,0,0];
+		if(distance <= range && distance < minDistance){			
+			if(abs(mDirection) == 1 ){
+				mDistance = objPos.z-buttonPos.z;				
+			}else if(abs(mDirection) == 2){
+				mDistance = objPos.x-buttonPos.x;						
 			}
 			
-			//If I check the y, the lowest or highest blocks will never be counted
-			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2 + (objPos.y-buttonPos.y)^2);
-//			distance = sqrt((objPos.x-buttonPos.x)^2 + (objPos.z-buttonPos.z)^2);
-			if(distance <= range && distance < minDistance){
-//				outputln(str(distance) +" " +str(range));
-				
-				if(abs(mDirection) == 1 ){
-					mDistance = objPos.z-buttonPos.z;				
-				}else if(abs(mDirection) == 2){
-					mDistance = objPos.x-buttonPos.x;						
-				}
-				
-				minDistance = distance;
-				foundIndex = index;
-			}
+			minDistance = distance;
+			foundIndex = index;
 		}
-		
-		mActiveObjIndex = foundIndex;
-		
-		return mActiveObjIndex > -1;	
 	}
-	else{
-		return true;
-	}
+	
+	mActiveObjIndex = foundIndex;
+	
+	return minDistance;	
 }
 
