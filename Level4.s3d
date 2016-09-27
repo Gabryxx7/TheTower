@@ -750,7 +750,10 @@ function Level4::Level4(isVRon, inputManager, soundManager)
  */
 function Level4::Render()
 {	
-	glClearColor( 0,0,0, 1);
+	// This makes the background black
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	SetClearColor(0.0, 0.0, 0.0);
+	
 	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 

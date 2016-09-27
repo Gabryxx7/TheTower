@@ -230,7 +230,7 @@ function GameManager::GameManager(HMD)
 	mElevator.Unhide();
 	
 	// This creates an almost white background
-	SetClearColor(0.95,0.95,0.95);
+	SetClearColor(0.95, 0.95, 0.95);
 	
 	mFadeAnimationID = 0;
 
@@ -345,7 +345,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-//			XVRRendering();
+			XVRRendering();
 
 			if(mIsVRon)
 			{		
@@ -359,7 +359,6 @@ function GameManager::Render()
 					mHMD.frame_left();
 						XVRRendering();
 					mHMD.frame_right();
-//						glClearColor( 0.95,0.95,0.95, 1);
 						XVRRendering();
 				mHMD.SceneEnd();
 			}	
@@ -375,7 +374,8 @@ function GameManager::Render()
 
 function GameManager::XVRRendering()
 {
-//	glClearColor( 0.95,0.95,0.95, 1);
+	// This makes the background white
+	glClearColor(0.95, 0.95, 0.95, 1.0);
 	
 	// The current level might change the opengl offset (for now only when it moves the camera with the elevator), so we get it before applying it below
 	mOpenglTranslationOffset = mCurrentLevel.GetOpenglTransformOffset();

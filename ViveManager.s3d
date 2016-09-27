@@ -42,13 +42,15 @@ function ViveManager::ViveManager(HMD)
 	
 	mHMD = HMD;
 	
-	mController1Index = 3;
-	mController2Index = 4;
-	
 	var controllersIndex = mHMD.GetControllersIndex();
 	
-	mController1 = ViveController(controllersIndex[0]);
-	mController2 = ViveController(controllersIndex[1]);
+	mController1Index = controllersIndex[0];
+	mController2Index = controllersIndex[1];
+	
+	mControllers = {};
+		
+	aadd(mControllers, ViveController(1));
+	aadd(mControllers, ViveController(2));
 	
 	mIsPressingMenuButton = false;
 }
@@ -72,12 +74,12 @@ function ViveManager::UpdateControllers(openglTranslationOffset)
 	var x1 = controller1Matrix[12] - openglTranslationOffset.x;
 	var y1 = controller1Matrix[13] - openglTranslationOffset.y;
 	var z1 = controller1Matrix[14] - openglTranslationOffset.z;	
-	mController1.SetPosition([x1, y1, z1]);
+	mControllers[0].SetPosition([x1, y1, z1]);
 
 	var x2 = controller2Matrix[12] - openglTranslationOffset.x;
 	var y2 = controller2Matrix[13] - openglTranslationOffset.y;
 	var z2 = controller2Matrix[14] - openglTranslationOffset.z;
-	mController2.SetPosition([x2, y2, z2]);
+	mControllers[1].SetPosition([x2, y2, z2]);
 	
 	controller1Matrix[12] = 0;
 	controller1Matrix[13] = 0;
@@ -87,11 +89,11 @@ function ViveManager::UpdateControllers(openglTranslationOffset)
 	controller2Matrix[13] = 0;
 	controller2Matrix[14] = 0;
 	
-	mController1.SetRotationMatrix(controller1Matrix);
-	mController2.SetRotationMatrix(controller2Matrix);	
+	mControllers[0].SetRotationMatrix(controller1Matrix);
+	mControllers[1].SetRotationMatrix(controller2Matrix);	
 	
-	mController1.UpdateStatus(mHMD.GetTouchPadCoord(mController1Index), mHMD.GetTriggerCoord(mController1Index), mHMD.IsMenuPressed(mController1Index), mHMD.IsTriggerPressed(mController1Index), mHMD.IsGripPressed(mController1Index), mHMD.IsTouchpadPressed(mController1Index));
-	mController2.UpdateStatus(mHMD.GetTouchPadCoord(mController2Index), mHMD.GetTriggerCoord(mController2Index), mHMD.IsMenuPressed(mController2Index), mHMD.IsTriggerPressed(mController2Index), mHMD.IsGripPressed(mController2Index), mHMD.IsTouchpadPressed(mController2Index));
+	mControllers[0].UpdateStatus(mHMD.GetTouchPadCoord(mController1Index), mHMD.GetTriggerCoord(mController1Index), mHMD.IsMenuPressed(mController1Index), mHMD.IsTriggerPressed(mController1Index), mHMD.IsGripPressed(mController1Index), mHMD.IsTouchpadPressed(mController1Index));
+	mControllers[1].UpdateStatus(mHMD.GetTouchPadCoord(mController2Index), mHMD.GetTriggerCoord(mController2Index), mHMD.IsMenuPressed(mController2Index), mHMD.IsTriggerPressed(mController2Index), mHMD.IsGripPressed(mController2Index), mHMD.IsTouchpadPressed(mController2Index));
 }
 
 
@@ -102,23 +104,23 @@ function ViveManager::SetActiveCamera(camera)
 
 function ViveManager::IsPressingPrimaryButton(controllerIndex)
 {
-	return mHMD.IsTriggerPressed(controllerIndex + 2) == 1;
+	return mHMD.IsTriggerPressed(controllerIndex == 1 ? mController1Index : mController2Index) == 1;
 }
 
 function ViveManager::IsPressingSecondaryButton(controllerIndex)
 {
-	return mHMD.IsTouchpadPressed(controllerIndex + 2) == 1;
+	return mHMD.IsTouchpadPressed(controllerIndex == 1 ? mController1Index : mController2Index) == 1;
 }
 
 function ViveManager::IsGripPressed(controllerIndex)
 {
-	return mHMD.IsGripPressed(controllerIndex + 2) == 1;
+	return mHMD.IsGripPressed(controllerIndex == 1 ? mController1Index : mController2Index) == 1;
 }
 
 
 function ViveManager::HasPressedMenuButton(controllerIndex)
 {	
-	if(mHMD.IsMenuPressed(controllerIndex + 2) == 1)
+	if(mHMD.IsMenuPressed(controllerIndex == 1 ? mController1Index : mController2Index) == 1)
 	{
 		if(!mIsPressingMenuButton)
 		{
@@ -134,15 +136,15 @@ function ViveManager::HasPressedMenuButton(controllerIndex)
 
 function ViveManager::VibrateController(controllerIndex, microseconds)
 {
-	return mHMD.VibrateController(controllerIndex + 2, microseconds);
+	return mHMD.VibrateController(controllerIndex == 1 ? mController1Index : mController2Index, microseconds);
 }
 
 function ViveManager::GetController(controllerIndex)
 {
 	if(controllerIndex == 1)
-		return mController1;
+		return mControllers[0];
 	else if(controllerIndex == 2)
-		return mController2;
+		return mControllers[1];
 }
 
 function ViveManager::GetPlayAreaSize()
