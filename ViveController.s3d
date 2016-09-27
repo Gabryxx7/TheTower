@@ -130,7 +130,7 @@ function ViveController::ViveController(controllerIndex)
 	systemButtonPos = systemButtonObj.GetPosition();
 	trackpadPos = trackpadObj.GetPosition();
 	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
-	triggerRange = -45;
+	triggerRange = -55;
 	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
 	
 	buttonDepth = 0.0075*SCALE_FACTOR;
@@ -147,7 +147,7 @@ function ViveController::ViveController(controllerIndex)
 	
 	trackpadPointMesh.ShaderAdd("alphaShader.glsl", 0);
 	trackpadPointMesh.ShaderActivate(true);
-	
+	trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 	
 	
 	mViveController = CVmObj();
@@ -189,13 +189,12 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 	if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
 		var elapsedTime = GetTime() - timeSinceLastTouch; 
 		if(elapsedTime > trackPointTime){
-			trackpointAlpha = 0;	
+			trackpointAlpha = 0;
+			trackpadPointObj.Hide();	
 		}
 		else if(trackpointAlpha > 0){	
 			trackpointAlpha -= 0.025; //1/400 = 0.025, I don't know why but the floats are not working, I cannot use like trackPointTime/elapsedTime, no idea why
 		}
-		else
-			trackpadPointObj.Hide();
 	}
 	else{
 		trackpadPointObj.Unhide();
@@ -214,8 +213,8 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 			triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
 			triggerObj.SetPosition(0,0, 0.009 * triggerCoord[0]*SCALE_FACTOR);
 		}else{
-			triggerObj.SetPosition(0,0,0.012*SCALE_FACTOR);
-			triggerObj.SetRotation(triggerRange-2, 1, 0, 0);			
+//			triggerObj.SetPosition(0,0,0.009*SCALE_FACTOR);
+//			triggerObj.SetRotation(triggerRange, 1, 0, 0);			
 		}
 	}
 	else
@@ -280,6 +279,7 @@ function ViveController::Draw()
 		mBoundingBoxControllerObj.Draw();
 	mInvisibleShader.Stop();
 	
+//	mViveController.Draw(VR_NO_CHILDREN | VR_NO_CULLING);
 	mViveController.Draw(VR_NO_CULLING);
 }
 

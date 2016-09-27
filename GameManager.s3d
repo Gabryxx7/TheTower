@@ -170,7 +170,7 @@ function GameManager::GameManager(HMD)
 	mInputManager.SetActiveCamera(mCamera);
 	
 	mSoundManager = SoundManager();
-	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, true, 7.0);	
+	mSoundManager.SetMusic("sounds/Nexus - Tranquility.mp3", 0.95, false, 7.0);	
 	mSoundManager.AddSound("sounds/Mi1.wav", 0);
 	mSoundManager.AddSound("sounds/Fa#2.wav", 1);
 	mSoundManager.AddSound("sounds/Sol3.wav", 2);
@@ -230,7 +230,7 @@ function GameManager::GameManager(HMD)
 	mElevator.Unhide();
 	
 	// This creates an almost white background
-	SetClearColor(0.95,0.95,0.95); 
+	SetClearColor(0.95,0.95,0.95);
 	
 	mFadeAnimationID = 0;
 
@@ -245,12 +245,12 @@ function GameManager::GameManager(HMD)
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-//		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);
@@ -264,7 +264,8 @@ function GameManager::GameManager(HMD)
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
 		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
@@ -344,7 +345,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-			XVRRendering();
+//			XVRRendering();
 
 			if(mIsVRon)
 			{		
@@ -353,11 +354,12 @@ function GameManager::Render()
 					mCurrentLevel.SetupOpenglLights();
 					
 					glEnable (GL_BLEND);
-					glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);					
 					
 					mHMD.frame_left();
 						XVRRendering();
 					mHMD.frame_right();
+//						glClearColor( 0.95,0.95,0.95, 1);
 						XVRRendering();
 				mHMD.SceneEnd();
 			}	
@@ -373,6 +375,8 @@ function GameManager::Render()
 
 function GameManager::XVRRendering()
 {
+//	glClearColor( 0.95,0.95,0.95, 1);
+	
 	// The current level might change the opengl offset (for now only when it moves the camera with the elevator), so we get it before applying it below
 	mOpenglTranslationOffset = mCurrentLevel.GetOpenglTransformOffset();
 	
@@ -660,8 +664,8 @@ function GameManager::UpdateLogic(dt)
 					{
 						mCurrentLevelNumber = mCurrentLevel.GetSelectedLevel();
 						mCurrentLevel = mLevels[mCurrentLevelNumber];
-						mCurrentLevel.Init(mLights, {[1, 1, 1], [1, 1, 1], [1, 1, 1]}, mElevator, mOpenglTranslationOffset);
-						
+						mCurrentLevel.Init(mLights, {[1, 1, 1], [1, 1, 1], [1, 1, 1]}, mElevator, [0, 0, 0]);
+
 						mEndingLevelMenu = false;
 						mStarting = true;
 					}

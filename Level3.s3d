@@ -738,14 +738,14 @@ function Level3::UpdateLogic(dt)
 								if(pressedButton != "" && pressedButton != " "){
 									numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
 									numpadObj.AnimateButton(pressedButton);	
-									mInputManager.VibrateController(100);						
+									mInputManager.VibrateController(controller.GetIndex(), 500);						
 								}
 							}
-							else if(timeFromLastClick > 0.4){
+							else if(timeFromLastClick > 0.8){
 								timeFromLastClick = 0;
 								pressedButton = vrPressedButton;	
 								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);	
-								mInputManager.VibrateController(100);								
+								mInputManager.VibrateController(controller.GetIndex(), 500);								
 							}
 						}						
 					}		
@@ -760,7 +760,7 @@ function Level3::UpdateLogic(dt)
 							pressedButton = pressedKey;				
 						}
 					}
-					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.25){
+					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.4){
 						timeFromLastClick = 0;
 						pressedButton = pointedButton;	
 					}

@@ -72,12 +72,12 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	
 	// Creating the mesh for the arrow and adding the toon shader to it
 	mMinutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
-	AddToonShaderToMesh(mMinutesArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+//	AddToonShaderToMesh(mMinutesArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	mMinutesArrowObj = CVmObj(mMinutesArrowMesh);
 	
 	mHoursArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mHoursArrowHeight, mArrowsDepth]); 
-	AddToonShaderToMesh(mHoursArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+//	AddToonShaderToMesh(mHoursArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	mHoursArrowObj = CVmObj(mHoursArrowMesh);
 	

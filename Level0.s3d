@@ -151,7 +151,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 {
 	mTexture = CVmTexture("Level0Prev.png");
 	mIsVRon = isVRon;
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
@@ -759,6 +759,7 @@ function Level0::UpdateLogic(dt)
 	// First off, let's update the player's position and orientation and the controllers (if they're not present nothing will be done)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
+	
 	if(debugVrOn && !mIsVrOn){
 			mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.5 * SCALE_FACTOR);
 			

@@ -140,12 +140,12 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	//Ampl: 28.3498 spacing: 0 size: 117.953 xP: 0.795 yp: 0.645 level: -144.3 viewDist: 255 velocity: 0.7
 	//Ampl: 49.5997 spacing: 0 size: 185.604 xP: 0.775 yp: 0.67 level: -209.304 viewDist: 437.5 velocity: -1.9
 	seaShaderEnabled = false;
-	seaAmplitude = 40;
+	seaAmplitude = 50;
 	seaAmountx = 75;
 	seaAmounty = 75;
-	seaViewDistance = 450;
+	seaViewDistance = 300;
 	seaSpacing = 0.0;
-	seaSize = 180;
+	seaSize = 220;
 	seaXPeriod = 0.8;
 	seaYPeriod = 0.8;
 	seaLevel = -200;
@@ -529,16 +529,18 @@ function LevelMenu::Render()
 		var raycastEnd;
 		foreach(var controller in mControllersArray){
 			controller.Draw();
-			raycastOrigin = controller.GetPosition();
-			raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
-				glLineWidth(2); 		
-				glColor([0.2,0.2,1]); 
+//			if(mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+				raycastOrigin = controller.GetPosition();
+				raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
+				glLineWidth(3); 		
+				glColor([0,0,1]); 
 				
 				// I draw the ray as a simple opengl line
 				glBegin(GL_LINES);
 					glVertex(raycastOrigin);
 					glVertex(raycastEnd);		
-				glEnd();
+				glEnd();				
+//			}
 		}
 		
 	}
@@ -572,27 +574,33 @@ function LevelMenu::UpdateLogic(dt)
 			if(debugVrOn)			
 				mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);	
 				
-			for(var i = 0; i < len(levelSelectors); i++){
-				var res = false;
+			var res = false;
+			var levelPointed = false;
+			for(var i = 0; i < len(levelSelectors) && !levelPointed; i++){
+				res = false;
 				if(mIsVrOn || debugVrOn){
 					foreach(var controller in mControllersArray){
-						res = levelSelectors[i].IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());		
-						if(res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
-							levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
-							if(mSelectedLevel >= 0)
-								levelSelectors[mSelectedLevel].IsSelected(false);	
-												
-							levelSelectors[i].IsSelected(true);
-							mSelectedLevel = i;
-							mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
-							mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
-			
-							break;								
-						}			
+						if(!res){
+							res = levelSelectors[i].IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
+							if(res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+								outputln("Level selected");
+								levelPointed = true;
+								levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
+								
+								if(mSelectedLevel >= 0)
+									levelSelectors[mSelectedLevel].IsSelected(false);	
+													
+								levelSelectors[i].IsSelected(true);
+								mSelectedLevel = i;
+								mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+								mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);							
+							}			
+						}					
 					}
 				}else{					
 					res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());		
 					if(res && mInputManager.IsPressingPrimaryButton()){
+						levelPointed = true;
 						levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
 						if(mSelectedLevel >= 0)
 							levelSelectors[mSelectedLevel].IsSelected(false);	
@@ -605,18 +613,41 @@ function LevelMenu::UpdateLogic(dt)
 						break;								
 					}				
 				}
-			}
+			}			
 			
+//			if(!levelPointed){
+//				if(mIsVrOn || debugVrOn){
+//					foreach(var controller in mControllersArray){
+//						if(mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+//							outputln("No level pointed");
+//							if(mSelectedLevel >= 0)
+//								levelSelectors[mSelectedLevel].IsSelected(false);									
+//							
+//							mSelectedLevel = -1;							
+//						}
+//					}
+//				}
+//				else{
+//					if(mInputManager.IsPressingPrimaryButton()){
+//						if(mSelectedLevel >= 0)
+//							levelSelectors[mSelectedLevel].IsSelected(false);									
+//						
+//						mSelectedLevel = -1;							
+//					}					
+//				}
+//			}
 			
-			var res = false;
+			res = false;
 			if(mIsVrOn || debugVrOn){
 				foreach(var controller in mControllersArray){
-					res = levelPreviewFrame.IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
-					if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
-						levelPreviewFrame.IsSelected(true);
-						mIsLevelCompleted = true;
-					}						
-				}					
+					if(!res){
+						res = levelPreviewFrame.IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
+						if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+							levelPreviewFrame.IsSelected(true);
+							mIsLevelCompleted = true;
+						}						
+					}				
+				}				
 			}else{
 				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
 				if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){

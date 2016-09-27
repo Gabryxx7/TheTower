@@ -214,7 +214,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		
 
 	mMainClock = Clock(1, 2);
-	mMainClock.Translate(0 + mTranslateFactor.x, 5 * SCALE_FACTOR + mTranslateFactor.y, -20 * SCALE_FACTOR + mTranslateFactor.z);
+	mMainClock.Translate(mTranslateFactor.x, 6.5 * SCALE_FACTOR + mTranslateFactor.y, -20 * SCALE_FACTOR + mTranslateFactor.z);
 	mMainClock.Rotate(180, 0, 1, 0);
 	
 	// Initially the time runs forward
@@ -252,8 +252,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mBackText.SetRotation(180, 0, 1, 0);
 		
 	// Number of clocks per row and number of clocks rows for each wall
-	mNumberOfClocks = 8;
-	mNumberOfClockRows = 6;
+	mNumberOfClocks = 3;
+	mNumberOfClockRows = 3;
 	mClocks = {};
 	
 	// Computing the step distance in between each clock and the step in terms of height in between them
@@ -368,9 +368,10 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	}
 
 	mStarObjects = {};
+	var starObjectsNumber = 10;
 	
 	// Creating random star things
-	for(var i = 0; i < 10; i++)
+	for(var i = 0; i < starObjectsNumber; i++)
 	{
 		// To create the star object I use a function from the "Utils" file
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
@@ -406,9 +407,10 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	}
 		
 	mConeObjects = {};
+	var coneObjectsNumber = 10;
 	
 	// Creating random cone things; the procedure is the same as for the star objects
-	for(var i = 0; i < 10; i++)
+	for(var i = 0; i < coneObjectsNumber; i++)
 	{
 		var coneThing = CreateConeThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
 		
@@ -678,8 +680,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		light.Disable();
 		
 	mLight0Diffuse = [1, 1, 1];
-	mLight1Diffuse = [1.46768, 0.00383474, 0.18055];
-	mLight2Diffuse = [-0.0155148, 0.0400277, 0.536592];
+	mLight1Diffuse = [0.907894, -0.119524, 1.13935];
+	mLight2Diffuse = [-0.0754113, 0.416428, 0.533014];
 	
 	mLight0 = lights[0];
 	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
@@ -748,6 +750,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
  */
 function Level4::Render()
 {	
+	glClearColor( 0,0,0, 1);
 	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
@@ -796,39 +799,39 @@ function Level4::DrawRoom()
 		
 	mNumpad.Draw();
 	
-	glCullFace(GL_FRONT);
-	
-	// Drawing the silhouettes of the objects (so deactivating their current shader first)
-	mSilhouetteShader.Start();
-    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
-    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-    	
-    	
-    	for(var i = 0; i < len(mStarObjects); i++)
-		{
-			mStarObjects[i].GetMesh().ShaderActivate(false);
-			mStarObjects[i].Draw();
-		}
-		
-		for(var i = 0; i < len(mConeObjects); i++)
-		{
-			mConeObjects[i].GetMesh().ShaderActivate(false);
-			mConeObjects[i].Draw();
-		}
-	mSilhouetteShader.Stop();
-	
-	glCullFace(GL_BACK);
+//	glCullFace(GL_FRONT);
+//	
+//	// Drawing the silhouettes of the objects (so deactivating their current shader first)
+//	mSilhouetteShader.Start();
+//    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
+//    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+//    	
+//    	
+//    	for(var i = 0; i < len(mStarObjects); i++)
+//		{
+//			mStarObjects[i].GetMesh().ShaderActivate(false);
+//			mStarObjects[i].Draw();
+//		}
+//		
+//		for(var i = 0; i < len(mConeObjects); i++)
+//		{
+//			mConeObjects[i].GetMesh().ShaderActivate(false);
+//			mConeObjects[i].Draw();
+//		}
+//	mSilhouetteShader.Stop();
+//	
+//	glCullFace(GL_BACK);
 	
 	// Drawing the "normal state" of the objects
 	for(var i = 0; i < len(mStarObjects); i++)
 	{
-		mStarObjects[i].GetMesh().ShaderActivate(true);
+//		mStarObjects[i].GetMesh().ShaderActivate(true);
 		mStarObjects[i].Draw();
 	}
 	
 	for(var i = 0; i < len(mConeObjects); i++)
 	{
-		mConeObjects[i].GetMesh().ShaderActivate(true);
+//		mConeObjects[i].GetMesh().ShaderActivate(true);
 		mConeObjects[i].Draw();
 	}
 }
@@ -907,30 +910,30 @@ function Level4::DrawPortal()
 	// Now I need to draw the objects that are always present, such as the elevator and the Vive controllers
 	mElevator.Draw();
 	
-	glCullFace(GL_FRONT);
-	
-	// Drawing the silhouettes of the objects (so deactivating their current shader first)
-	mSilhouetteShader.Start();
-    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
-    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-    	    	
-    	foreach(var cubeArray in mNumbersCubesObjectArray)
-		{
-			foreach(var cubeObj in cubeArray)
-				cubeObj.GetMesh().ShaderActivate(false);
-		}
-    	
-    	for(var i = 0; i < len(mNumbersObjectArray); i++)
-			mNumbersObjectArray[i].Draw();
-	mSilhouetteShader.Stop();
-	
-	glCullFace(GL_BACK);
-	
-	foreach(var cubeArray in mNumbersCubesObjectArray)
-	{
-		foreach(var cubeObj in cubeArray)
-			cubeObj.GetMesh().ShaderActivate(true);
-	}
+//	glCullFace(GL_FRONT);
+//	
+//	// Drawing the silhouettes of the objects (so deactivating their current shader first)
+//	mSilhouetteShader.Start();
+//    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
+//    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
+//    	    	
+//    	foreach(var cubeArray in mNumbersCubesObjectArray)
+//		{
+//			foreach(var cubeObj in cubeArray)
+//				cubeObj.GetMesh().ShaderActivate(false);
+//		}
+//    	
+//    	for(var i = 0; i < len(mNumbersObjectArray); i++)
+//			mNumbersObjectArray[i].Draw();
+//	mSilhouetteShader.Stop();
+//	
+//	glCullFace(GL_BACK);
+//	
+//	foreach(var cubeArray in mNumbersCubesObjectArray)
+//	{
+//		foreach(var cubeObj in cubeArray)
+//			cubeObj.GetMesh().ShaderActivate(true);
+//	}
 	
 	// Drawing the "normal state" of the objects
 	for(var i = 0; i < len(mNumbersObjectArray); i++)
@@ -1525,8 +1528,13 @@ function Level4::UpdateLogic(dt)
 		}
 		// Case where we're almost at the end of the level
 		case STATUS_LEVEL_ENDING:
-		{
-			SetClearColor(0,0,0);
+		{			
+			if(mInvariantAnimator.HaveTransition(GL_LIGHT1, 5))
+				mLight1Diffuse = mInvariantAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+				
+			if(mInvariantAnimator.HaveTransition(GL_LIGHT2, 5))
+				mLight2Diffuse = mInvariantAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			
 			// I check if the numpad is still visible (remember, there is a scaling transition) and check if the scale reached 0; if that is so, I hide these objects
 			if(mNumpad.IsVisible() && mNumpad.GetScale().x <= 0)
 			{	
@@ -1596,6 +1604,9 @@ function Level4::UpdateLogic(dt)
 	
 						// I save the moment that the music started; this is essential in order to know at which keypoint in the song we are
 						mMusicStartTime = GetTime();
+						
+						mInvariantAnimator.CreateLightColorTransition(GL_LIGHT1, mLight1Diffuse, [0.1, 0.2, 0.2], 8.0);
+						mInvariantAnimator.CreateLightColorTransition(GL_LIGHT2, mLight2Diffuse, [0.1, 0.1, 0.2], 8.0);
 					}
 				}
 			}

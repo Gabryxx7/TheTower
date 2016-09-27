@@ -44,6 +44,8 @@ function OnDownload()
 	FileDownload("Level2Prev.png");
 	FileDownload("Level3Prev.png");
 	FileDownload("Level4Prev.png");
+	FileDownload("sounds/Interstellar - First Step.mp3");
+	FileDownload("sounds/Deadmau5 Ft Rob Swire - Ghosts n Stuff.mp3");
 	
 	/** VIVE MESH LOADING */	
 	FileDownload("Vive_Controller_Mesh/Exported/Body/body.aam");	
