@@ -5,6 +5,7 @@
 #define ROTATION_AROUND_POINT_TRANSITION 3
 #define COLOR_TRANSITION 4
 #define LIGHT_COLOR_TRANSITION 5
+#define GENERIC_TRANSITION 6
 
 /*
  * This class handles simple transitions and rotations of CVmObj objects.
@@ -28,6 +29,7 @@ class Animator
 	// List of starting positions for every transition. For rotations, it contains the starting angle   
 	var mStartingPositions; 
 	var mEndPositions;
+	var mCurrentPositions;
 	
 	// For every object added to the class, this array contains a boolean that states whether the object's transition/rotation is looping or not
 	var mIsLoopArray;
@@ -85,6 +87,7 @@ class Animator
 	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise);
 	CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop);
 	CreateLightColorTransition(openglLight, startingColor, endingColor, time);
+	CreateGenericTransition(transitionId, startingValue, endingValue, time);
 	
 	GetCurrentStateInTransition(object, transitionType);
 	
@@ -100,6 +103,7 @@ function Animator::Animator()
 	mObjects = {};
 	mStartingPositions = {};
 	mEndPositions = {};
+	mCurrentPositions = {};
 	mIsLoopArray = {};
 	mTimeArray = {};
 	mScaleFactorArray = {};
@@ -143,6 +147,7 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop)
 	
 	// Adding the things needed to update the object's position
 	aadd(mObjects, object);
+	aadd(mCurrentPositions, startingPos);
 	aadd(mStartingPositions, startingPos);
 	aadd(mIsLoopArray, loop);
 	aadd(mTimeArray, time);
@@ -241,6 +246,7 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 //	object.SetRotation(startingAngle, axis);
 	
 	aadd(mObjects, object);
+	aadd(mCurrentPositions, startingAngle);
 	aadd(mStartingPositions, startingAngle);
 	aadd(mEndPositions, finalAngle);
 	aadd(mIsLoopArray, loop);
@@ -284,6 +290,7 @@ function Animator::CreateScalingTransition(object, startingScale, endingScale, t
 	object.SetScale(startingScale);
 	
 	aadd(mObjects, object);
+	aadd(mCurrentPositions, startingScale);
 	aadd(mStartingPositions, startingScale);
 	aadd(mIsLoopArray, loop);
 	aadd(mTimeArray, time);
@@ -350,6 +357,7 @@ function Animator::CreateRotationAroundPointTransition(object, startingPoint, ce
 	object.SetPosition(startingPoint);
 	
 	aadd(mObjects, object);
+	aadd(mCurrentPositions, centerPoint);
 	aadd(mStartingPositions, centerPoint);
 	aadd(mEndPositions, 360);
 	aadd(mIsLoopArray, loop);
@@ -405,6 +413,7 @@ function Animator::CreateToonShaderColorTransition(mesh, startingColor, endingCo
 	mesh.ShaderSetParameter(0, "diffuse", 0, startingColor);
 	
 	aadd(mObjects, mesh);
+	aadd(mCurrentPositions, startingColor);
 	aadd(mStartingPositions, startingColor);
 	aadd(mEndPositions, endingColor);
 	aadd(mIsLoopArray, loop);
@@ -448,6 +457,7 @@ function Animator::CreateLightColorTransition(openglLight, startingColor, ending
 	glLight(openglLight, GL_DIFFUSE, startingColor); 
 	
 	aadd(mObjects, openglLight);
+	aadd(mCurrentPositions, startingColor);
 	aadd(mStartingPositions, startingColor);
 	aadd(mEndPositions, endingColor);
 	aadd(mIsLoopArray, false);
@@ -480,6 +490,67 @@ function Animator::CreateLightColorTransition(openglLight, startingColor, ending
 	aadd(mReverseArray, false);
 }
 
+
+/*
+ * This method creates scaling transitions; the code is pretty much the same as for movement transitions
+ */
+function Animator::CreateGenericTransition(transitionId, startingValue, endingValue, time)
+{		
+	var id = transitionId;
+	
+	RemoveTransitionByObject(id, GENERIC_TRANSITION);
+		
+	aadd(mObjects, id);
+	aadd(mCurrentPositions, startingValue);
+	aadd(mStartingPositions, startingValue);
+	aadd(mIsLoopArray, false);
+	aadd(mTimeArray, time);
+	aadd(mScaleFactorArray, 1.0);
+	
+	aadd(mTransitionTypeArray, GENERIC_TRANSITION);
+	
+	var endValue = endingValue;
+	
+	if(valtype(endingValue) == "A")
+	{
+		endValue = endingValue[0];
+		
+		var waypoints = {startingValue};
+		
+		foreach(var waypoint in endingValue)
+			aadd(waypoints, waypoint);		
+
+		aadd(mHasWaypointsArray, true);
+		aadd(mWaypointsArray, waypoints);
+		aadd(mWaypointsCounterArray, 2);
+	}
+	else
+	{		
+		aadd(mHasWaypointsArray, false);
+		aadd(mWaypointsArray, endValue);
+		aadd(mWaypointsCounterArray, 0);
+	}
+	
+	aadd(mEndPositions, endValue);
+	
+	var distance = abs(endValue - startingValue);
+
+	aadd(mDistanceArray, distance);	
+	
+	var speed = ((endValue - startingValue) / time);
+	
+	aadd(mXSpeedArray, speed);
+	aadd(mYSpeedArray, 0);
+	aadd(mZSpeedArray, 0);
+
+	
+	// Arrays not used; filled with useless stuff
+	aadd(mDirectionsArray, 0);
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+}
 
 /*
  * This method as to be called by the caller in its "update" function, so that the objects' positions will be constantly updated
@@ -805,9 +876,8 @@ function Animator::UpdateTransitions(dt)
 		}
 		else if(mTransitionTypeArray[i] == LIGHT_COLOR_TRANSITION)
 		{
-			// I get the current color, which is saved in the waypoint array to save space (since in this type of transition there are no waypoints);
-			// I could get the current color from the shader, but the XVR method to do so doesn't work	
-			var currentColor = mWaypointsArray[i];
+			// I get the current color; I could get the current color from the shader, but the XVR method to do so doesn't work	
+			var currentColor = mCurrentPositions[i];
 			
 			// Getting some useful information from the arrays
 			var startingColor = mStartingPositions[i];
@@ -821,7 +891,7 @@ function Animator::UpdateTransitions(dt)
 			currentColor.z += dt * zSpeed * mScaleFactorArray[i];
 			
 			// Saving the current color
-			mWaypointsArray[i] = currentColor;
+			mCurrentPositions[i] = currentColor;
 			
 			glLight(object, GL_DIFFUSE, currentColor); 
 	
@@ -830,6 +900,72 @@ function Animator::UpdateTransitions(dt)
 				glLight(object, GL_DIFFUSE, endingColor); 
 								
 				RemoveTransitionByIndex(i);
+			}
+		}
+		// Case where we have a scaling transition
+		else if(mTransitionTypeArray[i] == GENERIC_TRANSITION)
+		{
+			// Getting some useful information from the arrays
+			var currentValue = mCurrentPositions[i];
+			var startingValue = mStartingPositions[i];
+			var endValue = mEndPositions[i];
+			var distance = mDistanceArray[i];
+			var speed = mXSpeedArray[i];
+			
+			currentValue += dt * speed * mScaleFactorArray[i];
+			
+			mCurrentPositions[i] = currentValue;
+						
+			if(abs(currentValue - startingValue) >= abs(startingValue - endValue))
+			{
+				mCurrentPositions[i] = endValue;
+				
+				if(mHasWaypointsArray[i])
+				{
+					var waypoints = mWaypointsArray[i];
+					
+					if(mAreTransitionsInverted && mWaypointsCounterArray[i] == 0 && !mIsLoopArray[i]) 
+						RemoveTransitionByIndex(i);
+					else if(mWaypointsCounterArray[i] < len(waypoints))
+					{
+						var newEndValue = waypoints[mWaypointsCounterArray[i]];
+						mStartingPositions[i] = currentValue;
+						mEndPositions[i] = newEndValue;
+						
+						distance = endValue - newEndValue;
+										
+						mDistanceArray[i] = distance;
+						
+						speed = (newEndValue - endValue) / mTimeArray[i];
+												
+						mXSpeedArray[i] = speed;
+
+						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+							mWaypointsCounterArray[i]--;
+						else if(mAreTransitionsInverted)
+							mWaypointsCounterArray[i] = len(waypoints) - 1;
+						else
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
+						
+						if(mIsLoopArray[i])
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
+					}
+					else
+						RemoveTransitionByIndex(i);
+				}
+				else if(mIsLoopArray[i])
+			    {
+				 	mXSpeedArray[i] = -mXSpeedArray[i];
+					mYSpeedArray[i] = -mYSpeedArray[i];
+					mZSpeedArray[i] = -mZSpeedArray[i];
+				 	mWaypointsArray[i] = mStartingPositions[i];
+				 	mCurrentPositions[i] = mStartingPositions[i];
+				 	mEndPositions[i] = mStartingPositions[i];
+					mStartingPositions[i] = endValue;
+				}
+				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
+				else
+					RemoveTransitionByIndex(i);
 			}
 		}
 	}
@@ -844,10 +980,12 @@ function Animator::GetCurrentStateInTransition(object, transitionType)
 		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
 		
 		if(found && mTransitionTypeArray[i] == transitionType)
-			return mWaypointsArray[i];
+			return mCurrentPositions[i];
 		else
 			found = false;
 	}
+	
+	return Void;
 }
 
 /*
@@ -1072,6 +1210,7 @@ function Animator::RemoveTransitionByIndex(index)
 {
 	adel(mObjects, index);
 	adel(mStartingPositions, index);
+	adel(mCurrentPositions, index);
 	adel(mEndPositions, index);
 	adel(mIsLoopArray, index);
 	adel(mTimeArray, index);
