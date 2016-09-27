@@ -9,8 +9,9 @@ class ViveManager
 	var mController1Index;
 	var mController2Index;
 	
-	var mController1;
-	var mController2;
+//	var mController1;
+//	var mController2;
+	var mControllers;
 	
 	var mIsPressingMenuButton;
 	
@@ -44,8 +45,10 @@ function ViveManager::ViveManager(HMD)
 	mController1Index = 3;
 	mController2Index = 4;
 	
-	mController1 = ViveController(1);
-	mController2 = ViveController(2);
+	var controllersIndex = mHMD.GetControllersIndex();
+	
+	mController1 = ViveController(controllersIndex[0]);
+	mController2 = ViveController(controllersIndex[1]);
 	
 	mIsPressingMenuButton = false;
 }
