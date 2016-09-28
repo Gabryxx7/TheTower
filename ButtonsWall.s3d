@@ -81,7 +81,7 @@ function ButtonsWall::ButtonsWall(animator, size, spacing, pos, offset, amount, 
 	mBorderScalingAnimTime = 400.0;
 	mButtonPressScalingID = 9999;
 	
-	mActiveButtonScaling = 4;
+	mActiveButtonScaling = 5;
 	
 	mBaseColor = valtype(baseColor) != "" ? baseColor : [1,1,1];
 	mCodeColor = valtype(codeColor) != "" ? codeColor : [1,0,0];
@@ -333,7 +333,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller, mInputMa
 			if(distance <= 0 && (newPos.z <= minPos.z + 0.15) && !mFreePlay){
 				mButtonPressed = true;
 				mButtonPressedTime = GetTime();
-				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, {mActiveButtonScaling+30, mActiveButtonScaling}, mBorderScalingAnimTime/1000.0);			
+				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, {mActiveButtonScaling+(10-mActiveButtonScaling), 1}, mBorderScalingAnimTime/1000.0);			
 			}
 		}
 		else if(mDirection == 2){
@@ -365,7 +365,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller, mInputMa
 			if(distance <= 0 && (newPos.x <= minPos.x + 0.15) && !mFreePlay){
 				mButtonPressed = true;				
 				mButtonPressedTime = GetTime();	
-				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, mActiveButtonScaling+30, mActiveButtonScaling, mBorderScalingAnimTime/1000.0);
+				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, mActiveButtonScaling+(10-mActiveButtonScaling), mActiveButtonScaling, mBorderScalingAnimTime/1000.0);
 			}
 		}
 		else if(mDirection == -1){
@@ -397,7 +397,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller, mInputMa
 			if(distance <= 0 && (newPos.z >= minPos.z - 0.15) && !mFreePlay){
 				mButtonPressed = true;
 				mButtonPressedTime = GetTime();
-				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, {mActiveButtonScaling+30, mActiveButtonScaling}, mBorderScalingAnimTime/1000.0);				
+				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, {mActiveButtonScaling+(10-mActiveButtonScaling), 1}, mBorderScalingAnimTime/1000.0);				
 			}
 		}
 		else if(mDirection == -2){
@@ -429,7 +429,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller, mInputMa
 			if(distance <= 0 && (newPos.x >= minPos.x - 0.15) && !mFreePlay){
 				mButtonPressed = true;	
 				mButtonPressedTime = GetTime();
-				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, {mActiveButtonScaling+30, mActiveButtonScaling}, mBorderScalingAnimTime/1000.0);			
+				mAnimator.CreateGenericTransition(mButtonPressScalingID, mActiveButtonScaling, {mActiveButtonScaling+(10-mActiveButtonScaling), 1}, mBorderScalingAnimTime/1000.0);			
 			}
 		}
 				
