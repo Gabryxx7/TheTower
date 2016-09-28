@@ -74,6 +74,8 @@ class Level5
 	var mAnimatingWalls;
 	var mWallsAnimationTime;
 	
+	var controllerPressing;
+	
 	// Private functions	
 	// Public functions
 	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
@@ -99,6 +101,7 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mTexture = CVmTexture("Level5Prev.png"); ///TO CHANGE
 	mIsVRon = isVRon;
 	debugVrOn = false;
+	controllerPressing = -1;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -357,22 +360,28 @@ function Level5::UpdateLogic(dt)
 						var minDistance = range;
 						var closerControllerIndex = -1;
 						
-						for(var j = 0; j < len(mControllersArray); j++){
-							mControllersArray[j].SetActionAvailable(false);	
-							var controllerDistance = mWalls[i].IsInRangeOfActiveButton(mControllersArray[j].GetPosition(), range);
-
-							if(controllerDistance < minDistance){
-								minDistance = controllerDistance;
-								closerControllerIndex = j;								
-							}							
-						}	
-						
-						if(closerControllerIndex != -1){
-							mControllersArray[closerControllerIndex].SetActionAvailable(true);
-							if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
-								mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex], mInputManager);						
+						if(controllerPressing < 0){
+							for(var j = 0; j < len(mControllersArray); j++){
+								mControllersArray[j].SetActionAvailable(false);	
+								var controllerDistance = mWalls[i].IsInRangeOfActiveButton(mControllersArray[j].GetPosition(), range);
+	
+								if(controllerDistance < minDistance){
+									mControllersArray[j].SetActionAvailable(true);
+									minDistance = controllerDistance;
+									closerControllerIndex = j;								
+								}							
 							}
-							else{			
+						}
+						
+						if(closerControllerIndex != -1 || controllerPressing >= 0){
+							var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
+							mControllersArray[checkingController].SetActionAvailable(true);
+							if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
+								controllerPressing = checkingController;
+								mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
+							}
+							else{
+								controllerPressing = -1;			
 								mWalls[i].StopMoving();	
 							}						
 						}		
