@@ -94,8 +94,8 @@ function ViveManager::UpdateControllers(openglTranslationOffset)
 	mControllers[0].SetRotationMatrix(controller1Matrix);
 	mControllers[1].SetRotationMatrix(controller2Matrix);	
 	
-	mControllers[0].UpdateStatus(mHMD.GetTouchPadCoord(mController1Index), mHMD.GetTriggerCoord(mController1Index), mHMD.IsMenuPressed(mController1Index), mHMD.IsTriggerPressed(mController1Index), mHMD.IsGripPressed(mController1Index), mHMD.IsTouchpadPressed(mController1Index));
-	mControllers[1].UpdateStatus(mHMD.GetTouchPadCoord(mController2Index), mHMD.GetTriggerCoord(mController2Index), mHMD.IsMenuPressed(mController2Index), mHMD.IsTriggerPressed(mController2Index), mHMD.IsGripPressed(mController2Index), mHMD.IsTouchpadPressed(mController2Index));
+	mControllers[0].UpdateStatus(mHMD.GetTouchPadCoord(mController1Index), mHMD.GetTriggerCoord(mController1Index), mHMD.IsMenuPressed(mController1Index), mHMD.IsTriggerPressed(mController1Index), mHMD.IsGripPressed(mController1Index), mHMD.IsTouchpadPressed(mController1Index), mHMD.IsSystemButtonPressed(mController1Index));
+	mControllers[1].UpdateStatus(mHMD.GetTouchPadCoord(mController2Index), mHMD.GetTriggerCoord(mController2Index), mHMD.IsMenuPressed(mController2Index), mHMD.IsTriggerPressed(mController2Index), mHMD.IsGripPressed(mController2Index), mHMD.IsTouchpadPressed(mController2Index), mHMD.IsSystemButtonPressed(mController2Index));
 }
 
 

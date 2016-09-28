@@ -47,6 +47,7 @@ class ViveController
 	var trackpadPointObj;
 	
 	var buttonDepth;
+	var systemDepth;
 	var trackpadDepth;
 	var gripDepth;
 	var leftGripPos;
@@ -55,6 +56,7 @@ class ViveController
 	var trackpadPos;
 	var trackpadCenterOffset;
 	var buttonPos;
+	var systemPos;
 	var triggerRange;
 	var trackpadPointRange;
 	
@@ -87,7 +89,7 @@ class ViveController
 	GetHeight();
 	GetDepth();
 	IsCollidingBBox(object);
-	UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed);
+	UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed);
 };
 
 
@@ -125,6 +127,7 @@ function ViveController::ViveController(controllerIndex)
 	triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.22*SCALE_FACTOR);
 	
 	buttonPos = buttonObj.GetPosition();
+	systemPos = systemButtonObj.GetPosition();
 	leftGripPos = leftGripObj.GetPosition();
 	rightGripPos = rightGripObj.GetPosition();
 	systemButtonPos = systemButtonObj.GetPosition();
@@ -133,6 +136,7 @@ function ViveController::ViveController(controllerIndex)
 	triggerRange = -55;
 	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
 	
+	systemDepth = 0.0075*SCALE_FACTOR;
 	buttonDepth = 0.0075*SCALE_FACTOR;
 	trackpadDepth = 4.5;
 	gripDepth = 0.007*SCALE_FACTOR;
@@ -185,7 +189,7 @@ function ViveController::ViveController(controllerIndex)
 /*
  * This method updates the visual status of the vive controller
  */
-function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed){
+function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed){
 	if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
 		var elapsedTime = GetTime() - timeSinceLastTouch; 
 		if(elapsedTime > trackPointTime){
@@ -249,6 +253,14 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 //		trackpadObj.SetPosition(trackpadPos);	
 		trackpadObj.SetRotation(0,1,0,0);		
 		trackpadObj.SetRotation(0,0,0,1);	
+	}
+	
+	outputln(isSystemPressed);
+	if(isSystemPressed == 0){
+		systemButtonObj.SetPosition(systemPos - [0, systemDepth, 0]);
+	}
+	else{
+		systemButtonObj.SetPosition(systemPos);		
 	}
 }
 

@@ -80,6 +80,7 @@ function OnInit(params)
 	HMD.__AddFunction( C_PFLOAT_2, "GetTouchpadCoord", C_INT);
 	HMD.__AddFunction( C_PFLOAT_2, "GetTriggerCoord", C_INT);
 	HMD.__AddFunction( C_INT, "IsMenuPressed", C_INT);
+	HMD.__AddFunction( C_INT, "IsSystemButtonPressed", C_INT);
 	HMD.__AddFunction( C_INT, "IsTriggerPressed", C_INT);
 	HMD.__AddFunction( C_INT, "IsGripPressed", C_INT);
 	HMD.__AddFunction( C_INT, "IsTouchpadPressed", C_INT);
