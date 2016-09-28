@@ -20,21 +20,33 @@ class ButtonsWall{
 	var mCodeColor;
 	var mActiveColor;
 	var mMovingColor;
+	var mPressedColor;
 	
 	var mActiveObjIndex;
 	var mActiveButtonBorderObj;
+	var mActiveButtonScaling;
 	var mIsMoving;
 	var mDistance;
 	var mExtrudeFactor;
 	
+	var mButtonPressed;
+	var mButtonPressedTime;
+	var mBorderScalingAnimTime;
+	
+	var mFreePlay;
+	var mAnimator;
+	
+	var mLastButtonPos;
+	var mLastButtonTime;
+	
 	Draw();
 	ComputeAnimations(num);
-	StartAnimation(animator);
-	StopAnimation(animator);
+	StartAnimation();
+	StopAnimation();
 	ComputeCode(amount, maxRow);
 	IsCompleted();
 	IsInRangeOfActiveButton(objPos, range);
-	MoveButtonInRange(movingObjPos, isVr, controller);
+	MoveButtonInRange(movingObjPos, isVr, controller,mInputManager);
 	StopMoving();
 	SetActiveCOlor(color);
 	SetCodeColor(color);
@@ -43,9 +55,11 @@ class ButtonsWall{
 	IsAnimating();
 	IsNotInWallRange(pos, range);
 	ActivateClosestButton(objPos, range);
+	EnableFreePlay();
 };
 
-function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction, baseColor, codeColor, activeColor, movingColor){
+function ButtonsWall::ButtonsWall(animator, size, spacing, pos, offset, amount, direction, baseColor, codeColor, activeColor, movingColor){
+	mAnimator = animator;
 	mSize = size;
 	mPos = pos;
 	mOffset = offset;
@@ -59,11 +73,19 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction,
 	mDistance = -1;
 	mExtrudeFactor = 0.95;
 	
+	mButtonPressed = false;
+	mButtonPressedTime = -1;
+	mFreePlay = false;
+	
+	mBorderScalingAnimTime = 400.0;
+	
+	mActiveButtonScaling = [1.02,1.02,1.02];
 	
 	mBaseColor = valtype(baseColor) != "" ? baseColor : [1,1,1];
 	mCodeColor = valtype(codeColor) != "" ? codeColor : [1,0,0];
 	mActiveColor = valtype(activeColor) != "" ? activeColor : [1,1,0];
 	mMovingColor = valtype(movingColor) != "" ? movingColor : [0,0,1];
+	mPressedColor = [0,1,0];
 		
 	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
 	
@@ -128,12 +150,12 @@ function ButtonsWall::ButtonsWall(size, spacing, pos, offset, amount, direction,
 		}
 	}	
 	mActiveButtonBorderObj = CvmObj(CvmNewMesh(VRP_BOX, 1, mMeshSizes[0], mMeshSizes[1]));
-	mActiveButtonBorderObj.SetScale(1.02, 1.02, 1.02);
+	mActiveButtonBorderObj.SetScale(mActiveButtonScaling);
 }
 
 function ButtonsWall::Draw(){
 	for(var i = 0; i < len(mObjs); i++){
-			mObjs[i].Draw(VR_NO_CULLING);			
+		mObjs[i].Draw(VR_NO_CULLING);			
 	}
 	
 	if(mActiveObjIndex >= 0){
@@ -141,9 +163,26 @@ function ButtonsWall::Draw(){
     	glCullFace (GL_FRONT);
     	
     	mBorderShader.Start();
-    		mBorderShader.SetParameter("color", mIsMoving ? mMovingColor : mActiveColor);
-//    		mBorderShader.SetParameter("color", mMovingColor);
-			mActiveButtonBorderObj.Draw();
+	    	if(!mButtonPressed){
+	    		mBorderShader.SetParameter("color", mIsMoving ? mMovingColor : mActiveColor);
+	    	}else{
+	    		if(GetTime() - mButtonPressedTime <= mBorderScalingAnimTime*2+50){
+		    		mBorderShader.SetParameter("color", mPressedColor); 	    		
+	    		}
+	    		else{
+	    			mButtonPressed = false;
+	    			mButtonPressedTime = -1;
+	    			for(var i = 0; i < len(mCodePositions); i++){
+						if(mCodePositions[i] == mActiveObjIndex){
+							adel(mCodePositions, i);
+							break;
+						}
+					}
+	    			mActiveObjIndex = -1;
+    			}
+	    	}
+    	
+		mActiveButtonBorderObj.Draw();
 		mBorderShader.Stop();
 	
 		glCullFace (GL_BACK);	
@@ -202,7 +241,7 @@ function ButtonsWall::ComputeAnimations(num){
 	for(var i = 0; i < len(mObjs); i++){
 		var objWaypoints = {};
 		for(var j = 0; j < num; j++){			
-			var offset = Rand(8)+2;		
+			var offset = (Rand(800.0)+200.0)/100.0;		
 			var finalOffset = [0,0,0];
 			if(mDirection == 1){
 				finalOffset = [0,0,offset*SCALE_FACTOR];		
@@ -224,14 +263,13 @@ function ButtonsWall::ComputeAnimations(num){
 	}
 }
 
-function ButtonsWall::StartAnimation(animator){	
+function ButtonsWall::StartAnimation(){	
 	if(!mIsAnimating){
 		mIsAnimating = true;
 		for(var i = 0; i < len(mObjs); i++){					
-			var mAnimationTime = Rand(200)/(100);
-			mAnimationTime += 0.7;	
+			var mAnimationTime = (Rand(2000.0)+700.0)/1000.0;
 						
-			animator.CreateTransition(mObjs[i], mMinimumPos[i], mWaypoints[i], mAnimationTime, true);
+			mAnimator.CreateTransition(mObjs[i], mMinimumPos[i], mWaypoints[i], mAnimationTime, true);
 		}		
 	}
 }
@@ -240,13 +278,13 @@ function ButtonsWall::IsAnimating(){
 	return mIsAnimating;
 }
 
-function ButtonsWall::StopAnimation(animator){	
+function ButtonsWall::StopAnimation(){	
 	if(mIsAnimating){
 		mIsAnimating = false;
 		for(var i = 0; i < len(mObjs); i++){					
 			var mAnimationTime = Rand(200)/(100);
 			mAnimationTime += 0.7;	
-			animator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mMinimumPos[i], mAnimationTime, false);
+			mAnimator.CreateTransition(mObjs[i], mObjs[i].GetPosition(), mMinimumPos[i], mAnimationTime, false);
 		}	
 	}
 }
@@ -255,16 +293,9 @@ function ButtonsWall::IsCompleted(){
 	return len(mCodePositions) < 1;
 }
 
-function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
-	var vrCheck = true;
-//	if(isVr){
-//		outputln(controller.IsCollidingBBox(mObjs[mActiveObjIndex]));
-//		if(!controller.IsCollidingBBox(mObjs[mActiveObjIndex])){
-//			vrCheck = false;
-//		}
-//	}
+function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller, mInputManager){
 	
-	if(mActiveObjIndex >= 0 && vrCheck){
+	if(mActiveObjIndex >= 0 && !mButtonPressed){
 		mIsMoving = true;
 		var pos = mObjs[mActiveObjIndex].GetPosition();
 		var minPos = mMinimumPos[mActiveObjIndex];
@@ -272,7 +303,7 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 		var newPos = [0,0,0];
 		var maxDistance = 0;
 		var distance = 0;
-		var buttonPressed = false;
+		var mMoveBoolean = false;
 		
 		if(mDirection == 1){
 			if(isVr)
@@ -281,14 +312,30 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [pos.x, pos.y, movingObjPos.z-mSize.z*0.5-mDistance];
 				
 			if(newPos.z >= minPos.z && newPos.z <= maxPos.z){
-				mObjs[mActiveObjIndex].SetPosition(newPos);	
-				maxDistance = abs(maxPos.z - minPos.z);
-				distance = abs(newPos.z - minPos.z)/maxDistance;	
-				mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);			
+				if(isVr){
+					if(movingObjPos.x >= pos.x - mSize.x/2 && movingObjPos.x <= pos.x + mSize.x/2 &&
+					   movingObjPos.y >= pos.y - mSize.y/2 && movingObjPos.y <= pos.y + mSize.y/2){
+						mInputManager.VibrateController(controller.GetIndex(), 100);
+						mMoveBoolean = true;					
+					}					
+				}
+				else{
+					mMoveBoolean = true;
+				}
+						
+				if(mMoveBoolean){		
+					mObjs[mActiveObjIndex].SetPosition(newPos);	
+					maxDistance = abs(maxPos.z - minPos.z);
+					distance = abs(newPos.z - minPos.z)/maxDistance;	
+					mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);				
+				}
 			}
 			
-			if(distance <= 0 && (newPos.z <= minPos.z + 0.15))
-				buttonPressed = true;
+			if(distance <= 0 && (newPos.z <= minPos.z + 0.15) && !mFreePlay){
+				mButtonPressed = true;
+				mButtonPressedTime = GetTime();
+				mAnimator.CreateScalingTransition(mActiveButtonBorderObj, mActiveButtonScaling, {mActiveButtonScaling+[0.05,0.05,0.05],mActiveButtonScaling}, mBorderScalingAnimTime/1000.0, false);			
+			}
 		}
 		else if(mDirection == 2){
 			if(isVr)
@@ -297,14 +344,30 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [movingObjPos.x-mSize.z*0.5-mDistance, pos.y, pos.z];
 				
 			if(newPos.x >= minPos.x && newPos.x <= maxPos.x){
-				mObjs[mActiveObjIndex].SetPosition(newPos);	
-				maxDistance = abs(maxPos.x - minPos.x);
-				distance = abs(newPos.x - minPos.x)/maxDistance;	
-				mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);			
+				if(isVr){
+					if(movingObjPos.z >= pos.z - mSize.x/2 && movingObjPos.z <= pos.z + mSize.x/2 &&
+					   movingObjPos.y >= pos.y - mSize.y/2 && movingObjPos.y <= pos.y + mSize.y/2){
+							mInputManager.VibrateController(controller.GetIndex(), 100);
+							mMoveBoolean = true;					
+					}					
+				}
+				else{
+					mMoveBoolean = true;
+				}
+					
+				if(mMoveBoolean){
+					mObjs[mActiveObjIndex].SetPosition(newPos);	
+					maxDistance = abs(maxPos.x - minPos.x);
+					distance = abs(newPos.x - minPos.x)/maxDistance;	
+					mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);			
+				}
 			}
 			
-			if(distance <= 0 && (newPos.x <= minPos.x + 0.15))
-				buttonPressed = true;
+			if(distance <= 0 && (newPos.x <= minPos.x + 0.15) && !mFreePlay){
+				mButtonPressed = true;				
+				mButtonPressedTime = GetTime();	
+				mAnimator.CreateScalingTransition(mActiveButtonBorderObj, mActiveButtonScaling, {mActiveButtonScaling+[0.05,0.05,0.05],mActiveButtonScaling}, mBorderScalingAnimTime/1000.0, false);	
+			}
 		}
 		else if(mDirection == -1){
 			if(isVr)
@@ -313,14 +376,30 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [pos.x, pos.y, movingObjPos.z+mSize.z*0.5-mDistance];
 				
 			if(newPos.z >= maxPos.z && newPos.z <= minPos.z){
-				mObjs[mActiveObjIndex].SetPosition(newPos);	
-				maxDistance = abs(maxPos.z - minPos.z);
-				distance = abs(newPos.z - minPos.z)/maxDistance;	
-				mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
+				if(isVr){
+					if(movingObjPos.x >= pos.x - mSize.x/2 && movingObjPos.x <= pos.x + mSize.x/2 &&
+					   movingObjPos.y >= pos.y - mSize.y/2 && movingObjPos.y <= pos.y + mSize.y/2){
+						mInputManager.VibrateController(controller.GetIndex(), 100);
+						mMoveBoolean = true;					
+					}					
+				}
+				else{
+					mMoveBoolean = true;
+				}
+				
+				if(mMoveBoolean){
+					mObjs[mActiveObjIndex].SetPosition(newPos);	
+					maxDistance = abs(maxPos.z - minPos.z);
+					distance = abs(newPos.z - minPos.z)/maxDistance;	
+					mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
+				}
 			}
 			
-			if(distance <= 0 && (newPos.z >= minPos.z - 0.15))
-				buttonPressed = true;
+			if(distance <= 0 && (newPos.z >= minPos.z - 0.15) && !mFreePlay){
+				mButtonPressed = true;
+				mButtonPressedTime = GetTime();
+				mAnimator.CreateScalingTransition(mActiveButtonBorderObj, mActiveButtonScaling, {mActiveButtonScaling+[0.05,0.05,0.05],mActiveButtonScaling}, mBorderScalingAnimTime/1000.0, false);					
+			}
 		}
 		else if(mDirection == -2){
 			if(isVr)
@@ -329,77 +408,94 @@ function ButtonsWall::MoveButtonInRange(movingObjPos, isVr, controller){
 				newPos = [movingObjPos.x+mSize.z*0.5-mDistance, pos.y, pos.z];
 				
 			if(newPos.x >= maxPos.x && newPos.x <= minPos.x){
-				mObjs[mActiveObjIndex].SetPosition(newPos);	
-				maxDistance = abs(maxPos.x - minPos.x);
-				distance = abs(newPos.x - minPos.x)/maxDistance;	
-				mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
+				if(isVr){
+					if(movingObjPos.z >= pos.z - mSize.x/2 && movingObjPos.z <= pos.z + mSize.x/2 &&
+					   movingObjPos.y >= pos.y - mSize.y/2 && movingObjPos.y <= pos.y + mSize.y/2){
+						mInputManager.VibrateController(controller.GetIndex(), 100);
+						mMoveBoolean = true;					
+					}					
+				}
+				else{
+					mMoveBoolean = true;
+				}
+				
+				if(mMoveBoolean){
+					mObjs[mActiveObjIndex].SetPosition(newPos);	
+					maxDistance = abs(maxPos.x - minPos.x);
+					distance = abs(newPos.x - minPos.x)/maxDistance;	
+					mObjs[mActiveObjIndex].GetMesh().ShaderSetParameter(0, "diffuse", 0, [mBaseColor.r*(1-distance) + mCodeColor.r*(distance), mBaseColor.g*(1-distance) + mCodeColor.g*(distance), mBaseColor.b*(1-distance) + mCodeColor.b*(distance)]);
+				}
 			}	
 			
-			if(distance <= 0 && (newPos.x >= minPos.x - 0.15))
-				buttonPressed = true;
-		}
-		
-		if(buttonPressed){
-			for(var i = 0; i < len(mCodePositions); i++){
-				if(mCodePositions[i] == mActiveObjIndex){
-					adel(mCodePositions, i);
-					mActiveObjIndex = -1;
-					return true;
-				}
+			if(distance <= 0 && (newPos.x >= minPos.x - 0.15) && !mFreePlay){
+				mButtonPressed = true;	
+				mButtonPressedTime = GetTime();
+				mAnimator.CreateScalingTransition(mActiveButtonBorderObj, mActiveButtonScaling, {mActiveButtonScaling+[0.05,0.05,0.05],mActiveButtonScaling}, mBorderScalingAnimTime/1000.0, false);				
 			}
 		}
-		
+				
 		return false;		
 	}
-	else{		
-//		mIsMoving = false;
+	else if(mButtonPressed){
+		mIsMoving = true;
+		return true;
+	}
+	else{				
+		mIsMoving = false;
 		return false;
 	}
 		
 }
 
 function ButtonsWall::StopMoving(){
-	mIsMoving = false;
+	mIsMoving = mButtonPressed ? true : false;
 }
 
 function ButtonsWall::IsInRangeOfActiveButton(objPos, range){ 
-	var distance = 0;
-	var buttonPos = 0;
-	var minDistance = range*1000;
-	var foundIndex = -1;
-	
-	foreach(var index in mCodePositions){
-		buttonPos = mObjs[index].GetPosition();
-		if(mDirection == 1){
-			buttonPos += [0,0,mSize.z*0.5];
-		}
-		else if(mDirection == -1){
-			buttonPos += [0,0,-mSize.z*0.5];
-		}
-		else if(mDirection == 2){
-			buttonPos += [mSize.z*0.5,0,0];
-		}
-		else if(mDirection == -2){
-			buttonPos += [-mSize.z*0.5,0,0];
-		}
-
-		distance = Modulus(objPos - buttonPos);
+	//If it is not moving I should check if it is in range
+	//Otherwise I was already in range so I'll return a distance always in range in order to mantain it active
+	if(!mIsMoving){
+		var distance = 0;
+		var buttonPos = 0;
+		var minDistance = range*1000;
+		var foundIndex = -1;
 		
-		if(distance <= range && distance < minDistance){			
-			if(abs(mDirection) == 1 ){
-				mDistance = objPos.z-buttonPos.z;				
-			}else if(abs(mDirection) == 2){
-				mDistance = objPos.x-buttonPos.x;						
+		foreach(var index in mCodePositions){
+			buttonPos = mObjs[index].GetPosition();
+			if(mDirection == 1){
+				buttonPos += [0,0,mSize.z*0.5];
+			}
+			else if(mDirection == -1){
+				buttonPos += [0,0,-mSize.z*0.5];
+			}
+			else if(mDirection == 2){
+				buttonPos += [mSize.z*0.5,0,0];
+			}
+			else if(mDirection == -2){
+				buttonPos += [-mSize.z*0.5,0,0];
 			}
 			
-			minDistance = distance;
-			foundIndex = index;
+			distance = Modulus(objPos - buttonPos);
+			
+			if(distance <= range && distance < minDistance){			
+				if(abs(mDirection) == 1 ){
+					mDistance = objPos.z-buttonPos.z;				
+				}else if(abs(mDirection) == 2){
+					mDistance = objPos.x-buttonPos.x;						
+				}
+				
+				minDistance = distance;
+				foundIndex = index;
+			}
 		}
-	}
-	
-	mActiveObjIndex = foundIndex;
-	
-	return minDistance;	
+		
+			mActiveObjIndex = foundIndex;
+		
+		return minDistance;	
+		
+		}
+	else
+		return range/2;
 }
 
 function ButtonsWall::SetDefaultColor(color){
@@ -442,43 +538,54 @@ function ButtonsWall::IsNotInWallRange(pos, range){
 	}
 }
 
-function ButtonsWall::ActivateClosestButton(objPos, range){
-	var distance = 0;
-	var buttonPos = 0;
-	var minDistance = range*1000;
-	var foundIndex = -1;
-	
-	for(var index = 0; index < len(mObjs); index++){
-		buttonPos = mObjs[index].GetPosition();
-		if(mDirection == 1){
-			buttonPos += [0,0,mSize.z*0.5];
-		}
-		else if(mDirection == -1){
-			buttonPos += [0,0,-mSize.z*0.5];
-		}
-		else if(mDirection == 2){
-			buttonPos += [mSize.z*0.5,0,0];
-		}
-		else if(mDirection == -2){
-			buttonPos += [-mSize.z*0.5,0,0];
-		}
-
-		distance = Modulus(objPos - buttonPos);
+function ButtonsWall::ActivateClosestButton(objPos, range){ 
+	//If it is not moving I should check if it is in range
+	//Otherwise I was already in range so I'll return a distance always in range in order to mantain it active
+	if(!mIsMoving){
+		var distance = 0;
+		var buttonPos = 0;
+		var minDistance = range*1000;
+		var foundIndex = -1;
 		
-		if(distance <= range && distance < minDistance){			
-			if(abs(mDirection) == 1 ){
-				mDistance = objPos.z-buttonPos.z;				
-			}else if(abs(mDirection) == 2){
-				mDistance = objPos.x-buttonPos.x;						
+		for(var index = 0; index < len(mObjs); index++){
+			buttonPos = mObjs[index].GetPosition();
+			if(mDirection == 1){
+				buttonPos += [0,0,mSize.z*0.5];
+			}
+			else if(mDirection == -1){
+				buttonPos += [0,0,-mSize.z*0.5];
+			}
+			else if(mDirection == 2){
+				buttonPos += [mSize.z*0.5,0,0];
+			}
+			else if(mDirection == -2){
+				buttonPos += [-mSize.z*0.5,0,0];
 			}
 			
-			minDistance = distance;
-			foundIndex = index;
+			distance = Modulus(objPos - buttonPos);
+			
+			if(distance <= range && distance < minDistance){			
+				if(abs(mDirection) == 1 ){
+					mDistance = objPos.z-buttonPos.z;				
+				}else if(abs(mDirection) == 2){
+					mDistance = objPos.x-buttonPos.x;						
+				}
+				
+				minDistance = distance;
+				foundIndex = index;
+			}
 		}
-	}
-	
-	mActiveObjIndex = foundIndex;
-	
-	return minDistance;	
+		
+			mActiveObjIndex = foundIndex;
+		
+		return minDistance;	
+		
+		}
+	else
+		return range;
+}
+
+function ButtonsWall::EnableFreePlay(){
+	mFreePlay = true;
 }
 

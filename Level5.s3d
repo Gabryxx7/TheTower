@@ -96,7 +96,7 @@ class Level5
  */
 function Level5::Level5(isVRon, inputManager, soundManager)
 {
-	mTexture = CVmTexture("Level2Prev.png"); ///TO CHANGE
+	mTexture = CVmTexture("Level5Prev.png"); ///TO CHANGE
 	mIsVRon = isVRon;
 	debugVrOn = false;
 	
@@ -133,16 +133,16 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mWalls = {};
 	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
 	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,1, [1, 0.7, 0.7], [0,0,1]));
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,1, [1, 0.7, 0.7], [0,0,1]));
 
 	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-1, [0.7, 1, 0.7], [1,0,1]));
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,-1, [0.7, 1, 0.7], [1,0,1]));
 	
 	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x)/2] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,2, [0.7, 0.7, 1], [1,0,0]));
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,2, [0.7, 0.7, 1], [1,0,0]));
 
 	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(wallSize, spacing, wallPos, wallOffset, amount,-2, [0.7, 1, 1], [1,1,0]));
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,-2, [0.7, 1, 1], [1,1,0]));
 	
 	foreach(var wall in mWalls){
 		wall.ComputeAnimations(5);
@@ -358,6 +358,7 @@ function Level5::UpdateLogic(dt)
 						var closerControllerIndex = -1;
 						
 						for(var j = 0; j < len(mControllersArray); j++){
+							mControllersArray[j].SetActionAvailable(false);	
 							var controllerDistance = mWalls[i].IsInRangeOfActiveButton(mControllersArray[j].GetPosition(), range);
 
 							if(controllerDistance < minDistance){
@@ -367,24 +368,25 @@ function Level5::UpdateLogic(dt)
 						}	
 						
 						if(closerControllerIndex != -1){
+							mControllersArray[closerControllerIndex].SetActionAvailable(true);
 							if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
-								mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex]);						
+								mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex], mInputManager);						
 							}
-							else{						
+							else{			
 								mWalls[i].StopMoving();	
 							}						
 						}		
 					}
 					else{
-						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
+						var range = 2.5; //I check whether the camera or the vive is in the range of an active button or not
 						if(mWalls[i].IsInRangeOfActiveButton(cameraPosition, range) <= range){
 							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
 								mWalls[i].MoveButtonInRange(cameraPosition, false);						
 							}
-							else{						
+							else{	
 								mWalls[i].StopMoving();
 							}
-						}	
+						}
 					}
 						
 					if(mWalls[i].IsCompleted()){
@@ -394,7 +396,7 @@ function Level5::UpdateLogic(dt)
 				else{
 					if(!mWalls[i].IsAnimating()){
 						if(mWalls[i].IsNotInWallRange(cameraPosition, 5*SCALE_FACTOR)){
-							mWalls[i].StartAnimation(mAnimator);
+							mWalls[i].StartAnimation();
 							mAnimatingWalls += 1;	
 							if(mAnimatingWalls == len(mWalls)){
 								mWallsAnimationTime = GetTime();
@@ -412,10 +414,8 @@ function Level5::UpdateLogic(dt)
 		{
 			
 			if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 500 && mAnimatingWalls < len(mWalls)){
-//				foreach(var wall in mWalls){
-//					wall.StopAnimation(mAnimator);
-//				}
-				mWalls[mAnimatingWalls].StopAnimation(mAnimator);
+				mWalls[mAnimatingWalls].StopAnimation();
+				mWalls[mAnimatingWalls].EnableFreePlay();
 				mAnimatingWalls++;
 				mWallsAnimationTime = GetTime();
 				
@@ -450,6 +450,7 @@ function Level5::UpdateLogic(dt)
 							var closerControllerIndex = -1;
 							
 							for(var j = 0; j < len(mControllersArray); j++){
+								mControllersArray[j].SetActionAvailable(false);
 								var controllerDistance = mWalls[i].ActivateClosestButton(mControllersArray[j].GetPosition(), range);
 	
 								if(controllerDistance < minDistance){
@@ -459,13 +460,14 @@ function Level5::UpdateLogic(dt)
 							}	
 							
 							if(closerControllerIndex != -1){
+								mControllersArray[closerControllerIndex].SetActionAvailable(true);
 								if(mInputManager.IsPressingPrimaryButton(mControllersArray[closerControllerIndex].GetIndex())){ //If it is in a range, I check if the button is being pressed
 									mWalls[i].MoveButtonInRange(mControllersArray[closerControllerIndex].GetPosition(), true, mControllersArray[closerControllerIndex]);						
 								}
 								else{						
 									mWalls[i].StopMoving();	
 								}						
-							}		
+							}
 						}
 						else{
 							var range = 1; //I check whether the camera or the vive is in the range of an active button or not

@@ -32,22 +32,20 @@ function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color){
 	var randomx = 0;
 	var randomy = 0;
 	var randomz = 0;
-	var randomDecimal;
 	
 	for(var i = 0; i < amount; i++){
-		randomx = Rand(boxSize.x*2 -offset.x) + boxPosition.x - boxSize.x +offset.x;
-		randomy = Rand(boxSize.y*2)+boxPosition.y;
-		randomz = Rand(boxSize.z*2)+boxPosition.z;
-		randomDecimal = 1 / (Rand(99)+1);
+		randomx = (Rand(boxSize.x*2*1000 -offset.x*1000))/1000 + boxPosition.x - boxSize.x +offset.x;
+		randomy = (Rand(boxSize.y*2*1000))/1000 + boxPosition.y;
+		randomz = (Rand(boxSize.z*2*1000))/1000+boxPosition.z;
 		
 		aadd(mObjsArray, CvmObj(mesh));
 		
-		aadd(mObjsOrigAngles,[Rand(360), Rand(360), Rand(360)]);
+		aadd(mObjsOrigAngles,[Rand(3600.0)/10.0, Rand(3600.0)/10.0, Rand(3600.0)/10.0]);
 		mObjsArray[i].SetRotation(mObjsOrigAngles[i].x, 1, 0, 0);
 		mObjsArray[i].SetRotation(mObjsOrigAngles[i].y, 0, 1, 0);
 		mObjsArray[i].SetRotation(mObjsOrigAngles[i].z, 0, 0, 1);
 		
-		aadd(mObjsOrigPos, [randomx+randomDecimal, randomy+randomDecimal, randomz+randomDecimal]);
+		aadd(mObjsOrigPos, [randomx, randomy, randomz]);
 		mObjsArray[i].SetPosition(mObjsOrigPos[i].x, mObjsOrigPos[i].y, mObjsOrigPos[i].z);
 	}	
 }
@@ -85,7 +83,7 @@ function RandomMeshes::MoveToFinalPosition(mAnimator){
 	var objPos;
 	for(var i = 0; i < len(mObjsArray); i++){
 		objPos = mObjsArray[i].GetPosition();
-		time = (Rand(10)+ 11) / 5;
+		time = (Rand(1000)+ 1000)/ 500;
 		mAnimator.RemoveTransitionByObject(mObjsArray[i], 3);	//The animation is starting so I remove the rotation around a point animation
 		mAnimator.CreateTransition(mObjsArray[i], objPos, {[mObjsFinalPos[i].x, objPos.y, objPos.z], [mObjsFinalPos[i].x, mObjsFinalPos[i].y, objPos.z], [mObjsFinalPos[i].x, mObjsFinalPos[i].y, mObjsFinalPos[i].z]}, time, false);
 		mObjsArray[i].SetRotation(mObjsOrigAngles[i].x, 1,0,0);

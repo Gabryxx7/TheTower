@@ -657,9 +657,9 @@ function Level3::UpdateLogic(dt)
 				
 				for(var j = 0; j < len(randomShapes); j++){		
 					for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
-						time = (Rand(13)+ 11) / 5;
+						time = (Rand(1300.0)+ 1100.0) / 500.0;
 						mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
-						time = (Rand(13)+ 11) / 5;	
+						time = (Rand(1300.0)+ 1100.0) / 500.0;	
 						cubePos	= randomShapes[j].GetObjs()[i].GetPosition();	
 						mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], cubePos, cubePos - [(Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(1)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true, Rand(1) == 1);
 					}	
@@ -802,6 +802,9 @@ function Level3::UpdateLogic(dt)
 				}
 				
 				if(correctNumbers == len(typedNumbers)){
+					foreach(var controller in mControllersArray)
+						controller.SetActionAvailable(false);
+						
 					mSoundManager.PlaySound("numpadCorrectCode", true, 0.85);	
 					doorUnlocked = true;
 					outputln("Well done mate! (mofo)");
@@ -832,7 +835,7 @@ function Level3::UpdateLogic(dt)
 				numpadObj.AnimatePressedButtons();
 			}
 						
-			var time = (Rand(10)+ 11) / 5;
+			var time = (Rand(1000.0)+ 1100.0) / 500.0;
 			var objPos;
 			var musicRadius = musicCircleRadius*1.7; 
 			var distanceFromCircle = sqrt((cameraPosition.x-musicCirclePosition.x)*(cameraPosition.x-musicCirclePosition.x) + (cameraPosition.z-musicCirclePosition.z)*(cameraPosition.z-musicCirclePosition.z));
@@ -862,10 +865,10 @@ function Level3::UpdateLogic(dt)
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
 							objPos = randomShapes[j].GetObjs()[i].GetPosition();
-							time = (Rand(13)+ 11) / 5;
+							time = (Rand(1300.0)+ 1100.0) / 500.0;
 							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
-							time = (Rand(100)+ 50) / 7;
-							var randomSpeed = (Rand(9)+1);
+							time = (Rand(10000.0)+ 5000.0) / 700.0;
+							var randomSpeed = (Rand(900.0)+100.0)/100;
 							var rotationRadius = 10*SCALE_FACTOR;
 							var startingPosx = objPos.x;
 							var startingPosz = objPos.z;
@@ -886,9 +889,9 @@ function Level3::UpdateLogic(dt)
 					if(!paths[j].HasBeenWalked()){
 						for(var i = 0; i < len(randomShapes[j].GetObjs()); i++){
 							objPos = randomShapes[j].GetObjs()[i].GetPosition();
-							time = (Rand(13)+ 11) / 5;
+							time = (Rand(1300.0)+ 1100.0) / 500.0;
 							mAnimator.CreateRotatingTransition(randomShapes[j].GetObjs()[i], Rand(360), Rand(360), [Rand(1),Rand(1),Rand(1)], time-0.5, true, false);
-							time = (Rand(9)+ 11) / 5;			
+							time = (Rand(900.0)+ 1100.0) / 500.0;			
 							mAnimator.CreateRotationAroundPointTransition(randomShapes[j].GetObjs()[i], objPos, objPos - [(Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR, (Rand(2)+1) / (Rand(1)+2) * SCALE_FACTOR], time,  true, true, Rand(1) == 1);
 						}						
 					}
