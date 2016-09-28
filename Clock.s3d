@@ -70,7 +70,7 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	mClockSphereRadius = 1 * SCALE_FACTOR;
 	mClockSphereThickness = 0.02 * SCALE_FACTOR;
 	
-	// Creating the mesh for the arrow and adding the toon shader to it
+	// Creating the mesh for the arrow and adding the toon shader to it (actually now it's disabled to improve performance)
 	mMinutesArrowMesh = CVmNewMesh(VRP_BOX, 0, [0.0, 0.0, 0.0], [mArrowsWidth, mMinutesArrowHeight, mArrowsDepth]); 
 //	AddToonShaderToMesh(mMinutesArrowMesh, [0.04, 0.04, 0.04], [0.9, 0.9, 0.9], [0.5, 0.5, 0.5], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
@@ -89,9 +89,6 @@ function Clock::Clock(lightsRangeMin, lightsRangeMax)
 	clockMesh.Rotate(-90, 1, 0, 0);	
 	clockMesh.Rotate(180, 0, 0, 1);	
 	
-//	var mat = CVmMaterial();
-//	mat.SetTexture(CVmTexture ("clock_face.png"));
-//	clockMesh.ForceMaterial(mat);
 
 	// I'm using a shader that applies the phong lighting. I'm doing this basically just to avoid using the default lighting pipeline, because I want
 	// the clocks to be lighted ONLY by the lights I want (defined in the range [lightsRangeMin, lightsRangeMax]). Otherwise every light affects the clocks
@@ -258,25 +255,6 @@ function Clock::GetHoursArrowObj()
 
 function Clock::Draw()
 {
-//	glCullFace(GL_FRONT);
-//	
-//	mMinutesArrowMesh.ShaderActivate(false);
-//	mHoursArrowMesh.ShaderActivate(false);
-//	
-//	mSilhouetteShader.Start();
-//    	// Setting its parameter; the offset tells the shader how the size of the mesh has to increase
-//    	mSilhouetteShader.SetParameter("offset", 0.05 * SCALE_FACTOR);
-//    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-//    	
-//    	// Drawing the silhouette of the room and of any objects in it
-//		mClockObj.Draw();
-//	mSilhouetteShader.Stop();
-//	
-//	glCullFace(GL_BACK);
-//	
-//	mMinutesArrowMesh.ShaderActivate(true);
-//	mHoursArrowMesh.ShaderActivate(true);
-	
 	mClockObj.Draw();
 }
 

@@ -129,7 +129,7 @@ class Level0
 	DrawPortal(portalFrame, portalRoom, lightColor, lightPosition, lightAngle, lightIncrement, lightCenter, lightRadius);
 	
 	// Public functions
-	Init();
+	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
@@ -529,7 +529,10 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	aadd(mPortalRoomsLightTransitionCenterArray, lightTransitionCenter4);
 }
 
-function Level0::Init(){	
+function Level0::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
+{	
+	mOpenglTranslationOffset = openglTransformOffset;
+	
 	// Positioning the room so that is right behind the first portal frame
 	mElevator.SetPosition(mPortalFrameObj1.GetPosition() - [0, 0, mElevator.GetRoomDepth() - 0.04 * SCALE_FACTOR]);
 				

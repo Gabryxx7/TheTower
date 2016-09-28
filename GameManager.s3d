@@ -142,7 +142,7 @@ class GameManager
 	// Private methods
 	XVRRendering();
 	DrawCrosshair();
-	FadeToBlackScreen(fadeType, time);
+	FadeToBlackScreen();
 	
 	// Public methods
 	Render();
@@ -237,20 +237,22 @@ function GameManager::GameManager(HMD)
 	if(DEBUG_MODE)
 	{
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
+		
+//		mOpenglTranslationOffset.z += 20 * SCALE_FACTOR;
  
 		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
-//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);
@@ -620,14 +622,21 @@ function GameManager::UpdateLogic(dt)
 					// If the last position of the circle was valid, I update the opengl offset
 					if(mIsPositionValid)
 					{
-						// If the game is neither
-//						if(!mStarting && (!mEnding && !mEndingLevelMenu))
+						// When the user teleports there is a very quick fade effect to black and then to white; in order to make it look cool, I need to
+						// teleport the player when the fade reaches black (i.e. the screen is completely black). I do this only if there is no current
+						// fading animation active (for example, when the game is starting and there is a "fade in", I can't create the animation otherwise
+						// it overwrites the old animation). So I check if there is no current animation, and in that case I create one
 						if(!mAnimator.HaveTransition(mFadeAnimationID, 6))
 						{
+							// At start, the fade animation is composed of 1 animation from white to black, so that later I can check if the animation ended
+							// and if that is so, I teleport the user and create another animation, this time from black to white. I don't create
+							// a waypoint animation because it caused artifacts, maybe because the animation is very fast
 							mAnimator.CreateGenericTransition(mFadeAnimationID, 0.0, 1.0, 0.15);
 							
+							// I state that the user is teleporting, so that now I can check when the screen becomes black
 							mIsTeleporting = true;
 						}
+						// This is the case where the animation doesn't have to be used, and the player needs to be teleported instantly
 						else
 						{
 							// The new offset is the difference between the player's position and the new position of the circle;
@@ -652,19 +661,37 @@ function GameManager::UpdateLogic(dt)
 			else
 				mIsPlayAreaPlaneVisible = false;
 			
+			// If the current level is completed, I switch to the next one
 			if(mCurrentLevel.IsLevelCompleted())
 			{
-				if(mCurrentLevel.__GetName() == "LEVELMENU"){
+				// If the level that notified this is the menu, I need to do something a little different
+				if(mCurrentLevel.__GetName() == "LEVELMENU")
+				{
 					if(!mEndingLevelMenu)
 					{
+						// If we reach this, it means we're moving from the menu level to an actual level; so, I create a fade effect from white to black
+						// and then from black to white
 						mAnimator.CreateGenericTransition(mFadeAnimationID, 0.0, {1.0, 0.0}, 3.0);
 						mEndingLevelMenu = true;
 					}
+					// If the fade effect reached 1.0 (i.e. the screen is completely black), I change level
 					else if(mFadeToBlackAlpha >= 1.0)
 					{
 						mCurrentLevelNumber = mCurrentLevel.GetSelectedLevel();
+
+						// In order to position the player inside the elevator, I take the difference between their position and the one of the elevator.
+						// Note that I'm not considering the mOpenglTranslationOffset; I consider it to be [0, 0, 0], as new. This will be the starting
+						// opengl offset for the new level
+						var startingOpenglOffset = mCamera.GetPosition() - mElevator.GetPosition();
+						
+						// If the level is actually the first, I don't put the player inside the elevator, but in front of it; otherwise, I put it in the middle
+						if(mCurrentLevelNumber == 0)
+							startingOpenglOffset.z -= 40.0 * SCALE_FACTOR - mElevator.GetRoomDepth();
+						else
+							startingOpenglOffset.z -= mElevator.GetRoomDepth() / 2.0;
+						
 						mCurrentLevel = mLevels[mCurrentLevelNumber];
-						mCurrentLevel.Init(mLights, {[1, 1, 1], [1, 1, 1], [1, 1, 1]}, mElevator, [0, 0, 0]);
+						mCurrentLevel.Init(mLights, {[1, 1, 1], [1, 1, 1], [1, 1, 1]}, mElevator, [startingOpenglOffset.x, 0.0, startingOpenglOffset.z]);
 
 						mEndingLevelMenu = false;
 						mStarting = true;
@@ -689,16 +716,21 @@ function GameManager::UpdateLogic(dt)
 				}
 			}
 			
+			// If there is an active transition for the fade effect, I take the current value. It's the only way to update the alpha value
 			if(mAnimator.HaveTransition(mFadeAnimationID, 6))
-				mFadeToBlackAlpha = mAnimator.GetCurrentStateInTransition(0, 6);
+				mFadeToBlackAlpha = mAnimator.GetCurrentStateInTransition(mFadeAnimationID, 6);
 								
+			// If the game was starting, there was a fade in effect; if the fade alpha reached almost zero (I don't check zero to avoid floating 
+			// point errors), surely the game has started
 			if(mStarting && mFadeToBlackAlpha <= 0.01)
 				mStarting = false;
 						
+			// If the user was teleporting (i.e. there is a pending fade animation) and the fade alpha reached the threshold (I should check that the screen
+			// is completely black, but to avoid artifacts due to the very fast animation I check that it's above this threshold, which is good enough), I need
+			// to teleport the player
 			if(mIsTeleporting && mFadeToBlackAlpha >= 0.65)
 			{
-				// The new offset is the difference between the player's position and the new position of the circle;
-				// I'm only udpating the x and y values since the y should stay the same
+				// I teleport the player
 				var cameraPosition = mCamera.GetPosition();
 				mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
 				mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
@@ -706,8 +738,10 @@ function GameManager::UpdateLogic(dt)
 				// I notify the current level that the offset has changed
 				mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
 				
+				// I create the animation from black to white
 				mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 0.15);
 				
+				// I state that the player is no longer teleporting
 				mIsTeleporting = false;
 			}
 			
@@ -775,7 +809,7 @@ function GameManager::DrawCrosshair()
 /*
  * 
  */
-function GameManager::FadeToBlackScreen(fadeType, time)
+function GameManager::FadeToBlackScreen()
 {
 	var viewport = array(4);
 	viewport = glget(GL_VIEWPORT);

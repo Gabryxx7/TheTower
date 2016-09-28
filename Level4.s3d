@@ -222,21 +222,21 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 		
 	// Creating texts object for the scene
-	var frontText = Text("Time is relative", 2.0);
+	var frontText = Text("Time is relative", 4.0);
 	frontText.Rotate(180, 0, 1, 0);
 	var frontTextPos = [2.0 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2.0 - 0.1 * SCALE_FACTOR] + mTranslateFactor;
 	var frontTextBoundingBox = [frontTextPos.x - frontText.GetWidthOfLine(0) * 2.0, frontTextPos.y - 2.5 * SCALE_FACTOR, frontTextPos.x + frontText.GetWidthOfLine(0) * 2.0, frontTextPos.y + 2.5 * SCALE_FACTOR];
 	frontText.SetPosition(frontTextPos);
 	
 	// Creating texts object for the scene
-	var leftText = Text("Sometimes it seems to follow you as you go", 2.0);
+	var leftText = Text("Sometimes it seems to follow you as you go", 4.0);
 	leftText.Rotate(-90, 0, 1, 0);
 	var leftTextPos = [mMainRoom.GetRoomWidth()/2.0 - 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR] + mTranslateFactor;
 	var leftTextBoundingBox = [leftTextPos.z - leftText.GetWidthOfLine(0) * 2.0, leftTextPos.y - 2.5 * SCALE_FACTOR, leftTextPos.z + leftText.GetWidthOfLine(0) * 2.0, leftTextPos.y + 2.5 * SCALE_FACTOR];
 	leftText.SetPosition(leftTextPos);
 	
 	// Creating texts object for the scene
-	var rightText = Text("At times it seems to slow down or speed up", 2.0);
+	var rightText = Text("At times it seems to slow down or speed up", 4.0);
 	rightText.Rotate(90, 0, 1, 0);
 	var rightTextPos = [-mMainRoom.GetRoomWidth()/2.0 + 0.1 * SCALE_FACTOR, 8.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR] + mTranslateFactor;
 	var rightTextBoundingBox = [rightTextPos.z - rightText.GetWidthOfLine(0) * 2.0, rightTextPos.y - 2.5 * SCALE_FACTOR, rightTextPos.z + rightText.GetWidthOfLine(0) * 2.0, rightTextPos.y + 2.5 * SCALE_FACTOR];
@@ -750,7 +750,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
  */
 function Level4::Render()
 {	
-	// This makes the background black
+	// This makes the background black; I do it both using the opengl call and the XVR call because the opengl call doesn't work 
+	// with XVR and the XVR call doesn't work with the Vive
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	SetClearColor(0.0, 0.0, 0.0);
 	
@@ -1266,9 +1267,9 @@ function Level4::UpdateLogic(dt)
 				
 				var difference = Modulus(camPos - prevCamPos);
 				
-				// If the difference is greater than a threshold (totally random-chosen, need to see how it behaves with the Vive) I change the speed
+				// If the difference is greater than a threshold (totally randomly chosen, need to see how it behaves with the Vive) I change the speed
 				// of the objects by an amount relative to how much he moved; otherwise, I simply stop all animations
-				if(difference > 0.08 * SCALE_FACTOR)
+				if(difference > 0.04 * SCALE_FACTOR)
 					mAnimator.ChangeScaleFactors(1.0 * difference * 30.0);
 				else
 					mAnimator.ChangeScaleFactors(0.0);
@@ -1398,8 +1399,8 @@ function Level4::UpdateLogic(dt)
 					// If the user has pressed the trigger, I press the button currently hovered
 					if(mInputManager.IsPressingPrimaryButton(mControllerBeingHoveredInNumpad.GetIndex()))
 					{
-						mNumpad.PressSelectedButton();
 						mInputManager.VibrateController(mControllerBeingHoveredInNumpad.GetIndex(), 500);
+						mNumpad.PressSelectedButton();
 					}
 				}
 				// If the controller wasn't in range and this controller was the one currently hovering, I set that it's not anymore
