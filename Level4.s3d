@@ -753,7 +753,7 @@ function Level4::Render()
 	// This makes the background black; I do it both using the opengl call and the XVR call because the opengl call doesn't work 
 	// with XVR and the XVR call doesn't work with the Vive
 	glClearColor(0.0, 0.0, 0.0, 1.0);
-	SetClearColor(0.0, 0.0, 0.0);
+//	SetClearColor(0.0, 0.0, 0.0);
 	
 	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 

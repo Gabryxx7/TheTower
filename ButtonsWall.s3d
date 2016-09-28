@@ -81,7 +81,7 @@ function ButtonsWall::ButtonsWall(animator, size, spacing, pos, offset, amount, 
 	mBorderScalingAnimTime = 400.0;
 	mButtonPressScalingID = 9999;
 	
-	mActiveButtonScaling = 5;
+	mActiveButtonScaling = 3;
 	
 	mBaseColor = valtype(baseColor) != "" ? baseColor : [1,1,1];
 	mCodeColor = valtype(codeColor) != "" ? codeColor : [1,0,0];

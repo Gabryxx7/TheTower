@@ -44,6 +44,8 @@ function ViveManager::ViveManager(HMD)
 	
 	var controllersIndex = mHMD.GetControllersIndex();
 	
+	outputln(controllersIndex);
+	
 	mController1Index = controllersIndex[0];
 	mController2Index = controllersIndex[1];
 	

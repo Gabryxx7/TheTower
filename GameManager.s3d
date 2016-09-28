@@ -240,19 +240,19 @@ function GameManager::GameManager(HMD)
 		
 //		mOpenglTranslationOffset.z += 20 * SCALE_FACTOR;
  
-		aadd(mLevels, arrayLevel0);
+//		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-//		mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);
@@ -347,7 +347,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-			XVRRendering();
+//			XVRRendering();
 
 			if(mIsVRon)
 			{		
@@ -357,6 +357,7 @@ function GameManager::Render()
 					
 					glEnable (GL_BLEND);
 					glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);					
+					glClearColor(0.95, 0.95, 0.95, 1.0);
 					
 					mHMD.frame_left();
 						XVRRendering();
@@ -377,7 +378,7 @@ function GameManager::Render()
 function GameManager::XVRRendering()
 {
 	// This makes the background white
-	glClearColor(0.95, 0.95, 0.95, 1.0);
+//	glClearColor(0.95, 0.95, 0.95, 1.0);
 	
 	// The current level might change the opengl offset (for now only when it moves the camera with the elevator), so we get it before applying it below
 	mOpenglTranslationOffset = mCurrentLevel.GetOpenglTransformOffset();

@@ -70,7 +70,7 @@ function OnInit(params)
 	HMD = CVmExternDLL( "francodll.dll" );
 	
 	HMD.__AddFunction( C_INT, "IsVRactive");	
-//	HMD.__AddFunction( C_PINT, "GetControllersIndex");	
+	HMD.__AddFunction( C_PFLOAT_2, "GetControllersIndex");	
 	HMD.__AddFunction( C_VOID, "SceneBegin");
 	HMD.__AddFunction( C_VOID, "frame_left");
 	HMD.__AddFunction( C_VOID, "frame_right");
