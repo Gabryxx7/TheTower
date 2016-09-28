@@ -67,7 +67,7 @@ function OnInit(params)
 {
 	SetLocalDir("");	
 	
-	HMD = CVmExternDLL( "francodll.dll" );
+	HMD = CVmExternDLL( "FrancoDLL.dll" );
 	
 	HMD.__AddFunction( C_INT, "IsVRactive");	
 	HMD.__AddFunction( C_PFLOAT_2, "GetControllersIndex");	
@@ -90,8 +90,6 @@ function OnInit(params)
 	mGameManager = GameManager(HMD);
 	
 	oldTime = GetTime();
-		
-//	SceneSetParam(VR_VERTICAL_SYNC, 1);
 	
 	// I don't know why, but we have to disable the cursor both here and in the InputManager class
 	ShowCursor(false);

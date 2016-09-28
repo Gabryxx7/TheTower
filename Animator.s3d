@@ -533,16 +533,33 @@ function Animator::CreateGenericTransition(transitionId, startingValue, endingVa
 	
 	aadd(mEndPositions, endValue);
 	
-	var distance = abs(endValue - startingValue);
 
+	
+	var distance = 0;
+	var xSpeed = 0;
+	var ySpeed = 0;
+	var zSpeed = 0;
+	
+	
+	if(valtype(startingValue) == "V")
+	{
+		xSpeed = ((endValue.x - startingValue.x) / time);
+		ySpeed = ((endValue.y - startingValue.y) / time);
+		zSpeed = ((endValue.z - startingValue.z) / time);
+		distance = Modulus(endValue - startingValue);
+	}
+	else
+	{
+		xSpeed = ((endValue - startingValue) / time);
+		distance = abs(endValue - startingValue);
+	}
+	
 	aadd(mDistanceArray, distance);	
 	
-	var speed = ((endValue - startingValue) / time);
 	
-	aadd(mXSpeedArray, speed);
-	aadd(mYSpeedArray, 0);
-	aadd(mZSpeedArray, 0);
-
+	aadd(mXSpeedArray, xSpeed);
+	aadd(mYSpeedArray, ySpeed);
+	aadd(mZSpeedArray, zSpeed);
 	
 	// Arrays not used; filled with useless stuff
 	aadd(mDirectionsArray, 0);
@@ -910,13 +927,27 @@ function Animator::UpdateTransitions(dt)
 			var startingValue = mStartingPositions[i];
 			var endValue = mEndPositions[i];
 			var distance = mDistanceArray[i];
-			var speed = mXSpeedArray[i];
+			var xSpeed = mXSpeedArray[i];
+			var ySpeed = mYSpeedArray[i];
+			var zSpeed = mZSpeedArray[i];
 			
-			currentValue += dt * speed * mScaleFactorArray[i];
+			var isVector = valtype(startingValue) == "V";
+			
+			if(isVector)
+			{
+				currentValue.x += dt * xSpeed * mScaleFactorArray[i];
+				currentValue.y += dt * ySpeed * mScaleFactorArray[i];
+				currentValue.z += dt * zSpeed * mScaleFactorArray[i];
+			}
+			else
+				currentValue += dt * xSpeed * mScaleFactorArray[i];
+			
 			
 			mCurrentPositions[i] = currentValue;
+			
+			print({"currentValue", "startingValue", "endValue"}, {currentValue, startingValue, endValue});
 						
-			if(abs(currentValue - startingValue) >= abs(startingValue - endValue))
+			if((isVector && Modulus((currentValue - startingValue) >= Modulus(startingValue - endValue)) || (!isVector && abs(currentValue - startingValue) >= abs(startingValue - endValue))))
 			{
 				mCurrentPositions[i] = endValue;
 				
@@ -931,14 +962,24 @@ function Animator::UpdateTransitions(dt)
 						var newEndValue = waypoints[mWaypointsCounterArray[i]];
 						mStartingPositions[i] = currentValue;
 						mEndPositions[i] = newEndValue;
-						
-						distance = endValue - newEndValue;
-										
-						mDistanceArray[i] = distance;
-						
-						speed = (newEndValue - endValue) / mTimeArray[i];
 												
-						mXSpeedArray[i] = speed;
+						if(isVector)
+						{
+							xSpeed = (newEndValue.x - endValue.x) / mTimeArray[i];
+							ySpeed = (newEndValue.y - endValue.y) / mTimeArray[i];
+							zSpeed = (newEndValue.z - endValue.z) / mTimeArray[i];
+							distance = Modulus(endValue - startingValue);
+						}
+						else
+						{
+							xSpeed = (newEndValue - endValue) / mTimeArray[i];
+							distance = abs(endValue - startingValue);
+						}
+												
+						mDistanceArray[i] = distance;
+						mXSpeedArray[i] = xSpeed;
+						mYSpeedArray[i] = ySpeed;
+						mZSpeedArray[i] = zSpeed;
 
 						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
 							mWaypointsCounterArray[i]--;

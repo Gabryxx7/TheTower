@@ -92,6 +92,8 @@ class GameManager
      * needs to know the updated value, otherwise the level's logic will be updated using wrong positions */
 	var mOpenglTranslationOffset;
 	
+	var mOpenglTranslationOffsetAnimationID;
+	
 	var mIsTeleporting;
 	
 	
@@ -217,6 +219,7 @@ function GameManager::GameManager(HMD)
 	aadd(mLights, light2);
 	
 	mOpenglTranslationOffset = [0, 0, 0]; 
+	mOpenglTranslationOffsetAnimationID = 1;
 	
 	mTimeToEnd = 7000;
 	mStarting = true;
@@ -247,8 +250,8 @@ function GameManager::GameManager(HMD)
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
-//		mCurrentLevel = arrayLevel0;
+//		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
 //		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
@@ -347,7 +350,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-//			XVRRendering();
+			XVRRendering();
 
 			if(mIsVRon)
 			{		
@@ -623,37 +626,48 @@ function GameManager::UpdateLogic(dt)
 					// If the last position of the circle was valid, I update the opengl offset
 					if(mIsPositionValid)
 					{
-						// When the user teleports there is a very quick fade effect to black and then to white; in order to make it look cool, I need to
-						// teleport the player when the fade reaches black (i.e. the screen is completely black). I do this only if there is no current
-						// fading animation active (for example, when the game is starting and there is a "fade in", I can't create the animation otherwise
-						// it overwrites the old animation). So I check if there is no current animation, and in that case I create one
-						if(!mAnimator.HaveTransition(mFadeAnimationID, 6))
-						{
-							// At start, the fade animation is composed of 1 animation from white to black, so that later I can check if the animation ended
-							// and if that is so, I teleport the user and create another animation, this time from black to white. I don't create
-							// a waypoint animation because it caused artifacts, maybe because the animation is very fast
-							mAnimator.CreateGenericTransition(mFadeAnimationID, 0.0, 1.0, 0.15);
+						var cameraPosition = mCamera.GetPosition();
+						var newPos = [0.0, mOpenglTranslationOffset.y, 0.0];
+						newPos.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
+						newPos.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
 							
-							// I state that the user is teleporting, so that now I can check when the screen becomes black
-							mIsTeleporting = true;
-						}
-						// This is the case where the animation doesn't have to be used, and the player needs to be teleported instantly
-						else
-						{
-							// The new offset is the difference between the player's position and the new position of the circle;
-							// I'm only udpating the x and y values since the y should stay the same
-							var cameraPosition = mCamera.GetPosition();
-							mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
-							mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
-							
-							// I notify the current level that the offset has changed
-							mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
-						}
+						mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.5);
+						
+//						// When the user teleports there is a very quick fade effect to black and then to white; in order to make it look cool, I need to
+//						// teleport the player when the fade reaches black (i.e. the screen is completely black). I do this only if there is no current
+//						// fading animation active (for example, when the game is starting and there is a "fade in", I can't create the animation otherwise
+//						// it overwrites the old animation). So I check if there is no current animation, and in that case I create one
+//						if(!mAnimator.HaveTransition(mFadeAnimationID, 6))
+//						{
+//							// At start, the fade animation is composed of 1 animation from white to black, so that later I can check if the animation ended
+//							// and if that is so, I teleport the user and create another animation, this time from black to white. I don't create
+//							// a waypoint animation because it caused artifacts, maybe because the animation is very fast
+//							mAnimator.CreateGenericTransition(mFadeAnimationID, 0.0, 1.0, 0.15);
+//							
+//							// I state that the user is teleporting, so that now I can check when the screen becomes black
+//							mIsTeleporting = true;
+//						}
+//						// This is the case where the animation doesn't have to be used, and the player needs to be teleported instantly
+//						else
+//						{
+//							// The new offset is the difference between the player's position and the new position of the circle;
+//							// I'm only udpating the x and y values since the y should stay the same
+//							var cameraPosition = mCamera.GetPosition();
+//							mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
+//							mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
+//							
+//							// I notify the current level that the offset has changed
+//							mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
+//						}
 					}
 					
 					mControllerBeingUsedIndex = 0;
 				}
 			}
+			
+			
+			if(mAnimator.HaveTransition(mOpenglTranslationOffsetAnimationID, 6))
+				mOpenglTranslationOffset = mAnimator.GetCurrentStateInTransition(mOpenglTranslationOffsetAnimationID, 6);
 			
 			
 			// If the user presses the grip buttons of the controllers, I show the play area plane
@@ -720,6 +734,7 @@ function GameManager::UpdateLogic(dt)
 			// If there is an active transition for the fade effect, I take the current value. It's the only way to update the alpha value
 			if(mAnimator.HaveTransition(mFadeAnimationID, 6))
 				mFadeToBlackAlpha = mAnimator.GetCurrentStateInTransition(mFadeAnimationID, 6);
+				
 								
 			// If the game was starting, there was a fade in effect; if the fade alpha reached almost zero (I don't check zero to avoid floating 
 			// point errors), surely the game has started
