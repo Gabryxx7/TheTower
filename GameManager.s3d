@@ -1,5 +1,5 @@
 global var DEBUG_MODE = true;
-global var MUSIC_ON = true;
+global var MUSIC_ON = false;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
 
@@ -644,7 +644,7 @@ function GameManager::UpdateLogic(dt)
 						var distance = Modulus(playerPos - circlePos);
 						
 						// If the distance is below the threshold, I create the moving animation
-						if(distance < mTeleportDistanceThreshold)
+						if(distance < 200)
 						{
 							// The new position has the same y as the opengl offset (I only want to move along the x and z axis after all), 
 							// and as x and z it has the difference between the player's position and the desired position
@@ -670,7 +670,7 @@ function GameManager::UpdateLogic(dt)
 							
 							// If the player can see the desired point, I create a direct transition
 							if(isPositionValid)
-								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.15);
+								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 3.15);
 							// Otherwise, I create a waypoint transition that first move from the camera's position to the position of the controller,
 							// and then to the desired position
 							else
