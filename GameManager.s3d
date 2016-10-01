@@ -92,10 +92,14 @@ class GameManager
      * needs to know the updated value, otherwise the level's logic will be updated using wrong positions */
 	var mOpenglTranslationOffset;
 	
+	// ID for the animations used to teleport the player from one position to another
 	var mOpenglTranslationOffsetAnimationID;
 	
-	var mIsTeleporting;
+	// Threshold used to determine whether to use the moving transition when teleporting or the fade-to-black transition
+	var mTeleportDistanceThreshold;
 	
+	// Boolean that is true when the user is teleporting with the fade-to-black transition
+	var mIsTeleporting;
 	
 	// This object is the circle that appears when the user wants to teleport to a destination
 	var mPositionCircleObj;
@@ -250,8 +254,8 @@ function GameManager::GameManager(HMD)
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-//		mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);
-		mCurrentLevel = arrayLevel0;
+		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
 //		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
@@ -266,10 +270,10 @@ function GameManager::GameManager(HMD)
 		mCurrentLevelNumber = 0;
 		
 		aadd(mLevels, arrayLevel0);
-//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
 		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
@@ -326,6 +330,7 @@ function GameManager::GameManager(HMD)
 	mIsPlayAreaPlaneVisible = false;
 	
 	mIsTeleporting = false;
+	mTeleportDistanceThreshold = 20.0 * SCALE_FACTOR;
 }
 
 /*
@@ -626,39 +631,87 @@ function GameManager::UpdateLogic(dt)
 					// If the last position of the circle was valid, I update the opengl offset
 					if(mIsPositionValid)
 					{
-						var cameraPosition = mCamera.GetPosition();
-						var newPos = [0.0, mOpenglTranslationOffset.y, 0.0];
-						newPos.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
-						newPos.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
-							
-						mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.5);
+						// I need to check which teleport transition to use: the moving animation or the fade-to-black animation. The choice is determined
+						// by the distance; if it's too long, I use the fade-to-black animation to avoid motion sickness. So now I need to determine
+						// the distance from the player to the desired position
+						var playerPos = mCamera.GetPosition() - mOpenglTranslationOffset;
+						var circlePos = mPositionCircleObj.GetPosition();
 						
-//						// When the user teleports there is a very quick fade effect to black and then to white; in order to make it look cool, I need to
-//						// teleport the player when the fade reaches black (i.e. the screen is completely black). I do this only if there is no current
-//						// fading animation active (for example, when the game is starting and there is a "fade in", I can't create the animation otherwise
-//						// it overwrites the old animation). So I check if there is no current animation, and in that case I create one
-//						if(!mAnimator.HaveTransition(mFadeAnimationID, 6))
-//						{
-//							// At start, the fade animation is composed of 1 animation from white to black, so that later I can check if the animation ended
-//							// and if that is so, I teleport the user and create another animation, this time from black to white. I don't create
-//							// a waypoint animation because it caused artifacts, maybe because the animation is very fast
-//							mAnimator.CreateGenericTransition(mFadeAnimationID, 0.0, 1.0, 0.15);
-//							
-//							// I state that the user is teleporting, so that now I can check when the screen becomes black
-//							mIsTeleporting = true;
-//						}
-//						// This is the case where the animation doesn't have to be used, and the player needs to be teleported instantly
-//						else
-//						{
-//							// The new offset is the difference between the player's position and the new position of the circle;
-//							// I'm only udpating the x and y values since the y should stay the same
-//							var cameraPosition = mCamera.GetPosition();
-//							mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
-//							mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
-//							
-//							// I notify the current level that the offset has changed
-//							mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
-//						}
+						// I only care about the x and z values for the distance, so the y is put to 0
+						playerPos.y = 0;
+						circlePos.y = 0;
+						
+						var distance = Modulus(playerPos - circlePos);
+						
+						// If the distance is below the threshold, I create the moving animation
+						if(distance < mTeleportDistanceThreshold)
+						{
+							// The new position has the same y as the opengl offset (I only want to move along the x and z axis after all), 
+							// and as x and z it has the difference between the player's position and the desired position
+							var cameraPosition = mCamera.GetPosition();
+							var newPos = [0.0, mOpenglTranslationOffset.y, 0.0];
+							newPos.x = cameraPosition.x - mPositionCircleObj.GetPosition().x;
+							newPos.z = cameraPosition.z - mPositionCircleObj.GetPosition().z;
+								
+							// Normally the animation is direct from the player's position to the desired one. But if the player's controller is, for example,
+							// after a wall and it points directly behind it (a position that can't be directly seen by the player's point of view), 
+							// the player would move through the wall to get to that position. To avoid that, I check whether the desired position
+							// can be directly seen by the player's position; if that's so, I move directly to it. Otherwise, I first move
+							// where the controller was, and then to the desired position. 
+							// So first, I need to check whether the player can see the desired point
+							var raycastOrigin = mCamera.GetPosition() - mOpenglTranslationOffset;
+							var raycastEnd = raycastOrigin + mCamera.GetDirection() * mCamera.GetZFar();
+							
+							var contactPoint;
+							var normal;
+							var isWall = true;
+								
+							var isPositionValid = mCurrentLevel.IsPointedPositionValid(raycastOrigin, raycastEnd, &contactPoint, &normal, &isWall);
+							
+							// If the player can see the desired point, I create a direct transition
+							if(isPositionValid)
+								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.15);
+							// Otherwise, I create a waypoint transition that first move from the camera's position to the position of the controller,
+							// and then to the desired position
+							else
+							{
+								var controllerPos = mCamera.GetPosition() - mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
+	//							var controllerPos = mCamera.GetPosition() - (mCamera.GetPosition() - mOpenglTranslationOffset - [1 * SCALE_FACTOR, 0, 0]);
+								controllerPos.y = mOpenglTranslationOffset.y;
+								
+								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, {controllerPos, newPos}, 0.15);
+							}
+						}
+						// If the distance to the desired point is too great, I teleport using the fade-to-black transition
+						else
+						{
+							// When the user teleports there is a very quick fade effect to black and then to white; in order to make it look cool, I need to
+							// teleport the player when the fade reaches black (i.e. the screen is completely black). I do this only if there is no current
+							// fading animation active (for example, when the game is starting and there is a "fade in", I can't create the animation otherwise
+							// it overwrites the old animation). So I check if there is no current animation, and in that case I create one
+							if(!mAnimator.HaveTransition(mFadeAnimationID, 6))
+							{
+								// At start, the fade animation is composed of 1 animation from white to black, so that later I can check if the animation ended
+								// and if that is so, I teleport the user and create another animation, this time from black to white. I don't create
+								// a waypoint animation because it caused artifacts, maybe because the animation is very fast
+								mAnimator.CreateGenericTransition(mFadeAnimationID, 0.0, 1.0, 0.15);
+								
+								// I state that the user is teleporting, so that now I can check when the screen becomes black
+								mIsTeleporting = true;
+							}
+							// This is the case where the animation doesn't have to be used, and the player needs to be teleported instantly
+							else
+							{
+								// The new offset is the difference between the player's position and the new position of the circle;
+								// I'm only udpating the x and y values since the y should stay the same
+								var cameraPosition = mCamera.GetPosition();
+								mOpenglTranslationOffset.x = cameraPosition.x  - mPositionCircleObj.GetPosition().x;
+								mOpenglTranslationOffset.z = cameraPosition.z  - mPositionCircleObj.GetPosition().z;
+								
+								// I notify the current level that the offset has changed
+								mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
+							}
+						}
 					}
 					
 					mControllerBeingUsedIndex = 0;
@@ -667,7 +720,10 @@ function GameManager::UpdateLogic(dt)
 			
 			
 			if(mAnimator.HaveTransition(mOpenglTranslationOffsetAnimationID, 6))
-				mOpenglTranslationOffset = mAnimator.GetCurrentStateInTransition(mOpenglTranslationOffsetAnimationID, 6);
+			{	mOpenglTranslationOffset = mAnimator.GetCurrentStateInTransition(mOpenglTranslationOffsetAnimationID, 6);
+				// I notify the current level that the offset has changed
+				mCurrentLevel.SetOpenglTransformOffset(&mOpenglTranslationOffset);
+			}
 			
 			
 			// If the user presses the grip buttons of the controllers, I show the play area plane

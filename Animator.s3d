@@ -944,10 +944,8 @@ function Animator::UpdateTransitions(dt)
 			
 			
 			mCurrentPositions[i] = currentValue;
-			
-			print({"currentValue", "startingValue", "endValue"}, {currentValue, startingValue, endValue});
 						
-			if((isVector && Modulus((currentValue - startingValue) >= Modulus(startingValue - endValue)) || (!isVector && abs(currentValue - startingValue) >= abs(startingValue - endValue))))
+			if((isVector && Modulus(currentValue - startingValue) >= Modulus(startingValue - endValue)) || (!isVector && abs(currentValue - startingValue) >= abs(startingValue - endValue)))
 			{
 				mCurrentPositions[i] = endValue;
 				

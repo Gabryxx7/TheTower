@@ -1005,12 +1005,16 @@ function Level3::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 			}
 		}
 	}
-		
+
+	// Collision with the elevator (since it's in the wall, I only check it if the elevator is open
+	if(intersectedPlane == -1 && mElevator.IsElevatorOpen())
+		intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+
 	// Checking collision with the back wall; like the floor, it's not present in the room object, so I check intersection with the plane that is in that position
 	if(intersectedPlane == -1)
 	{
 		var pos = mElevatorWall.GetPosition();
-		pos.z = -mMainRoom.GetRoomDepth() / 2.0;
+		pos.z = -mMainRoom.GetRoomDepth() / 2.0 + mTranslateFactor.z;
 		
 		normal = [0, 0, 1];
 		contactPoint = FindIntersectionInPlane(rayOrigin, rayEnd, pos, normal);
