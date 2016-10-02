@@ -88,7 +88,7 @@ class Animator
 	CreateTransition(object, startingPos, endingPos, time, loop, easingType);
 	
 	CreatePathTransition(object, waypoints, time, loop, easingType);
-	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse, easingType);
+	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
 	CreateScalingTransition(object, startingScale, endingScale, time, loop, easingType);
 	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise);
 	CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop, easingType);
@@ -226,7 +226,7 @@ function Animator::CreateTransition(object, startingPos, endingPos, time, loop, 
  * loop: (boolean) whether the rotation has to loop or not
  * reverse: (boolean) this is only checked if loop == true; in that case if reverse is true the loop will go back and forth from startingAngle to finalAngle
  */
-function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse, easingType)
+function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse)
 {		
 	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
 	RemoveTransitionByObject(object, ROTATING_TRANSITION);
@@ -243,20 +243,13 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 	aadd(mTimeElapsedArray, 0);
 	aadd(mScaleFactorArray, 1.0);
 	
-	if(easingType == Void)
-		aadd(mEasingFunctionArray, LINEAR);
-	else
-		aadd(mEasingFunctionArray, easingType);
+	aadd(mEasingFunctionArray, LINEAR);
 	
 	// I state that this object has a rotation
 	aadd(mTransitionTypeArray, ROTATING_TRANSITION);
 	
-	
-	
 	// Computing the speed of the rotation, based on the given time
 	var speed = (finalAngle - startingAngle) / (time);
-	
-	print({"startingAngle", "finalAngle", "axis", "time", "speed"}, {startingAngle, finalAngle, axis, time, speed});
 	
 	// I am adding the speed to the mXSpeedArray, even though the X doesn't really fit; I do so tho avoid creating a completely new array
 	aadd(mSpeedArray, speed);
@@ -266,7 +259,6 @@ function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, a
 	aadd(mAxisArray, axis);
 	aadd(mAngleDeltaArray, 0);
 	aadd(mReverseArray, reverse);
-	aadd(mSpeedArray, 0);
 	
 	aadd(mHasWaypointsArray, false);
 	aadd(mWaypointsArray, 0);
@@ -873,16 +865,32 @@ function Animator::UpdateTransitions(dt)
 	}
 }
 
+/*
+ * This method updates the value of the given animation, according to the easing function used for that transition.
+ * 
+ * timeElapsed: (float) the time elapsed from the beginning of the animation
+ * duration: (float) the total time for this animation
+ * startingValue: (vector or float) the starting value for this animation
+ * endingValue: (vector or float) the ending value for this animation
+ * easeType: (integer) the type of easing function to use; the default value is "linear"
+ * 
+ * returns: the new value that should be used to update the state of the animation
+ */
 function Animator::UpdateValue(timeElapsed, duration, startingValue, endingValue, easeType)
 {
 	var value;
 	var timeElapsedNormalized = timeElapsed / duration;
 	var valueSpan = endingValue - startingValue;	
 	
+	// The easing functions implemented here are common for these kind of things. In particular they were taken partly by this page: http://gizma.com/easing/
+	// and by the code of the AndEngine, which implemented them a bit differently sometimes and it worked best for my case
 	switch(easeType)
 	{
 		case LINEAR:
 		{
+			// For the linear interpolation I simply consider the time elapsed from the beginning of the animation and the ending value for the animation.
+			// By normalizing the time elapsed I basically take the "current frame" for this value, which I multiply with the difference between the
+			// starting value and the ending one
 			value = startingValue + timeElapsedNormalized * valueSpan;
 			break;
 		}
@@ -1131,12 +1139,7 @@ function Animator::RemoveTransitionByObject(object, isType)
 		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
 		
 		if(found && mTransitionTypeArray[i] == isType)
-		{	
-			if(isType == ROTATING_TRANSITION)
-				outputln("deleted");
 			RemoveTransitionByIndex(i);
-			
-		}
 		else
 			found = false;
 	}
