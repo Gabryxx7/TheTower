@@ -365,7 +365,6 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	/////////////////////////////////////////////////////////7
 	
 	codeNumbers = {};
-	var finalPositions;
 	var cubeNums = CubeNumbers();
 	var numPosOffset = len(randomShapes)/2;
 	var numberPosition;
@@ -391,18 +390,8 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 			if(!alreadyPresent){				
 				aadd(codeNumbers, randNumb);	
 			}		
-		}
-		finalPositions = cubeNums.GenerateNumberPositions(codeNumbers[i], numberPosition+mTranslateFactor);
-		
-		var j = 0;
-		while(len(randomShapes[i].GetFinalPos()) < len(randomShapes[i].GetObjs())){	
-			aadd(randomShapes[i].GetFinalPos(),[finalPositions[j].x, finalPositions[j].y, finalPositions[j].z]);	
-					
-			if(j+1 == len(finalPositions))
-				j = 0;
-			else
-				j += 1;
 		}		
+		randomShapes[i].SetFinalPosition(codeNumbers[i], numberPosition+mTranslateFactor);		
 	}	
 	
 	output("\n\n\nCodice:  ");

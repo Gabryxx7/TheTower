@@ -58,6 +58,13 @@ class Level6
 	
 	var mControllersBeingUsedIndex;
 	
+	var mCounterPosition;
+	var mCounterBox;
+	var mCounterRandomMeshes;
+	var mCounter;
+	var mLastCounterUpdate;
+	var mCounterShader;
+	
 //	var mFrontText;
 //	var mBackText; 
 //	var mLeftText; 
@@ -83,6 +90,7 @@ class Level6
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	UpdateCounter(num, toRandomPos);
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
@@ -105,6 +113,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
+	mCounterShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
 	mLinesTimeVariable = 0;
 	
 	
@@ -130,6 +139,18 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		aadd(mControllersArray, mDebugController);
 	}
 	
+	mCounter = 0;
+	mLastCounterUpdate = 0;
+	mCounterPosition = [5*SCALE_FACTOR, 4*SCALE_FACTOR, 5*SCALE_FACTOR];
+	mCounterBox = [5*SCALE_FACTOR, 5*SCALE_FACTOR, 5*SCALE_FACTOR];
+//	var cubeSizes = 0.70 *SCALE_FACTOR;
+	var cubeSizes = 0.25 *SCALE_FACTOR;
+	var counterMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+	mCounterRandomMeshes = {};
+	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPosition, [0.8,0.2,0.2]));
+	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPosition+[mCounterPosition.x,0,0], [0.2,0.4,1]));
+	UpdateCounter(0, false);
+
 	
 	mLaserArray = {};
 	mLaserLength = 1.0 * SCALE_FACTOR;
@@ -283,6 +304,19 @@ function Level6::Render()
 			
 			mLinesTimeVariable += 0.01;
 			
+			mCounterShader.Start();
+			
+				for(var i = 0; i < len(mCounterRandomMeshes); i++){
+					foreach(var obj in mCounterRandomMeshes[i].GetObjs()){
+						mCounterShader.SetParameter("color", mCounterRandomMeshes[i].GetColor());
+						obj.Draw();
+						mCounterShader.SetParameter("color", [0,0,0]);
+						glLineWidth(2.0);
+						obj.Draw(VR_BBOX_ONLY);
+					}			
+				}
+			mCounterShader.Stop();
+			
 			
 			// Drawing the texts
 //			mFrontText.Draw();
@@ -334,6 +368,41 @@ function Level6::UpdateLogic(dt)
 		}
 		else
 			mDebugKeyHit = false;
+		
+		var updated = false;
+		var toRandomPos = false;
+		if(KeyPressed("0")){			
+			if(GetTime() - mLastCounterUpdate > 150){
+				mCounter = (mCounter+1) % 100;
+				mLastCounterUpdate = GetTime();	
+				updated = true;		
+				toRandomPos = true;
+			}			
+		}
+		else if(KeyPressed("9")){
+			if(GetTime() - mLastCounterUpdate > 150){
+				mCounter = (mCounter-1 >= 0) ? mCounter-1 : mCounter;
+				mLastCounterUpdate = GetTime();	
+				updated = true;		
+				toRandomPos = true;		
+			}
+		}else if(KeyPressed("2")){
+			if(GetTime() - mLastCounterUpdate > 150){
+				mCounter = (mCounter+1) % 100;
+				mLastCounterUpdate = GetTime();	
+				updated = true;				
+			}
+			
+		}else if(KeyPressed("1")){
+			if(GetTime() - mLastCounterUpdate > 150){
+				mCounter = (mCounter-1 >= 0) ? mCounter-1 : mCounter;
+				mLastCounterUpdate = GetTime();	
+				updated = true;				
+			}
+		}
+		if(updated)
+			UpdateCounter(mCounter, toRandomPos);
+		
 		
 		static var rotX = 0;
 		static var rotY = 0;
@@ -425,7 +494,7 @@ function Level6::UpdateLogic(dt)
 		}
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{
+		{			
     		HandleLasers();
     		
     		for(var i = 0; i < len(mLaserArray); i++)
@@ -633,4 +702,31 @@ function Level6::GetLevelPreview(){
 
 function Level6::GetLevelName(){
 	return "Ghost";
+}
+
+function Level6::UpdateCounter(num, toRandomPos){
+	var digits = {};
+	if(num > 9){
+		aadd(digits, num/10);
+		aadd(digits, num%10);
+	}
+	else{
+		aadd(digits, 0);
+		aadd(digits, num);
+	}
+	
+	for(var j = 0; j < len(mCounterRandomMeshes); j++){
+		var finalPos = mCounterRandomMeshes[j].GenerateFinalPositions(digits[j], j > 0 ? mCounterPosition : mCounterPosition+[mCounterPosition.x+2*SCALE_FACTOR,0,0]);
+		var objs = mCounterRandomMeshes[j].GetObjs();
+		for(var i = 0; i < len(objs); i++){				
+			objs[i].SetRotation(0,1,0,0);
+			objs[i].SetRotation(0,0,1,0);
+			objs[i].SetRotation(0,0,0,1);
+			if(toRandomPos){
+				var randomPos = mCounterRandomMeshes[j].GenerateRandomPositions(mCounterBox, mCounterPosition); 
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.2, false, 2);
+			}else
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), finalPos[i], 0.2, false, 2);
+		}
+	}
 }
