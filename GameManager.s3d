@@ -20,7 +20,6 @@ global var SCALE_FACTOR = 0.2;
 #include "TilesPath.s3d"
 #include "LevelMenuSelector.s3d"
 #include "PreviewFrame.s3d"
-#include "CubeNumbers.s3d"
 #include "RandomMeshes.s3d"
 #include "ButtonsWall.s3d"
 #include "MarcelloUtils.s3d"

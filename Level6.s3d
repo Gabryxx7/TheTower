@@ -58,7 +58,7 @@ class Level6
 	
 	var mControllersBeingUsedIndex;
 	
-	var mCounterPosition;
+	var mCounterPositions;
 	var mCounterBox;
 	var mCounterRandomMeshes;
 	var mCounter;
@@ -141,14 +141,18 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	mCounter = 0;
 	mLastCounterUpdate = 0;
-	mCounterPosition = [5*SCALE_FACTOR, 4*SCALE_FACTOR, 5*SCALE_FACTOR];
-	mCounterBox = [5*SCALE_FACTOR, 5*SCALE_FACTOR, 5*SCALE_FACTOR];
-//	var cubeSizes = 0.70 *SCALE_FACTOR;
-	var cubeSizes = 0.25 *SCALE_FACTOR;
+	mCounterPositions = {};
+	var cubeSizes = 1.5 *SCALE_FACTOR;
+	var cubeSpacing = 0.20 *SCALE_FACTOR;
+	var numberSpacing = 0.8*SCALE_FACTOR;
+	mCounterBox = [6*(cubeSizes+cubeSpacing)/2, 10*(cubeSizes+cubeSpacing)/2, 6*(cubeSizes+cubeSpacing)/2];
+	var digitWidth = 6*(cubeSizes+cubeSpacing)-cubeSpacing;
 	var counterMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
 	mCounterRandomMeshes = {};
-	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPosition, [0.8,0.2,0.2]));
-	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPosition+[mCounterPosition.x,0,0], [0.2,0.4,1]));
+	aadd(mCounterPositions, [digitWidth/2+numberSpacing/2, 6*SCALE_FACTOR, -mMainRoom.GetRoomWidth()/2-cubeSizes]+mTranslateFactor);
+	aadd(mCounterPositions, mCounterPositions[0]-[digitWidth+numberSpacing,0,0]);
+	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[0], [0.8,0.2,0.2], cubeSizes, cubeSpacing, -1));
+	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[1], [0.2,0.4,1], cubeSizes,cubeSpacing, -1));
 	UpdateCounter(0, false);
 
 	
@@ -716,14 +720,14 @@ function Level6::UpdateCounter(num, toRandomPos){
 	}
 	
 	for(var j = 0; j < len(mCounterRandomMeshes); j++){
-		var finalPos = mCounterRandomMeshes[j].GenerateFinalPositions(digits[j], j > 0 ? mCounterPosition : mCounterPosition+[mCounterPosition.x+2*SCALE_FACTOR,0,0]);
+		var finalPos = mCounterRandomMeshes[j].GenerateFinalPositions(digits[j], mCounterPositions[j]);
 		var objs = mCounterRandomMeshes[j].GetObjs();
 		for(var i = 0; i < len(objs); i++){				
 			objs[i].SetRotation(0,1,0,0);
 			objs[i].SetRotation(0,0,1,0);
 			objs[i].SetRotation(0,0,0,1);
 			if(toRandomPos){
-				var randomPos = mCounterRandomMeshes[j].GenerateRandomPositions(mCounterBox, mCounterPosition); 
+				var randomPos = mCounterRandomMeshes[j].GenerateRandomPositions(mCounterBox, mCounterPositions[len(mCounterRandomMeshes)-j-1]); 
 				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.2, false, 2);
 			}else
 				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), finalPos[i], 0.2, false, 2);

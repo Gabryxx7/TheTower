@@ -6,7 +6,9 @@ class RandomMeshes{
 	var mObjsFinalPos;
 	var mObjsAnimations;
 	var mColor;
-	var mCubeNums;
+	var mMeshSize;
+	var mNumberSpacing;
+	var mNumberDirection;
 	
 	GetObjs();
 	GetAnimationsVector();
@@ -24,7 +26,7 @@ class RandomMeshes{
 };
 
 
-function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color){
+function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color, meshSize, numberSpacing, numberDirection){
 	mObjsArray = {};
 	mObjsOrigPos = {};	
 	mObjsFinalPos = {};	
@@ -32,7 +34,9 @@ function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color){
 	mObjsFinalAngles = {};	
 	mObjsAnimations = {};
 	mColor = color;
-	mCubeNums = CubeNumbers();
+	mMeshSize = meshSize;
+	mNumberSpacing = numberSpacing;
+	mNumberDirection = numberDirection;
 	
 	var offset = [1*SCALE_FACTOR, 0.5*SCALE_FACTOR, 1*SCALE_FACTOR];
 	var randomx = 0;
@@ -89,7 +93,7 @@ function RandomMeshes::SetFinalPosition(number, pos){
 }
 
 function RandomMeshes::GenerateFinalPositions(number, pos){
-	var finalPositions = mCubeNums.GenerateNumberPositions(number, pos);
+	var finalPositions = GenerateNumberPositions(number, pos, mMeshSize, mNumberSpacing, mNumberDirection);
 	outputln(number);
 	var finalObjPos = {};
 	

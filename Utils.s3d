@@ -513,574 +513,619 @@ function UpdateLightsColor(light1Diffuse, light2Diffuse)
 	}
 }
 
-/*
- * Function to create the positions of the objects to form numbers
+
+/**In order to change something in the position, is possible to use the following regular expression in the Notepad++ find and replace
+ * "\[(\-[0-9]|[0-9])\*size.x,(\s*)(\-[0-9]|[0-9])\*size.y,(\s*)(\-[0-9]|[0-9])\]"
+ * and use this to substitute the data 
+ * "[$1*size.x, $3*size.y, $5]"
+ * 
+ * where
+ * $1 = the multiplier of size.x
+ * $2 = the space after the coma after size.x
+ * $3 = the multiplier of size.y
+ * $4 = the space after the coma after size.y
+ * $5 = the z coordinate
  */
-function GenerateNumberPositions(number, offset) 
-{
+function GenerateNumberPositions(number, offset, size, spacing, direction){
 	var ret = {};
+	direction = valtype(direction) == "" ? 1 : direction;
+	size = valtype(size) != "A" && valtype(size) != "V" ? [size, size] : size;
+	spacing = valtype(spacing) != "A" && valtype(spacing) != "V" ? [spacing, spacing] : spacing;
 	switch(number){	
 		case 0:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;
 		case 1:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
 			//Height
-			aadd(ret, [0*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//		
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//		
 			
-			aadd(ret, [0*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
 			//Top
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
 			break;
 			
 		case 2:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//			
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//			
 			
 			//Height
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//					
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//					
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;
 		
 		case 3:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;		
 		
 		case 4:
 			//Base
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//		
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//		
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;	
 		
 		case 5:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//s
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//s
 			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;			
 		
 		case 6:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//s
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//s
 			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;	
 		
 		case 7:
 			//Base
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;		
 		
 		case 8:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;		
 		
 		case 9:
 			//Base
-			aadd(ret, [1*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [0*SCALE_FACTOR, 		0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	0*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	1*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [-2*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//				
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	2*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	2*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	3*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	5*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		4*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		4*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		5*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	7*SCALE_FACTOR, 	0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
 			
-			aadd(ret, [1*SCALE_FACTOR, 		6*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		6*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		7*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [-2*SCALE_FACTOR, 	8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [-2*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-3*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [-2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [0*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [0*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [-1*SCALE_FACTOR, 	9*SCALE_FACTOR, 	0] + offset);//	
+			aadd(ret, [0*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [0*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//	
 			
-			aadd(ret, [1*SCALE_FACTOR, 		8*SCALE_FACTOR,		0] + offset);//
-			aadd(ret, [1*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		8*SCALE_FACTOR, 	0] + offset);//
-			aadd(ret, [2*SCALE_FACTOR, 		9*SCALE_FACTOR, 	0] + offset);//				
+			aadd(ret, [1*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 8*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 9*(size.y+spacing.y), 0] + offset);//				
 			break;
+	}
+	
+	if(direction == 2){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.z, tmp.y, tmp.x];
+		}
+	}
+	else if(direction == 3){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.y, tmp.x, tmp.z];
+		}
+	}else if(direction == -1){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [-tmp.x, tmp.y, tmp.z];
+		}
+	}else if(direction == -2){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.z, tmp.y, -tmp.x];
+		}
+	}else if(direction == -3){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.y, -tmp.x, tmp.z];
+		}
 	}
 	
 	return ret;

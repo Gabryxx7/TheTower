@@ -312,6 +312,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	var randomMeshesLimits = [roomWidthFar/2 - 2*SCALE_FACTOR, roomHeight, roomWidthSide/2 - 1*SCALE_FACTOR];
 	var randomMeshesPos = [0,-roomHeight-1*SCALE_FACTOR,-roomWidthSide/2+1*SCALE_FACTOR] + mTranslateFactor;
 	var cubeSizes = 0.70 *SCALE_FACTOR;
+	var cubeSpacing = 0.25 *SCALE_FACTOR;
 	var randomMeshNumber = 60; //MUST BE AT LEAST 52 (13*4 boxes to form an 8 is the maximum amount of cubes needed)
 	
 	randomShapes = {};
@@ -351,7 +352,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 		}
 		
 		
-		aadd(randomShapes, RandomMeshes(mesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor()));
+		aadd(randomShapes, RandomMeshes(mesh, randomMeshNumber, randomMeshesLimits, randomMeshesPos, paths[i].GetSteppedColor(), cubeSizes, cubeSpacing, 1));
 	}
 	
 	/////// NUMPAD SCREEN SETTING AND POSITIONING /////
@@ -365,7 +366,6 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	/////////////////////////////////////////////////////////7
 	
 	codeNumbers = {};
-	var cubeNums = CubeNumbers();
 	var numPosOffset = len(randomShapes)/2;
 	var numberPosition;
 	for(var i = 0; i < len(randomShapes); i++){

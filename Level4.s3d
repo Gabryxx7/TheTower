@@ -101,6 +101,8 @@ class Level4
 	var mGlassWall;
 	
 	// Arrays to handle the number objects that show the keycode 
+	var mCubeSizes;
+	var mCubeSpacing;
 	var mNumbersObjectArray;
 	var mNumbersCubesObjectArray;
 	var mNumbersListArray;
@@ -485,7 +487,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	var maxCubesPerNumber = 52;
 	
 	// Size for the cubes
-	var cubeSizes = 0.80 * SCALE_FACTOR;
+	mCubeSizes = 0.80 * SCALE_FACTOR;
+	mCubeSpacing = 0.20*SCALE_FACTOR;
 	
 	// Arrays to handle the number objects and their chaning numbers
 	mNumbersObjectArray = {};
@@ -529,13 +532,13 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		
 		// Generating the positions for the given number for each cube; I use an offset in the y axis so that the center of the container 
 		// seems to be in the center of the number (pretty much)
-		var cubesPositions = GenerateNumberPositions(numpadCode[i], [0 * SCALE_FACTOR, -numbersPosition.y, 0 * SCALE_FACTOR]);
+		var cubesPositions = GenerateNumberPositions(numpadCode[i], [0 * SCALE_FACTOR, -numbersPosition.y, 0 * SCALE_FACTOR], mCubeSizes, mCubeSpacing, 1);
 		
 		// Color for the cubes, chosen randomly
 		var colorMesh = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		
 		// Cube mesh; I add the toon shader to it
-		var cubeMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes / 2.0, -cubeSizes / 2.0, 0], [cubeSizes / 2.0, cubeSizes / 2.0, 0], cubeSizes);
+		var cubeMesh = CVmNewMesh(VRP_BOX, 1, [-mCubeSizes / 2.0, -mCubeSizes / 2.0, 0], [mCubeSizes / 2.0, mCubeSizes / 2.0, 0], mCubeSizes);
 		AddToonShaderToMesh(cubeMesh, [0.4, 0.4, 0.4], colorMesh, [0.2, 0.2, 0.2], 50, 1, 2, SCALE_FACTOR, 1.0);
 		
 		var length = len(cubesPositions);
@@ -1359,7 +1362,7 @@ function Level4::UpdateLogic(dt)
 					}
 					
 					// Computing the new positions for the cubes, using an y offset to force the cubes to be put around the center of the number object
-					var newPositions = GenerateNumberPositions(number, [0 * SCALE_FACTOR, -numberObject.GetPosition().y, 0 * SCALE_FACTOR]);
+					var newPositions = GenerateNumberPositions(number, [0 * SCALE_FACTOR, -numberObject.GetPosition().y, 0 * SCALE_FACTOR], mCubeSizes, mCubeSpacing, 1);
 								
 					// I set the new positions and unhide each element, in case it was hidden (because maybe the previous number had less cubes)		
 					for(var i = 0; i < len(newPositions); i++)
