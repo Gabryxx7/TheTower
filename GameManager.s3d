@@ -21,6 +21,7 @@ global var SCALE_FACTOR = 0.2;
 #include "LevelMenuSelector.s3d"
 #include "PreviewFrame.s3d"
 #include "RandomMeshes.s3d"
+#include "Target.s3d"
 #include "ButtonsWall.s3d"
 #include "MarcelloUtils.s3d"
 #include "Level0.s3d"
@@ -355,7 +356,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-//			XVRRendering();
+			XVRRendering();
 
 			if(mIsVRon)
 			{		

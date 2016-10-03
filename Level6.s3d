@@ -10,6 +10,7 @@ class Level6
 {
 	var mTexture;
 	var mIsVRon;
+	var mDebugVrOn;
 	
 	var mEnding;
 	var mIsLevelCompleted;
@@ -23,6 +24,7 @@ class Level6
 	var mSoundManager;
 	
 	var mCamera;
+	var cameraPosition;
 	
 	var mLight0;
 	var mLight1;
@@ -54,8 +56,10 @@ class Level6
 	var mLaserLength;
 	var mLaserSpeed;
 	
+	var mLastShoot;
+	var mShootingDelay;
+	
 	var mTargets;
-	var mTargetsHit;
 	
 	var mControllersBeingUsedIndex;
 	
@@ -98,6 +102,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
+	mDebugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -130,7 +135,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		aadd(mControllersArray, controller1);
 		aadd(mControllersArray, controller2);
 	}
-	else
+	else if(mDebugVrOn)
 	{
 		mDebugController = ViveController(1);
 		mDebugControllerHidden = false;
@@ -156,25 +161,26 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[1], [0.2,0.4,1], cubeSizes,cubeSpacing, -1));
 	UpdateCounter(0, false);
 
+	mLastShoot = 0;
+	mShootingDelay = 250;
 	
 	mLaserArray = {};
 	mLaserLength = 2.0 * SCALE_FACTOR;
 	mLaserSpeed = 0.2;
 	
 	mTargets = {};
-	mTargetsHit = {};
-	var targetsNumber = 10;
+	var targetsNumber = 5;
 	
 	// Creating random star things
 	for(var i = 0; i < targetsNumber; i++)
 	{
 		// To create the star object I use a function from the "Utils" file
-		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
 		
 		// Creating 2 random colors to change over time
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		
+		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);
 		var roomPos = mMainRoom.GetPosition();
 		var roomWidth = mMainRoom.GetRoomWidth();
 		var roomHeight = mMainRoom.GetRoomHeight();
@@ -189,12 +195,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 		// Creating the transitions
 		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
+//		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
 		
 		starObj.SetPosition([posX, posY, posZ]);
 		
-		aadd(mTargets, starObj);
-		aadd(mTargetsHit, false);
+		aadd(mTargets, Target(starObj, 3, 250, color1, color2, 3.0, mAnimator));
 	}
 	
 	// Creating texts object for the scene
@@ -282,8 +287,10 @@ function Level6::Render()
 	mElevator.Draw();
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
-	for(var i = 0; i < len(mControllersArray); i++)
-		mControllersArray[i].Draw();
+	if(mIsVrOn || mDebugVrOn){
+		for(var i = 0; i < len(mControllersArray); i++)
+			mControllersArray[i].Draw();		
+	}
 	
 	switch(mLevelStatus)
 	{
@@ -361,10 +368,10 @@ function Level6::UpdateLogic(dt)
 	// Debug function used to change the color of the lights in the room when certain keys are pressed
 	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
 	
-	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
 	
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
-	if(!mIsVRon)
+	if(!mIsVRon && mDebugVrOn)
 	{
 		mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
 		
@@ -546,62 +553,32 @@ function Level6::UpdateLogic(dt)
     		
     		for(var i = 0; i < len(mTargets); i++)
     		{
-    			var target = mTargets[i];
+    			var target = mTargets[i];    			
     			var hasBeenHit = false;
     			
-    			if(!mTargetsHit[i])
-	    			for(var j = 0; j < len(mLaserArray) && !hasBeenHit; j++)
-	    			{
-	    				var startPos = mLaserArray[j][0];
-	    				var endPos = mLaserArray[j][1];
-	    				
-	    				hasBeenHit = target.IsCollidingBBoxOnly(startPos, endPos);
-	    				
-	    				if(hasBeenHit)
-	    				{
-	    					adel(mLaserArray, j);
-	//    					adel(mTargets, i);
-	    					
-//	    					mAnimator.RemoveTransitionByObject(target, 0);
-	    					
-	    					mAnimator.CreateScalingTransition(target, [1, 1, 1], [0, 0, 0], 3.0, false, 3);
-							mAnimator.CreateToonShaderColorTransition(target.GetMesh(), [1, 1, 1], [1, 0, 0], 3.0, false);
-							
-							mTargetsHit[i] = true;
-							
+    			for(var j = 0; j < len(mLaserArray) && !hasBeenHit; j++)
+    			{
+    				var startPos = mLaserArray[j][0];
+    				var endPos = mLaserArray[j][1];
+    				
+    				hasBeenHit = target.IsCollidingBBoxOnly(startPos, endPos);
+    				
+    				if(hasBeenHit)
+    				{
+    					adel(mLaserArray, j);    					
+    					
+    					if(target.Hit() && target.RemoveLife() <= 0){
+    						output("KILLED");
+    						target.Kill();
 	    					mCounter = (mCounter + 1) % 100;
-							UpdateCounter(mCounter, false);
-	    				}
-	    			}
-    			
-    			if(!mTargetsHit[i] && !mAnimator.HaveTransition(target, 0))
-				{
-	    			var roomPos = mMainRoom.GetPosition();
-					var roomWidthHalved = mMainRoom.GetRoomWidth() / 2.0;
-					var roomHeightHalved = mMainRoom.GetRoomHeight() / 2.0;
-					var roomDepthHalved = mMainRoom.GetRoomDepth() / 2.0;
-					
-					var posX = (roomPos.x - mMainRoom.GetRoomWidth() / 2.0) + Rand(mMainRoom.GetRoomWidth() - 10.0 * SCALE_FACTOR);
-					var posY = (roomPos.y - mMainRoom.GetRoomHeight() / 2.0 +  5.0 * SCALE_FACTOR) + Rand(mMainRoom.GetRoomHeight() - 10.0 * SCALE_FACTOR);
-					var posZ = (roomPos.z) + Rand(mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
-					
-					var targetPos = target.GetPosition();
-					
-					var newPosX = [targetPos.x + roomWidthHalved, targetPos.y, targetPos.z];
-					var newPosY = [targetPos.x, targetPos.y + roomHeightHalved, targetPos.z];
-					var newPosZ = [targetPos.x, targetPos.y, targetPos.z + roomDepthHalved];
-					
-					var pos = [0, 0, 0];
-					
-					pos.x = mMainRoom.IsPointInRoom(newPosX) ? newPosX.x : targetPos.x - roomWidthHalved;
-					pos.y = mMainRoom.IsPointInRoom(newPosY) ? newPosY.y : targetPos.y - roomHeightHalved;
-					pos.z = mMainRoom.IsPointInRoom(newPosZ) ? newPosZ.z : targetPos.z - roomDepthHalved;
-	
-	//				var time = ToFloat(Rand(3.0) + 1.0);
-					var time = 3.0;
-				
-					mAnimator.CreateTransition(target, target.GetPosition(), [posX, posY, posZ], 2.5, false, 2);
-				}
+							UpdateCounter(mCounter, false);	
+						}
+    				}
+    			}
+    			  			
+    			target.Update(mMainRoom);
+    			if(target.IsDead())
+    				adel(mTargets, i);
     		}
 			
 //			// I check if every connector has been connected
@@ -661,49 +638,60 @@ function Level6::UpdateLogic(dt)
 function Level6::HandleLasers()
 {
 	// Now I check if the player is drawing; I first check if he pressed a button
-	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
-	var usingController2 = mInputManager.IsPressingPrimaryButton(2);
-	
-	var firstTimeUsingController1 = usingController1 && mControllersBeingUsedIndex[0] == 0;
-	var firstTimeUsingController2 = mIsVRon && usingController2 && mControllersBeingUsedIndex[1] == 0;
-		 
-	if(firstTimeUsingController1 || firstTimeUsingController2)
-	{				
-		var index;
+	if(mIsVrOn || mDebugVrOn){
+		var usingController1 = mInputManager.IsPressingPrimaryButton(1);
+		var usingController2 = mInputManager.IsPressingPrimaryButton(2);
 		
-		if(firstTimeUsingController1)
-		{
-			index = 0;
-			mControllersBeingUsedIndex[index] = 1;
+		var firstTimeUsingController1 = usingController1 && mControllersBeingUsedIndex[0] == 0;
+		var firstTimeUsingController2 = mIsVRon && usingController2 && mControllersBeingUsedIndex[1] == 0;
+			 
+		if(firstTimeUsingController1 || firstTimeUsingController2)
+		{				
+			var index;
+			
+			if(firstTimeUsingController1)
+			{
+				index = 0;
+				mControllersBeingUsedIndex[index] = 1;
+			}
+			else
+			{
+				index = 1;
+				mControllersBeingUsedIndex[index] = 2;
+			}
+			
+			var controller = mControllersArray[index];
+			
+			var direction = controller.GetDirection();
+			
+			var startPoint = controller.GetPosition();
+			var endPoint = startPoint + mLaserLength * direction;			
+				
+			var laserInfo = {startPoint, endPoint, direction};
+			
+			aadd(mLaserArray, laserInfo);
 		}
+		// Case where the user stopped pressing a trigger
 		else
 		{
-			index = 1;
-			mControllersBeingUsedIndex[index] = 2;
-		}
-		
-		var controller = mControllersArray[index];
-		
-			var direction = controller.GetDirection();
-//		var direction = mCamera.GetDirection();
-		
-		var startPoint = controller.GetPosition();
-		var endPoint = startPoint + mLaserLength * direction;
-		
+			// If when the user stopped pressing the trigger of the first controller, I update the fact that the controller is not being used anymore
+			if(!usingController1 && mControllersBeingUsedIndex[0] != 0)
+				mControllersBeingUsedIndex[0] = 0;
 			
-		var laserInfo = {startPoint, endPoint, direction};
-		
-		aadd(mLaserArray, laserInfo);
+			if(!usingController2 && mControllersBeingUsedIndex[1] != 0)
+				mControllersBeingUsedIndex[1] = 0;
+		}	
 	}
-	// Case where the user stopped pressing a trigger
-	else
-	{
-		// If when the user stopped pressing the trigger of the first controller, I update the fact that the controller is not being used anymore
-		if(!usingController1 && mControllersBeingUsedIndex[0] != 0)
-			mControllersBeingUsedIndex[0] = 0;
-		
-		if(!usingController2 && mControllersBeingUsedIndex[1] != 0)
-			mControllersBeingUsedIndex[1] = 0;
+	else{
+		if(mInputManager.IsPressingPrimaryButton() && GetTime() - mLastShoot > mShootingDelay){
+			mLastShoot = GetTime();
+			var startPoint = cameraPosition- [-0.1 * SCALE_FACTOR, 0.1 * SCALE_FACTOR, 0.0 * SCALE_FACTOR];
+			var direction = mCamera.GetDirection();
+			var endPoint = startPoint + mLaserLength * direction;
+			var laserInfo = {startPoint, endPoint, direction};
+			
+			aadd(mLaserArray, laserInfo);
+		}	
 	}
 }
 

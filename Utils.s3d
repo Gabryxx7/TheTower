@@ -186,7 +186,7 @@ function AddToonShaderToMesh(mesh, ambient, diffuse, specular, shininess, lights
  * pyramidHeight: optional (float) height of a single pyramid in the object; if not defined, a random one will be chosen
  * color: optional (vector[3]) the color of the object; if not defined, a random one will be chosen
  */
-function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight, color)
+function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight, color, ambient)
 {
 	if(baseSize == Void)
 		baseSize = 0.3 * SCALE_FACTOR + (Rand(4) / 10.0) * SCALE_FACTOR;
@@ -199,7 +199,9 @@ function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight
 	if(color == Void)
 		color = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 	
-	AddToonShaderToMesh(pyramidMesh, [0.04, 0.04, 0.04], color, [0.4, 0.4, 0.4], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
+//	mesh, ambient, diffuse, specular, shininess, lightsRangeMin, lightsRangeMax, scaleFactor, alpha
+	ambient = valtype(ambient) == "" ? [0.04, 0.04, 0.04] : ambient;
+	AddToonShaderToMesh(pyramidMesh, ambient, color, [0.4, 0.4, 0.4], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
 	var star = CVmObj(pyramidMesh);
 	var pyramidObj2 = CVmObj(pyramidMesh);

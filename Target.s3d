@@ -1,0 +1,154 @@
+class Target{	
+	var mObj;
+	var mHit;
+	var mShootDelay;
+	var mLives;
+	var mColor;
+	var mActualColor;
+	var mHitColor;
+	var mMesh;
+	var mSpeed;
+	
+	var mColorTransitionTime;
+	var mScalingTransitionTime;
+	var mIsChangingColor;
+	
+	var mHitTime;
+	var mShootTime;
+	
+	var mAnimator;
+	
+	var mKilled;
+	var mKilledTime;
+	
+	Draw();
+	GetObj();
+	IsCollidingBBoxOnly(startPos, endPos);
+	GetLives();
+	RemoveLife();
+	Update(mMainRoom);
+	UpdateTransition(mMainRoom);
+	UpdateColor();
+	Kill();
+	IsDead();
+	Hit();	
+	SetPosition(x,y,z);
+	GetMesh();
+};
+
+function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, animator){
+	mAnimator = animator;
+	mObj = mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH" ? CVmObj(mesh) : mesh;
+	mLives = lives;
+	mShootDelay = shootDelay;
+	mColor = color;
+	mHitColor = hitColor;
+	mSpeed = speed;
+	mActualColor = color;
+	
+	mIsChangingColor = -1;
+	mColorTransitionTime = 0.25;
+	
+	mScalingTransitionTime = 0.35;
+	
+	mHitTime = 0;
+	mShootTime = 0;
+	
+	mKilledTime = -1;
+	mKilled = false;
+}
+
+function Target::Draw(){
+	mObj.Draw();
+}
+
+function Target::GetObj(){
+	return mObj;
+}
+
+function Target::IsCollidingBBoxOnly(startPos, endPos){
+	return mObj.IsCollidingBBoxOnly(startPos, endPos);
+}
+
+function Target::GetLives(){
+	return mLives;
+}
+
+function Target::RemoveLife(){
+	return --mLives;
+}
+
+function Target::Hit(){
+	mIsChangingColor = 1;
+	return !mKilled;
+}
+
+function Target::Update(mMainRoom){
+	if(!mKilled){
+		UpdateColor();
+//		UpdateTransition(mMainRoom);
+	}
+}
+
+function Target::Kill(){
+	mKilled = true;
+	mKilledTime = GetTime();
+	mAnimator.CreateScalingTransition(mObj, [1, 1, 1], [0, 0, 0], mScalingTransitionTime, false, 3);
+}
+
+function Target::UpdateTransition(mMainRoom){
+	if(!mAnimator.HaveTransition(mObj,0)){
+		var roomPos = mMainRoom.GetPosition();
+		var roomWidthHalved = mMainRoom.GetRoomWidth() / 2.0;
+		var roomHeightHalved = mMainRoom.GetRoomHeight() / 2.0;
+		var roomDepthHalved = mMainRoom.GetRoomDepth() / 2.0;
+		
+		var posX = (roomPos.x - mMainRoom.GetRoomWidth() / 2.0) + Rand(mMainRoom.GetRoomWidth() - 10.0 * SCALE_FACTOR);
+		var posY = (roomPos.y - mMainRoom.GetRoomHeight() / 2.0 +  5.0 * SCALE_FACTOR) + Rand(mMainRoom.GetRoomHeight() - 10.0 * SCALE_FACTOR);
+		var posZ = (roomPos.z) + Rand(mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
+		
+		var targetPos = mObj.GetPosition();
+		
+		var newPosX = [targetPos.x + roomWidthHalved, targetPos.y, targetPos.z];
+		var newPosY = [targetPos.x, targetPos.y + roomHeightHalved, targetPos.z];
+		var newPosZ = [targetPos.x, targetPos.y, targetPos.z + roomDepthHalved];
+		
+		var pos = [0, 0, 0];
+		
+		pos.x = mMainRoom.IsPointInRoom(newPosX) ? newPosX.x : targetPos.x - roomWidthHalved;
+		pos.y = mMainRoom.IsPointInRoom(newPosY) ? newPosY.y : targetPos.y - roomHeightHalved;
+		pos.z = mMainRoom.IsPointInRoom(newPosZ) ? newPosZ.z : targetPos.z - roomDepthHalved;
+
+//				var time = ToFloat(Rand(3.0) + 1.0);
+		var time = 3.0;
+	
+		mAnimator.CreateTransition(mObj, mObj.GetPosition(), [posX, posY, posZ], mSpeed, false, 2);		
+	}
+	
+}
+
+function Target::UpdateColor(){
+	if(mIsChangingColor != -1){
+		if(mIsChangingColor == 1){
+			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, mHitColor, mColorTransitionTime, false);
+			mHitTime = GetTime();
+			mIsChangingColor = 2;				
+		}
+		else if(mIsChangingColor == 2 && GetTime()-mHitTime > (mColorTransitionTime*1000)){
+			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mHitColor, mColor, mColorTransitionTime, false);
+			mIsChangingColor = -1;
+		}	
+	}
+}
+
+function Target::SetPosition(x,y,z){
+	mObj.SetPosition(valtype(x) != "A" && valtype(x) != "V" ? [x,y,z] : x);
+}
+
+function Target::GetMesh(){
+	return mObj.GetMesh();
+}
+
+function Target::IsDead(){
+	return mKilled && GetTime() - mKilledTime > (mScalingTransitionTime*1000);
+}
