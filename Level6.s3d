@@ -55,6 +55,7 @@ class Level6
 	var mLaserSpeed;
 	
 	var mTargets;
+	var mTargetsHit;
 	
 	var mControllersBeingUsedIndex;
 	
@@ -157,11 +158,12 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 
 	
 	mLaserArray = {};
-	mLaserLength = 1.0 * SCALE_FACTOR;
-	mLaserSpeed = 0.5 * SCALE_FACTOR;
+	mLaserLength = 2.0 * SCALE_FACTOR;
+	mLaserSpeed = 0.2;
 	
 	mTargets = {};
-	var targetsNumber = 1;
+	mTargetsHit = {};
+	var targetsNumber = 10;
 	
 	// Creating random star things
 	for(var i = 0; i < targetsNumber; i++)
@@ -188,11 +190,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		// Creating the transitions
 		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
 		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
-//		mAnimator.CreateTransition(mObjsArray[i], objPos, [mObjsFinalPos[i].x, mObjsFinalPos[i].y, mObjsFinalPos[i].z], time, false, 2);
 		
 		starObj.SetPosition([posX, posY, posZ]);
 		
 		aadd(mTargets, starObj);
+		aadd(mTargetsHit, false);
 	}
 	
 	// Creating texts object for the scene
@@ -293,7 +295,7 @@ function Level6::Render()
 		{
 			mMainRoom.Draw();
 
-			glLineWidth(5);
+			glLineWidth(10);
 			
 			mDrawingShader.Start();	
 				mDrawingShader.SetParameter("time", mLinesTimeVariable);
@@ -381,8 +383,37 @@ function Level6::UpdateLogic(dt)
 		}
 		else
 			mDebugKeyHit = false;
+
 		
-		var updated = false;
+		static var rotX = 0;
+		static var rotY = 0;
+		static var rotZ = 0;
+			
+		if(KeyPressed("J"))
+			rotX += 1;
+		
+		if(KeyPressed("L"))
+			rotX -= 1;
+			
+		if(KeyPressed("I"))
+			rotY += 1;
+		
+		if(KeyPressed("K"))
+			rotY -= 1;
+			
+		if(KeyPressed("U"))
+			rotZ += 1;
+		
+		if(KeyPressed("O"))
+			rotZ -= 1;
+		
+		mDebugController.SetRotation(0, 1, 0, 0);
+		mDebugController.Rotate(rotY, 1, 0, 0);
+		mDebugController.Rotate(rotX, 0, 1, 0);
+		mDebugController.Rotate(rotZ, 0, 0, 1);
+	}
+	
+	var updated = false;
 		var toRandomPos = false;
 		if(KeyPressed("0")){			
 			if(GetTime() - mLastCounterUpdate > 150){
@@ -412,38 +443,17 @@ function Level6::UpdateLogic(dt)
 				mLastCounterUpdate = GetTime();	
 				updated = true;				
 			}
-		}
+		}		
+//		else if(GetTime() - mLastCounterUpdate > 1000){
+//			mCounter = (mCounter+1) % 100;
+//			mLastCounterUpdate = GetTime();	
+//			updated = true;		
+//			toRandomPos = true;		
+//			outputln("yolo");
+//		}
+		
 		if(updated)
 			UpdateCounter(mCounter, toRandomPos);
-		
-		
-		static var rotX = 0;
-		static var rotY = 0;
-		static var rotZ = 0;
-			
-		if(KeyPressed("J"))
-			rotX += 1;
-		
-		if(KeyPressed("L"))
-			rotX -= 1;
-			
-		if(KeyPressed("I"))
-			rotY += 1;
-		
-		if(KeyPressed("K"))
-			rotY -= 1;
-			
-		if(KeyPressed("U"))
-			rotZ += 1;
-		
-		if(KeyPressed("O"))
-			rotZ -= 1;
-		
-		mDebugController.SetRotation(0, 1, 0, 0);
-		mDebugController.Rotate(rotY, 1, 0, 0);
-		mDebugController.Rotate(rotX, 0, 1, 0);
-		mDebugController.Rotate(rotZ, 0, 0, 1);
-	}
 	
 	switch(mLevelStatus)
 	{
@@ -536,18 +546,44 @@ function Level6::UpdateLogic(dt)
     		
     		for(var i = 0; i < len(mTargets); i++)
     		{
-    			if(!mAnimator.HaveTransition(target, 0))
+    			var target = mTargets[i];
+    			var hasBeenHit = false;
+    			
+    			if(!mTargetsHit[i])
+	    			for(var j = 0; j < len(mLaserArray) && !hasBeenHit; j++)
+	    			{
+	    				var startPos = mLaserArray[j][0];
+	    				var endPos = mLaserArray[j][1];
+	    				
+	    				hasBeenHit = target.IsCollidingBBoxOnly(startPos, endPos);
+	    				
+	    				if(hasBeenHit)
+	    				{
+	    					adel(mLaserArray, j);
+	//    					adel(mTargets, i);
+	    					
+//	    					mAnimator.RemoveTransitionByObject(target, 0);
+	    					
+	    					mAnimator.CreateScalingTransition(target, [1, 1, 1], [0, 0, 0], 3.0, false, 3);
+							mAnimator.CreateToonShaderColorTransition(target.GetMesh(), [1, 1, 1], [1, 0, 0], 3.0, false);
+							
+							mTargetsHit[i] = true;
+							
+	    					mCounter = (mCounter + 1) % 100;
+							UpdateCounter(mCounter, false);
+	    				}
+	    			}
+    			
+    			if(!mTargetsHit[i] && !mAnimator.HaveTransition(target, 0))
 				{
-	    			var target = mTargets[i];
-	    			
 	    			var roomPos = mMainRoom.GetPosition();
 					var roomWidthHalved = mMainRoom.GetRoomWidth() / 2.0;
 					var roomHeightHalved = mMainRoom.GetRoomHeight() / 2.0;
 					var roomDepthHalved = mMainRoom.GetRoomDepth() / 2.0;
 					
-	//				var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
-	//				var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
-	//				var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
+					var posX = (roomPos.x - mMainRoom.GetRoomWidth() / 2.0) + Rand(mMainRoom.GetRoomWidth() - 10.0 * SCALE_FACTOR);
+					var posY = (roomPos.y - mMainRoom.GetRoomHeight() / 2.0 +  5.0 * SCALE_FACTOR) + Rand(mMainRoom.GetRoomHeight() - 10.0 * SCALE_FACTOR);
+					var posZ = (roomPos.z) + Rand(mMainRoom.GetRoomDepth() - 10.0 * SCALE_FACTOR);
 					
 					var targetPos = target.GetPosition();
 					
@@ -564,7 +600,7 @@ function Level6::UpdateLogic(dt)
 	//				var time = ToFloat(Rand(3.0) + 1.0);
 					var time = 3.0;
 				
-					mAnimator.CreateTransition(target, target.GetPosition(), pos, 3.0, false, 2);
+					mAnimator.CreateTransition(target, target.GetPosition(), [posX, posY, posZ], 2.5, false, 2);
 				}
     		}
 			
@@ -648,10 +684,10 @@ function Level6::HandleLasers()
 		
 		var controller = mControllersArray[index];
 		
-//			var direction = controller.GetDirection();
-		var direction = mCamera.GetDirection();
+			var direction = controller.GetDirection();
+//		var direction = mCamera.GetDirection();
 		
-		var startPoint = controller.GetControllerTipCoordinates();
+		var startPoint = controller.GetPosition();
 		var endPoint = startPoint + mLaserLength * direction;
 		
 			
@@ -685,10 +721,6 @@ function Level6::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 	var intersectedPlane = -1;
 
 	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
-	
-	if(intersectedPlane != -1)
-		outputln(intersectedPlane);
-		
 
 	if(intersectedPlane == -1 || intersectedPlane == -2)
 		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
@@ -773,9 +805,9 @@ function Level6::UpdateCounter(num, toRandomPos){
 			objs[i].SetRotation(0,0,0,1);
 			if(toRandomPos){
 				var randomPos = mCounterRandomMeshes[j].GenerateRandomPositions(mCounterBox, mCounterPositions[len(mCounterRandomMeshes)-j-1]); 
-				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.2, false, 2);
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.2, false, 1);
 			}else
-				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), finalPos[i], 0.2, false, 2);
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), finalPos[i], 0.2, false, 1);
 		}
 	}
 }

@@ -91,6 +91,8 @@ function OnInit(params)
 	
 	oldTime = GetTime();
 	
+//	SceneSetParam(VR_MOTION_BLUR, 1.0); 
+	
 	// I don't know why, but we have to disable the cursor both here and in the InputManager class
 	ShowCursor(false);
 }

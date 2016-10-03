@@ -318,28 +318,30 @@ function VirtualKeyboard::AnimatePressedButtons(){
 
 
 function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){	
-	var raycastOrigin = objectPosition;
-	var raycastEnd = isCamera ? (raycastOrigin + mObject.GetDirection() * mObject.GetZFar()) : (raycastOrigin + mObject.GetDirection() * 20);
-	var contactPoint;	
+	var minDistance = 10000;
+	var closestButtonIndex = -1;	
 	
 	
 	for(var i = 0; i < len(mButtonsObjs); i++){
-		contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mButtonsObjs[i]);
-		if(contactPoint != Void){
-			if(mHoveredButton != i){
-				if(mHoveredButton != -1)	
-					UnhoverButton(mAnimator);
-				mHoveredButton = i;				
-				HoverButton(mAnimator);
-			}
-			return mCharacters[i];	
-		}	
+		var newDistance = Modulus(mButtonsObjs[i].GetPosition() - objectPosition);
+		if(newDistance < minDistance){
+			minDistance = newDistance;
+			closestButtonIndex = i;
+		}		
 	}
+		
+	if(mHoveredButton != closestButtonIndex){
+		if(mHoveredButton != -1)	
+			UnhoverButton(mAnimator);
+		mHoveredButton = closestButtonIndex;				
+		HoverButton(mAnimator);
+	}
+	return mCharacters[closestButtonIndex];	
 	
-	if(mHoveredButton != -1){
-		UnhoverButton(mAnimator);
-		mHoveredButton = -1;		
-	}
+//	if(mHoveredButton != -1){
+//		UnhoverButton(mAnimator);
+//		mHoveredButton = -1;		
+//	}
 	return "";
 }
 

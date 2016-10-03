@@ -247,7 +247,7 @@ function GameManager::GameManager(HMD)
 		
 //		mOpenglTranslationOffset.z += 20 * SCALE_FACTOR;
  
-//		aadd(mLevels, arrayLevel0);
+		aadd(mLevels, arrayLevel0);
 //		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
@@ -330,7 +330,7 @@ function GameManager::GameManager(HMD)
 	mIsPlayAreaPlaneVisible = false;
 	
 	mIsTeleporting = false;
-	mTeleportDistanceThreshold = 20.0 * SCALE_FACTOR;
+	mTeleportDistanceThreshold = 30.0 * SCALE_FACTOR;
 }
 
 /*
@@ -355,7 +355,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-			XVRRendering();
+//			XVRRendering();
 
 			if(mIsVRon)
 			{		
@@ -364,8 +364,10 @@ function GameManager::Render()
 					mCurrentLevel.SetupOpenglLights();
 					
 					glEnable (GL_BLEND);
-					glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);					
-					glClearColor(0.95, 0.95, 0.95, 1.0);
+					glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	
+					
+					if(mCurrentLevel.__GetName() == "LEVELMENU")				
+						glClearColor(0.95, 0.95, 0.95, 1.0);
 					
 					mHMD.frame_left();
 						XVRRendering();
@@ -644,8 +646,8 @@ function GameManager::UpdateLogic(dt)
 						var distance = Modulus(playerPos - circlePos);
 						
 						// If the distance is below the threshold, I create the moving animation
-//						if(distance < mTeleportDistanceThreshold)
-						if(distance < 200)
+						if(distance < mTeleportDistanceThreshold)
+//						if(distance < 200)
 						{
 							// The new position has the same y as the opengl offset (I only want to move along the x and z axis after all), 
 							// and as x and z it has the difference between the player's position and the desired position
@@ -670,18 +672,18 @@ function GameManager::UpdateLogic(dt)
 							var isPositionValid = mCurrentLevel.IsPointedPositionValid(raycastOrigin, raycastEnd, &contactPoint, &normal, &isWall);
 							
 							// If the player can see the desired point, I create a direct transition
-							if(isPositionValid)
-								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.15, 3);
+//							if(isPositionValid)
+								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.2, 3);
 							// Otherwise, I create a waypoint transition that first move from the camera's position to the position of the controller,
 							// and then to the desired position
-							else
-							{
-								var controllerPos = mCamera.GetPosition() - mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
-	//							var controllerPos = mCamera.GetPosition() - (mCamera.GetPosition() - mOpenglTranslationOffset - [1 * SCALE_FACTOR, 0, 0]);
-								controllerPos.y = mOpenglTranslationOffset.y;
-								
-								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, {controllerPos, newPos}, 0.15, 3);
-							}
+//							else
+//							{
+//								var controllerPos = mCamera.GetPosition() - mInputManager.GetController(mControllerBeingUsedIndex).GetPosition();
+//	//							var controllerPos = mCamera.GetPosition() - (mCamera.GetPosition() - mOpenglTranslationOffset - [1 * SCALE_FACTOR, 0, 0]);
+//								controllerPos.y = mOpenglTranslationOffset.y;
+//								
+//								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, {controllerPos, newPos}, 0.2, 3);
+//							}
 						}
 						// If the distance to the desired point is too great, I teleport using the fade-to-black transition
 						else

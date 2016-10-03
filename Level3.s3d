@@ -721,7 +721,7 @@ function Level3::UpdateLogic(dt)
 							var vrPressedButton = numpadObj.TouchedButton(controller.GetControllerTipCoordinates());				
 						 	var vrPointedButton = numpadObj.PointedButton(controller, controller.GetPosition(), false);
 						 	
-							if(mInputManager.IsPressingPrimaryButton(controller.GetIndex()) && timeFromLastClick > 0.13){
+							if(mInputManager.IsPressingPrimaryButton(controller.GetIndex()) && timeFromLastClick > 0.5){
 								timeFromLastClick = 0;	
 								pressedButton = vrPointedButton;
 								if(pressedButton != "" && pressedButton != " "){

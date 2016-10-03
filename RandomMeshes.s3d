@@ -94,7 +94,7 @@ function RandomMeshes::SetFinalPosition(number, pos){
 
 function RandomMeshes::GenerateFinalPositions(number, pos){
 	var finalPositions = GenerateNumberPositions(number, pos, mMeshSize, mNumberSpacing, mNumberDirection);
-	outputln(number);
+
 	var finalObjPos = {};
 	
 	var j = 0;
@@ -111,7 +111,7 @@ function RandomMeshes::MoveToFinalPosition(mAnimator){
 	
 	for(var i = 0; i < len(mObjsArray); i++){
 		objPos = mObjsArray[i].GetPosition();
-		time = (Rand(1000)+ 1000)/ 500;
+		time = (Rand(1000)+ 1000)/ 300;
 				
 
 		mAnimator.RemoveTransitionByObject(mObjsArray[i], 3);	//The animation is starting so I remove the rotation around a point animation

@@ -141,7 +141,7 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, distance){
 		if(!mIsPointed && !mIsSelected){
 			mIsPointed = true;
 			ChangeMeshesColor(mSelectedColor);
-			mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1.35,1.35,1], 0.1, false);			
+			mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1.35,1.35,1], 0.1, false, 2);			
 		}
 		return true;		
 	}
@@ -149,7 +149,7 @@ function LevelMenuSelector::IsBeingPointedBy(mObject, objectPosition, distance){
 	if(mIsPointed && !mIsSelected){
 		mIsPointed = false;
 		ChangeMeshesColor(mColor);
-		mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1,1,1], 0.1, false);
+		mAnimator.CreateScalingTransition(mObj, mObj.GetScale(), [1,1,1], 0.1, false, 2);
 	}
 		
 	return false;	

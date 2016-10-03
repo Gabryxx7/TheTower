@@ -193,7 +193,7 @@ function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset){
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
 
-	mElevatorFinalPosition = mElevator.GetPosition();
+	mElevatorFinalPosition = mElevator.GetPosition()+[0,0.005*SCALE_FACTOR, 0];
 	
 	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
 	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);

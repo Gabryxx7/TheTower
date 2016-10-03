@@ -387,7 +387,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		var posY = mMainRoom.GetRoomHeight() / 2.0 + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
 		var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
 		var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
-		
+				
 		// The period of the rotation-around-point. Since I'm using the "random" option in the transition, the speed of the objects depend also on the radius.
 		// Since the radius is pretty big (half the depth of the room pretty much), the objects tend to go very fast. So, I use a very high period, while I normally
 		// would use something like 20 seconds as base to obtain almost the same velocity
@@ -402,7 +402,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		// Creating the transitions
 		mAnimator.CreateScalingTransition(starObj, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
 		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-		mAnimator.CreateRotationAroundPointTransition(starObj, [posX, posY, posZ] + mTranslateFactor, [0, 0, 0] + mTranslateFactor, time, true, true, clockwise);
+		mAnimator.CreateRotationAroundPointTransition(starObj, [posX, posY, posZ] + mTranslateFactor, [0, posY, 0] + mTranslateFactor, time, true, true, clockwise);
 		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
 		
 		aadd(mStarObjects, starObj);
@@ -431,7 +431,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 		mAnimator.CreateScalingTransition(coneThing, [1.0, 1.0, 1.0], {[1.0, 0.2, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.2], [1.0, 1.0, 1.0], [0.2, 1.0, 1.0]}, 2.0 + Rand(10) / 2.0, true);
 		mAnimator.CreateRotatingTransition(coneThing, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-		mAnimator.CreateRotationAroundPointTransition(coneThing, [posX, posY, posZ] + mTranslateFactor, [0, 0, 0] + mTranslateFactor, time, true, true, clockwise);
+		mAnimator.CreateRotationAroundPointTransition(coneThing, [posX, posY, posZ] + mTranslateFactor, [0, posY, 0] + mTranslateFactor, time, true, true, clockwise);
 		mAnimator.CreateToonShaderColorTransition(coneThing.GetMesh(), color1, color2, 3.5, true);
 		
 		aadd(mConeObjects, coneThing);
@@ -566,8 +566,14 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		// Setting the position of the number object
 		numbersContainer.SetPosition(numbersPosition);
 		
+		
+//		for(var i = 0; i < len(cubesArray); i++)
+//		{				
+//			mAnimator.CreateTransition(cubesArray[i], cubesArray[i].GetPosition(), cubesPositions[i], 0.2, false, 1);
+//		}
+		
 		// Creating the scaling transition
-		mAnimator.CreateScalingTransition(numbersContainer, [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 2.0, true);
+//		mAnimator.CreateScalingTransition(numbersContainer, [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 2.0, true);
 	}
 	
 	
@@ -755,8 +761,8 @@ function Level4::Render()
 {	
 	// This makes the background black; I do it both using the opengl call and the XVR call because the opengl call doesn't work 
 	// with XVR and the XVR call doesn't work with the Vive
-	glClearColor(0.0, 0.0, 0.0, 1.0);
-//	SetClearColor(0.0, 0.0, 0.0);
+//	glClearColor(0.0, 0.0, 0.0, 1.0);
+	SetClearColor(0.0, 0.0, 0.0);
 	
 	// Move the lights back to their original position, because if the user previously teleported their position will be wrong
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
@@ -1286,7 +1292,13 @@ function Level4::UpdateLogic(dt)
 			else
 				mAnimator.ChangeScaleFactors(1.0);
 				
-			
+				
+				
+//		for(var i = 0; i < len(cubesArray); i++)
+//		{				
+//			mAnimator.CreateTransition(cubesArray[i], cubesArray[i].GetPosition(), cubesPositions[i], 0.2, false, 1);
+//		}
+		
 			// Now I check the number objects to see if their scale has reached 0; in that case I change the number they're displaying, but only 
 			// if the player didn't already find the final numbers (i.e. the number objects are not scaling anymore)
 			for(var i = 0; i < len(mNumbersObjectArray) && !mFinalNumbersFound; i++)
@@ -1296,6 +1308,9 @@ function Level4::UpdateLogic(dt)
 				var cubeObjects = mNumbersCubesObjectArray[i];
 				var scale = numberObject.GetScale();
 				var numbersList = mNumbersListArray[i];
+				
+//				if(mAnimator.HaveTransition())
+				
 
 				// If the scale is small enough (I don't look for 0 to avoid problems with floating point computations), and it's been a while since
 				// the last change of the number (I need this to avoid changing multiple times the number while the scale is below the threshold),
@@ -1379,6 +1394,99 @@ function Level4::UpdateLogic(dt)
 					mChangedNumberTime[i] = GetTime();
 				}
 			}
+			
+//			// Now I check the number objects to see if their scale has reached 0; in that case I change the number they're displaying, but only 
+//			// if the player didn't already find the final numbers (i.e. the number objects are not scaling anymore)
+//			for(var i = 0; i < len(mNumbersObjectArray) && !mFinalNumbersFound; i++)
+//			{
+//				// Getting the number object, the cubes that are contained in it, the scale of the object and the list of past numbers
+//				var numberObject = mNumbersObjectArray[i];
+//				var cubeObjects = mNumbersCubesObjectArray[i];
+//				var scale = numberObject.GetScale();
+//				var numbersList = mNumbersListArray[i];
+//
+//				// If the scale is small enough (I don't look for 0 to avoid problems with floating point computations), and it's been a while since
+//				// the last change of the number (I need this to avoid changing multiple times the number while the scale is below the threshold),
+//				// and if I this number object hasn't reached its final number
+//				if(scale.x <= 0.01 && scale.y <= 0.01 && scale.z <= 0.01 && GetTime() - mChangedNumberTime[i] > mDelayBetweenNumberChange && !mFinalNumberFoundArray[i])
+//				{
+//					var number;
+//					
+//					// If time is going forward...
+//					if(mTimeDirection == 1)
+//					{
+//						// I get the previous number
+//						var previousNumber = numbersList[len(numbersList) - 1];
+//						
+//						// I create a new number randomly until it's different from the previous one
+//						do
+//						{
+//							number = Rand(9);
+//						}
+//						while(previousNumber == number);
+//							
+//						// I add the number to the list
+//						aadd(numbersList, number);
+//					}
+//					// If time is going backward and there are at least 2 elements in the list of numbers...
+//					else if(mTimeDirection == -1 && len(numbersList) > 1)
+//					{
+//						// If there are too many numbers in the list, I keep only the first ones, otherwise the player needs to go back
+//						// in time for a while
+//						var tooManyNumbers = 7;
+//						
+//						// I eliminate all the last numbers
+//						if(len(numbersList) > tooManyNumbers)
+//						{
+//							for(var j = len(numbersList) - 1; j >= tooManyNumbers - 1; j--)
+//								adel(numbersList, j);
+//						}
+//
+//						
+//						// I get the previous from last number
+//						var lastNumberIndex = len(numbersList) - 2;
+//						number = numbersList[lastNumberIndex];
+//						
+//						// I remove the last number in the array
+//						adel(numbersList, lastNumberIndex + 1);
+//						
+//						// If now the array has only one element, I reached the last number, so this will be the last transition
+//						if(len(numbersList) == 1)
+//						{
+//							// I remove the current scaling transition and create a new one (without loop) to form the last number
+//							mAnimator.RemoveTransitionByObject(numberObject, SCALING_TRANSITION);
+//							mInvariantAnimator.CreateScalingTransition(numberObject, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0, false);
+//							
+//							// I save the fact that this number object has finished its job
+//							mFinalNumberFoundArray[i] = true;
+//							
+//							// Now I need to check if also the other number objects have finished. Initially I assume that it's true
+//							mFinalNumbersFound = true;
+//										
+//							// I iterate until I find a false value
+//							for(var i = 0; i < len(mFinalNumberFoundArray) && mFinalNumbersFound; i++)
+//								mFinalNumbersFound = mFinalNumberFoundArray[i];
+//						}
+//					}
+//					
+//					// Computing the new positions for the cubes, using an y offset to force the cubes to be put around the center of the number object
+//					var newPositions = GenerateNumberPositions(number, [0 * SCALE_FACTOR, -numberObject.GetPosition().y, 0 * SCALE_FACTOR], mCubeSizes, mCubeSpacing, 1);
+//								
+//					// I set the new positions and unhide each element, in case it was hidden (because maybe the previous number had less cubes)		
+//					for(var i = 0; i < len(newPositions); i++)
+//					{
+//						cubeObjects[i].Unhide();
+//						cubeObjects[i].SetPosition(newPositions[i]);
+//					}
+//					
+//					// I hide the last cubes (if there are any), since for this number they're not needed
+//					for(var i = len(newPositions); i < len(cubeObjects); i++)
+//						cubeObjects[i].Hide();
+//					
+//					// I save the moment that this number has changed, so not to change it again too early
+//					mChangedNumberTime[i] = GetTime();
+//				}
+//			}
 			
 			
 			// For each controller, I need to check if it's close to the numpad, and in that case if the user pressed the trigger
