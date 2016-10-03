@@ -555,6 +555,9 @@ function Animator::UpdateTransitions(dt)
 			// Now I compute the distance traveled from the starting position to the current one; if it's greater or equal than the total distance, I'm done
 			if(timeElapsed >= duration)
 			{
+				print({"startingPosition", "endPosition", "duration"}, {startingPosition, endPosition, duration});
+				
+				
 				object.SetPosition(endPosition);
 				mTimeElapsedArray[i] = 0;
 								
@@ -1151,9 +1154,11 @@ function Animator::HaveTransition(object, isType)
 	for(var i = 0; i < len(mObjects) && !found; i++)
 	{
 		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
-		
+
 		if(found && mTransitionTypeArray[i] == isType)
 			return true;
+		else
+			found = false;
 	}
 	return false;
 }

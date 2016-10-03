@@ -158,35 +158,42 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	mLaserArray = {};
 	mLaserLength = 1.0 * SCALE_FACTOR;
-	mLaserSpeed = 0.5* SCALE_FACTOR;
+	mLaserSpeed = 0.5 * SCALE_FACTOR;
 	
 	mTargets = {};
 	var targetsNumber = 1;
 	
-//	// Creating random star things
-//	for(var i = 0; i < targetsNumber; i++)
-//	{
-//		// To create the star object I use a function from the "Utils" file
-//		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
-//		
-//		// Creating 2 random colors to change over time
-//		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-//		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-//		
-//		var posY = mMainRoom.GetRoomHeight() / 2.0 + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
-//		var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
-//		var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
-//		
-//		var time = 140.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
-//		var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-//	
-//		// Creating the transitions
-//		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-//		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
+	// Creating random star things
+	for(var i = 0; i < targetsNumber; i++)
+	{
+		// To create the star object I use a function from the "Utils" file
+		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+		
+		// Creating 2 random colors to change over time
+		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		
+		var roomPos = mMainRoom.GetPosition();
+		var roomWidth = mMainRoom.GetRoomWidth();
+		var roomHeight = mMainRoom.GetRoomHeight();
+		var roomDepth = mMainRoom.GetRoomDepth();
+		
+		var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
+		var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
+		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
+		
+		var time = 140.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+		var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+	
+		// Creating the transitions
+		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
 //		mAnimator.CreateTransition(mObjsArray[i], objPos, [mObjsFinalPos[i].x, mObjsFinalPos[i].y, mObjsFinalPos[i].z], time, false, 2);
-//		
-//		aadd(mTargets, starObj);
-//	}
+		
+		starObj.SetPosition([posX, posY, posZ]);
+		
+		aadd(mTargets, starObj);
+	}
 	
 	// Creating texts object for the scene
 //	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
@@ -308,8 +315,10 @@ function Level6::Render()
 			
 			mLinesTimeVariable += 0.01;
 			
-			mCounterShader.Start();
+			foreach(var target in mTargets)
+				target.Draw();
 			
+			mCounterShader.Start();
 				for(var i = 0; i < len(mCounterRandomMeshes); i++){
 					foreach(var obj in mCounterRandomMeshes[i].GetObjs()){
 						mCounterShader.SetParameter("color", mCounterRandomMeshes[i].GetColor());
@@ -513,17 +522,49 @@ function Level6::UpdateLogic(dt)
     			var normal;
     			var isWall;
     			
-    			var hasItWall = IsPointedPositionValid(startPoint, endPoint, &contactPoint, &normal, &isWall, true);
+//    			var hasItWall = IsPointedPositionValid(startPoint, endPoint, &contactPoint, &normal, &isWall, true);
+    			var isPointValid = mMainRoom.IsPointInRoom(endPoint) && !mElevator.IsPointInElevator(endPoint);
     			
-    			if(hasItWall)
+    			if(isPointValid)
     			{
     				laserInfo[0] = startPoint + mLaserSpeed * direction;
     				laserInfo[1] = endPoint + mLaserSpeed * direction;
     			}
     			else
-				{
-					outputln("ASD");
 					adel(mLaserArray, i);
+    		}
+    		
+    		for(var i = 0; i < len(mTargets); i++)
+    		{
+    			if(!mAnimator.HaveTransition(target, 0))
+				{
+	    			var target = mTargets[i];
+	    			
+	    			var roomPos = mMainRoom.GetPosition();
+					var roomWidthHalved = mMainRoom.GetRoomWidth() / 2.0;
+					var roomHeightHalved = mMainRoom.GetRoomHeight() / 2.0;
+					var roomDepthHalved = mMainRoom.GetRoomDepth() / 2.0;
+					
+	//				var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
+	//				var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
+	//				var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
+					
+					var targetPos = target.GetPosition();
+					
+					var newPosX = [targetPos.x + roomWidthHalved, targetPos.y, targetPos.z];
+					var newPosY = [targetPos.x, targetPos.y + roomHeightHalved, targetPos.z];
+					var newPosZ = [targetPos.x, targetPos.y, targetPos.z + roomDepthHalved];
+					
+					var pos = [0, 0, 0];
+					
+					pos.x = mMainRoom.IsPointInRoom(newPosX) ? newPosX.x : targetPos.x - roomWidthHalved;
+					pos.y = mMainRoom.IsPointInRoom(newPosY) ? newPosY.y : targetPos.y - roomHeightHalved;
+					pos.z = mMainRoom.IsPointInRoom(newPosZ) ? newPosZ.z : targetPos.z - roomDepthHalved;
+	
+	//				var time = ToFloat(Rand(3.0) + 1.0);
+					var time = 3.0;
+				
+					mAnimator.CreateTransition(target, target.GetPosition(), pos, 3.0, false, 2);
 				}
     		}
 			
@@ -649,14 +690,18 @@ function Level6::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 		outputln(intersectedPlane);
 		
 
-	if(intersectedPlane == -1)
+	if(intersectedPlane == -1 || intersectedPlane == -2)
 		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 		
 		
 	isWall = true;
 	
 	if(isLaser != Void && isLaser)
-		return intersectedPlane != -1 && intersectedPlane != -2;
+	{
+//		outputln(intersectedPlane);
+		print({"rayOrigin", "rayEnd", "intersectedPlane"}, {rayOrigin, rayEnd, intersectedPlane});
+		return intersectedPlane != -1;
+	}
 	else
 		return intersectedPlane == 0;
 }
