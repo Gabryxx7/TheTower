@@ -56,6 +56,7 @@ class GamepadManager
 	IsPressingSecondaryButton();
 	HasPressedMenuButton();
 	GetController(controllerIndex);
+	IsGripPressed();
 };
 
 
@@ -327,4 +328,9 @@ function GamepadManager::HasPressedMenuButton()
 function GamepadManager::GetController(controllerIndex)
 {
 	return Void;
+}
+
+function GamepadManager::IsGripPressed()
+{
+	return KeyPressed(VK_CONTROL);
 }
