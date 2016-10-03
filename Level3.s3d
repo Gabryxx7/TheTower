@@ -9,7 +9,6 @@ class Level3
 	var roomWidthSide;
 	var roomHeight;
 	
-	var mTexture;
 	var mIsVRon;
 	var mControllersArray;
 	var debugVrOn;
@@ -132,9 +131,8 @@ class Level3
  */
 function Level3::Level3(isVRon, inputManager, soundManager)
 {
-	mTexture = CVmTexture("Level3Prev.png");
 	mIsVRon = isVRon;	
-	debugVrOn = false;
+	debugVrOn = true;
 	
 	mControllersArray = {};
 	
@@ -684,9 +682,9 @@ function Level3::UpdateLogic(dt)
 							mAnimator.CreateTransition(tilesObjs[i], tilesObjs[i].GetPosition() + [0, -50*SCALE_FACTOR, 0], tilesObjs[i].GetPosition(), 0.6, false);
 							
 						aadd(steppedTilesObjs, tilesObjs[i]);
-						if(timeFromLastSound > 0.25 && MUSICFX_ON){
+						if(GetTime() - timeFromLastSound > 250 && MUSICFX_ON){
 							mSoundManager.PlaySound(paths[j].GetNextSoundIndex(), true, 1);
-							timeFromLastSound = 0;
+							timeFromLastSound = GetTime();
 						}
 
 						adel(tilesObjs, i);
@@ -711,34 +709,34 @@ function Level3::UpdateLogic(dt)
 			
 			var pressedButton = "";
 			//If the player is close to the numpad
-			if(!doorUnlocked && numpadObj.IsCameraInKeyboardRange(cameraPosition, 5 * SCALE_FACTOR) && numpadClearNeeded == 0){			   	
-			   	
+			if(!doorUnlocked && numpadObj.IsCameraInKeyboardRange(cameraPosition, 5 * SCALE_FACTOR) && numpadClearNeeded == 0){	
 				if(mIsVRon || debugVrOn){
-					foreach(var controller in mControllersArray){
-						controller.SetActionAvailable(true);
-						
-						if(numpadClearNeeded == 0 && !doorUnlocked){
-							var vrPressedButton = numpadObj.TouchedButton(controller.GetControllerTipCoordinates());				
-						 	var vrPointedButton = numpadObj.PointedButton(controller, controller.GetPosition(), false);
+					var closestController = -1;
+					var buttonToPress = -1;
+					var minDistance = 1000;
+					
+					if(numpadClearNeeded == 0 && !doorUnlocked){
+						foreach(var controller in mControllersArray){
+							controller.SetActionAvailable(true);											
+						 	var vrClosestButton = numpadObj.ClosestButton(controller, controller.GetPosition(), false);
 						 	
-							if(mInputManager.IsPressingPrimaryButton(controller.GetIndex()) && timeFromLastClick > 0.5){
-								timeFromLastClick = 0;	
-								pressedButton = vrPointedButton;
-								if(pressedButton != "" && pressedButton != " "){
-									numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
-									numpadObj.AnimateButton(pressedButton);	
-									mInputManager.VibrateController(controller.GetIndex(), 500);						
-								}
+						 	if(vrClosestButton[0] < minDistance){
+						 		closestController = controller;
+						 		minDistance = vrClosestButton[0];
+						 		buttonToPress = vrClosestButton[1];						 		
+						 	}						 	
+					 	}
+					 	
+						if(mInputManager.IsPressingPrimaryButton(closestController.GetIndex()) && GetTime() - timeFromLastClick > 500){
+							timeFromLastClick = GetTime();	
+							pressedButton = buttonToPress;
+							if(pressedButton != "" && pressedButton != " "){
+								numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
+								numpadObj.AnimateButton(pressedButton);	
+								mInputManager.VibrateController(closestController.GetIndex(), 500);						
 							}
-							else if(timeFromLastClick > 0.8){
-								timeFromLastClick = 0;
-								pressedButton = vrPressedButton;	
-								numpadObj.PressButton(pressedButton, pressedButton == "c" ? false : true);	
-								mInputManager.VibrateController(controller.GetIndex(), 500);								
-							}
-						}						
-					}		
-								
+						}				
+					}								
 				}
 				else {
 					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true);
@@ -749,8 +747,8 @@ function Level3::UpdateLogic(dt)
 							pressedButton = pressedKey;				
 						}
 					}
-					else if(mInputManager.IsPressingPrimaryButton() && timeFromLastClick > 0.4){
-						timeFromLastClick = 0;
+					else if(mInputManager.IsPressingPrimaryButton() && GetTime() - timeFromLastClick > 400){
+						timeFromLastClick = GetTime();
 						pressedButton = pointedButton;	
 					}
 					
@@ -914,8 +912,6 @@ function Level3::UpdateLogic(dt)
 		}
 	}
 	
-	timeFromLastClick = (timeFromLastClick > 1) ? timeFromLastClick : timeFromLastClick += dt;
-	timeFromLastSound = (timeFromLastSound > 1) ? timeFromLastSound : timeFromLastSound += dt;
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
@@ -1072,7 +1068,7 @@ function Level3::GetLightDiffuse(){
 }
 
 function Level3::GetLevelPreview(){
-	return mTexture;
+	return CVmTexture("Level3Prev.png");;
 }
 
 function Level3::GetLevelName(){

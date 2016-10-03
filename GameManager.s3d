@@ -81,6 +81,7 @@ class GameManager
 	var mLights;
 	
 	var mLevels;
+	var mLevel0;
 	
 	/* In order to use the teleporting feature along with the HTC Vive, when a user teleports to a destination we need to change the camera's position 
 	 * in opengl fashon, meaning NOT using the SetPosition() of XVR. This is because the HTC Vive is powered by OpenVR, which works in its own way, and 
@@ -144,7 +145,9 @@ class GameManager
 	
 	// Index of the controller being used for the teleportation
 	var mControllerBeingUsedIndex;
-
+	
+	var mLevelsPreloading;
+	
 
 	// Private methods
 	XVRRendering();
@@ -232,35 +235,48 @@ function GameManager::GameManager(HMD)
 	mEndingLevelMenu = false;
 	
 	mLevels = {};
-	var arrayLevel0 = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);
+	mLevel0 = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);	
+	 		
+	var levelSelectors = {};
+	aadd(levelSelectors, {"Start", CVmTexture("Level0Prev.png")});
+	aadd(levelSelectors, {"Colors", CVmTexture("Level1Prev.png")});
+	aadd(levelSelectors, {"Ghost", CVmTexture("Level2Prev.png")});
+	aadd(levelSelectors, {"Chaos", CVmTexture("Level3Prev.png")});
+	aadd(levelSelectors, {"Timing", CVmTexture("Level4Prev.png")});
+	aadd(levelSelectors, {"Wall", CVmTexture("Level5Prev.png")});	
+	aadd(levelSelectors, {"War", CVmTexture("Level5Prev.png")});	
 	
-	mElevator = arrayLevel0.GetElevator();
+	mElevator = mLevel0.GetElevator();
 	mElevator.Unhide();
 	
 	// This creates an almost white background
 	SetClearColor(0.95, 0.95, 0.95);
 	
 	mFadeAnimationID = 0;
-
+	
+	mLevelsPreloading = true;
 	if(DEBUG_MODE)
 	{
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 		
 //		mOpenglTranslationOffset.z += 20 * SCALE_FACTOR;
- 
-		aadd(mLevels, arrayLevel0);
-//		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
-//		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level6(mIsVRon, mInputManager, mSoundManager);
-//		mCurrentLevel = arrayLevel0;
+		if(mLevelsPreloading){
+			aadd(mLevels, mLevel0);
+			aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+			aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+			aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+			aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
+			aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+			aadd(mLevels, Level6(mIsVRon, mInputManager, mSoundManager));
+		}
 		
-//		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
-//		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
+//		mCurrentLevel = Level6(mIsVRon, mInputManager, mSoundManager);
+//		mCurrentLevel = mLevel0;
+		
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, levelSelectors, mElevator);
+		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
+//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
 		mCurrentLevelNumber = -1;
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);
@@ -270,7 +286,7 @@ function GameManager::GameManager(HMD)
 		// The current level takes as parameter the input manager, which is shared among every level
 		mCurrentLevelNumber = 0;
 		
-		aadd(mLevels, arrayLevel0);
+		aadd(mLevels, mLevel0);
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
@@ -765,7 +781,35 @@ function GameManager::UpdateLogic(dt)
 						else
 							startingOpenglOffset.z -= mElevator.GetRoomDepth() / 2.0;
 						
-						mCurrentLevel = mLevels[mCurrentLevelNumber];
+						if(!mLevelsPreloading){
+							switch(mCurrentLevelNumber){
+								case 0:
+									mCurrentLevel = mLevel0;	
+									break;
+								case 1:
+									mCurrentLevel = Level1(mIsVRon, mInputManager, mSoundManager);	
+									break;
+								case 2:
+									mCurrentLevel = Level2(mIsVRon, mInputManager, mSoundManager);	
+									break;
+								case 3:
+									mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);	
+									break;
+								case 4:
+									mCurrentLevel = Level4(mIsVRon, mInputManager, mSoundManager);	
+									break;
+								case 5:
+									mCurrentLevel = Level5(mIsVRon, mInputManager, mSoundManager);	
+									break;
+								case 6:
+									mCurrentLevel = Level6(mIsVRon, mInputManager, mSoundManager);	
+									break;
+							}						
+						}
+						else{
+							mCurrentLevel = mLevels[mCurrentLevelNumber];
+						}
+						
 						mCurrentLevel.Init(mLights, {[1, 1, 1], [1, 1, 1], [1, 1, 1]}, mElevator, [startingOpenglOffset.x, 0.0, startingOpenglOffset.z]);
 
 						mEndingLevelMenu = false;

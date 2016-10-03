@@ -353,8 +353,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 		if(i % elementsPerRow != 0)
 			pos.x += width + thickness*2 + spacingx;	
 			
-		var selector = LevelMenuSelector(mAnimator, mLevels[i].GetLevelName(), mLevels[i].GetLevelPreview(), pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
-//		var selector = LevelMenuSelector(mAnimator, "Level " + char(i+48), "thetower.png", pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
+		var selector = LevelMenuSelector(mAnimator, mLevels[i][0], mLevels[i][1], pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
 		aadd(levelSelectors, selector);
 	}
 	

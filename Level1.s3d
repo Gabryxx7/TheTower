@@ -6,7 +6,6 @@
 
 class Level1
 {
-	var mTexture;
 	var mIsVRon;
 	
 	// Booleans that indicate if the level is starting or ending
@@ -155,7 +154,6 @@ class Level1
  */
 function Level1::Level1(isVRon, inputManager, soundManager)
 {		
-	mTexture = CVmTexture("Level1Prev.png");
 	mIsVRon = isVRon;
 	
 	mInputManager = inputManager;
@@ -1061,7 +1059,7 @@ function Level1::GetLightDiffuse(){
 }
 
 function Level1::GetLevelPreview(){
-	return mTexture;
+	return CVmTexture("Level1Prev.png");
 }
 
 function Level1::GetLevelName(){

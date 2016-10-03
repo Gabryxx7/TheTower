@@ -1,6 +1,5 @@
 class Level5
 {
-	var mTexture;
 	var mIsVRon;
 	var debugVrOn;
 	
@@ -98,7 +97,6 @@ class Level5
  */
 function Level5::Level5(isVRon, inputManager, soundManager)
 {
-	mTexture = CVmTexture("Level5Prev.png"); ///TO CHANGE
 	mIsVRon = isVRon;
 	debugVrOn = false;
 	controllerPressing = -1;
@@ -587,7 +585,7 @@ function Level5::SetupOpenglLights()
 
 
 function Level5::GetLevelPreview(){
-	return mTexture;
+	return CVmTexture("Level5Prev.png");;
 }
 
 function Level5::GetLevelName(){

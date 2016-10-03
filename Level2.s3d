@@ -8,7 +8,6 @@
  */
 class Level2
 {
-	var mTexture;
 	var mIsVRon;
 	
 	var mEnding;
@@ -120,7 +119,6 @@ class Level2
 
 function Level2::Level2(isVRon, inputManager, soundManager)
 {		
-	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
 	
 	mInputManager = inputManager;
@@ -1006,7 +1004,7 @@ function Level2::GetLightDiffuse(){
 }
 
 function Level2::GetLevelPreview(){
-	return mTexture;
+	return CVmTexture("Level2Prev.png");;
 }
 
 function Level2::GetLevelName(){

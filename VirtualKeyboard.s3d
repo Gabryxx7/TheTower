@@ -83,6 +83,7 @@ class VirtualKeyboard{
 	ChangePressedButtonsColor(pColor);
 	FadePressedButtonsColor(startColor, endColor);
 	PointedButton(mObject, cameraPosition, isCamera);
+	ClosestButton(mObject, objectPosition);
 	TouchedButton(objPos);
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
@@ -316,11 +317,9 @@ function VirtualKeyboard::AnimatePressedButtons(){
 	}
 }
 
-
-function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){	
+function VirtualKeyboard::ClosestButton(mObject, objectPosition){	
 	var minDistance = 10000;
-	var closestButtonIndex = -1;	
-	
+	var closestButtonIndex = -1;		
 	
 	for(var i = 0; i < len(mButtonsObjs); i++){
 		var newDistance = Modulus(mButtonsObjs[i].GetPosition() - objectPosition);
@@ -336,12 +335,34 @@ function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){
 		mHoveredButton = closestButtonIndex;				
 		HoverButton(mAnimator);
 	}
-	return mCharacters[closestButtonIndex];	
 	
-//	if(mHoveredButton != -1){
-//		UnhoverButton(mAnimator);
-//		mHoveredButton = -1;		
-//	}
+	return {minDistance, mCharacters[closestButtonIndex]};	
+}
+
+
+function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){	
+	var raycastOrigin = objectPosition;
+	var raycastEnd = isCamera ? (raycastOrigin + mObject.GetDirection() * mObject.GetZFar()) : (raycastOrigin + mObject.GetDirection() * 20);
+	var contactPoint;	
+	
+	
+	for(var i = 0; i < len(mButtonsObjs); i++){
+		contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mButtonsObjs[i]);
+		if(contactPoint != Void){
+			if(mHoveredButton != i){
+				if(mHoveredButton != -1)	
+					UnhoverButton(mAnimator);
+				mHoveredButton = i;				
+				HoverButton(mAnimator);
+			}
+			return mCharacters[i];	
+		}	
+	}
+	
+	if(mHoveredButton != -1){
+		UnhoverButton(mAnimator);
+		mHoveredButton = -1;		
+	}
 	return "";
 }
 
