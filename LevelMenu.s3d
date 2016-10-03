@@ -331,14 +331,14 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	levelSelectors = {};
 	var elementsPerRow = 2;	
 	var objScale = 2.5;
-	var txtSize = 0.145*objScale;
-	var spacingx = 1.65*SCALE_FACTOR*objScale;
-	var spacingy = 0.8*SCALE_FACTOR*objScale;
-	var width = 3.4*SCALE_FACTOR*objScale;
-	var height = 1.3*SCALE_FACTOR*objScale;
+	var txtSize = 0.125*objScale;
+	var spacingx = 1.70*SCALE_FACTOR*objScale;
+	var spacingy = 0.55*SCALE_FACTOR*objScale;
+	var width = 3.0*SCALE_FACTOR*objScale;
+	var height = 1.0*SCALE_FACTOR*objScale;
 	var thickness = 0.1*SCALE_FACTOR*objScale;	
 	var pos = [-menuRoom_WidthSide/2 + (width+thickness*2)/2, (height + spacingy)/2, -menuRoom_WidthSide/2];
-	var offset = [2.65*SCALE_FACTOR, 1.35*SCALE_FACTOR, 0.01*SCALE_FACTOR];
+	var offset = [3.15*SCALE_FACTOR, 0.65*SCALE_FACTOR, 0.01*SCALE_FACTOR];
 	
 	for(var i = 0; i < len(mLevels); i++){		
 		if( i > 0 && (i % elementsPerRow) == 0){

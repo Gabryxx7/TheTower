@@ -236,15 +236,6 @@ function GameManager::GameManager(HMD)
 	
 	mLevels = {};
 	mLevel0 = Level0(mIsVRon, mInputManager, mSoundManager, mLights, &mOpenglTranslationOffset);	
-	 		
-	var levelSelectors = {};
-	aadd(levelSelectors, {"Start", CVmTexture("Level0Prev.png")});
-	aadd(levelSelectors, {"Colors", CVmTexture("Level1Prev.png")});
-	aadd(levelSelectors, {"Ghost", CVmTexture("Level2Prev.png")});
-	aadd(levelSelectors, {"Chaos", CVmTexture("Level3Prev.png")});
-	aadd(levelSelectors, {"Timing", CVmTexture("Level4Prev.png")});
-	aadd(levelSelectors, {"Wall", CVmTexture("Level5Prev.png")});	
-	aadd(levelSelectors, {"War", CVmTexture("Level5Prev.png")});	
 	
 	mElevator = mLevel0.GetElevator();
 	mElevator.Unhide();
@@ -257,27 +248,60 @@ function GameManager::GameManager(HMD)
 	mLevelsPreloading = true;
 	if(DEBUG_MODE)
 	{
+		/*** Select here which level you want to preload (-1 to preload every level)
+		 * Select if you want to start from the menu or not
+		 */
+		var testingLevel = 6;
+		var testWithMenu = false;
+		
+		
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 		
 //		mOpenglTranslationOffset.z += 20 * SCALE_FACTOR;
+
+		var levelSelectors = {};
+		if(testingLevel == 0 || testingLevel == -1)
+			aadd(levelSelectors, {"Start", CVmTexture("Level0Prev.png")});
+		if(testingLevel == 1 || testingLevel == -1)
+			aadd(levelSelectors, {"Colors", CVmTexture("Level1Prev.png")});
+		if(testingLevel == 2 || testingLevel == -1)
+			aadd(levelSelectors, {"Ghost", CVmTexture("Level2Prev.png")});
+		if(testingLevel == 3 || testingLevel == -1)
+			aadd(levelSelectors, {"Chaos", CVmTexture("Level3Prev.png")});
+		if(testingLevel == 4 || testingLevel == -1)
+			aadd(levelSelectors, {"Timing", CVmTexture("Level4Prev.png")});
+		if(testingLevel == 5 || testingLevel == -1)
+			aadd(levelSelectors, {"Wall", CVmTexture("Level5Prev.png")});	
+		if(testingLevel == 6 || testingLevel == -1)
+			aadd(levelSelectors, {"War", CVmTexture("Level5Prev.png")});
 		
 		if(mLevelsPreloading){
-			aadd(mLevels, mLevel0);
-			aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
-			aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
-			aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
-			aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
-			aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
-			aadd(mLevels, Level6(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 0 || testingLevel == -1)
+				aadd(mLevels, mLevel0);
+			if(testingLevel == 1 || testingLevel == -1)
+				aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 2 || testingLevel == -1)
+				aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 3 || testingLevel == -1)
+				aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 4 || testingLevel == -1)
+				aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 5 || testingLevel == -1)
+				aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 6 || testingLevel == -1)
+				aadd(mLevels, Level6(mIsVRon, mInputManager, mSoundManager));
 		}
 		
-//		mCurrentLevel = Level6(mIsVRon, mInputManager, mSoundManager);
-//		mCurrentLevel = mLevel0;
-		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, levelSelectors, mElevator);
-		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);		
-//		mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);			
-		mCurrentLevelNumber = -1;
+		if(testWithMenu){
+			mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, levelSelectors, mElevator);
+			mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);			
+			mCurrentLevelNumber = -1;		
+		}	
+		else{
+			mCurrentLevel = mLevels[0];
+			mCurrentLevel.Init(mLights, {[0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]}, mElevator, &mOpenglTranslationOffset);				
+			mCurrentLevelNumber = testingLevel;				
+		}	
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);
 	}
@@ -286,14 +310,24 @@ function GameManager::GameManager(HMD)
 		// The current level takes as parameter the input manager, which is shared among every level
 		mCurrentLevelNumber = 0;
 		
+		var levelSelectors = {};
+		aadd(levelSelectors, {"Start", CVmTexture("Level0Prev.png")});
+		aadd(levelSelectors, {"Colors", CVmTexture("Level1Prev.png")});
+		aadd(levelSelectors, {"Ghost", CVmTexture("Level2Prev.png")});
+		aadd(levelSelectors, {"Chaos", CVmTexture("Level3Prev.png")});
+		aadd(levelSelectors, {"Wall", CVmTexture("Level5Prev.png")});
+		aadd(levelSelectors, {"War", CVmTexture("Level5Prev.png")});
+		aadd(levelSelectors, {"Timing", CVmTexture("Level4Prev.png")});
+		
 		aadd(mLevels, mLevel0);
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level6(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
-		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
+		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, levelSelectors, mElevator);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);

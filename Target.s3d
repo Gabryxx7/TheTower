@@ -86,7 +86,7 @@ function Target::Hit(){
 function Target::Update(mMainRoom){
 	if(!mKilled){
 		UpdateColor();
-//		UpdateTransition(mMainRoom);
+		UpdateTransition(mMainRoom);
 	}
 }
 
