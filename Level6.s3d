@@ -1,0 +1,636 @@
+#define STATUS_ELEVATOR_MOVING 0
+#define STATUS_ELEVATOR_ARRIVED 1
+#define STATUS_LEVEL_STARTED 2
+#define STATUS_LEVEL_ENDING 3
+
+/*
+ * This level is strictly related to Level1; most of the things were copied and pasted. Comments will be on the parts that are different
+ */
+class Level6
+{
+	var mTexture;
+	var mIsVRon;
+	
+	var mEnding;
+	var mIsLevelCompleted;
+	var mEndTimer;
+	var mTimeToEnd;
+	
+	var mLevelStatus;
+	
+	var mInputManager;
+	var mAnimator;
+	var mSoundManager;
+	
+	var mCamera;
+	
+	var mLight0;
+	var mLight1;
+	var mLight2;
+	var mLight0Position;
+	var mLight1Position;
+	var mLight2Position;
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
+	
+	var mMainRoom;
+	var mElevator;
+	
+	var mElevatorFinalPosition;
+	var mElevatorTravelDistance;
+	var mElevatorTravelTime;
+	var mCameraYoffset;
+	
+	var mOpenglTranslationOffset;
+	var mPreviousOpenglTranslationOffset;
+	
+	var mControllersArray;
+	
+	var mDrawingShader;
+	var mLinesTimeVariable;
+
+	var mLaserArray;
+	var mLaserLength;
+	var mLaserSpeed;
+	
+	var mTargets;
+	
+	var mControllersBeingUsedIndex;
+	
+//	var mFrontText;
+//	var mBackText; 
+//	var mLeftText; 
+	
+	var mDebugController;
+	var mDebugControllerHidden;
+	var mDebugKeyHit;
+	
+	var mTranslateFactor;
+	
+	// Private functions
+	HandleLasers();
+	
+	// Public functions
+	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
+	Render();
+	UpdateLogic(dt);
+	IsLevelCompleted();
+	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall, isLaser);
+	GetOpenglTransformOffset();
+	SetOpenglTransformOffset(mOpenglTranslationOffset);
+	SetupOpenglLights();
+	GetLightDiffuse();
+	GetLevelPreview();
+	GetLevelName();
+};
+
+function Level6::Level6(isVRon, inputManager, soundManager)
+{		
+	mTexture = CVmTexture("Level2Prev.png");
+	mIsVRon = isVRon;
+	
+	mInputManager = inputManager;
+	mSoundManager = soundManager;
+	
+	mTranslateFactor = [0, 0, -20 * SCALE_FACTOR];
+	
+	mEnding = false;
+	mIsLevelCompleted = false;
+	mTimeToEnd = 2500;
+		
+	mAnimator = Animator();
+	
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_SIDE_WALL_WIDTH - 25 * SCALE_FACTOR, ROOM_HEIGHT, true, 1, 2);
+	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
+	
+	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
+	mLinesTimeVariable = 0;
+	
+	
+	mControllersBeingUsedIndex = {0, 0};
+	
+	mControllersArray = {};
+		
+	if(mIsVRon)
+	{
+		var controller1 = mInputManager.GetController(1);
+		var controller2 = mInputManager.GetController(2);
+		
+		aadd(mControllersArray, controller1);
+		aadd(mControllersArray, controller2);
+	}
+	else
+	{
+		mDebugController = ViveController(1);
+		mDebugControllerHidden = false;
+		mDebugKeyhit = false;
+		mDebugController.SetRotation(90, 0, 1, 0);
+
+		aadd(mControllersArray, mDebugController);
+	}
+	
+	
+	mLaserArray = {};
+	mLaserLength = 1.0 * SCALE_FACTOR;
+	mLaserSpeed = 0.5* SCALE_FACTOR;
+	
+	mTargets = {};
+	var targetsNumber = 1;
+	
+//	// Creating random star things
+//	for(var i = 0; i < targetsNumber; i++)
+//	{
+//		// To create the star object I use a function from the "Utils" file
+//		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+//		
+//		// Creating 2 random colors to change over time
+//		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+//		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+//		
+//		var posY = mMainRoom.GetRoomHeight() / 2.0 + (Rand(1) == 1 ? (Rand(10) / 5.0) * SCALE_FACTOR : -(Rand(10) / 5.0) * SCALE_FACTOR);
+//		var posZ = mMainRoom.GetRoomDepth() / 2.0  - 20.0 * SCALE_FACTOR + (Rand(1) == 1 ? (Rand(5) / 5.0) * SCALE_FACTOR : -(Rand(15) / 2.0) * SCALE_FACTOR);
+//		var posX = cos(Rand(360) * GRAD_TO_RAD) * posZ;
+//		
+//		var time = 140.0 + (Rand(1) == 1 ? (Rand(10) / 2.0) : -(Rand(10) / 2.0));
+//		var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+//	
+//		// Creating the transitions
+//		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+//		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
+//		mAnimator.CreateTransition(mObjsArray[i], objPos, [mObjsFinalPos[i].x, mObjsFinalPos[i].y, mObjsFinalPos[i].z], time, false, 2);
+//		
+//		aadd(mTargets, starObj);
+//	}
+	
+	// Creating texts object for the scene
+//	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
+//	mFrontText.Rotate(180, 0, 1, 0);
+}
+
+
+ 
+ function Level6::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
+{	
+	mOpenglTranslationOffset = openglTransformOffset;
+	
+	foreach(var light in lights)
+		light.Disable();
+		
+	mLight0Diffuse = [1, 1, 1];
+	mLight1Diffuse = [0.612865, 0.0750434, 1.08279];
+	mLight2Diffuse = [0.172785, 1.00443, 0.488585];
+	
+	mLight0 = lights[0];
+	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
+	mLight0.Enable();
+	
+	mLight1 = lights[1];
+	mLight1.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
+	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetDiffuse(mLight2Diffuse.x, mLight2Diffuse.y, mLight2Diffuse.z);
+	mLight2.Enable();
+	
+		
+	mElevator = elevator;
+	
+	mCamera = mInputManager.GetActiveCamera();
+	
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
+	
+	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	
+	mLight0Position = mLight0.GetPosition();
+	mLight1Position = mLight1.GetPosition();
+	mLight2Position = mLight2.GetPosition();
+	
+	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
+	
+	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+	mOpenglTranslationOffset.y += mElevatorTravelDistance;
+	
+	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
+	// I move the room a bit so that the elevator is completely in the center of the room
+	mMainRoom.Translate(-mElevator.GetRoomDepth() / 2.0 + 3.0 * SCALE_FACTOR, 0, -mElevator.GetRoomWidth() / 2.0);
+	
+	// I set now the position of a text that needed to know where the elevator was
+//	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
+//	mBackText.SetPosition(mElevatorFinalPosition + [0.1 * SCALE_FACTOR, 1 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
+//	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
+	
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
+}
+
+
+/* ****************************************************** *
+ * **************** RENDER METHODS ********************** *
+ * ****************************************************** */
+
+
+/*
+ * Render method
+ */
+function Level6::Render()
+{	
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
+	
+	mElevator.Draw();
+
+	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
+	for(var i = 0; i < len(mControllersArray); i++)
+		mControllersArray[i].Draw();
+	
+	switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING:
+			break;
+		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_ENDING:
+		case STATUS_LEVEL_STARTED:
+		{
+			mMainRoom.Draw();
+
+			glLineWidth(5);
+			
+			mDrawingShader.Start();	
+				mDrawingShader.SetParameter("time", mLinesTimeVariable);
+
+				for(var i = 0; i < len(mLaserArray); i++)
+				{
+					var laserStartingPos = mLaserArray[i][0];
+					var laserEndingPos = mLaserArray[i][1];
+
+					mDrawingShader.SetParameter("alpha", 1.0);
+					mDrawingShader.SetParameter("lineIsConnected", false);
+
+					glBegin(GL_LINES);
+						glVertex(laserStartingPos);
+						glVertex(laserEndingPos);		
+					glEnd();
+				}
+			mDrawingShader.Stop();
+			
+			mLinesTimeVariable += 0.01;
+			
+			
+			// Drawing the texts
+//			mFrontText.Draw();
+//			mBackText.Draw();
+//			mLeftText.Draw();
+
+			break;
+		}
+	}
+}
+
+
+/* ****************************************************** *
+ * **************** LOGIC METHODS ********************** *
+ * ****************************************************** */
+  
+/*
+ * Updates the logic of the game
+ * 
+ * dt: (float) delta time, i.e. the time between the last update and this one
+ */
+function Level6::UpdateLogic(dt)
+{
+	mInputManager.UpdateCamera();
+	mInputManager.UpdateControllers(mOpenglTranslationOffset);
+	
+	// Debug function used to change the color of the lights in the room when certain keys are pressed
+	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
+	
+	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	
+	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
+	if(!mIsVRon)
+	{
+		mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+		
+		if(KeyPressed("Y"))
+		{
+			if(!mDebugKeyHit)
+			{
+				if(mDebugControllerHidden)
+					mDebugController.Unhide();
+				else
+					mDebugController.Hide();
+					
+				mDebugControllerHidden = !mDebugControllerHidden;
+				mDebugKeyHit = true;
+			}
+		}
+		else
+			mDebugKeyHit = false;
+		
+		static var rotX = 0;
+		static var rotY = 0;
+		static var rotZ = 0;
+			
+		if(KeyPressed("J"))
+			rotX += 1;
+		
+		if(KeyPressed("L"))
+			rotX -= 1;
+			
+		if(KeyPressed("I"))
+			rotY += 1;
+		
+		if(KeyPressed("K"))
+			rotY -= 1;
+			
+		if(KeyPressed("U"))
+			rotZ += 1;
+		
+		if(KeyPressed("O"))
+			rotZ -= 1;
+		
+		mDebugController.SetRotation(0, 1, 0, 0);
+		mDebugController.Rotate(rotY, 1, 0, 0);
+		mDebugController.Rotate(rotX, 0, 1, 0);
+		mDebugController.Rotate(rotZ, 0, 0, 1);
+	}
+	
+	switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING: 
+		{			
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			
+		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
+			
+			var elevatorPos = mElevator.GetPosition();
+
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0)
+			{
+				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + mTranslateFactor;
+				
+				mLight0.SetPosition(mLight0Position);
+				mLight1.SetPosition(mLight1Position);
+				mLight2.SetPosition(mLight2Position);
+			}
+			
+			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
+			
+		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+			
+			if(elevatorPos.y >= mElevatorFinalPosition.y)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+				
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+				
+				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+				
+				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
+			}
+	
+			break;
+		}		
+		case STATUS_ELEVATOR_ARRIVED:
+		{
+			if(!mElevator.IsPointInElevator(cameraPosition))
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				mLevelStatus = STATUS_LEVEL_STARTED;
+			}
+			
+			break;
+		}
+		// Case where the player is out of the elevator. It's the main status of the level
+		case STATUS_LEVEL_STARTED:
+		{
+    		HandleLasers();
+    		
+    		for(var i = 0; i < len(mLaserArray); i++)
+    		{
+    			var laserInfo = mLaserArray[i];
+    			
+    			var startPoint = laserInfo[0];
+    			var endPoint = laserInfo[1];
+    			var direction = laserInfo[2];
+    			
+    			var contactPoint;
+    			var normal;
+    			var isWall;
+    			
+    			var hasItWall = IsPointedPositionValid(startPoint, endPoint, &contactPoint, &normal, &isWall, true);
+    			
+    			if(hasItWall)
+    			{
+    				laserInfo[0] = startPoint + mLaserSpeed * direction;
+    				laserInfo[1] = endPoint + mLaserSpeed * direction;
+    			}
+    			else
+				{
+					outputln("ASD");
+					adel(mLaserArray, i);
+				}
+    		}
+			
+//			// I check if every connector has been connected
+//			if(len(mConnectorsGroups) == mConnectorsGroupLinkedCounter)
+//			{
+//				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+//				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+//				
+//				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+//				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+//				
+//				mLevelStatus = STATUS_LEVEL_ENDING;
+//				
+//				// Now I have to unhide the controllers and hide the duplicate ones
+//				for(var i = 0; i < len(mControllersArray); i++)
+//				{
+//					mControllersArray[i].Unhide();
+//					mControllersDuplicateArray[i].Hide();
+//				}
+//			}
+			
+			break;
+		}
+		// Case where the level is ending: the only thing missing is the player inside the elevator
+		case STATUS_LEVEL_ENDING:
+		{
+			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
+			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				// If the player is in, I start the timer to end the level
+				mEnding = true;
+				mEndTimer = GetTime();
+			}
+			
+			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
+			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+				mIsLevelCompleted = true;
+			
+			break;
+		}
+	}
+		
+	// I update the methods of the managers
+	mAnimator.UpdateTransitions(dt);
+	mSoundManager.UpdateMusic(dt);
+}
+
+/*
+ * This method works the same as the one in Level1, except for the array of controllers used to check the points
+ */
+function Level6::HandleLasers()
+{
+	// Now I check if the player is drawing; I first check if he pressed a button
+	var usingController1 = mInputManager.IsPressingPrimaryButton(1);
+	var usingController2 = mInputManager.IsPressingPrimaryButton(2);
+	
+	var firstTimeUsingController1 = usingController1 && mControllersBeingUsedIndex[0] == 0;
+	var firstTimeUsingController2 = mIsVRon && usingController2 && mControllersBeingUsedIndex[1] == 0;
+		 
+	if(firstTimeUsingController1 || firstTimeUsingController2)
+	{				
+		var index;
+		
+		if(firstTimeUsingController1)
+		{
+			index = 0;
+			mControllersBeingUsedIndex[index] = 1;
+		}
+		else
+		{
+			index = 1;
+			mControllersBeingUsedIndex[index] = 2;
+		}
+		
+		var controller = mControllersArray[index];
+		
+//			var direction = controller.GetDirection();
+		var direction = mCamera.GetDirection();
+		
+		var startPoint = controller.GetControllerTipCoordinates();
+		var endPoint = startPoint + mLaserLength * direction;
+		
+			
+		var laserInfo = {startPoint, endPoint, direction};
+		
+		aadd(mLaserArray, laserInfo);
+	}
+	// Case where the user stopped pressing a trigger
+	else
+	{
+		// If when the user stopped pressing the trigger of the first controller, I update the fact that the controller is not being used anymore
+		if(!usingController1 && mControllersBeingUsedIndex[0] != 0)
+			mControllersBeingUsedIndex[0] = 0;
+		
+		if(!usingController2 && mControllersBeingUsedIndex[1] != 0)
+			mControllersBeingUsedIndex[1] = 0;
+	}
+}
+
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
+function Level6::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall, isLaser)
+{
+	var intersectedPlane = -1;
+
+	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	
+	if(intersectedPlane != -1)
+		outputln(intersectedPlane);
+		
+
+	if(intersectedPlane == -1)
+		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+		
+	isWall = true;
+	
+	if(isLaser != Void && isLaser)
+		return intersectedPlane != -1 && intersectedPlane != -2;
+	else
+		return intersectedPlane == 0;
+}
+
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function Level6::IsLevelCompleted()
+{
+	return mIsLevelCompleted;
+}
+
+function Level6::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
+}
+
+function Level6::SetOpenglTransformOffset(openglTransformOffset)
+{
+	mOpenglTranslationOffset = openglTransformOffset;
+}
+
+function Level6::SetupOpenglLights()
+{
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	
+	// Note: might need to SUBTRACT mOpenglTranslationOffset to each axis position
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
+}
+
+function Level6::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
+}
+
+function Level6::GetLevelPreview(){
+	return mTexture;
+}
+
+function Level6::GetLevelName(){
+	return "Ghost";
+}

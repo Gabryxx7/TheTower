@@ -31,6 +31,7 @@ global var SCALE_FACTOR = 0.2;
 #include "Level3.s3d"
 #include "Level4.s3d"
 #include "Level5.s3d"
+#include "Level6.s3d"
 #include "InputManager.s3d"
 
 
@@ -254,7 +255,7 @@ function GameManager::GameManager(HMD)
 //		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 //		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));	
 		
-		mCurrentLevel = Level3(mIsVRon, mInputManager, mSoundManager);
+		mCurrentLevel = Level6(mIsVRon, mInputManager, mSoundManager);
 //		mCurrentLevel = arrayLevel0;
 		
 //		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, mLevels, mElevator);
@@ -644,6 +645,7 @@ function GameManager::UpdateLogic(dt)
 						var distance = Modulus(playerPos - circlePos);
 						
 						// If the distance is below the threshold, I create the moving animation
+//						if(distance < mTeleportDistanceThreshold)
 						if(distance < 200)
 						{
 							// The new position has the same y as the opengl offset (I only want to move along the x and z axis after all), 
@@ -670,7 +672,7 @@ function GameManager::UpdateLogic(dt)
 							
 							// If the player can see the desired point, I create a direct transition
 							if(isPositionValid)
-								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 3.15);
+								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, newPos, 0.15, 3);
 							// Otherwise, I create a waypoint transition that first move from the camera's position to the position of the controller,
 							// and then to the desired position
 							else
@@ -679,7 +681,7 @@ function GameManager::UpdateLogic(dt)
 	//							var controllerPos = mCamera.GetPosition() - (mCamera.GetPosition() - mOpenglTranslationOffset - [1 * SCALE_FACTOR, 0, 0]);
 								controllerPos.y = mOpenglTranslationOffset.y;
 								
-								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, {controllerPos, newPos}, 0.15);
+								mAnimator.CreateGenericTransition(mOpenglTranslationOffsetAnimationID, mOpenglTranslationOffset, {controllerPos, newPos}, 0.15, 3);
 							}
 						}
 						// If the distance to the desired point is too great, I teleport using the fade-to-black transition
