@@ -22,6 +22,7 @@ class Target{
 	var mKilledTime;
 	
 	var mLaserSpeed;
+	var mLaserLength;
 	
 	Draw();
 	GetObj();
@@ -39,7 +40,7 @@ class Target{
 	HandleEnemyLaser(cameraPosition);
 };
 
-function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, animator){
+function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, laserLength, animator){
 	mAnimator = animator;
 	mObj = mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH" ? CVmObj(mesh) : mesh;
 	mLives = lives;
@@ -50,6 +51,7 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSp
 	mActualColor = color;
 	
 	mLaserSpeed = laserSpeed;
+	mLaserLength = laserLength;
 	
 	mIsChangingColor = -1;
 	mColorTransitionTime = 0.15;
@@ -166,7 +168,8 @@ function Target::HandleEnemyLaser(cameraPosition){
 	if(GetTIme()-mShootTime > mShootDelay){
 		mShootTime = GetTime();
 		var pos = mObj.GetPosition();
-		return {pos, cameraPosition, [0,-1,0], true, mLaserSpeed};
+		var direction = [0,-1,0];
+		return {pos, pos+mLaserLength*direction, direction, true, mLaserSpeed};
 	}
 	return null;
 } 
