@@ -10,7 +10,7 @@ class VirtualKeyboard{
 	var mPressedButtonsObjs;
 	var mPressedText;
 	var mUnpressedButtonsObjs;
-	var mHoveredButton;
+	var mHoveredButtons;
 	var mAnimator;
 	
 	var mHolderObj;
@@ -78,12 +78,12 @@ class VirtualKeyboard{
 	AnimateButton(buttonChar);
 	AnimatePressedButtons();
 	PressButton(buttonChar, typeOnScreen);
-	HoverButton();
-	UnhoverButton();
+	HoverButton(hoverIndex);
+	UnhoverButton(hoverIndex);
 	ChangePressedButtonsColor(pColor);
 	FadePressedButtonsColor(startColor, endColor);
-	PointedButton(mObject, cameraPosition, isCamera);
-	ClosestButton(mObject, objectPosition);
+	PointedButton(mObject, cameraPosition, isCamera, hoverIndex);
+	ClosestButton(mObject, objectPosition, hoverIndex);
 	TouchedButton(objPos);
 	UnpressButton(buttonChar);
 	UnpressAllButtons();
@@ -99,7 +99,7 @@ function VirtualKeyboard::VirtualKeyboard(useToonShader, animator, buttonsText, 
 	mTimefromLastAction = 0;
 	mAnimator = animator;
 	mAnimationTime = 0.25;
-	mHoveredButton = -1;
+	mHoveredButtons = {-1, -1};
 	mButtonsObjs = {};
 	mScreenTextsMeshes = {};
 	mCharOnScreen = {};
@@ -317,7 +317,7 @@ function VirtualKeyboard::AnimatePressedButtons(){
 	}
 }
 
-function VirtualKeyboard::ClosestButton(mObject, objectPosition){	
+function VirtualKeyboard::ClosestButton(mObject, objectPosition, hoverIndex){	
 	var minDistance = 10000;
 	var closestButtonIndex = -1;		
 	
@@ -329,18 +329,18 @@ function VirtualKeyboard::ClosestButton(mObject, objectPosition){
 		}		
 	}
 		
-	if(mHoveredButton != closestButtonIndex){
-		if(mHoveredButton != -1)	
-			UnhoverButton(mAnimator);
-		mHoveredButton = closestButtonIndex;				
-		HoverButton(mAnimator);
+	if(mHoveredButtons[hoverIndex] != closestButtonIndex){
+		if(mHoveredButtons[hoverIndex] != -1)	
+			UnhoverButton(hoverIndex);
+		mHoveredButtons[hoverIndex] = closestButtonIndex;				
+		HoverButton(hoverIndex);
 	}
 	
 	return {minDistance, mCharacters[closestButtonIndex]};	
 }
 
 
-function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){	
+function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera, hoverIndex){	
 	var raycastOrigin = objectPosition;
 	var raycastEnd = isCamera ? (raycastOrigin + mObject.GetDirection() * mObject.GetZFar()) : (raycastOrigin + mObject.GetDirection() * 20);
 	var contactPoint;	
@@ -349,19 +349,19 @@ function VirtualKeyboard::PointedButton(mObject, objectPosition, isCamera){
 	for(var i = 0; i < len(mButtonsObjs); i++){
 		contactPoint = IsObjectSelected(raycastOrigin, raycastEnd, mButtonsObjs[i]);
 		if(contactPoint != Void){
-			if(mHoveredButton != i){
-				if(mHoveredButton != -1)	
-					UnhoverButton(mAnimator);
-				mHoveredButton = i;				
-				HoverButton(mAnimator);
+			if(mHoveredButtons[hoverIndex] != i){
+				if(mHoveredButtons[hoverIndex] != -1)	
+					UnhoverButton(hoverIndex);
+				mHoveredButtons[hoverIndex] = i;				
+				HoverButton(hoverIndex);
 			}
 			return mCharacters[i];	
 		}	
 	}
 	
-	if(mHoveredButton != -1){
-		UnhoverButton(mAnimator);
-		mHoveredButton = -1;		
+	if(mHoveredButtons[hoverIndex] != -1){
+		UnhoverButton(hoverIndex);
+		mHoveredButtons[hoverIndex] = -1;		
 	}
 	return "";
 }
@@ -442,8 +442,10 @@ function VirtualKeyboard::PressButton(buttonChar, typeOnScreen){
 	return 1;
 }
 
-function VirtualKeyboard::UnpressButton(buttonChar){	
-	mHoveredButton = -1;
+function VirtualKeyboard::UnpressButton(buttonChar){
+	for(var i = 0; i < len(mHoveredButtons); i++)
+		mHoveredButtons[i] = -1;
+		
 	var charPos = -1;
 	//CHeck if char is present in the Keyboard
 	for(var i = 0; i < len(mCharacters); i++){
@@ -545,7 +547,8 @@ function VirtualKeyboard::ClearScreen(){
 }
 
 function VirtualKeyboard::UnpressAllButtons(){	
-	mHoveredButton = -1;	
+	for(var i = 0; i < len(mHoveredButtons); i++)
+		mHoveredButtons[i] = -1;	
 	//Remove chars from the screen
 	ClearScreen();
 			
@@ -579,32 +582,32 @@ function VirtualKeyboard::IsCameraInKeyboardRange(cameraPosition, range){
 }
 
 
-function VirtualKeyboard::HoverButton(){
+function VirtualKeyboard::HoverButton(hoverIndex){
 	for(var i = 0; i < len(mPressedText); i++){
-		if(mPressedText[i] == mHoveredButton)
+		if(mPressedText[i] == mHoveredButtons[hoverIndex])
 			return;			
 	}
 	if(mUseToonShader)
-		mButtonsObjs[mHoveredButton].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor + [0.3,0.3,0.3]);
+		mButtonsObjs[mHoveredButtons[hoverIndex]].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor + [0.3,0.3,0.3]);
 	else{
 		mMaterial.Diffuse = mUnpressedButtonColor + [0.3,0.3,0.3];
 		mMaterial.Emission = mUnpressedButtonColor + [0.3,0.3,0.3];
-		mButtonsObjs[mHoveredButton].GetMesh(0).SetMaterial(mMaterial);
+		mButtonsObjs[mHoveredButtons[hoverIndex]].GetMesh(0).SetMaterial(mMaterial);
 	}
 }
 
-function VirtualKeyboard::UnhoverButton(){
+function VirtualKeyboard::UnhoverButton(hoverIndex){
 	for(var i = 0; i < len(mPressedText); i++){
-		if(mPressedText[i] == mHoveredButton)
+		if(mPressedText[i] == mHoveredButtons[hoverIndex])
 			return;			
 	}
 	
 	if(mUseToonShader)
-		mButtonsObjs[mHoveredButton].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor);
+		mButtonsObjs[mHoveredButtons[hoverIndex]].GetMesh(0).ShaderSetParameter(0, "diffuse", 0, mUnpressedButtonColor);
 	else{
 		mMaterial.Diffuse = mUnpressedButtonColor;
 		mMaterial.Emission = mUnpressedButtonColor;
-		mButtonsObjs[mHoveredButton].GetMesh(0).SetMaterial(mMaterial);
+		mButtonsObjs[mHoveredButtons[hoverIndex]].GetMesh(0).SetMaterial(mMaterial);
 	}
 }
 

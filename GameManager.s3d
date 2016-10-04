@@ -251,7 +251,7 @@ function GameManager::GameManager(HMD)
 		/*** Select here which level you want to preload (-1 to preload every level)
 		 * Select if you want to start from the menu or not
 		 */
-		var testingLevel = 6;
+		var testingLevel = 5;
 		var testWithMenu = false;
 		
 		
@@ -285,9 +285,9 @@ function GameManager::GameManager(HMD)
 			if(testingLevel == 3 || testingLevel == -1)
 				aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
 			if(testingLevel == 4 || testingLevel == -1)
-				aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
-			if(testingLevel == 5 || testingLevel == -1)
 				aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
+			if(testingLevel == 5 || testingLevel == -1)
+				aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
 			if(testingLevel == 6 || testingLevel == -1)
 				aadd(mLevels, Level6(mIsVRon, mInputManager, mSoundManager));
 		}

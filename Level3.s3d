@@ -132,7 +132,7 @@ class Level3
 function Level3::Level3(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;	
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mControllersArray = {};
 	
@@ -151,6 +151,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	{
 		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
 		aadd(mControllersArray, ViveController(1));
+		aadd(mControllersArray, ViveController(2));
 		mDebugControllerHidden = false;
 		mDebugKeyHit = false;
 	}
@@ -434,8 +435,10 @@ function Level3::Render()
  	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon)
 	{
-		if(debugVrOn)
-			mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+		if(debugVrOn){
+			mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
+			mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);			
+		}
 		
 		// I also check if Y is pressed: this hides/unhides the debug controller
 		if(KeyPressed("Y"))
@@ -711,35 +714,28 @@ function Level3::UpdateLogic(dt)
 			//If the player is close to the numpad
 			if(!doorUnlocked && numpadObj.IsCameraInKeyboardRange(cameraPosition, 5 * SCALE_FACTOR) && numpadClearNeeded == 0){	
 				if(mIsVRon || debugVrOn){
-					var closestController = -1;
-					var buttonToPress = -1;
-					var minDistance = 1000;
 					
 					if(numpadClearNeeded == 0 && !doorUnlocked){
-						foreach(var controller in mControllersArray){
-							controller.SetActionAvailable(true);											
-						 	var vrClosestButton = numpadObj.ClosestButton(controller, controller.GetPosition(), false);
+						for(var c = 0; c < len(mControllersArray); c++){
+							mControllersArray[c].SetActionAvailable(true);											
+						 	var vrClosestButton = numpadObj.ClosestButton(mControllersArray[c], mControllersArray[c].GetPosition(), c);
 						 	
-						 	if(vrClosestButton[0] < minDistance){
-						 		closestController = controller;
-						 		minDistance = vrClosestButton[0];
-						 		buttonToPress = vrClosestButton[1];						 		
-						 	}						 	
-					 	}
-					 	
-						if(mInputManager.IsPressingPrimaryButton(closestController.GetIndex()) && GetTime() - timeFromLastClick > 500){
-							timeFromLastClick = GetTime();	
-							pressedButton = buttonToPress;
-							if(pressedButton != "" && pressedButton != " "){
-								numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
-								numpadObj.AnimateButton(pressedButton);	
-								mInputManager.VibrateController(closestController.GetIndex(), 500);						
+//						 	if(((c == 0 && KeyPressed("1")) || (c == 1 && KeyPressed("2"))) && GetTime() - timeFromLastClick > 350){
+							if(mInputManager.IsPressingPrimaryButton(mControllersArray[c].GetIndex()) && GetTime() - timeFromLastClick > 500){
+								timeFromLastClick = GetTime();	
+								pressedButton = vrClosestButton[1];
+								if(pressedButton != "" && pressedButton != " "){
+									numpadObj.PressButton(pressedButton, pressedButton == "c"? false : true);		
+									numpadObj.AnimateButton(pressedButton);	
+									mInputManager.VibrateController(mControllersArray[c].GetIndex(), 500);						
+								}
 							}
-						}				
+													 	
+					 	}			
 					}								
 				}
 				else {
-					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true);
+					 var pointedButton = numpadObj.PointedButton(mCamera, cameraPosition, true, 0);
 					 var pressedKey = Keyboard();
 					
 					if(pressedKey != "" && pressedKey != " "){
@@ -747,7 +743,7 @@ function Level3::UpdateLogic(dt)
 							pressedButton = pressedKey;				
 						}
 					}
-					else if(mInputManager.IsPressingPrimaryButton() && GetTime() - timeFromLastClick > 400){
+					else if(mInputManager.IsPressingPrimaryButton() && GetTime() - timeFromLastClick > 350){
 						timeFromLastClick = GetTime();
 						pressedButton = pointedButton;	
 					}

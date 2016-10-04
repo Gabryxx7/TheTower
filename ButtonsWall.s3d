@@ -575,11 +575,10 @@ function ButtonsWall::ActivateClosestButton(objPos, range){
 			}
 		}
 		
-			mActiveObjIndex = foundIndex;
+		mActiveObjIndex = foundIndex;
 		
-		return minDistance;	
-		
-		}
+		return minDistance;			
+	}
 	else
 		return range;
 }
