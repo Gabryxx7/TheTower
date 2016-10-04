@@ -23,6 +23,7 @@ class Target{
 	var mKilledTime;
 	
 	var mLaserSpeed;
+	var mLaserMaxDistance;
 	
 	Draw();
 	GetObj();
@@ -41,8 +42,8 @@ class Target{
 	IsCollidingBBox(object);
 };
 
-function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, laserMesh,  animator){
-	mAnimator = animator;
+function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, laserMesh, laserMaxDistance,  animator){
+	mAnimator = animator; 
 	mObj = mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH" ? CVmObj(mesh) : mesh;
 	mLives = lives;
 	mShootDelay = shootDelay;
@@ -53,6 +54,7 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSp
 	
 	mLaserSpeed = laserSpeed;
 	mLaserMesh = laserMesh;
+	mLaserMaxDistance = laserMaxDistance;
 	
 	mIsChangingColor = -1;
 	mColorTransitionTime = 0.15;
@@ -170,7 +172,7 @@ function Target::HandleEnemyLaser(cameraPosition){
 		mShootTime = GetTime();
 		var pos = mObj.GetPosition();
 		var laserObj = CvmObj(mLaserMesh);
-		mAnimator.CreateTransition(laserObj, pos, (pos-cameraPosition)*1000, mLaserSpeed, false, 0);
+		mAnimator.CreateTransition(laserObj, pos, [cameraPosition.x-pos.x, cameraPosition.y-pos.y, cameraPosition.z-pos.z]*mLaserMaxDistance, mLaserSpeed, false, 0);
 		return laserObj;
 	}
 	return null;

@@ -94,8 +94,9 @@ class Level6
 	var mShootingAnimationTimes;
 	var mShootingOffsets;
 	var mShootingDepth;
-	var mShootingControllerIndex;
-	var mShootAnimId;
+	var mIsControllerShooting;
+	var mControllerShotTime;
+	var mControllerAnimId;
 	
 	// Private functions
 	HandleLasers();
@@ -117,7 +118,6 @@ class Level6
 
 function Level6::Level6(isVRon, inputManager, soundManager)
 {		
-	mShootAnimId = 12412123;
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
 	mDebugVrOn = true;
@@ -190,7 +190,9 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mLastShoot = 0;
 	mShootingDelay = 150.0;
 	mShootingDepth = 4*SCALE_FACTOR;
-	mShootingControllerIndex = -1;
+	mIsControllerShooting = {false, false};
+	mControllerShotTime = {0,0};
+	mControllerAnimId = {12345, 54321};
 	
 	
 	mPistolsLaserArray = {};
@@ -206,11 +208,13 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mLaserMesh.Rotate(90,1,0,0);
 	mLaserTestObj = CvmObj(mLaserMesh);
 	mLaserSpeed = 1;
-	mEnemyLaserSpeed = mLaserSpeed*4;
+	mEnemyLaserSpeed = mLaserSpeed*15;
 	mEnemySpeed = 5.0;
 	
 	mTargets = {};
-	var targetsNumber = 1;
+	var targetsNumber = 3;
+		
+	var enemyLaserMesh = CvmNewMesh(VRP_SPHERE, 30, 0.3*SCALE_FACTOR, 1);
 	
 	// Creating random star things
 	for(var i = 0; i < targetsNumber; i++)
@@ -221,12 +225,12 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		
-//		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);
+		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);
 
-		var cubeSizes = 3*SCALE_FACTOR;
-		var mesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-		AddToonShaderToMesh(mesh, [1,1,1], [1,1,1], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
-		var starObj = CVmObj(mesh);
+//		var cubeSizes = 3*SCALE_FACTOR;
+//		var mesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+//		AddToonShaderToMesh(mesh, [1,1,1], [1,1,1], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);		
+//		var starObj = CVmObj(mesh);
 		
 		var roomPos = mMainRoom.GetPosition();
 		var roomWidth = mMainRoom.GetRoomWidth();
@@ -246,7 +250,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		
 		starObj.SetPosition([posX, posY, posZ]);
 		
-		aadd(mTargets, Target(starObj, 3, 1500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, mLaserMesh, mAnimator));
+		aadd(mTargets, Target(starObj, 3, 2500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, enemyLaserMesh, 20, mAnimator));
 	}
 	
 	// Creating texts object for the scene
@@ -356,7 +360,7 @@ function Level6::Render()
 			
 			mCounterShader.Start();
 				mCounterShader.SetParameter("color", [1,0,0]);
-				mLaserTestObj.Draw();
+//				mLaserTestObj.Draw();
 				foreach(var laser in mPistolsLaserArray)
 					laser.Draw();
 					
@@ -633,14 +637,16 @@ function Level6::UpdateLogic(dt)
 //				}
 //			}
 			
-			if(mShootingControllerIndex != -1){
-				if(GetTime()-mLastShoot <= mShootingDelay*2){
-					var controller = mControllersArray[mShootingControllerIndex];
-					controller.Translate(-controller.GetDirection()*mAnimator.GetCurrentStateInTransition(mShootAnimId,6));
+			for(var i = 0; i < len(mIsControllerShooting); i++){				
+				if(mIsControllerShooting[i]){
+					if(GetTime()-mControllerShotTime[i] <= mShootingDelay*2){
+						var controller = mControllersArray[i];
+						controller.Translate(-controller.GetDirection()*mAnimator.GetCurrentStateInTransition(mControllerAnimId[i],6));
+					}
+					else{
+						mIsControllerShooting[i] = false;
+					}			
 				}
-				else{
-					mShootingControllerIndex = -1;
-				}			
 			}
 			break;
 		}
@@ -681,8 +687,10 @@ function Level6::HandleLasers()
 {
 	// Now I check if the player is drawing; I first check if he pressed a button
 	if(mIsVrOn || mDebugVrOn){
-		var usingController1 = mInputManager.IsPressingPrimaryButton(1);
-		var usingController2 = mInputManager.IsPressingPrimaryButton(2);
+//		var usingController1 = mInputManager.IsPressingPrimaryButton(1);
+//		var usingController2 = mInputManager.IsPressingPrimaryButton(2);
+		var usingController1 = KeyPressed("Z");
+		var usingController2 = KeyPressed("X");
 		
 		var firstTimeUsingController1 = usingController1 && mControllersBeingUsedIndex[0] == 0;
 		var firstTimeUsingController2 = mIsVRon && usingController2 && mControllersBeingUsedIndex[1] == 0;
@@ -704,13 +712,14 @@ function Level6::HandleLasers()
 			
 			var controller = mControllersArray[index];
 			
-			mShootingControllerIndex = index;
-			mLastShoot = GetTime();
+			mIsControllerShooting[index] = true;
+			mControllerShotTime[index] = GetTime();			
+			mAnimator.CreateGenericTransition(mControllerAnimId[index], 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
 			
-			mAnimator.CreateGenericTransition(mShootAnimId, 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
 			var laserObj = CvmObj(mLaserMesh);
 			laserObj.SetRotationMatrix(controller.GetRotationMatrix());
 			mAnimator.CreateTransition(laserObj, controller.GetPosition(), controller.GetPosition()+controller.GetDirection()*mLaserMaxDistance, mLaserSpeed, false,0);
+			
 			aadd(mPistolsLaserArray, laserObj);
 		}
 		// Case where the user stopped pressing a trigger
