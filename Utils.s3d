@@ -533,6 +533,7 @@ function GenerateNumberPositions(number, offset, size, spacing, direction){
 	direction = valtype(direction) == "" ? 1 : direction;
 	size = valtype(size) != "A" && valtype(size) != "V" ? [size, size] : size;
 	spacing = valtype(spacing) != "A" && valtype(spacing) != "V" ? [spacing, spacing] : spacing;
+	
 	switch(number){	
 		case 0:
 			//Base

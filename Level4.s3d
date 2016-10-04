@@ -73,8 +73,6 @@ class Level4
 	
 	// Array of clocks for the walls, and number of rows and clocks per row
 	var mClocks;
-	var mNumberOfClocks;
-	var mNumberOfClockRows;
 	
 	// Texts object and text behind the elevator (this one isn't in the array because I need a direct reference to make it fade away at the end of the level)
 	var mTexts;
@@ -99,15 +97,15 @@ class Level4
 	// Glass wall at the back of the room
 	var mGlassWall;
 	
-	// Arrays to handle the number objects that show the keycode 
+	// Arrays and variables used to handle the number objects that show the keycode 
 	var mCubeSizes;
 	var mCubeSpacing;
-	var mNumbersObjectArray;
-	var mNumbersCubesObjectArray;
 	var mNumbersListArray;
-	var mChangedNumberTime;
-	var mDelayBetweenNumberChange;
 	var mFinalNumberFoundArray;
+	
+	var mNumberObjects;
+	
+	var mNumbersShader;
 	
 	// Boolean; true if the player discovered the final number objects
 	var mFinalNumbersFound;
@@ -214,7 +212,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		
 
 	mMainClock = Clock(1, 2);
-	mMainClock.Translate(mTranslateFactor.x, 6.5 * SCALE_FACTOR + mTranslateFactor.y, -20 * SCALE_FACTOR + mTranslateFactor.z);
+	mMainClock.Translate(mTranslateFactor.x, mIsVrOn ? 6.5 * SCALE_FACTOR + mTranslateFactor.y : 5.5 * SCALE_FACTOR + mTranslateFactor.y, -20 * SCALE_FACTOR + mTranslateFactor.z);
 	mMainClock.Rotate(180, 0, 1, 0);
 	
 	// Initially the time runs forward
@@ -252,26 +250,26 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mBackText.SetRotation(180, 0, 1, 0);
 		
 	// Number of clocks per row and number of clocks rows for each wall
-	mNumberOfClocks = 3;
-	mNumberOfClockRows = 3;
+	var numberOfClocksInRow = 3;
+	var numberOfClockRows = 3;
 	mClocks = {};
 	
 	// Computing the step distance in between each clock and the step in terms of height in between them
-	var step = mMainRoom.GetRoomWidth() / mNumberOfClocks;
-	var heightStep = mMainRoom.GetRoomHeight() / mNumberOfClockRows;
+	var step = mMainRoom.GetRoomWidth() / numberOfClocksInRow;
+	var heightStep = mMainRoom.GetRoomHeight() / numberOfClockRows;
 	
 	// Creating every clock in the wall. There is no way to create a function that adds the clocks to a given wall, because of the different
 	// sizes and positions and rotations of the walls (i.e. we move across the x axis or the z axis? There are problems like that to handle).
 	// So to make things easier, I almost copy and paste the code for each wall, adding a clock to each wall whenever a clock is created
-	for(var i = 0; i < mNumberOfClockRows; i++)
+	for(var i = 0; i < numberOfClockRows; i++)
 	{
-		for(var j = 0; j < mNumberOfClocks; j++)
+		for(var j = 0; j < numberOfClocksInRow; j++)
 		{
 			// Clock for the front wall
 			var newClockFront = Clock(1, 2);
 			
 			// Positioning in the clocks in the wall, taking into account the total width available, the number of clocks and so on in order to spread them evenly
-			var x = (mMainRoom.GetRoomWidth()/2.0 - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
+			var x = (mMainRoom.GetRoomWidth()/2.0 - 2.0 * SCALE_FACTOR) - step * (j - numberOfClocksInRow/2.0) - mMainRoom.GetRoomWidth()/2.0 - (step/2.0)*(i % 2);
 			var y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
 			var z = mMainRoom.GetRoomDepth() - 0.3 * SCALE_FACTOR;
 			
@@ -307,9 +305,9 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 			var newClockLeft = Clock(1, 2);
 			newClockLeft.Rotate(90, 0, 1, 0); // This time I rotate the clock too
 			
-			x = (mMainRoom.GetRoomWidth()/2.0 - 0.3 * SCALE_FACTOR);
-			y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
-			z = (mMainRoom.GetRoomDepth() - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomDepth()/2.0 - (step/2.0)*(i % 2);
+			x = (mMainRoom.GetRoomWidth() / 2.0 - 0.3 * SCALE_FACTOR);
+			y = (mMainRoom.GetRoomHeight() / 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			z = (mMainRoom.GetRoomDepth() + 2.0 * SCALE_FACTOR) - step * (j - numberOfClocksInRow/2-0) - mMainRoom.GetRoomDepth()/2.0 - (step/2.0)*(i % 2);
 			
 			aadd(mClocks, newClockLeft);
 			
@@ -338,9 +336,9 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 			var newClockRight = Clock(1, 2);
 			newClockRight.Rotate(-90, 0, 1, 0);
 			
-			x = -mMainRoom.GetRoomWidth()/2.0 + 0.3 * SCALE_FACTOR;
-			y = (mMainRoom.GetRoomHeight()/ 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
-			z = (mMainRoom.GetRoomDepth() - 2.0 * SCALE_FACTOR) - step * (j - mNumberOfClocks/2) - mMainRoom.GetRoomDepth()/2.0 - (step/2.0)*(i % 2);
+			x = -mMainRoom.GetRoomWidth() / 2.0 + 0.3 * SCALE_FACTOR;
+			y = (mMainRoom.GetRoomHeight() / 2.0 - 3.0 * SCALE_FACTOR - heightStep*i) ;
+			z = (mMainRoom.GetRoomDepth() + 2.0 * SCALE_FACTOR) - step * (j - numberOfClocksInRow/2-0) - mMainRoom.GetRoomDepth()/2.0 - (step/2.0)*(i % 2);
 			
 			aadd(mClocks, newClockRight);
 			
@@ -489,14 +487,9 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	mCubeSpacing = 0.20*SCALE_FACTOR;
 	
 	// Arrays to handle the number objects and their chaning numbers
-	mNumbersObjectArray = {};
-	mNumbersCubesObjectArray = {};
+	mNumberObjects = {};	
 	mNumbersListArray = {};
-	mChangedNumberTime = {};
 	mFinalNumberFoundArray = {};
-	
-	// Time delay between a change from one number to the other; needed to prevent rapid changes in the numbers due to the player using the clock (mostly)
-	mDelayBetweenNumberChange = 300;
 	
 	// Initially the player didn't find the final numbers (i.e. the actual code)
 	mFinalNumbersFound = false;
@@ -507,71 +500,63 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	// Total from in the x axis that the objects occupy
 	var totalSpace = numbersPositionOffset * codeLength;
+	
+	// Shader used to draw the cubes in the numbers; it just sets their color. I don't use a material to avoid problems with the Vive (the XVR material
+	// might not work when rendering with the vive)
+	mNumbersShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
+	
+	var tmp;
+	
+	// Now I have to create the number objects. Before doing that, since the numbers are rendered in the mirror, and there is the problem that
+	// everything is inverted when drawing the mirror (more info in the DrawPortal() function), to avoid inverting the numbers I invert the code
+	// array so that the numbers will be created (in the following code) reversed, which is ok since they will be inverted when rendered in the mirror
+	for(var i = 0; i < codeLength/2; i++)
+	{
+	    tmp = numpadCode[codeLength -i - 1];
+	    numpadCode[codeLength - i - 1] = numpadCode[i];
+	    numpadCode[i] = tmp;
+	}
+	
 		
-	// Now I create each object
+	// Now I create each number object
 	for(var i = 0; i < codeLength; i++)
 	{
-		// Container; holds the cubes object
-		var numbersContainer = CVmObj();
-		aadd(mNumbersObjectArray, numbersContainer);
-		
-		// Cubes array; each object has a different array
-		var cubesArray = {};
-		aadd(mNumbersCubesObjectArray, cubesArray);
-		
-		// Initially I set that the time passed from the last change is 0 (i.e. no change yet)
-		aadd(mChangedNumberTime, 0);
-		
 		// Adding the code number as the first number in the list of each object
 		aadd(mNumbersListArray, { numpadCode[i] });
 		
 		// For each object I set that initially the final number was not found
 		aadd(mFinalNumberFoundArray, false);
 		
-		// Generating the positions for the given number for each cube; I use an offset in the y axis so that the center of the container 
-		// seems to be in the center of the number (pretty much)
-		var cubesPositions = GenerateNumberPositions(numpadCode[i], [0 * SCALE_FACTOR, -numbersPosition.y, 0 * SCALE_FACTOR], mCubeSizes, mCubeSpacing, 1);
-		
 		// Color for the cubes, chosen randomly
 		var colorMesh = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		
-		// Cube mesh; I add the toon shader to it
+		// Cube mesh
 		var cubeMesh = CVmNewMesh(VRP_BOX, 1, [-mCubeSizes / 2.0, -mCubeSizes / 2.0, 0], [mCubeSizes / 2.0, mCubeSizes / 2.0, 0], mCubeSizes);
-		AddToonShaderToMesh(cubeMesh, [0.4, 0.4, 0.4], colorMesh, [0.2, 0.2, 0.2], 50, 1, 2, SCALE_FACTOR, 1.0);
-		
-		var length = len(cubesPositions);
-		
-		// Now I set the position of each cube. Note that there might be more cubes than needed for this given number, 
-		// so I will hide those unusued (the ones in the end)
-		for(var j = 0; j < maxCubesPerNumber; j++)
-		{
-			var object = CVmObj(cubeMesh);
-			aadd(cubesArray, object);
-			
-			// If this cube needs to be used, I add it as child of the container; otherwise, I add it but hide it
-			if(j < length)
-				numbersContainer.AddChild(object, cubesPositions[j].x, cubesPositions[j].y, cubesPositions[j].z);
-			else
-			{
-				numbersContainer.AddChild(object, 0, 0, 0);
-				object.Hide();
-			}
-		}
 		
 		// I compute the position so that the first number in the code is on the left
 		numbersPosition.x = (numbersPositionOffset - totalSpace) + numbersPositionOffset * (i+1);
 		
-		// Setting the position of the number object
-		numbersContainer.SetPosition(numbersPosition);
+		// Now I need to create the number objects. The code for the creation was mostly taken from the level with the shooting
+		var counterBox = [6.0 * (mCubeSizes + mCubeSpacing) / 2.0, 10 * (mCubeSizes + mCubeSpacing) / 2.0, 6 * (mCubeSizes + mCubeSpacing) / 2.0];
 		
+		var numberObj = RandomMeshes(cubeMesh, 54, counterBox, numbersPosition, colorMesh, mCubeSizes, mCubeSpacing, 1);
 		
-//		for(var i = 0; i < len(cubesArray); i++)
-//		{				
-//			mAnimator.CreateTransition(cubesArray[i], cubesArray[i].GetPosition(), cubesPositions[i], 0.2, false, 1);
-//		}
+		var finalPos = numberObj.GenerateFinalPositions(numpadCode[i], numbersPosition);
+		var cubes = numberObj.GetObjs();
 		
-		// Creating the scaling transition
-//		mAnimator.CreateScalingTransition(numbersContainer, [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], 2.0, true);
+		// Creating the first animation for the cubes
+		for(var j = 0; j < len(cubes); j++) 
+			mAnimator.CreateTransition(cubes[j], cubes[j].GetPosition(), finalPos[j], 0.2, false, 1);
+		
+		aadd(mNumberObjects, numberObj);
+	}
+	
+	// I invert the code again, otherwise it changes the code for the numpad (since the array it's a pointer to the numpad's code)
+	for(var i = 0; i < codeLength/2; i++)
+	{
+	    tmp = numpadCode[codeLength -i - 1];
+	    numpadCode[codeLength - i - 1] = numpadCode[i];
+	    numpadCode[i] = tmp;
 	}
 	
 	
@@ -921,34 +906,24 @@ function Level4::DrawPortal()
 	// Now I need to draw the objects that are always present, such as the elevator and the Vive controllers
 	mElevator.Draw();
 	
-//	glCullFace(GL_FRONT);
-//	
-//	// Drawing the silhouettes of the objects (so deactivating their current shader first)
-//	mSilhouetteShader.Start();
-//    	mSilhouetteShader.SetParameter("offset", 0.04 * SCALE_FACTOR);
-//    	mSilhouetteShader.SetParameter("color", [0.0, 0.0, 0.0]);
-//    	    	
-//    	foreach(var cubeArray in mNumbersCubesObjectArray)
-//		{
-//			foreach(var cubeObj in cubeArray)
-//				cubeObj.GetMesh().ShaderActivate(false);
-//		}
-//    	
-//    	for(var i = 0; i < len(mNumbersObjectArray); i++)
-//			mNumbersObjectArray[i].Draw();
-//	mSilhouetteShader.Stop();
-//	
-//	glCullFace(GL_BACK);
-//	
-//	foreach(var cubeArray in mNumbersCubesObjectArray)
-//	{
-//		foreach(var cubeObj in cubeArray)
-//			cubeObj.GetMesh().ShaderActivate(true);
-//	}
-	
-	// Drawing the "normal state" of the objects
-	for(var i = 0; i < len(mNumbersObjectArray); i++)
-		mNumbersObjectArray[i].Draw();
+	// Drawing the numbers
+	mNumbersShader.Start();
+		for(var i = 0; i < len(mNumberObjects); i++)
+		{
+			// I need to draw each cube with it's color
+			foreach(var cube in mNumberObjects[i].GetObjs())
+			{
+				// First I draw the cube
+				mNumbersShader.SetParameter("color", mNumberObjects[i].GetColor());
+				cube.Draw();
+				
+				// Now I draw it's bounding box only as black, so that it looks like the silhouette
+				mNumbersShader.SetParameter("color", [0,0,0]);
+				glLineWidth(2.0);
+				cube.Draw(VR_BBOX_ONLY);
+			}			
+		}
+	mNumbersShader.Stop();
 		
 	// Drawing the mask object
 	mMaskObj.Draw();
@@ -1030,9 +1005,6 @@ function Level4::InvertObjectsPosition()
 	// I also invert any "official" child of the room (so also the clocks in the walls)
 	foreach(var childObject in mMainRoom.GetChildren())
 		InvertObject(childObject);
-		
-	foreach(var numberObject in mNumbersObjectArray)
-		InvertObject(numberObject);
 		
 	foreach(var childObject in mNumpad.GetChildren())
 		InvertObject(childObject);
@@ -1290,202 +1262,98 @@ function Level4::UpdateLogic(dt)
 			else
 				mAnimator.ChangeScaleFactors(1.0);
 				
-				
-				
-//		for(var i = 0; i < len(cubesArray); i++)
-//		{				
-//			mAnimator.CreateTransition(cubesArray[i], cubesArray[i].GetPosition(), cubesPositions[i], 0.2, false, 1);
-//		}
-		
-			// Now I check the number objects to see if their scale has reached 0; in that case I change the number they're displaying, but only 
-			// if the player didn't already find the final numbers (i.e. the number objects are not scaling anymore)
-			for(var i = 0; i < len(mNumbersObjectArray) && !mFinalNumbersFound; i++)
+			
+			// Now, for each number object, I need to check if it ended its animation and in that case I assign a new animation (and number) to it
+			for(var i = 0; i < len(mNumberObjects) && !mFinalNumbersFound; i++)
 			{
-				// Getting the number object, the cubes that are contained in it, the scale of the object and the list of past numbers
-				var numberObject = mNumbersObjectArray[i];
-				var cubeObjects = mNumbersCubesObjectArray[i];
-				var scale = numberObject.GetScale();
-				var numbersList = mNumbersListArray[i];
-				
-//				if(mAnimator.HaveTransition())
-				
-
-				// If the scale is small enough (I don't look for 0 to avoid problems with floating point computations), and it's been a while since
-				// the last change of the number (I need this to avoid changing multiple times the number while the scale is below the threshold),
-				// and if I this number object hasn't reached its final number
-				if(scale.x <= 0.01 && scale.y <= 0.01 && scale.z <= 0.01 && GetTime() - mChangedNumberTime[i] > mDelayBetweenNumberChange && !mFinalNumberFoundArray[i])
+				// I only procede to check this number object if it didn't reach its fianl number (i.e. the player solved the riddle)
+				if(!mFinalNumberFoundArray[i])
 				{
-					var number;
+					var numberObject = mNumberObjects[i];
+					var cubeObjects = numberObject.GetObjs();
+					var numbersList = mNumbersListArray[i];
 					
-					// If time is going forward...
-					if(mTimeDirection == 1)
-					{
-						// I get the previous number
-						var previousNumber = numbersList[len(numbersList) - 1];
-						
-						// I create a new number randomly until it's different from the previous one
-						do
-						{
-							number = Rand(9);
-						}
-						while(previousNumber == number);
-							
-						// I add the number to the list
-						aadd(numbersList, number);
-					}
-					// If time is going backward and there are at least 2 elements in the list of numbers...
-					else if(mTimeDirection == -1 && len(numbersList) > 1)
-					{
-						// If there are too many numbers in the list, I keep only the first ones, otherwise the player needs to go back
-						// in time for a while
-						var tooManyNumbers = 7;
-						
-						// I eliminate all the last numbers
-						if(len(numbersList) > tooManyNumbers)
-						{
-							for(var j = len(numbersList) - 1; j >= tooManyNumbers - 1; j--)
-								adel(numbersList, j);
-						}
-
-						
-						// I get the previous from last number
-						var lastNumberIndex = len(numbersList) - 2;
-						number = numbersList[lastNumberIndex];
-						
-						// I remove the last number in the array
-						adel(numbersList, lastNumberIndex + 1);
-						
-						// If now the array has only one element, I reached the last number, so this will be the last transition
-						if(len(numbersList) == 1)
-						{
-							// I remove the current scaling transition and create a new one (without loop) to form the last number
-							mAnimator.RemoveTransitionByObject(numberObject, SCALING_TRANSITION);
-							mInvariantAnimator.CreateScalingTransition(numberObject, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0, false);
-							
-							// I save the fact that this number object has finished its job
-							mFinalNumberFoundArray[i] = true;
-							
-							// Now I need to check if also the other number objects have finished. Initially I assume that it's true
-							mFinalNumbersFound = true;
-										
-							// I iterate until I find a false value
-							for(var i = 0; i < len(mFinalNumberFoundArray) && mFinalNumbersFound; i++)
-								mFinalNumbersFound = mFinalNumberFoundArray[i];
-						}
-					}
+					var foundTransition = false;
+				
+					// In order to know if it has finished its animation to form the number assigned to it, I iterate over the cubes that form
+					// the number object and check if there is an active transition. If I find even one, I stop: the number object is still animating
+					for(var j = 0; j < len(cubeObjects) && !foundTransition; j++)
+						foundTransition = mAnimator.HaveTransition(cubeObjects[j], 0);
 					
-					// Computing the new positions for the cubes, using an y offset to force the cubes to be put around the center of the number object
-					var newPositions = GenerateNumberPositions(number, [0 * SCALE_FACTOR, -numberObject.GetPosition().y, 0 * SCALE_FACTOR], mCubeSizes, mCubeSpacing, 1);
+					// If the number object is not animating anymore, I have to assign a new number and a new animation to it
+					if(!foundTransition)
+					{
+						var number;
+						
+						// If time is going forward...
+						if(mTimeDirection == 1)
+						{
+							// I get the previous number
+							var previousNumber = numbersList[len(numbersList) - 1];
+							
+							// I create a new number randomly until it's different from the previous one
+							do
+							{
+								number = Rand(9);
+							}
+							while(previousNumber == number);
 								
-					// I set the new positions and unhide each element, in case it was hidden (because maybe the previous number had less cubes)		
-					for(var i = 0; i < len(newPositions); i++)
-					{
-						cubeObjects[i].Unhide();
-						cubeObjects[i].SetPosition(newPositions[i]);
+							// I add the number to the list
+							aadd(numbersList, number);
+						}
+						// If time is going backward and there are at least 2 elements in the list of numbers...
+						else if(mTimeDirection == -1 && len(numbersList) > 1)
+						{
+							// If there are too many numbers in the list, I keep only the first ones, otherwise the player needs to go back
+							// in time for a while
+							var tooManyNumbers = 7;
+							
+							// I eliminate all the last numbers
+							if(len(numbersList) > tooManyNumbers)
+							{
+								for(var j = len(numbersList) - 1; j >= tooManyNumbers - 1; j--)
+									adel(numbersList, j);
+							}
+	
+							
+							// I get the previous from last number
+							var lastNumberIndex = len(numbersList) - 2;
+							number = numbersList[lastNumberIndex];
+														
+							// I remove the last number in the array
+							adel(numbersList, lastNumberIndex + 1);
+							
+							// If now the array has only one element, I reached the last number, so this will be the last transition
+							if(len(numbersList) == 1)
+							{
+								// I save the fact that this number object has finished its job
+								mFinalNumberFoundArray[i] = true;
+								
+								// Now I need to check if also the other number objects have finished. Initially I assume that it's true
+								mFinalNumbersFound = true;
+											
+								// I iterate until I find a false value
+								for(var i = 0; i < len(mFinalNumberFoundArray) && mFinalNumbersFound; i++)
+									mFinalNumbersFound = mFinalNumberFoundArray[i];
+							}
+						}
+						
+						// I get the new positions for the new number, and I get the array of cubes that form the number object
+						var finalPos = numberObject.GenerateFinalPositions(number, numberObject.GetBoxPosition());
+						var cubes = numberObject.GetObjs();
+						
+						for(var j = 0; j < len(cubes); j++) 
+						{				
+							// If it's NOT the final animation, I create the transition with the normal animator, otherwise with the invariant one
+							// (which is not affected by the time manipulation)
+							if(!mFinalNumberFoundArray[i])
+								mAnimator.CreateTransition(cubes[j], cubes[j].GetPosition(), {finalPos[j], finalPos[j]}, 0.7, false, 3);
+							else
+								mInvariantAnimator.CreateTransition(cubes[j], cubes[j].GetPosition(), {finalPos[j], finalPos[j]}, 0.7, false, 3);
+						}
 					}
-					
-					// I hide the last cubes (if there are any), since for this number they're not needed
-					for(var i = len(newPositions); i < len(cubeObjects); i++)
-						cubeObjects[i].Hide();
-					
-					// I save the moment that this number has changed, so not to change it again too early
-					mChangedNumberTime[i] = GetTime();
 				}
 			}
-			
-//			// Now I check the number objects to see if their scale has reached 0; in that case I change the number they're displaying, but only 
-//			// if the player didn't already find the final numbers (i.e. the number objects are not scaling anymore)
-//			for(var i = 0; i < len(mNumbersObjectArray) && !mFinalNumbersFound; i++)
-//			{
-//				// Getting the number object, the cubes that are contained in it, the scale of the object and the list of past numbers
-//				var numberObject = mNumbersObjectArray[i];
-//				var cubeObjects = mNumbersCubesObjectArray[i];
-//				var scale = numberObject.GetScale();
-//				var numbersList = mNumbersListArray[i];
-//
-//				// If the scale is small enough (I don't look for 0 to avoid problems with floating point computations), and it's been a while since
-//				// the last change of the number (I need this to avoid changing multiple times the number while the scale is below the threshold),
-//				// and if I this number object hasn't reached its final number
-//				if(scale.x <= 0.01 && scale.y <= 0.01 && scale.z <= 0.01 && GetTime() - mChangedNumberTime[i] > mDelayBetweenNumberChange && !mFinalNumberFoundArray[i])
-//				{
-//					var number;
-//					
-//					// If time is going forward...
-//					if(mTimeDirection == 1)
-//					{
-//						// I get the previous number
-//						var previousNumber = numbersList[len(numbersList) - 1];
-//						
-//						// I create a new number randomly until it's different from the previous one
-//						do
-//						{
-//							number = Rand(9);
-//						}
-//						while(previousNumber == number);
-//							
-//						// I add the number to the list
-//						aadd(numbersList, number);
-//					}
-//					// If time is going backward and there are at least 2 elements in the list of numbers...
-//					else if(mTimeDirection == -1 && len(numbersList) > 1)
-//					{
-//						// If there are too many numbers in the list, I keep only the first ones, otherwise the player needs to go back
-//						// in time for a while
-//						var tooManyNumbers = 7;
-//						
-//						// I eliminate all the last numbers
-//						if(len(numbersList) > tooManyNumbers)
-//						{
-//							for(var j = len(numbersList) - 1; j >= tooManyNumbers - 1; j--)
-//								adel(numbersList, j);
-//						}
-//
-//						
-//						// I get the previous from last number
-//						var lastNumberIndex = len(numbersList) - 2;
-//						number = numbersList[lastNumberIndex];
-//						
-//						// I remove the last number in the array
-//						adel(numbersList, lastNumberIndex + 1);
-//						
-//						// If now the array has only one element, I reached the last number, so this will be the last transition
-//						if(len(numbersList) == 1)
-//						{
-//							// I remove the current scaling transition and create a new one (without loop) to form the last number
-//							mAnimator.RemoveTransitionByObject(numberObject, SCALING_TRANSITION);
-//							mInvariantAnimator.CreateScalingTransition(numberObject, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0, false);
-//							
-//							// I save the fact that this number object has finished its job
-//							mFinalNumberFoundArray[i] = true;
-//							
-//							// Now I need to check if also the other number objects have finished. Initially I assume that it's true
-//							mFinalNumbersFound = true;
-//										
-//							// I iterate until I find a false value
-//							for(var i = 0; i < len(mFinalNumberFoundArray) && mFinalNumbersFound; i++)
-//								mFinalNumbersFound = mFinalNumberFoundArray[i];
-//						}
-//					}
-//					
-//					// Computing the new positions for the cubes, using an y offset to force the cubes to be put around the center of the number object
-//					var newPositions = GenerateNumberPositions(number, [0 * SCALE_FACTOR, -numberObject.GetPosition().y, 0 * SCALE_FACTOR], mCubeSizes, mCubeSpacing, 1);
-//								
-//					// I set the new positions and unhide each element, in case it was hidden (because maybe the previous number had less cubes)		
-//					for(var i = 0; i < len(newPositions); i++)
-//					{
-//						cubeObjects[i].Unhide();
-//						cubeObjects[i].SetPosition(newPositions[i]);
-//					}
-//					
-//					// I hide the last cubes (if there are any), since for this number they're not needed
-//					for(var i = len(newPositions); i < len(cubeObjects); i++)
-//						cubeObjects[i].Hide();
-//					
-//					// I save the moment that this number has changed, so not to change it again too early
-//					mChangedNumberTime[i] = GetTime();
-//				}
-//			}
-			
 			
 			// For each controller, I need to check if it's close to the numpad, and in that case if the user pressed the trigger
 			for(var i = 0; i < len(mControllersArray); i++)
@@ -1633,8 +1501,11 @@ function Level4::UpdateLogic(dt)
 				mInvariantAnimator.CreateScalingTransition(mMainClock.GetObj(), [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
 				
 				// Scaling animation also for the number objects
-				foreach(var numberObject in mNumbersObjectArray)
-					mInvariantAnimator.CreateScalingTransition(numberObject, [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
+				foreach(var numberObject in mNumberObjects)
+				{
+					foreach(var cube in numberObject.GetObjs())
+						mInvariantAnimator.CreateScalingTransition(cube, [1.0, 1.0, 1.0], [0.0, 1.0, 1.0], 0.7, false);	
+				}
 			}
 			
 			break;
@@ -1655,8 +1526,11 @@ function Level4::UpdateLogic(dt)
 				mBackText.Hide();
 				mMainClock.Hide();
 				
-				foreach(var numberObject in mNumbersObjectArray)
-					numberObject.Hide();
+				foreach(var numberObject in mNumberObjects)
+				{
+					foreach(var cube in numberObject.GetObjs())
+						cube.Hide();
+				}
 					
 				var elevatorPos = mElevator.GetPosition();
 					

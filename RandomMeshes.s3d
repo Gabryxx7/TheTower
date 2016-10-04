@@ -9,6 +9,7 @@ class RandomMeshes{
 	var mMeshSize;
 	var mNumberSpacing;
 	var mNumberDirection;
+	var mBoxPosition;
 	
 	GetObjs();
 	GetAnimationsVector();
@@ -17,6 +18,7 @@ class RandomMeshes{
 	GetOriginalAngles();
 	GetFinalAngles();
 	GetColor();	
+	GetBoxPosition();
 	SetFinalPos();
 	
 	MoveToFinalPosition(animator);
@@ -37,6 +39,7 @@ function RandomMeshes::RandomMeshes(mesh, amount, boxSize, boxPosition, color, m
 	mMeshSize = meshSize;
 	mNumberSpacing = numberSpacing;
 	mNumberDirection = numberDirection;
+	mBoxPosition = boxPosition;
 	
 	var offset = [1*SCALE_FACTOR, 0.5*SCALE_FACTOR, 1*SCALE_FACTOR];
 	var randomx = 0;
@@ -83,6 +86,10 @@ function RandomMeshes::GetFinalAngles(){
 
 function RandomMeshes::GetColor(){
 	return mColor;
+}
+
+function RandomMeshes::GetBoxPosition(){
+	return mBoxPosition;
 }
 
 function RandomMeshes::SetFinalPosition(number, pos){
