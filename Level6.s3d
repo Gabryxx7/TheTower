@@ -90,6 +90,8 @@ class Level6
 	
 	var mTranslateFactor;
 	
+	var mShootingGun;
+	var mGunRotation;
 	var mShootingAnimTime;
 	var mShootingAnimationTimes;
 	var mShootingOffsets;
@@ -139,8 +141,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mCounterShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
 	mLinesTimeVariable = 0;
-	
-	
+	mShootingGun = 0;
+		
 	mControllersBeingUsedIndex = {0, 0};
 	
 	mControllersArray = {};
@@ -170,6 +172,9 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		mDebugController = mControllersArray[0];
 		mDebugControllerHidden = false;
 		mDebugKeyhit = false;
+	}
+	else{
+		mGunRotation = {90, 90};
 	}
 	
 	mCounter = 0;
@@ -471,8 +476,8 @@ function Level6::UpdateLogic(dt)
 	if(!mIsVrOn && !mDebugVrOn){
 		mGunsObj[0].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
 		mGunsObj[1].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
-		mGunsObj[0].Rotate(95,0,1,0);
-		mGunsObj[1].Rotate(100,0,1,0);
+		mGunsObj[0].Rotate(mGunRotation[0],0,1,0);
+		mGunsObj[1].Rotate(mGunRotation[1],0,1,0);
 		mGunsObj[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
 		mGunsObj[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
 	}
@@ -654,7 +659,7 @@ function Level6::UpdateLogic(dt)
 			
 			for(var i = 0; i < len(mIsControllerShooting); i++){				
 				if(mIsControllerShooting[i]){
-					if(GetTime()-mControllerShotTime[i] <= mShootingDelay*2){
+					if(GetTime()-mControllerShotTime[i] <= mShootingDelay){
 						if(!mIsVrOn && !mDebugVrOn){
 							var gun = mGunsObj[i];
 							var center = gun.LocalToWorld([0, 0, 0]);
@@ -758,17 +763,18 @@ function Level6::HandleLasers()
 	}
 	else{
 		if(mInputManager.IsPressingPrimaryButton() && GetTime() - mLastShoot > mShootingDelay){
+			mShootingGun = (mShootingGun+1)%2;
 			mLastShoot = GetTime();			
-			mIsControllerShooting[0] = true;
-			mControllerShotTime[0] = GetTime();			
-			mAnimator.CreateGenericTransition(mControllerAnimId[0], 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
+			mIsControllerShooting[mShootingGun] = true;
+			mControllerShotTime[mShootingGun] = GetTime();			
+			mAnimator.CreateGenericTransition(mControllerAnimId[mShootingGun], 0, {mShootingDepth,0}, mShootingDelay/2000, 2);
 			
-			var startPoint = mGunsObj[0].GetPosition();
+			var startPoint = mGunsObj[mShootingGun].GetPosition();
 			var laserObj = CvmObj(mLaserMesh);
-			laserObj.SetRotationMatrix(mGunsObj[0].GetRotationMatrix());
-			laserObj.Rotate(90,0,1,0);
-			var center = mGunsObj[0].LocalToWorld([0, 0, 0]);
-			var tip = mGunsObj[0].LocalToWorld([1, 0, 0]);
+			laserObj.SetRotationMatrix(mGunsObj[mShootingGun].GetRotationMatrix());
+			laserObj.Rotate(mGunRotation[mShootingGun],0,1,0);
+			var center = mGunsObj[mShootingGun].LocalToWorld([0, 0, 0]);
+			var tip = mGunsObj[mShootingGun].LocalToWorld([1, 0, 0]);
 			mAnimator.CreateTransition(laserObj, startPoint, startPoint+(tip-center)*mLaserMaxDistance, mLaserSpeed ,false,0);
 			aadd(mPistolsLaserArray, laserObj);
 		}	
