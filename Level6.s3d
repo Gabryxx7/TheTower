@@ -48,6 +48,7 @@ class Level6
 	var mPreviousOpenglTranslationOffset;
 	
 	var mControllersArray;
+	var mGunsObj;
 	
 	var mDrawingShader;
 	var mLinesTimeVariable;
@@ -83,6 +84,13 @@ class Level6
 	
 	var mTranslateFactor;
 	
+	var mShootingAnimTime;
+	var mShootingAnimationTimes;
+	var mShootingOffsets;
+	var mShootingDepth;
+	var mShootingControllerIndex;
+	var mShootAnimId;
+	
 	// Private functions
 	HandleLasers();
 	
@@ -103,6 +111,7 @@ class Level6
 
 function Level6::Level6(isVRon, inputManager, soundManager)
 {		
+	mShootAnimId = 12412123;
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
 	mDebugVrOn = true;
@@ -141,15 +150,19 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	}
 	else if(mDebugVrOn)
 	{
-		aadd(mControllersArray, ViveController(1, CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1));
-		aadd(mControllersArray, ViveController(2, CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1));
+		mGunsObj = {};
+		aadd(mGunsObj, CvmObj(CVmNewMesh("scifiGun/SciFiGun.AAM")));
+		aadd(mGunsObj, CvmObj(CVmNewMesh("scifiGun/SciFiGun.AAM")));
+		mGunsObj[0].GetMesh().Rotate(90,0,1,0);
+		mGunsObj[1].GetMesh().Rotate(90,0,1,0);
+		mGunsObj[0].SetScale(0.03,0.03,0.03);
+		mGunsObj[1].SetScale(0.03,0.03,0.03);
+		aadd(mControllersArray, ViveController(1, mGunsObj[0]));
+		aadd(mControllersArray, ViveController(2, mGunsObj[1]));
 		
 		mDebugController = mControllersArray[0];
 		mDebugControllerHidden = false;
 		mDebugKeyhit = false;
-		
-		mControllersArray[0].SetRotation(90, 0, 1, 0);	
-		mControllersArray[1].SetRotation(90, 0, 1, 0);	
 	}
 	
 	mCounter = 0;
@@ -169,12 +182,14 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	UpdateCounter(0, false);
 
 	mLastShoot = 0;
-	mShootingDelay = 250;
+	mShootingDelay = 150.0;
+	mShootingDepth = 4*SCALE_FACTOR;
+	mShootingControllerIndex = -1;
 	
 	mLaserArray = {};
-	mLaserLength = 10.0 * SCALE_FACTOR;
-	mLaserSpeed = 0.2;
-	mEnemyLaserSpeed = 0.8;
+	mLaserLength = 5 * SCALE_FACTOR;
+	mLaserSpeed = 0.5;
+	mEnemyLaserSpeed = 0.2;
 	mEnemySpeed = 5.0;
 	
 	mTargets = {};
@@ -391,49 +406,49 @@ function Level6::UpdateLogic(dt)
 		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
 		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
 		
-		if(KeyPressed("Y"))
-		{
-			if(!mDebugKeyHit)
-			{
-				if(mDebugControllerHidden)
-					mDebugController.Unhide();
-				else
-					mDebugController.Hide();
-					
-				mDebugControllerHidden = !mDebugControllerHidden;
-				mDebugKeyHit = true;
-			}
-		}
-		else
-			mDebugKeyHit = false;
-
-		
-		static var rotX = 0;
-		static var rotY = 0;
-		static var rotZ = 0;
-			
-		if(KeyPressed("J"))
-			rotX += 1;
-		
-		if(KeyPressed("L"))
-			rotX -= 1;
-			
-		if(KeyPressed("I"))
-			rotY += 1;
-		
-		if(KeyPressed("K"))
-			rotY -= 1;
-			
-		if(KeyPressed("U"))
-			rotZ += 1;
-		
-		if(KeyPressed("O"))
-			rotZ -= 1;
-		
-		mDebugController.SetRotation(90, 0, 1, 0);
-		mDebugController.Rotate(rotY, 1, 0, 0);
-		mDebugController.Rotate(rotX, 0, 1, 0);
-		mDebugController.Rotate(rotZ, 0, 0, 1);
+//		if(KeyPressed("Y"))
+//		{
+//			if(!mDebugKeyHit)
+//			{
+//				if(mDebugControllerHidden)
+//					mDebugController.Unhide();
+//				else
+//					mDebugController.Hide();
+//					
+//				mDebugControllerHidden = !mDebugControllerHidden;
+//				mDebugKeyHit = true;
+//			}
+//		}
+//		else
+//			mDebugKeyHit = false;
+//
+//		
+//		static var rotX = 0;
+//		static var rotY = 0;
+//		static var rotZ = 0;
+//			
+//		if(KeyPressed("J"))
+//			rotX += 1;
+//		
+//		if(KeyPressed("L"))
+//			rotX -= 1;
+//			
+//		if(KeyPressed("I"))
+//			rotY += 1;
+//		
+//		if(KeyPressed("K"))
+//			rotY -= 1;
+//			
+//		if(KeyPressed("U"))
+//			rotZ += 1;
+//		
+//		if(KeyPressed("O"))
+//			rotZ -= 1;
+//		
+//		mDebugController.SetRotation(90, 0, 1, 0);
+//		mDebugController.Rotate(rotY, 1, 0, 0);
+//		mDebugController.Rotate(rotX, 0, 1, 0);
+//		mDebugController.Rotate(rotZ, 0, 0, 1);
 	}
 	
 	var updated = false;
@@ -596,7 +611,6 @@ function Level6::UpdateLogic(dt)
     			  			
     			var enemyLaser = target.HandleEnemyLaser(cameraPosition);
     			if(enemyLaser != Void){
-					outputln("ENEMY SHOOT");
     				aadd(mLaserArray, enemyLaser);	
     			}
     			
@@ -624,6 +638,15 @@ function Level6::UpdateLogic(dt)
 //				}
 //			}
 			
+			if(mShootingControllerIndex != -1){
+				if(GetTime()-mLastShoot <= mShootingDelay*2){
+					var controller = mControllersArray[mShootingControllerIndex];
+					controller.Translate(-controller.GetDirection()*mAnimator.GetCurrentStateInTransition(mShootAnimId,6));
+				}
+				else{
+					mShootingControllerIndex = -1;
+				}			
+			}
 			break;
 		}
 		// Case where the level is ending: the only thing missing is the player inside the elevator
@@ -693,6 +716,9 @@ function Level6::HandleLasers()
 				
 			var laserInfo = {startPoint, endPoint, direction, false, mLaserSpeed};
 			
+			mShootingControllerIndex = index;
+			mLastShoot = GetTime();
+			mAnimator.CreateGenericTransition(mShootAnimId, 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
 			aadd(mLaserArray, laserInfo);
 		}
 		// Case where the user stopped pressing a trigger

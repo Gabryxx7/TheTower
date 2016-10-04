@@ -65,6 +65,9 @@ class ViveController
 	var trackPointTime;
 	var trackpointAlpha;
 	
+	var mCustomMesh;
+	var mCustomObj;
+	
 	// Public functions
 	Draw();
 	DrawBoundingBox();
@@ -75,6 +78,7 @@ class ViveController
 	GetControllerTipCoordinates();
 	GetDirection();
 	SetPosition(position);
+	Translate(transl);
 	GetPosition();
 	SetRotationMatrix(matrix);
 	GetRotationMatrix();
@@ -91,11 +95,11 @@ class ViveController
 	GetDepth();
 	IsCollidingBBox(object);
 	UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed);
-	SetCustomMesh(mesh, scalingValue);
+	SetCustomMesh(mesh);
 };
 
 
-function ViveController::ViveController(controllerIndex, mesh, scalingValue)
+function ViveController::ViveController(controllerIndex, mesh)
 {
 	mControllerIndex = controllerIndex;
 	var fullControllerMesh;
@@ -177,7 +181,7 @@ function ViveController::ViveController(controllerIndex, mesh, scalingValue)
 		mDepth = abs(point2.z - point1.z);
 	}
 	else{		
-		SetCustomMesh(mesh, scalingValue);
+		SetCustomMesh(mesh);
 	}
 	
 	
@@ -198,79 +202,81 @@ function ViveController::ViveController(controllerIndex, mesh, scalingValue)
  * This method updates the visual status of the vive controller
  */
 function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed){
-	if(mUsingCustomMesh)
+	if(mUsingCustomMesh){
 		return;
+	}else{		
+		if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
+			var elapsedTime = GetTime() - timeSinceLastTouch; 
+			if(elapsedTime > trackPointTime){
+				trackpointAlpha = 0;
+				trackpadPointObj.Hide();	
+			}
+			else if(trackpointAlpha > 0){	
+				trackpointAlpha -= 0.025; //1/400 = 0.025, I don't know why but the floats are not working, I cannot use like trackPointTime/elapsedTime, no idea why
+			}
+		}
+		else{
+			trackpadPointObj.Unhide();
+			timeSinceLastTouch = GetTime();
+			trackpointAlpha = 1;
+			var yOffsetFactor = (touchPadCoord[1] > 0 ? touchPadCoord[1]: touchPadCoord[1]*0.4);
+			yOffsetFactor += abs(touchPadCoord[0])*0.3;
+			trackpadPointPos = trackpadPos + [trackpadCenterOffset.x, trackpadCenterOffset.y*yOffsetFactor+0.026*SCALE_FACTOR, trackpadCenterOffset.z] + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
+			trackpadPointObj.SetPosition(trackpadPointPos);
+		}
+	//	trackpadPointMesh.ModulateMaterials(1,1,1,trackpointAlpha);
+		trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, trackpointAlpha);
+	
+		if(triggerCoord[0] > 0){
+			if(isTriggerPressed < 1){
+				triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
+				triggerObj.SetPosition(0,0, 0.009 * triggerCoord[0]*SCALE_FACTOR);
+			}else{
+	//			triggerObj.SetPosition(0,0,0.009*SCALE_FACTOR);
+	//			triggerObj.SetRotation(triggerRange, 1, 0, 0);			
+			}
+		}
+		else
+			triggerObj.SetRotation(0, 1, 0, 0);
 		
-	if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
-		var elapsedTime = GetTime() - timeSinceLastTouch; 
-		if(elapsedTime > trackPointTime){
-			trackpointAlpha = 0;
-			trackpadPointObj.Hide();	
+		if(isMenuPressed > 0){
+			buttonObj.SetPosition(buttonPos - [0, buttonDepth, 0]);
 		}
-		else if(trackpointAlpha > 0){	
-			trackpointAlpha -= 0.025; //1/400 = 0.025, I don't know why but the floats are not working, I cannot use like trackPointTime/elapsedTime, no idea why
+		else{
+			buttonObj.SetPosition(buttonPos);		
 		}
-	}
-	else{
-		trackpadPointObj.Unhide();
-		timeSinceLastTouch = GetTime();
-		trackpointAlpha = 1;
-		var yOffsetFactor = (touchPadCoord[1] > 0 ? touchPadCoord[1]: touchPadCoord[1]*0.4);
-		yOffsetFactor += abs(touchPadCoord[0])*0.3;
-		trackpadPointPos = trackpadPos + [trackpadCenterOffset.x, trackpadCenterOffset.y*yOffsetFactor+0.026*SCALE_FACTOR, trackpadCenterOffset.z] + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
-		trackpadPointObj.SetPosition(trackpadPointPos);
-	}
-//	trackpadPointMesh.ModulateMaterials(1,1,1,trackpointAlpha);
-	trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, trackpointAlpha);
-
-	if(triggerCoord[0] > 0){
-		if(isTriggerPressed < 1){
-			triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
-			triggerObj.SetPosition(0,0, 0.009 * triggerCoord[0]*SCALE_FACTOR);
-		}else{
-//			triggerObj.SetPosition(0,0,0.009*SCALE_FACTOR);
-//			triggerObj.SetRotation(triggerRange, 1, 0, 0);			
+		
+		if(isGripPressed > 0){
+	//		leftGripObj.SetPosition(leftGripPos + [gripDepth, 0, 0]);
+	//		rightGripObj.SetPosition(rightGripPos - [gripDepth, 0, 0]);
+			leftGripObj.SetRotation(2.5,0,1,0);
+			rightGripObj.SetRotation(-2.5,0,1,0);
 		}
-	}
-	else
-		triggerObj.SetRotation(0, 1, 0, 0);
+		else{
+	//		leftGripObj.SetPosition(leftGripPos);
+	//		rightGripObj.SetPosition(rightGripPos);	
+			leftGripObj.SetRotation(0,0,1,0);
+			rightGripObj.SetRotation(0,0,1,0);
+		}
+		
+		if(isTouchpadPressed > 0){
+	//		trackpadObj.SetPosition(trackpadPos - [0, 0.012*SCALE_FACTOR, 0]);
+			trackpadObj.SetRotation(-trackpadDepth*touchPadCoord[1], 1, 0, 0);
+			trackpadObj.Rotate(-trackpadDepth*touchPadCoord[0], 0, 0, 1);
+		}
+		else{
+	//		trackpadObj.SetPosition(trackpadPos);	
+			trackpadObj.SetRotation(0,1,0,0);		
+			trackpadObj.SetRotation(0,0,0,1);	
+		}
+		
+		if(isSystemPressed == 0){
+			systemButtonObj.SetPosition(systemPos - [0, systemDepth, 0]);
+		}
+		else{
+			systemButtonObj.SetPosition(systemPos);		
+		}
 	
-	if(isMenuPressed > 0){
-		buttonObj.SetPosition(buttonPos - [0, buttonDepth, 0]);
-	}
-	else{
-		buttonObj.SetPosition(buttonPos);		
-	}
-	
-	if(isGripPressed > 0){
-//		leftGripObj.SetPosition(leftGripPos + [gripDepth, 0, 0]);
-//		rightGripObj.SetPosition(rightGripPos - [gripDepth, 0, 0]);
-		leftGripObj.SetRotation(2.5,0,1,0);
-		rightGripObj.SetRotation(-2.5,0,1,0);
-	}
-	else{
-//		leftGripObj.SetPosition(leftGripPos);
-//		rightGripObj.SetPosition(rightGripPos);	
-		leftGripObj.SetRotation(0,0,1,0);
-		rightGripObj.SetRotation(0,0,1,0);
-	}
-	
-	if(isTouchpadPressed > 0){
-//		trackpadObj.SetPosition(trackpadPos - [0, 0.012*SCALE_FACTOR, 0]);
-		trackpadObj.SetRotation(-trackpadDepth*touchPadCoord[1], 1, 0, 0);
-		trackpadObj.Rotate(-trackpadDepth*touchPadCoord[0], 0, 0, 1);
-	}
-	else{
-//		trackpadObj.SetPosition(trackpadPos);	
-		trackpadObj.SetRotation(0,1,0,0);		
-		trackpadObj.SetRotation(0,0,0,1);	
-	}
-	
-	if(isSystemPressed == 0){
-		systemButtonObj.SetPosition(systemPos - [0, systemDepth, 0]);
-	}
-	else{
-		systemButtonObj.SetPosition(systemPos);		
 	}
 }
 
@@ -425,18 +431,36 @@ function ViveController::GetDepth()
 	return mDepth;
 }
 
+function ViveController::Translate(transl){
+	mViveController.Translate(transl);
+}
+
 function ViveController::IsCollidingBBox(object)
 {
 	return mBoundingBoxControllerObj.IsCollidingBBox(object);
 }
 
-function ViveController::SetCustomMesh(mesh, scalingValue){	
+function ViveController::SetCustomMesh(mesh){	
 	mUsingCustomMesh = true;
-	mViveController = CVmObj(mesh);
-	mViveController.Normalize(scalingValue);
-	mBoundingBoxControllerObj = CVmObj(mesh);
+	if(mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH"){
+		mCustomMesh = mesh;
+		mCustomObj = CVmObj(mesh);
+	}
+	else{
+		mCustomObj = mesh;
+		mCustomMesh = mCustomObj.GetMesh();
+	}
+	mCustomMesh.CenterBoundingBox ();
 	
-	mBoundingBox = mesh.GetBoundingBox();
+//	mViveController = CVmObj();
+//	mViveController.AddChild(mCustomObj,0,0,0);
+	
+	mViveController = mCustomObj;
+	
+	
+	mBoundingBoxControllerObj = mCustomObj;
+	
+	mBoundingBox = mCustomMesh.GetBoundingBox();
 	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
 	var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
 	
