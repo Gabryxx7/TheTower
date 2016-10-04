@@ -120,7 +120,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = true;
+	mDebugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -145,6 +145,12 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	mControllersArray = {};
 		
+	mGunsObj = {};
+	aadd(mGunsObj, CvmObj(CVmNewMesh("scifiGun/SciFiGun.AAM")));
+	aadd(mGunsObj, CvmObj(CVmNewMesh("scifiGun/SciFiGun.AAM")));
+	mGunsObj[0].SetScale(0.03,0.03,0.03);
+	mGunsObj[1].SetScale(0.03,0.03,0.03);
+	
 	if(mIsVRon)
 	{
 		var controller1 = mInputManager.GetController(1);
@@ -156,13 +162,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	}
 	else if(mDebugVrOn)
 	{
-		mGunsObj = {};
-		aadd(mGunsObj, CvmObj(CVmNewMesh("scifiGun/SciFiGun.AAM")));
-		aadd(mGunsObj, CvmObj(CVmNewMesh("scifiGun/SciFiGun.AAM")));
 		mGunsObj[0].GetMesh().Rotate(90,0,1,0);
 		mGunsObj[1].GetMesh().Rotate(90,0,1,0);
-		mGunsObj[0].SetScale(0.03,0.03,0.03);
-		mGunsObj[1].SetScale(0.03,0.03,0.03);
 		aadd(mControllersArray, ViveController(1, mGunsObj[0]));
 		aadd(mControllersArray, ViveController(2, mGunsObj[1]));
 		
@@ -343,6 +344,12 @@ function Level6::Render()
 			mControllersArray[i].Draw();		
 	}
 	
+	
+	if(!mIsVrOn && !mDebugVrOn){
+		mGunsObj[0].Draw();
+		mGunsObj[1].Draw();	
+	}
+	
 	switch(mLevelStatus)
 	{
 		case STATUS_ELEVATOR_MOVING:
@@ -412,7 +419,6 @@ function Level6::UpdateLogic(dt)
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon && mDebugVrOn)
 	{
-		
 		mLaserTestObj.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
 		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
 		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
@@ -460,6 +466,15 @@ function Level6::UpdateLogic(dt)
 		mDebugController.Rotate(rotY, 1, 0, 0);
 		mDebugController.Rotate(rotX, 0, 1, 0);
 		mDebugController.Rotate(rotZ, 0, 0, 1);
+	}
+	
+	if(!mIsVrOn && !mDebugVrOn){
+		mGunsObj[0].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+		mGunsObj[1].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+		mGunsObj[0].Rotate(95,0,1,0);
+		mGunsObj[1].Rotate(100,0,1,0);
+		mGunsObj[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
+		mGunsObj[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
 	}
 	
 	var updated = false;
@@ -640,8 +655,18 @@ function Level6::UpdateLogic(dt)
 			for(var i = 0; i < len(mIsControllerShooting); i++){				
 				if(mIsControllerShooting[i]){
 					if(GetTime()-mControllerShotTime[i] <= mShootingDelay*2){
-						var controller = mControllersArray[i];
-						controller.Translate(-controller.GetDirection()*mAnimator.GetCurrentStateInTransition(mControllerAnimId[i],6));
+						if(!mIsVrOn && !mDebugVrOn){
+							var gun = mGunsObj[i];
+							var mat = gun.GetRotationMatrix();
+//							outputln(mCamera.GetDirection());
+//							outputln([mCamera.GetRotationMatrix()[2], -mCamera.GetRotationMatrix()[6], -mCamera.GetRotationMatrix()[10]]); //THIS IS the fucking direction vector
+//							outputln("");
+							gun.Translate([mat[2], 0, 0]*mAnimator.GetCurrentStateInTransition(mControllerAnimId[i],6));
+						}
+						else{
+							var controller = mControllersArray[i];
+							controller.Translate(-controller.GetDirection()*mAnimator.GetCurrentStateInTransition(mControllerAnimId[i],6));
+						}
 					}
 					else{
 						mIsControllerShooting[i] = false;
@@ -736,10 +761,17 @@ function Level6::HandleLasers()
 	else{
 		if(mInputManager.IsPressingPrimaryButton() && GetTime() - mLastShoot > mShootingDelay){
 			mLastShoot = GetTime();
-			var startPoint = cameraPosition- [-0.1 * SCALE_FACTOR, 0.1 * SCALE_FACTOR, 0.0 * SCALE_FACTOR];
+			
+			mIsControllerShooting[0] = true;
+			mControllerShotTime[0] = GetTime();			
+			mAnimator.CreateGenericTransition(mControllerAnimId[0], 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
+			
+			var startPoint = mGunsObj[0].GetPosition();
 			var laserObj = CvmObj(mLaserMesh);
-			laserObj.SetRotationMatrix(mCamera.GetRotationMatrix());
-			mAnimator.CreateTransition(laserObj, startPoint, startPoint+mCamera.GetDirection()*mLaserMaxDistance, mLaserSpeed ,false,0);
+//			laserObj.SetRotationMatrix(MatrixInverse_4(mGunsObj[0].GetRotationMatrix()));
+			laserObj.SetRotationMatrix(mGunsObj[0].GetRotationMatrix());
+			laserObj.Rotate(-75,0,1,0);
+			mAnimator.CreateTransition(laserObj, startPoint, startPoint+mCamera.GetDirection()*mLaserMaxDistance, mLaserSpeed*10 ,false,0);
 			aadd(mPistolsLaserArray, laserObj);
 		}	
 	}
