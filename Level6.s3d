@@ -105,7 +105,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = false;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -134,18 +134,22 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	{
 		var controller1 = mInputManager.GetController(1);
 		var controller2 = mInputManager.GetController(2);
-		
+		controller1.SetCustomMesh(CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1);
+		controller2.SetCustomMesh(CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1);
 		aadd(mControllersArray, controller1);
 		aadd(mControllersArray, controller2);
 	}
 	else if(mDebugVrOn)
 	{
-		mDebugController = ViveController(1);
+		aadd(mControllersArray, ViveController(1, CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1));
+		aadd(mControllersArray, ViveController(2, CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1));
+		
+		mDebugController = mControllersArray[0];
 		mDebugControllerHidden = false;
 		mDebugKeyhit = false;
-		mDebugController.SetRotation(90, 0, 1, 0);
-
-		aadd(mControllersArray, mDebugController);
+		
+		mControllersArray[0].SetRotation(90, 0, 1, 0);	
+		mControllersArray[1].SetRotation(90, 0, 1, 0);	
 	}
 	
 	mCounter = 0;
@@ -210,7 +214,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		
 		starObj.SetPosition([posX, posY, posZ]);
 		
-		aadd(mTargets, Target(starObj, 3, 500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, mAnimator));
+		aadd(mTargets, Target(starObj, 3, 1500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, mAnimator));
 	}
 	
 	// Creating texts object for the scene
@@ -384,7 +388,8 @@ function Level6::UpdateLogic(dt)
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon && mDebugVrOn)
 	{
-		mDebugController.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
+		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
+		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
 		
 		if(KeyPressed("Y"))
 		{
@@ -425,7 +430,7 @@ function Level6::UpdateLogic(dt)
 		if(KeyPressed("O"))
 			rotZ -= 1;
 		
-		mDebugController.SetRotation(0, 1, 0, 0);
+		mDebugController.SetRotation(90, 0, 1, 0);
 		mDebugController.Rotate(rotY, 1, 0, 0);
 		mDebugController.Rotate(rotX, 0, 1, 0);
 		mDebugController.Rotate(rotZ, 0, 0, 1);
@@ -591,6 +596,7 @@ function Level6::UpdateLogic(dt)
     			  			
     			var enemyLaser = target.HandleEnemyLaser(cameraPosition);
     			if(enemyLaser != Void){
+					outputln("ENEMY SHOOT");
     				aadd(mLaserArray, enemyLaser);	
     			}
     			

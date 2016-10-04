@@ -149,7 +149,7 @@ class Level0
 function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTranslationOffset, prevLightDiffuse)
 {
 	mIsVRon = isVRon;
-	debugVrOn = false;
+	debugVrOn = true;
 	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
@@ -174,6 +174,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 //	var translateFactor = [0, 0, 0];
 	mControllersArray = {};
 	if(debugVrOn){
+//		aadd(mControllersArray, ViveController(1, CVmNewMesh("scifiGun/SciFiGun.AAM"), 0.1));
 		aadd(mControllersArray, ViveController(1));
 		viveTestParam = {{0,0}, {0,0}, -1, -1, -1, -1, 0, 0};	
 	}
@@ -802,7 +803,7 @@ function Level0::UpdateLogic(dt)
 		}if(KeyPressed("k")){
 			viveTestParam[7] += 1;
 		}
-		mControllersArray[0].UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5]);
+		mControllersArray[0].UpdateStatus(viveTestParam[0], viveTestParam[1], viveTestParam[2], viveTestParam[3], viveTestParam[4], viveTestParam[5], 1);
 		mControllersArray[0].SetRotation(viveTestParam[6],1,0,0);
 		mControllersArray[0].Rotate(viveTestParam[7],0,0,1);
 	}

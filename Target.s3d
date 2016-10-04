@@ -52,9 +52,9 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSp
 	mLaserSpeed = laserSpeed;
 	
 	mIsChangingColor = -1;
-	mColorTransitionTime = 0.5;
+	mColorTransitionTime = 0.15;
 	
-	mScalingTransitionTime = 0.35;
+	mScalingTransitionTime = 0.25;
 	
 	mHitTime = 0;
 	mShootTime = 0;
@@ -135,14 +135,16 @@ function Target::UpdateTransition(mMainRoom){
 function Target::UpdateColor(){
 	if(mIsChangingColor != -1){
 		if(mIsChangingColor == 1){
-			outputln("GOIND RED");
 			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, mHitColor, mColorTransitionTime, false);
+			if(!mKilled)
+				mAnimator.CreateScalingTransition(mObj, [1, 1, 1], [0.8, 0.8, 0.8], mColorTransitionTime, false, 3);
 			mHitTime = GetTime();
 			mIsChangingColor = 2;				
 		}
 		else if(mIsChangingColor == 2 && GetTime()-mHitTime > (mColorTransitionTime*1000)){
-			outputln("GOIND WHITE");
 			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mHitColor, mColor, mColorTransitionTime, false);
+			if(!mKilled)
+				mAnimator.CreateScalingTransition(mObj, [0.8, 0.8, 0.8], [1,1,1], mColorTransitionTime, false, 3);
 			mIsChangingColor = -1;
 		}	
 	}
@@ -164,7 +166,7 @@ function Target::HandleEnemyLaser(cameraPosition){
 	if(GetTIme()-mShootTime > mShootDelay){
 		mShootTime = GetTime();
 		var pos = mObj.GetPosition();
-		return {pos, cameraPosition, pos-cameraPosition, true, mLaserSpeed};
+		return {pos, cameraPosition, [0,-1,0], true, mLaserSpeed};
 	}
 	return null;
 } 

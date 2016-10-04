@@ -1,6 +1,7 @@
  
 class ViveController
 {
+	var mUsingCustomMesh;
 	var mViveController;
 	var mBoundingBoxControllerObj;
 	
@@ -90,88 +91,95 @@ class ViveController
 	GetDepth();
 	IsCollidingBBox(object);
 	UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed);
+	SetCustomMesh(mesh, scalingValue);
 };
 
 
-function ViveController::ViveController(controllerIndex)
+function ViveController::ViveController(controllerIndex, mesh, scalingValue)
 {
 	mControllerIndex = controllerIndex;
-	
-	controllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Body/body.aam");
-	buttonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Button/button.aam");
-	ledMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Led/led.aam");
-	leftGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");
-	rightGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
-	systemButtonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
-	trackpadMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
-	triggerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trigger/trigger.aam");
-
-	var fullControllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam");
-	
+	var fullControllerMesh;
+	mUsingCustomMesh = !(mesh == Void);
 	mInvisibleShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { discard; }", true);
 	
-	mBoundingBoxControllerObj = CVmObj(fullControllerMesh);
+	if(!mUsingCustomMesh){
+		fullControllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam");
+		
+		controllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Body/body.aam");
+		buttonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Button/button.aam");
+		ledMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Led/led.aam");
+		leftGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");
+		rightGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
+		systemButtonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
+		trackpadMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
+		triggerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trigger/trigger.aam");	
+		
+		
+		mBoundingBoxControllerObj = CVmObj(fullControllerMesh);
+		
+		bodyObj = CVmObj(controllerMesh);
+		buttonObj = CVmObj(buttonMesh);
+		ledObj = CVmObj(ledMesh);
+		leftGripObj = CVmObj(leftGripMesh);
+		leftGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
+		
+		rightGripObj = CVmObj(rightGripMesh);
+		rightGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
+		
+		systemButtonObj = CVmObj(systemButtonMesh);
+		trackpadObj = CVmObj(trackpadMesh);
+		triggerObj = CVmObj(triggerMesh);
+		triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.22*SCALE_FACTOR);
+		
+		buttonPos = buttonObj.GetPosition();
+		systemPos = systemButtonObj.GetPosition();
+		leftGripPos = leftGripObj.GetPosition();
+		rightGripPos = rightGripObj.GetPosition();
+		systemButtonPos = systemButtonObj.GetPosition();
+		trackpadPos = trackpadObj.GetPosition();
+		trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
+		triggerRange = -55;
+		trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
+		
+		systemDepth = 0.0075*SCALE_FACTOR;
+		buttonDepth = 0.0075*SCALE_FACTOR;
+		trackpadDepth = 4.5;
+		gripDepth = 0.007*SCALE_FACTOR;
+		
+		trackPointTime = 400;
+		trackpointAlpha = 1;
+		trackpadPointMesh = CVmNewMesh(VRP_SPHERE, 60, 0.008*SCALE_FACTOR, 1.2);
+		trackpadPointObj = CVmObj(trackpadPointMesh);
+		trackpadPointPos = trackpadPos + trackpadCenterOffset;
+		trackpadObj.AddChild(trackpadPointObj);
+		trackpadObj.SetPivotPoint(trackpadCenterOffset);
+		
+		trackpadPointMesh.ShaderAdd("alphaShader.glsl", 0);
+		trackpadPointMesh.ShaderActivate(true);
+		trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+		
+		mViveController = CVmObj();
+		mViveController.AddChild(bodyObj);
+		mViveController.AddChild(buttonObj);
+		mViveController.AddChild(ledObj);
+		mViveController.AddChild(leftGripObj);
+		mViveController.AddChild(rightGripObj);
+		mViveController.AddChild(systemButtonObj);
+		mViveController.AddChild(triggerObj);
+		mViveController.AddChild(trackpadObj);
+		
+		mBoundingBox = fullControllerMesh.GetBoundingBox();
+		var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
+		var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
+		
+		mWidth = abs(point2.x - point1.x);
+		mHeight = abs(point2.y - point1.y);
+		mDepth = abs(point2.z - point1.z);
+	}
+	else{		
+		SetCustomMesh(mesh, scalingValue);
+	}
 	
-	bodyObj = CVmObj(controllerMesh);
-	buttonObj = CVmObj(buttonMesh);
-	ledObj = CVmObj(ledMesh);
-	leftGripObj = CVmObj(leftGripMesh);
-	leftGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
-	
-	rightGripObj = CVmObj(rightGripMesh);
-	rightGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
-	
-	systemButtonObj = CVmObj(systemButtonMesh);
-	trackpadObj = CVmObj(trackpadMesh);
-	triggerObj = CVmObj(triggerMesh);
-	triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.22*SCALE_FACTOR);
-	
-	buttonPos = buttonObj.GetPosition();
-	systemPos = systemButtonObj.GetPosition();
-	leftGripPos = leftGripObj.GetPosition();
-	rightGripPos = rightGripObj.GetPosition();
-	systemButtonPos = systemButtonObj.GetPosition();
-	trackpadPos = trackpadObj.GetPosition();
-	trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
-	triggerRange = -55;
-	trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
-	
-	systemDepth = 0.0075*SCALE_FACTOR;
-	buttonDepth = 0.0075*SCALE_FACTOR;
-	trackpadDepth = 4.5;
-	gripDepth = 0.007*SCALE_FACTOR;
-	
-	trackPointTime = 400;
-	trackpointAlpha = 1;
-	trackpadPointMesh = CVmNewMesh(VRP_SPHERE, 60, 0.008*SCALE_FACTOR, 1.2);
-	trackpadPointObj = CVmObj(trackpadPointMesh);
-	trackpadPointPos = trackpadPos + trackpadCenterOffset;
-	trackpadObj.AddChild(trackpadPointObj);
-	trackpadObj.SetPivotPoint(trackpadCenterOffset);
-	
-	trackpadPointMesh.ShaderAdd("alphaShader.glsl", 0);
-	trackpadPointMesh.ShaderActivate(true);
-	trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
-	
-	
-	mViveController = CVmObj();
-	mViveController.AddChild(bodyObj);
-	mViveController.AddChild(buttonObj);
-	mViveController.AddChild(ledObj);
-	mViveController.AddChild(leftGripObj);
-	mViveController.AddChild(rightGripObj);
-	mViveController.AddChild(systemButtonObj);
-	mViveController.AddChild(triggerObj);
-	mViveController.AddChild(trackpadObj);
-	
-	
-	mBoundingBox = fullControllerMesh.GetBoundingBox();
-	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
-	var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
-	
-	mWidth = abs(point2.x - point1.x);
-	mHeight = abs(point2.y - point1.y);
-	mDepth = abs(point2.z - point1.z);
 	
 	mTipLocalCoordinates = [0, -0.38 * SCALE_FACTOR, -0.20 * SCALE_FACTOR];
 	
@@ -190,6 +198,9 @@ function ViveController::ViveController(controllerIndex)
  * This method updates the visual status of the vive controller
  */
 function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed){
+	if(mUsingCustomMesh)
+		return;
+		
 	if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
 		var elapsedTime = GetTime() - timeSinceLastTouch; 
 		if(elapsedTime > trackPointTime){
@@ -417,4 +428,19 @@ function ViveController::GetDepth()
 function ViveController::IsCollidingBBox(object)
 {
 	return mBoundingBoxControllerObj.IsCollidingBBox(object);
+}
+
+function ViveController::SetCustomMesh(mesh, scalingValue){	
+	mUsingCustomMesh = true;
+	mViveController = CVmObj(mesh);
+	mViveController.Normalize(scalingValue);
+	mBoundingBoxControllerObj = CVmObj(mesh);
+	
+	mBoundingBox = mesh.GetBoundingBox();
+	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
+	var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
+	
+	mWidth = abs(point2.x - point1.x);
+	mHeight = abs(point2.y - point1.y);
+	mDepth = abs(point2.z - point1.z);
 }
