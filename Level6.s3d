@@ -53,8 +53,14 @@ class Level6
 	var mDrawingShader;
 	var mLinesTimeVariable;
 
-	var mLaserArray;
+	var mAllLasersArrays;
+	var mPistolsLaserArray;
+	var mEnemyLaserArray;
+	var mLaserMaxDistance;
+	var mLaserMesh;
+	var mLaserTestObj;
 	var mLaserLength;
+	var mLaserWidth;
 	var mLaserSpeed;
 	var mEnemyLaserSpeed;
 	
@@ -186,10 +192,21 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mShootingDepth = 4*SCALE_FACTOR;
 	mShootingControllerIndex = -1;
 	
-	mLaserArray = {};
-	mLaserLength = 5 * SCALE_FACTOR;
-	mLaserSpeed = 0.5;
-	mEnemyLaserSpeed = 0.2;
+	
+	mPistolsLaserArray = {};
+	mEnemyLaserArray = {};
+	mAllLasersArrays = {};
+	aadd(mAllLasersArrays, mPistolsLaserArray);
+	aadd(mAllLasersArrays, mEnemyLaserArray);
+	
+	mLaserMaxDistance = 500;
+	mLaserLength = 0.65;
+	mLaserWidth = 0.025;
+	mLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
+	mLaserMesh.Rotate(90,1,0,0);
+	mLaserTestObj = CvmObj(mLaserMesh);
+	mLaserSpeed = 1;
+	mEnemyLaserSpeed = mLaserSpeed*4;
 	mEnemySpeed = 5.0;
 	
 	mTargets = {};
@@ -229,7 +246,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		
 		starObj.SetPosition([posX, posY, posZ]);
 		
-		aadd(mTargets, Target(starObj, 3, 1500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, mLaserLength, mAnimator));
+		aadd(mTargets, Target(starObj, 3, 1500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, mLaserMesh, mAnimator));
 	}
 	
 	// Creating texts object for the scene
@@ -331,26 +348,6 @@ function Level6::Render()
 		case STATUS_LEVEL_STARTED:
 		{
 			mMainRoom.Draw();
-
-			glLineWidth(10);
-			
-			mDrawingShader.Start();	
-				mDrawingShader.SetParameter("time", mLinesTimeVariable);
-
-				for(var i = 0; i < len(mLaserArray); i++)
-				{
-					var laserStartingPos = mLaserArray[i][0];
-					var laserEndingPos = mLaserArray[i][1];
-
-					mDrawingShader.SetParameter("alpha", 1.0);
-					mDrawingShader.SetParameter("lineIsConnected", false);
-
-					glBegin(GL_LINES);
-						glVertex(laserStartingPos);
-						glVertex(laserEndingPos);		
-					glEnd();
-				}
-			mDrawingShader.Stop();
 			
 			mLinesTimeVariable += 0.01;
 			
@@ -358,6 +355,14 @@ function Level6::Render()
 				target.Draw();
 			
 			mCounterShader.Start();
+				mCounterShader.SetParameter("color", [1,0,0]);
+				mLaserTestObj.Draw();
+				foreach(var laser in mPistolsLaserArray)
+					laser.Draw();
+					
+				foreach(var enemyLaser in mEnemyLaserArray)
+					enemyLaser.Draw();
+					
 				for(var i = 0; i < len(mCounterRandomMeshes); i++){
 					foreach(var obj in mCounterRandomMeshes[i].GetObjs()){
 						mCounterShader.SetParameter("color", mCounterRandomMeshes[i].GetColor());
@@ -403,52 +408,54 @@ function Level6::UpdateLogic(dt)
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon && mDebugVrOn)
 	{
+		
+		mLaserTestObj.SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);
 		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
 		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
 		
-//		if(KeyPressed("Y"))
-//		{
-//			if(!mDebugKeyHit)
-//			{
-//				if(mDebugControllerHidden)
-//					mDebugController.Unhide();
-//				else
-//					mDebugController.Hide();
-//					
-//				mDebugControllerHidden = !mDebugControllerHidden;
-//				mDebugKeyHit = true;
-//			}
-//		}
-//		else
-//			mDebugKeyHit = false;
-//
-//		
-//		static var rotX = 0;
-//		static var rotY = 0;
-//		static var rotZ = 0;
-//			
-//		if(KeyPressed("J"))
-//			rotX += 1;
-//		
-//		if(KeyPressed("L"))
-//			rotX -= 1;
-//			
-//		if(KeyPressed("I"))
-//			rotY += 1;
-//		
-//		if(KeyPressed("K"))
-//			rotY -= 1;
-//			
-//		if(KeyPressed("U"))
-//			rotZ += 1;
-//		
-//		if(KeyPressed("O"))
-//			rotZ -= 1;
-//		
-//		mDebugController.SetRotation(90, 0, 1, 0);
-//		mDebugController.Rotate(rotY, 1, 0, 0);
-//		mDebugController.Rotate(rotX, 0, 1, 0);
-//		mDebugController.Rotate(rotZ, 0, 0, 1);
+		if(KeyPressed("Y"))
+		{
+			if(!mDebugKeyHit)
+			{
+				if(mDebugControllerHidden)
+					mDebugController.Unhide();
+				else
+					mDebugController.Hide();
+					
+				mDebugControllerHidden = !mDebugControllerHidden;
+				mDebugKeyHit = true;
+			}
+		}
+		else
+			mDebugKeyHit = false;
+
+		
+		static var rotX = 0;
+		static var rotY = 0;
+		static var rotZ = 0;
+			
+		if(KeyPressed("J"))
+			rotX += 1;
+		
+		if(KeyPressed("L"))
+			rotX -= 1;
+			
+		if(KeyPressed("I"))
+			rotY += 1;
+		
+		if(KeyPressed("K"))
+			rotY -= 1;
+			
+		if(KeyPressed("U"))
+			rotZ += 1;
+		
+		if(KeyPressed("O"))
+			rotZ -= 1;
+		
+		mDebugController.SetRotation(90, 0, 1, 0);
+		mDebugController.Rotate(rotY, 1, 0, 0);
+		mDebugController.Rotate(rotX, 0, 1, 0);
+		mDebugController.Rotate(rotZ, 0, 0, 1);
 	}
 	
 	var updated = false;
@@ -558,30 +565,21 @@ function Level6::UpdateLogic(dt)
 		{			
     		HandleLasers();
     		
-    		for(var i = 0; i < len(mLaserArray); i++)
-    		{
-    			var laserInfo = mLaserArray[i];
-    			
-    			var startPoint = laserInfo[0];
-    			var endPoint = laserInfo[1];
-    			var direction = laserInfo[2];
-    			var isEnemy = laserInfo[3];
-    			var laserSpeed = laserInfo[4];
-    			
-    			var contactPoint;
-    			var normal;
-    			var isWall;
-    			
-//    			var hasItWall = IsPointedPositionValid(startPoint, endPoint, &contactPoint, &normal, &isWall, true);
-    			var isPointValid = mMainRoom.IsPointInRoom(endPoint) && !mElevator.IsPointInElevator(endPoint);
-    			
-    			if(isPointValid && !isEnemy)
-    			{
-    				laserInfo[0] = startPoint + laserSpeed * direction;
-    				laserInfo[1] = endPoint + laserSpeed * direction;
-    			}
-    			else
-					adel(mLaserArray, i);
+    		foreach(var lasersArray in mAllLasersArrays){
+	    		for(var i = 0; i < len(lasersArray); i++)
+	    		{
+	    			var laserObj = lasersArray[i];
+	    			var contactPoint;
+	    			var normal;
+	    			var isWall;
+	    			
+	//    			var hasItWall = IsPointedPositionValid(startPoint, endPoint, &contactPoint, &normal, &isWall, true);
+	    			var isPointValid = mMainRoom.IsPointInRoom(laserObj.GetPosition()) && !mElevator.IsPointInElevator(laserObj.GetPosition());
+	    			
+	    			if(!isPointValid){
+						adel(lasersArray, i);
+	    			}
+	    		}    		
     		}
     		
     		for(var i = 0; i < len(mTargets); i++)
@@ -589,16 +587,13 @@ function Level6::UpdateLogic(dt)
     			var target = mTargets[i];    			
     			var hasBeenHit = false;
     			
-    			for(var j = 0; j < len(mLaserArray) && !hasBeenHit; j++)
+    			for(var j = 0; j < len(mPistolsLaserArray) && !hasBeenHit; j++)
     			{
-    				var startPos = mLaserArray[j][0];
-    				var endPos = mLaserArray[j][1];
-    				
-    				hasBeenHit = target.IsCollidingBBoxOnly(startPos, endPos);
+    				hasBeenHit = target.IsCollidingBBox(mPistolsLaserArray[j]);
     				
     				if(hasBeenHit)
     				{
-    					adel(mLaserArray, j);    					
+    					adel(mPistolsLaserArray, j);    					
     					
     					if(target.Hit() && target.RemoveLife() <= 0){
     						output("KILLED");
@@ -606,12 +601,12 @@ function Level6::UpdateLogic(dt)
 	    					mCounter = (mCounter + 1) % 100;
 							UpdateCounter(mCounter, false);	
 						}
-    				}
+    				}  
     			}
     			  			
     			var enemyLaser = target.HandleEnemyLaser(cameraPosition);
     			if(enemyLaser != Void){
-    				aadd(mLaserArray, enemyLaser);	
+    				aadd(mEnemyLaserArray, enemyLaser);	
     			}
     			
     			target.Update(mMainRoom);
@@ -709,17 +704,14 @@ function Level6::HandleLasers()
 			
 			var controller = mControllersArray[index];
 			
-			var direction = controller.GetDirection();
-			
-			var startPoint = controller.GetPosition();
-			var endPoint = startPoint + mLaserLength * direction;			
-				
-			var laserInfo = {startPoint, endPoint, direction, false, mLaserSpeed};
-			
 			mShootingControllerIndex = index;
 			mLastShoot = GetTime();
+			
 			mAnimator.CreateGenericTransition(mShootAnimId, 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
-			aadd(mLaserArray, laserInfo);
+			var laserObj = CvmObj(mLaserMesh);
+			laserObj.SetRotationMatrix(controller.GetRotationMatrix());
+			mAnimator.CreateTransition(laserObj, controller.GetPosition(), controller.GetPosition()+controller.GetDirection()*mLaserMaxDistance, mLaserSpeed, false,0);
+			aadd(mPistolsLaserArray, laserObj);
 		}
 		// Case where the user stopped pressing a trigger
 		else
@@ -736,11 +728,10 @@ function Level6::HandleLasers()
 		if(mInputManager.IsPressingPrimaryButton() && GetTime() - mLastShoot > mShootingDelay){
 			mLastShoot = GetTime();
 			var startPoint = cameraPosition- [-0.1 * SCALE_FACTOR, 0.1 * SCALE_FACTOR, 0.0 * SCALE_FACTOR];
-			var direction = mCamera.GetDirection();
-			var endPoint = startPoint + mLaserLength * direction;
-			var laserInfo = {startPoint, endPoint, direction, false, mLaserSpeed};
-			
-			aadd(mLaserArray, laserInfo);
+			var laserObj = CvmObj(mLaserMesh);
+			laserObj.SetRotationMatrix(mCamera.GetRotationMatrix());
+			mAnimator.CreateTransition(laserObj, startPoint, startPoint+mCamera.GetDirection()*mLaserMaxDistance, mLaserSpeed ,false,0);
+			aadd(mPistolsLaserArray, laserObj);
 		}	
 	}
 }
