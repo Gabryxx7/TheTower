@@ -55,6 +55,9 @@ class Level6
 	var mLaserArray;
 	var mLaserLength;
 	var mLaserSpeed;
+	var mEnemyLaserSpeed;
+	
+	var mEnemySpeed;
 	
 	var mLastShoot;
 	var mShootingDelay;
@@ -167,9 +170,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mLaserArray = {};
 	mLaserLength = 2.0 * SCALE_FACTOR;
 	mLaserSpeed = 0.2;
+	mEnemyLaserSpeed = 0.8;
+	mEnemySpeed = 5.0;
 	
 	mTargets = {};
-	var targetsNumber = 5;
+	var targetsNumber = 1;
 	
 	// Creating random star things
 	for(var i = 0; i < targetsNumber; i++)
@@ -180,7 +185,13 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		
-		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);
+//		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);
+
+		var cubeSizes = 3*SCALE_FACTOR;
+		var mesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+		AddToonShaderToMesh(mesh, [1,1,1], [1,1,1], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+		var starObj = CVmObj(mesh);
+		
 		var roomPos = mMainRoom.GetPosition();
 		var roomWidth = mMainRoom.GetRoomWidth();
 		var roomHeight = mMainRoom.GetRoomHeight();
@@ -199,7 +210,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		
 		starObj.SetPosition([posX, posY, posZ]);
 		
-		aadd(mTargets, Target(starObj, 3, 250, color1, color2, 3.0, mAnimator));
+		aadd(mTargets, Target(starObj, 3, 500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, mAnimator));
 	}
 	
 	// Creating texts object for the scene
@@ -534,6 +545,8 @@ function Level6::UpdateLogic(dt)
     			var startPoint = laserInfo[0];
     			var endPoint = laserInfo[1];
     			var direction = laserInfo[2];
+    			var isEnemy = laserInfo[3];
+    			var laserSpeed = laserInfo[4];
     			
     			var contactPoint;
     			var normal;
@@ -542,10 +555,10 @@ function Level6::UpdateLogic(dt)
 //    			var hasItWall = IsPointedPositionValid(startPoint, endPoint, &contactPoint, &normal, &isWall, true);
     			var isPointValid = mMainRoom.IsPointInRoom(endPoint) && !mElevator.IsPointInElevator(endPoint);
     			
-    			if(isPointValid)
+    			if(isPointValid && !isEnemy)
     			{
-    				laserInfo[0] = startPoint + mLaserSpeed * direction;
-    				laserInfo[1] = endPoint + mLaserSpeed * direction;
+    				laserInfo[0] = startPoint + laserSpeed * direction;
+    				laserInfo[1] = endPoint + laserSpeed * direction;
     			}
     			else
 					adel(mLaserArray, i);
@@ -576,6 +589,11 @@ function Level6::UpdateLogic(dt)
     				}
     			}
     			  			
+    			var enemyLaser = target.HandleEnemyLaser(cameraPosition);
+    			if(enemyLaser != Void){
+    				aadd(mLaserArray, enemyLaser);	
+    			}
+    			
     			target.Update(mMainRoom);
     			if(target.IsDead())
     				adel(mTargets, i);
@@ -667,7 +685,7 @@ function Level6::HandleLasers()
 			var startPoint = controller.GetPosition();
 			var endPoint = startPoint + mLaserLength * direction;			
 				
-			var laserInfo = {startPoint, endPoint, direction};
+			var laserInfo = {startPoint, endPoint, direction, false, mLaserSpeed};
 			
 			aadd(mLaserArray, laserInfo);
 		}
@@ -688,7 +706,7 @@ function Level6::HandleLasers()
 			var startPoint = cameraPosition- [-0.1 * SCALE_FACTOR, 0.1 * SCALE_FACTOR, 0.0 * SCALE_FACTOR];
 			var direction = mCamera.GetDirection();
 			var endPoint = startPoint + mLaserLength * direction;
-			var laserInfo = {startPoint, endPoint, direction};
+			var laserInfo = {startPoint, endPoint, direction, false, mLaserSpeed};
 			
 			aadd(mLaserArray, laserInfo);
 		}	

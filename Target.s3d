@@ -21,6 +21,8 @@ class Target{
 	var mKilled;
 	var mKilledTime;
 	
+	var mLaserSpeed;
+	
 	Draw();
 	GetObj();
 	IsCollidingBBoxOnly(startPos, endPos);
@@ -34,9 +36,10 @@ class Target{
 	Hit();	
 	SetPosition(x,y,z);
 	GetMesh();
+	HandleEnemyLaser(cameraPosition);
 };
 
-function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, animator){
+function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, animator){
 	mAnimator = animator;
 	mObj = mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH" ? CVmObj(mesh) : mesh;
 	mLives = lives;
@@ -46,8 +49,10 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, animato
 	mSpeed = speed;
 	mActualColor = color;
 	
+	mLaserSpeed = laserSpeed;
+	
 	mIsChangingColor = -1;
-	mColorTransitionTime = 0.25;
+	mColorTransitionTime = 0.5;
 	
 	mScalingTransitionTime = 0.35;
 	
@@ -84,8 +89,8 @@ function Target::Hit(){
 }
 
 function Target::Update(mMainRoom){
+	UpdateColor();
 	if(!mKilled){
-		UpdateColor();
 		UpdateTransition(mMainRoom);
 	}
 }
@@ -130,11 +135,13 @@ function Target::UpdateTransition(mMainRoom){
 function Target::UpdateColor(){
 	if(mIsChangingColor != -1){
 		if(mIsChangingColor == 1){
+			outputln("GOIND RED");
 			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, mHitColor, mColorTransitionTime, false);
 			mHitTime = GetTime();
 			mIsChangingColor = 2;				
 		}
 		else if(mIsChangingColor == 2 && GetTime()-mHitTime > (mColorTransitionTime*1000)){
+			outputln("GOIND WHITE");
 			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mHitColor, mColor, mColorTransitionTime, false);
 			mIsChangingColor = -1;
 		}	
@@ -152,3 +159,12 @@ function Target::GetMesh(){
 function Target::IsDead(){
 	return mKilled && GetTime() - mKilledTime > (mScalingTransitionTime*1000);
 }
+
+function Target::HandleEnemyLaser(cameraPosition){
+	if(GetTIme()-mShootTime > mShootDelay){
+		mShootTime = GetTime();
+		var pos = mObj.GetPosition();
+		return {pos, cameraPosition, pos-cameraPosition, true, mLaserSpeed};
+	}
+	return null;
+} 
