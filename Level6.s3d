@@ -657,11 +657,9 @@ function Level6::UpdateLogic(dt)
 					if(GetTime()-mControllerShotTime[i] <= mShootingDelay*2){
 						if(!mIsVrOn && !mDebugVrOn){
 							var gun = mGunsObj[i];
-							var mat = gun.GetRotationMatrix();
-//							outputln(mCamera.GetDirection());
-//							outputln([mCamera.GetRotationMatrix()[2], -mCamera.GetRotationMatrix()[6], -mCamera.GetRotationMatrix()[10]]); //THIS IS the fucking direction vector
-//							outputln("");
-							gun.Translate([mat[2], 0, 0]*mAnimator.GetCurrentStateInTransition(mControllerAnimId[i],6));
+							var center = gun.LocalToWorld([0, 0, 0]);
+							var tip = gun.LocalToWorld([-1, 0, 0]);
+							gun.Translate((tip-center)*mAnimator.GetCurrentStateInTransition(mControllerAnimId[i],6));
 						}
 						else{
 							var controller = mControllersArray[i];
@@ -760,18 +758,18 @@ function Level6::HandleLasers()
 	}
 	else{
 		if(mInputManager.IsPressingPrimaryButton() && GetTime() - mLastShoot > mShootingDelay){
-			mLastShoot = GetTime();
-			
+			mLastShoot = GetTime();			
 			mIsControllerShooting[0] = true;
 			mControllerShotTime[0] = GetTime();			
 			mAnimator.CreateGenericTransition(mControllerAnimId[0], 0, {mShootingDepth,0}, mShootingDelay/1000, 2);
 			
 			var startPoint = mGunsObj[0].GetPosition();
 			var laserObj = CvmObj(mLaserMesh);
-//			laserObj.SetRotationMatrix(MatrixInverse_4(mGunsObj[0].GetRotationMatrix()));
 			laserObj.SetRotationMatrix(mGunsObj[0].GetRotationMatrix());
-			laserObj.Rotate(-75,0,1,0);
-			mAnimator.CreateTransition(laserObj, startPoint, startPoint+mCamera.GetDirection()*mLaserMaxDistance, mLaserSpeed*10 ,false,0);
+			laserObj.Rotate(90,0,1,0);
+			var center = mGunsObj[0].LocalToWorld([0, 0, 0]);
+			var tip = mGunsObj[0].LocalToWorld([1, 0, 0]);
+			mAnimator.CreateTransition(laserObj, startPoint, startPoint+(tip-center)*mLaserMaxDistance, mLaserSpeed ,false,0);
 			aadd(mPistolsLaserArray, laserObj);
 		}	
 	}

@@ -344,7 +344,6 @@ function ViveController::GetDirection()
 {
 	var center = mViveController.LocalToWorld([0, 0, 0]);
 	var tip = mViveController.LocalToWorld([0, 0, -1]);
-	
 	return (tip - center);
 }
 
