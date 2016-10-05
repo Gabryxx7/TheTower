@@ -224,9 +224,9 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mEnemySpeed = 5.0;
 	
 	mTargets = {};
-	var starTargetNumber = 20;
+	var starTargetNumber = 10;
 		
-	var enemyLaserMesh = CvmNewMesh(VRP_SPHERE, 30, 0.3*SCALE_FACTOR, 1);
+	var enemyLaserMesh = CvmNewMesh(VRP_SPHERE, 30, 0.2*SCALE_FACTOR, 1);
 	
 	// Creating random star things
 	for(var i = 0; i < starTargetNumber; i++)
@@ -234,7 +234,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		// To create the star object I use a function from the "Utils" file
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
-		aadd(mTargets, Target(starObj, 3, 4000+(i*200), [1,1,1], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, enemyLaserMesh, 20, mAnimator));
+		aadd(mTargets, Target(starObj, 10, 4000+(i*200), [1,1,1], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, enemyLaserMesh, 20, mAnimator));
 	}
 	
 	cubeSizes = 6*SCALE_FACTOR;
@@ -263,24 +263,25 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	bossObj.AddChild(textObj,0,0,-cubeSizes-txtOffset);		
 	aadd(mTargets, Target(bossObj, 50, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, true, true, true, true, mEnemyLaserSpeed/2, enemyLaserMesh, 20, mAnimator));
 	
-//	var nonShootingTargets = 2;
-//	cubeSizes = 3*SCALE_FACTOR;	
-//	for(var i = 0; i < nonShootingTargets; i++){		
-//		var mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
-//		AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);		
-//		var targetObj = CVmObj(mesh);var roomPos = mMainRoom.GetPosition();
-//		
-//		var roomWidth = mMainRoom.GetRoomWidth();
-//		var roomHeight = mMainRoom.GetRoomHeight();
-//		var roomDepth = mMainRoom.GetRoomDepth();
-//		
-//		var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
-//		var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
-//		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
-//		
-//		targetObj.SetPosition([posX, posY, posZ]);
-//		aadd(mTargets, Target(CVmObj(mesh), 50, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, enemyLaserMesh, 20, mAnimator));
-//	}
+	var nonShootingTargets = 7;
+	cubeSizes = 2*SCALE_FACTOR;	
+	for(var i = 0; i < nonShootingTargets; i++){		
+		var mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes, cubeSizes);
+		AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);		
+		var targetObj = CVmObj(mesh);
+		
+		var roomPos = mMainRoom.GetPosition();		
+		var roomWidth = mMainRoom.GetRoomWidth();
+		var roomHeight = mMainRoom.GetRoomHeight();
+		var roomDepth = mMainRoom.GetRoomDepth();
+		
+		var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
+		var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
+		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
+		
+		targetObj.SetPosition([posX, posY, posZ]);
+		aadd(mTargets, Target(targetObj, 2, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, enemyLaserMesh, 20, mAnimator));
+	}
 	
 	// Creating texts object for the scene
 //	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
