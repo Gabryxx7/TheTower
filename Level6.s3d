@@ -3,6 +3,10 @@
 #define STATUS_LEVEL_STARTED 2
 #define STATUS_LEVEL_ENDING 3
 
+#define STAGE_0 0
+#define STAGE_1 1
+#define STAGE_2 2
+
 /*
  * This level is strictly related to Level1; most of the things were copied and pasted. Comments will be on the parts that are different
  */
@@ -70,6 +74,7 @@ class Level6
 	var mShootingDelay;
 	
 	var mTargets;
+	var mCurrentTargets;
 	
 	var mControllersBeingUsedIndex;
 	
@@ -99,6 +104,8 @@ class Level6
 	var mIsControllerShooting;
 	var mControllerShotTime;
 	var mControllerAnimId;
+	
+	var mCurrentStage;
 	
 	// Private functions
 	HandleLasers();
@@ -218,19 +225,21 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mEnemySpeed = 5.0;
 	
 	mTargets = {};
-	var targetsNumber = 3;
+	mCurrentTargets = {};
+	var targetsNumber = 10;
+	var stage0targetsNumber = 3;
 		
-	var enemyLaserMesh = CvmNewMesh(VRP_SPHERE, 30, 0.3*SCALE_FACTOR, 1);
+//	var enemyLaserMesh = CvmNewMesh(VRP_SPHERE, 30, 0.3*SCALE_FACTOR, 1);
+	var enemyLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
 	
 	// Creating random star things
 	for(var i = 0; i < targetsNumber; i++)
-	{
-		// To create the star object I use a function from the "Utils" file
-		
+	{	
 		// Creating 2 random colors to change over time
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		
+		// To create the star object I use a function from the "Utils" file
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);
 
 //		var cubeSizes = 3*SCALE_FACTOR;
@@ -252,12 +261,17 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 		// Creating the transitions
 		mAnimator.CreateRotatingTransition(starObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
-//		mAnimator.CreateToonShaderColorTransition(starObj.GetMesh(), color1, color2, 3.5, true);
-		
 		starObj.SetPosition([posX, posY, posZ]);
 		
-		aadd(mTargets, Target(starObj, 3, 2500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, enemyLaserMesh, 20, mAnimator));
+		var targetObject = Target(starObj, 3, 2500, [1,1,1], [1,0,0], mEnemySpeed, mEnemyLaserSpeed, enemyLaserMesh, 20, mAnimator);
+		
+		aadd(mTargets, targetObject);
+		
+		if(i < stage0targetsNumber)
+			aadd(mCurrentTargets, mTargets[i]);
 	}
+	
+	mCurrentStage = 0;
 	
 	// Creating texts object for the scene
 //	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
@@ -367,7 +381,7 @@ function Level6::Render()
 			
 			mLinesTimeVariable += 0.01;
 			
-			foreach(var target in mTargets)
+			foreach(var target in mCurrentTargets)
 				target.Draw();
 			
 			mCounterShader.Start();
@@ -606,9 +620,35 @@ function Level6::UpdateLogic(dt)
 	    		}    		
     		}
     		
-    		for(var i = 0; i < len(mTargets); i++)
+    		if(len(mCurrentTargets) == 0)
     		{
-    			var target = mTargets[i];    			
+    			mCurrentStage++;
+    			var targetsNumber;
+    			
+    			switch(mCurrentStage)
+    			{
+    				case STAGE_1:
+					{
+						targetsNumber = 4;
+						break;
+					}
+					case STAGE_2:
+					{
+						targetsNumber = 8;
+						break;
+					}
+    			}
+    			
+    			for(var i = 0; i < targetsNumber; i++)
+				{
+					aadd(mCurrentTargets, mTargets[i]);
+					mCurrentTargets[i].ResetLife();
+				}
+    		}
+    		
+    		for(var i = 0; i < len(mCurrentTargets); i++)
+    		{
+    			var target = mCurrentTargets[i];    			
     			var hasBeenHit = false;
     			
     			for(var j = 0; j < len(mPistolsLaserArray) && !hasBeenHit; j++)
@@ -619,8 +659,8 @@ function Level6::UpdateLogic(dt)
     				{
     					adel(mPistolsLaserArray, j);    					
     					
-    					if(target.Hit() && target.RemoveLife() <= 0){
-    						output("KILLED");
+    					if(target.Hit() && target.RemoveLife() <= 0)
+    					{
     						target.Kill();
 	    					mCounter = (mCounter + 1) % 100;
 							UpdateCounter(mCounter, false);	
@@ -628,34 +668,22 @@ function Level6::UpdateLogic(dt)
     				}  
     			}
     			  			
-    			var enemyLaser = target.HandleEnemyLaser(cameraPosition);
-    			if(enemyLaser != Void){
-    				aadd(mEnemyLaserArray, enemyLaser);	
-    			}
-    			
-    			target.Update(mMainRoom);
-    			if(target.IsDead())
-    				adel(mTargets, i);
+	  			if(mCurrentStage != STAGE_0)
+	  			{
+	    			var enemyLaser = target.HandleEnemyLaser(cameraPosition);
+	    			
+	    			if(enemyLaser != Void){
+	    				aadd(mEnemyLaserArray, enemyLaser);	
+	    			}
+				}
+				
+				target.Update(mMainRoom);
+				
+				if(target.IsDead())
+					adel(mCurrentTargets, i);	
     		}
-			
-//			// I check if every connector has been connected
-//			if(len(mConnectorsGroups) == mConnectorsGroupLinkedCounter)
-//			{
-//				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-//				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-//				
-//				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-//				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-//				
-//				mLevelStatus = STATUS_LEVEL_ENDING;
-//				
-//				// Now I have to unhide the controllers and hide the duplicate ones
-//				for(var i = 0; i < len(mControllersArray); i++)
-//				{
-//					mControllersArray[i].Unhide();
-//					mControllersDuplicateArray[i].Hide();
-//				}
-//			}
+    		
+    		
 			
 			for(var i = 0; i < len(mIsControllerShooting); i++){				
 				if(mIsControllerShooting[i]){

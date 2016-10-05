@@ -546,7 +546,14 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 		
 		// Creating the first animation for the cubes
 		for(var j = 0; j < len(cubes); j++) 
+		{
+			// Setting the rotation, otherwise it's random
+			cubes[j].SetRotation(0, 1, 0, 0);
+			cubes[j].SetRotation(0, 0, 1, 0);
+			cubes[j].SetRotation(0, 0, 0, 1);
+			
 			mAnimator.CreateTransition(cubes[j], cubes[j].GetPosition(), finalPos[j], 0.2, false, 1);
+		}
 		
 		aadd(mNumberObjects, numberObj);
 	}

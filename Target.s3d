@@ -2,6 +2,7 @@ class Target{
 	var mObj;
 	var mHit;
 	var mShootDelay;
+	var mTotalLives;
 	var mLives;
 	var mColor;
 	var mActualColor;
@@ -29,6 +30,7 @@ class Target{
 	GetObj();
 	IsCollidingBBoxOnly(startPos, endPos);
 	GetLives();
+	ResetLife();
 	RemoveLife();
 	Update(mMainRoom);
 	UpdateTransition(mMainRoom);
@@ -45,6 +47,7 @@ class Target{
 function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, laserMesh, laserMaxDistance,  animator){
 	mAnimator = animator; 
 	mObj = mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH" ? CVmObj(mesh) : mesh;
+	mTotalLives = lives;
 	mLives = lives;
 	mShootDelay = shootDelay;
 	mColor = color;
@@ -82,6 +85,14 @@ function Target::IsCollidingBBoxOnly(startPos, endPos){
 
 function Target::GetLives(){
 	return mLives;
+}
+
+function Target::ResetLife(){
+	mLives = mTotalLives;
+	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mColorTransitionTime, false, 3);
+	mKilledTime = -1;
+	mKilled = false;
+	
 }
 
 function Target::RemoveLife(){
@@ -129,12 +140,10 @@ function Target::UpdateTransition(mMainRoom){
 		pos.y = mMainRoom.IsPointInRoom(newPosY) ? newPosY.y : targetPos.y - roomHeightHalved;
 		pos.z = mMainRoom.IsPointInRoom(newPosZ) ? newPosZ.z : targetPos.z - roomDepthHalved;
 
-//				var time = ToFloat(Rand(3.0) + 1.0);
 		var time = 3.0;
 	
 		mAnimator.CreateTransition(mObj, mObj.GetPosition(), [posX, posY, posZ], mSpeed, false, 2);		
 	}
-	
 }
 
 function Target::UpdateColor(){
@@ -172,6 +181,23 @@ function Target::HandleEnemyLaser(cameraPosition){
 		mShootTime = GetTime();
 		var pos = mObj.GetPosition();
 		var laserObj = CvmObj(mLaserMesh);
+		
+		// Now I need to rotate the laser object so that it points towards the player. First, I take the direction that goes from the previous 
+		// point to the current one. Note that the order of the difference is important: I need the direction that goes from the previous point
+		// to the current one
+		var vec = Norm(pos - cameraPosition);
+		
+		// To compute the angle around which to rotate the object, I compute the cross product between this vector and the up vector (the vector
+		// that tells me which way is up); the result will be a vector perpendicular to the 2, which I normalize to use it as a normal.
+		// I then switch sign, otherwise it turns on the opposite side
+		var axis = -Norm(vec ^ [0, 1, 0]);
+		
+		// I now compute the angle for the rotation. The formula derives from "easy" trigonometry (lookup "finding angle between 2 vectors").
+		// I'm not sure why the final angle is shifted by 180 degrees; that's why I subtract 180
+		var angle = acos((Norm(vec) * [0, 1, 0])) * RAD_TO_GRAD - 180; 
+		
+		laserObj.SetRotation(angle, axis.x, axis.y, axis.z);
+		
 		mAnimator.CreateTransition(laserObj, pos, [cameraPosition.x-pos.x, cameraPosition.y-pos.y, cameraPosition.z-pos.z]*mLaserMaxDistance, mLaserSpeed, false, 0);
 		return laserObj;
 	}
