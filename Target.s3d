@@ -25,6 +25,11 @@ class Target{
 	var mLaserSpeed;
 	var mLaserMaxDistance;
 	
+	var mHasLasers;
+	var mMoving;
+	var mRotating;
+	var mColorTransition;
+	
 	Draw();
 	GetObj();
 	IsCollidingBBoxOnly(startPos, endPos);
@@ -42,7 +47,7 @@ class Target{
 	IsCollidingBBox(object);
 };
 
-function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSpeed, laserMesh, laserMaxDistance,  animator){
+function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, hasLasers, moving, rotating, colorTransition, laserSpeed, laserMesh, laserMaxDistance,  animator){
 	mAnimator = animator; 
 	mObj = mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH" ? CVmObj(mesh) : mesh;
 	mLives = lives;
@@ -51,6 +56,10 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSp
 	mHitColor = hitColor;
 	mSpeed = speed;
 	mActualColor = color;
+	mHasLasers = hasLasers;
+	mMoving = moving;
+	mRotating = rotating;
+	mColorTransition = colorTransition;
 	
 	mLaserSpeed = laserSpeed;
 	mLaserMesh = laserMesh;
@@ -66,7 +75,17 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, laserSp
 	
 	mKilledTime = -1;
 	mKilled = false;
-}
+	
+	if(mRotating){		
+		var rotationAxis = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		mAnimator.CreateRotatingTransition(mObj, 0, 360, rotationAxis, 5.0 + Rand(5) / 2.0, true, false);
+	}
+	
+	if(mColorTransition){
+		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), color1, color2, 3.5, true);}
+	}
 
 function Target::Draw(){
 	mObj.Draw();
@@ -95,7 +114,7 @@ function Target::Hit(){
 
 function Target::Update(mMainRoom){
 	UpdateColor();
-	if(!mKilled){
+	if(!mKilled && mMoving){
 		UpdateTransition(mMainRoom);
 	}
 }
@@ -168,7 +187,7 @@ function Target::IsDead(){
 }
 
 function Target::HandleEnemyLaser(cameraPosition){
-	if(GetTIme()-mShootTime > mShootDelay){
+	if(GetTIme()-mShootTime > mShootDelay && mHasLasers){
 		mShootTime = GetTime();
 		var pos = mObj.GetPosition();
 		var laserObj = CvmObj(mLaserMesh);

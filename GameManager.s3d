@@ -251,7 +251,7 @@ function GameManager::GameManager(HMD)
 		/*** Select here which level you want to preload (-1 to preload every level)
 		 * Select if you want to start from the menu or not
 		 */
-		var testingLevel = 4;
+		var testingLevel = 6;
 		var testWithMenu = false;
 		
 		
