@@ -1,0 +1,51 @@
+Class Bullet{
+	var mObj;
+	var mMaxLife;
+	var mShotTime;
+	var mIsEnemyBullet;
+	var mColor;
+	
+	GetObj();
+	GetShotTime();
+	GetMaxLife();
+	GetColor();
+	IsEnemy();
+	Draw();
+	LocalToWorld(pos);
+};
+
+function Bullet::Bullet(obj, shotTime, maxLife, isEnemyBullet, color){
+	mObj = obj;
+	mShotTime = shotTime;
+	mMaxLife = maxLife;
+	mColor = color;
+	mIsEnemyBullet = isEnemyBullet;
+}
+
+function Bullet::GetObj(){
+	return mObj;
+}
+
+function Bullet::GetShotTime(){
+	return mShotTime;
+}
+
+function Bullet::GetMaxLife(){
+	return mMaxLife;
+}
+
+function Bullet::GetColor(){
+	return mColor;
+}
+
+function Bullet::IsEnemy(){
+	return mIsEnemyBullet;
+}
+
+function Bullet::Draw(){
+	return mObj.Draw();
+}
+
+function Bullet::LocalToWorld(pos){
+	return mObj.LocalToWorld(pos);
+}

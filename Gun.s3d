@@ -1,0 +1,132 @@
+class Gun{
+	var mAnimator;
+	var mAnimationId;
+	
+	var mGunMesh;
+	var mGunObj;	
+	
+	var mIsRotated;
+	var mGunRotation;
+	var mRotationAxis;
+	
+	var mShootingDelay;
+	var mShootingDelayOrig;
+	var mRecoilDepth;
+	
+	var mBulletMesh;
+	var mBulletSpeed;
+	var mBulletMaxDistance;
+	var mBulletMaxLife;
+	var mShootType;
+	var mShootAnimationTime;
+	var mDelayAnimFactor;
+	var mLastShotTime;
+	var mIsShooting;
+	
+	IsShooting();
+	UpdateGun();
+	SetRotationMatrix(mat);
+	Rotate(angle, x, y, z);
+	SetPosition(x,y,z);
+	Shoot();
+	Draw();
+	GetObj();
+};
+
+function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, shootType, animator, animationId){
+	mGunMesh = mesh;
+	mGunObj= CvmObj(mGunMesh);
+	mShootingDelayOrig = shootingDelay;
+	mShootingDelay = mShootingDelayOrig;
+	mRecoilDepth = recoilDepth;
+	mBulletMesh = bulletMesh;
+	mBulletSpeed = bulletSpeed;
+	mBulletMaxDistance = bulletMaxDistance;
+	mBulletMaxLife = bulletMaxLife;
+	mShootType = shootType;
+	mDelayAnimFactor = 350;
+	mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
+	mAnimator = animator;
+	mAnimationId = animationId;
+	mLastShotTime = GetTime();
+	
+	mIsShooting = false;
+	mIsRotated = false;
+}
+
+
+function Gun::SetRotationMatrix(mat){
+	mGunObj.SetRotationMatrix(mat);
+}
+
+function Gun::Rotate(angle,x,y,z){
+	mIsRotated = true;
+	mGunRotation = angle;
+	mRotationAxis = [x,y,z];
+	mGunObj.Rotate(angle,x,y,z);
+}
+
+function Gun::SetPosition(x,y,z){
+	if(valtype(x) == "A" || valtype(x) == "V"){
+		mGunObj.SetPosition(x);		
+	}
+	else
+		mGunObj.SetPosition(x,y,z);
+}
+
+function Gun::Shoot(){
+	if(GetTime() - mLastShotTime > mShootingDelay){
+		mIsShooting = true;
+		mLastShotTime = GetTime();
+		mAnimator.CreateGenericTransition(mAnimationId, 0, {mRecoilDepth,0}, mShootAnimationTime, 2);
+		
+		var startPoint = mGunObj.GetPosition();
+		var bulletObj = CvmObj(mBulletMesh);
+		
+		bulletObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
+		if(mIsRotated)
+			bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);
+		
+		var center = mGunObj.LocalToWorld([0, 0, 0]);
+		var tip = mGunObj.LocalToWorld([1, 0, 0]);
+		
+		mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+		
+		return Bullet(bulletObj, GetTime(), mBulletMaxLife, false, [1,0,0]);	
+	}
+}
+
+function Gun::IsShooting(){
+	return mIsShooting;
+}
+
+function Gun::UpdateGun(){
+	if(KeyPressed("q")){
+		mShootingDelay = mShootingDelayOrig/10;
+		mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
+	}
+	else{
+		mShootingDelay = mShootingDelayOrig;	
+		mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
+	}
+	
+	if(mIsShooting){
+		var translateValue = mAnimator.GetCurrentStateInTransition(mAnimationId,6);
+		if(translateValue != Void){
+			var center = mGunObj.LocalToWorld([0, 0, 0]);
+			var tip = mGunObj.LocalToWorld([-1, 0, 0]);
+			mGunObj.Translate((tip-center)*translateValue);			
+		}
+		else{
+			mIsShooting = false;
+		}			
+	}
+}
+
+function Gun::Draw(){
+	return mGunObj.Draw();
+}
+
+function Gun::GetObj(){
+	return mGunObj;
+}
