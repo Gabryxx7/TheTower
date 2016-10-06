@@ -55,8 +55,10 @@ class Level6
 	var mBulletsArray;
 	var mEnemySpeed;
 	var mEnemyLaserSpeed;
+	var mEnemyLaserMesh;
 	
 	var mTargets;
+	var mCurrentStage;
 	
 	var mControllersBeingUsedIndex;
 	
@@ -76,9 +78,7 @@ class Level6
 	var mDebugKeyHit;
 	
 	var mTranslateFactor;
-	
-	var mShootingGun;
-	
+		
 	var mWallsHolesObjs;
 	var mWallsHolesLife;
 	
@@ -99,13 +99,17 @@ class Level6
 	GetLevelName();
 	CounterKeyboardTesting();
 	UpdateCounter(num, toRandomPos);
+	
+	CreateTargetsStage0(numTargets);
+	CreateTargetsStage1(numTargets);
+	CreateTargetsBossStage(numTargets);
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = true;
+	mDebugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -143,11 +147,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var shootType = 0;
 	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
 	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 992));
-	mGuns[0].Rotate(90,0,1,0);
-	mGuns[1].Rotate(90,0,1,0);
 	
 	if(mIsVRon)
 	{
+		mGuns[0].Rotate(90,0,1,0);
+		mGuns[1].Rotate(90,0,1,0);
 		var controller1 = mInputManager.GetController(1);
 		var controller2 = mInputManager.GetController(2);
 		controller1.SetCustomMesh(mGuns[0].GetObj());
@@ -157,6 +161,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	}
 	else if(mDebugVrOn)
 	{
+		mGuns[0].Rotate(90,0,1,0);
+		mGuns[1].Rotate(90,0,1,0);
 		aadd(mControllersArray, ViveController(1, mGuns[0].GetObj()));
 		aadd(mControllersArray, ViveController(2, mGuns[1].GetObj()));
 //		aadd(mControllersArray, ViveController(1));
@@ -170,14 +176,14 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCounter = 0;
 	mLastCounterUpdate = 0;
 	mCounterPositions = {};
-	var cubeSizes = 1.5 *SCALE_FACTOR;
-	var cubeSpacing = 0.20 *SCALE_FACTOR;
-	var numberSpacing = 0.8*SCALE_FACTOR;
+	var cubeSizes = 2.5 *SCALE_FACTOR;
+	var cubeSpacing = 0.15 *SCALE_FACTOR;
+	var numberSpacing = 1*SCALE_FACTOR;
 	mCounterBox = [6*(cubeSizes+cubeSpacing)/2, 10*(cubeSizes+cubeSpacing)/2, 6*(cubeSizes+cubeSpacing)/2];
 	var digitWidth = 6*(cubeSizes+cubeSpacing)-cubeSpacing;
 	var counterMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
 	mCounterRandomMeshes = {};
-	aadd(mCounterPositions, [digitWidth/2+numberSpacing/2, 6*SCALE_FACTOR, -mMainRoom.GetRoomWidth()/2-cubeSizes]+mTranslateFactor);
+	aadd(mCounterPositions, [digitWidth/2+numberSpacing/2, 8*SCALE_FACTOR, -mMainRoom.GetRoomWidth()/2-cubeSizes]+mTranslateFactor);
 	aadd(mCounterPositions, mCounterPositions[0]-[digitWidth+numberSpacing,0,0]);
 	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[0], [0.8,0.2,0.2], cubeSizes, cubeSpacing, -1));
 	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[1], [0.2,0.4,1], cubeSizes,cubeSpacing, -1));
@@ -186,69 +192,17 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mBulletsArray = {};	
 	mWallsHolesObjs = {};
 	mWallsHolesLife = 5000;
+	mCurrentStage = 0;
 	
 	mEnemyLaserSpeed = 15;
 	mEnemySpeed = 5.0;
+	mEnemyLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
+	
 	
 	mTargets = {};
-	var starTargetNumber = 10;
-		
-	var enemyLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
-	
-	// Creating random star things
-	for(var i = 0; i < starTargetNumber; i++)
-	{
-		// To create the star object I use a function from the "Utils" file
-		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
-		aadd(mTargets, Target(starObj, 10, 4000+(i*200), [1,1,1], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, enemyLaserMesh, 20, 5000, mAnimator));
-	}
-	
-	cubeSizes = 6*SCALE_FACTOR;
-	var bossMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-	var bossObj = CVmObj(bossMesh);
-	AddToonShaderToMesh(bossMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
-	var txtOffset = 0.001*SCALE_FACTOR;		
-	var txtScale = [0.8*SCALE_FACTOR, 0.8*SCALE_FACTOR, 0.8*SCALE_FACTOR];
-	var txt = CVmText("DA BOSS",0,0,"Walkway bold", 0);
-	var textObj = CVmObj();	
-	textObj.LinkToText(txt);	
-	textObj.SetScale(txtScale);
-	textObj.SetRotation(90,0,1,0);
-	bossObj.AddChild(textObj, cubeSizes/2+txtOffset,0,0);		
-	
-	textObj = CvmObj();
-	textObj.LinkToText(txt);	
-	textObj.SetScale(txtScale);
-//	textObj.SetRotation(90,0,1,0);
-	bossObj.AddChild(textObj,0,0,txtOffset);	
-	
-	textObj = CvmObj();
-	textObj.LinkToText(txt);	
-	textObj.SetScale(txtScale);
-	textObj.SetRotation(180,0,1,0);
-	bossObj.AddChild(textObj,0,0,-cubeSizes-txtOffset);		
-	aadd(mTargets, Target(bossObj, 50, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, true, true, true, true, mEnemyLaserSpeed/2, enemyLaserMesh, 20, 5000, mAnimator));
-	
-	var nonShootingTargets = 7;
-	cubeSizes = 2*SCALE_FACTOR;	
-	for(var i = 0; i < nonShootingTargets; i++){		
-		var mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes, cubeSizes);
-		AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);		
-		var targetObj = CVmObj(mesh);
-		
-		var roomPos = mMainRoom.GetPosition();		
-		var roomWidth = mMainRoom.GetRoomWidth();
-		var roomHeight = mMainRoom.GetRoomHeight();
-		var roomDepth = mMainRoom.GetRoomDepth();
-		
-		var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
-		var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
-		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
-		
-		targetObj.SetPosition([posX, posY, posZ]);
-		aadd(mTargets, Target(targetObj, 2, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, enemyLaserMesh, 20, 5000, mAnimator));
-	}
+	aadd(mTargets, CreateTargetsStage0(10));
+	aadd(mTargets, CreateTargetsStage1(10));
+	aadd(mTargets, CreateTargetsBossStage(1));
 	
 	// Creating texts object for the scene
 //	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
@@ -354,9 +308,11 @@ function Level6::Render()
 		case STATUS_LEVEL_STARTED:
 		{
 			mMainRoom.Draw();
-						
-			foreach(var target in mTargets)
-				target.Draw();
+			
+			if(len(mTargets) > 0){
+				foreach(var target in mTargets[0])
+					target.Draw();				
+			}
 				
 			mCounterShader.Start();
 				mCounterShader.SetParameter("color", [1,0,0]);
@@ -465,6 +421,8 @@ function Level6::UpdateLogic(dt)
 	if(!mIsVrOn && !mDebugVrOn){
 		mGuns[0].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
 		mGuns[1].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+		mGuns[0].Rotate(90,0,1,0);
+		mGuns[1].Rotate(90,0,1,0);
 		mGuns[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
 		mGuns[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
 	}
@@ -534,7 +492,7 @@ function Level6::UpdateLogic(dt)
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
 		{			
-    		HandleLasers();    		
+    		HandleLasers();   
     					
 			foreach(var gun in mGuns)
 				gun.UpdateGun();
@@ -577,9 +535,10 @@ function Level6::UpdateLogic(dt)
     			}	
     		}
     		
-    		for(var i = 0; i < len(mTargets); i++)
+			var stageTargets = mTargets[0];
+    		for(var i = 0; i < len(stageTargets); i++)
     		{
-    			var target = mTargets[i];    			
+    			var target = stageTargets[i];    			
     			var hasBeenHit = false;
     			
     			for(var j = 0; j < len(mBulletsArray) && !hasBeenHit; j++)
@@ -611,7 +570,7 @@ function Level6::UpdateLogic(dt)
     			target.Update(mMainRoom);
     			
     			if(target.IsDead())
-    				adel(mTargets, i);
+    				adel(stageTargets, i);
     		}
     		
     		for(var i = 0; i < len(mWallsHolesObjs); i++){
@@ -620,6 +579,24 @@ function Level6::UpdateLogic(dt)
     				adel(mWallsHolesObjs,i);
     			}
     		}
+    		 	
+    		
+    		if(len(mTargets[0]) < 1){
+    			mCurrentStage++;
+    			adel(mTargets, 0);
+    			if(len(mTargets) <= 0){
+    				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+					
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+    				mLevelStatus = STATUS_LEVEL_ENDING;
+				}
+				else{
+					foreach(var target in mTargets[0])
+						target.Create();
+				}
+			}	
 				
 			break;
 		}
@@ -841,9 +818,93 @@ function Level6::CounterKeyboardTesting(){
 			mLastCounterUpdate = GetTime();	
 			updated = true;				
 		}
-	}		
-	
+	}	
 	
 	if(updated)
 		UpdateCounter(mCounter, toRandomPos);
+}
+
+function Level6::CreateTargetsStage0(numTargets){
+	var targets = {};
+	var meshes = {};
+	var cubeSizes = 4*SCALE_FACTOR;	
+	
+	var mesh =  CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+	AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+	
+	mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
+	AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+	aadd(meshes, mesh);
+	
+	mesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes, 1);
+	AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+	aadd(meshes, mesh);
+	
+	for(var i = 0; i < numTargets; i++){		
+		var chosenMesh = meshes[Rand(len(meshes)-1)];
+		var targetObj = CVmObj(chosenMesh);
+		
+		var roomPos = mMainRoom.GetPosition();		
+		var roomWidth = mMainRoom.GetRoomWidth();
+		var roomHeight = mMainRoom.GetRoomHeight();
+		var roomDepth = mMainRoom.GetRoomDepth();
+		
+		var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
+		var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
+		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
+		
+		targetObj.SetPosition([posX, posY, posZ]);
+		aadd(targets, Target(targetObj, 2, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
+	}
+	return targets;
+}
+
+
+function Level6::CreateTargetsStage1(numTargets){
+	var targets = {};
+	// Creating random star things
+	for(var i = 0; i < numTargets; i++)
+	{
+		// To create the star object I use a function from the "Utils" file
+		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
+		aadd(targets, Target(starObj, 10, 4000+(i*200), [1,1,1], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator));
+	}
+	
+	return targets;
+}
+
+
+function Level6::CreateTargetsBossStage(numTargets){
+	var targets = {};
+	var cubeSizes = 6*SCALE_FACTOR;
+	var bossMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+	for(var i = 0; i < numTargets; i++){
+		var bossObj = CVmObj(bossMesh);
+		AddToonShaderToMesh(bossMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+		var txtOffset = 0.001*SCALE_FACTOR;		
+		var txtScale = [0.8*SCALE_FACTOR, 0.8*SCALE_FACTOR, 0.8*SCALE_FACTOR];
+		var txt = CVmText("DA BOSS",0,0,"Walkway bold", 0);
+		var textObj = CVmObj();	
+		textObj.LinkToText(txt);	
+		textObj.SetScale(txtScale);
+		textObj.SetRotation(90,0,1,0);
+		bossObj.AddChild(textObj, cubeSizes/2+txtOffset,0,0);		
+		
+		textObj = CvmObj();
+		textObj.LinkToText(txt);	
+		textObj.SetScale(txtScale);
+	//	textObj.SetRotation(90,0,1,0);
+		bossObj.AddChild(textObj,0,0,txtOffset);	
+		
+		textObj = CvmObj();
+		textObj.LinkToText(txt);	
+		textObj.SetScale(txtScale);
+		textObj.SetRotation(180,0,1,0);
+		bossObj.AddChild(textObj,0,0,-cubeSizes-txtOffset);		
+		
+		aadd(targets, Target(bossObj, 50, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, true, true, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));		
+	}
+	
+	return targets;
 }

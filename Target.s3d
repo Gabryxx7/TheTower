@@ -36,7 +36,8 @@ class Target{
 	GetObj();
 	IsCollidingBBoxOnly(startPos, endPos);
 	GetLives();
-	ResetLife();
+	Create();
+	Recreate();
 	RemoveLife();
 	Update(mMainRoom);
 	UpdateTransition(mMainRoom);
@@ -71,9 +72,9 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, hasLase
 	mLaserMaxLife = laserMaxLife;
 	
 	mIsChangingColor = -1;
-	mColorTransitionTime = 0.15;
+	mColorTransitionTime = 0.2;
 	
-	mScalingTransitionTime = 0.25;
+	mScalingTransitionTime = 0.5;
 	
 	mHitTime = 0;
 	mShootTime = 0;
@@ -108,9 +109,9 @@ function Target::GetLives(){
 	return mLives;
 }
 
-function Target::ResetLife(){
+function Target::Recreate(){
 	mLives = mTotalLives;
-	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mColorTransitionTime, false, 3);
+	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mScalingTransitionTime, false, 3);
 	mKilledTime = -1;
 	mKilled = false;
 	
@@ -228,4 +229,8 @@ function Target::Shoot(cameraPosition){
 
 function Target::IsCollidingBBox(object){
 	return mObj.IsCollidingBBox(object);
+}
+
+function Target::Create(){
+	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mScalingTransitionTime*2, false, 1);
 }
