@@ -12,7 +12,7 @@ class Target{
 	
 	var mColorTransitionTime;
 	var mScalingTransitionTime;
-	var mIsChangingColor;
+	var mHasBeenHit;
 	
 	var mHitTime;
 	var mShootTime;
@@ -71,8 +71,8 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, hasLase
 	mLaserMaxDistance = laserMaxDistance;
 	mLaserMaxLife = laserMaxLife;
 	
-	mIsChangingColor = -1;
-	mColorTransitionTime = 0.2;
+	mHasBeenHit = false;
+	mColorTransitionTime = 0.3;
 	
 	mScalingTransitionTime = 0.5;
 	
@@ -88,9 +88,8 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, speed, hasLase
 	}
 	
 	if(mColorTransition){
-		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-		mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), color1, color2, 3.5, true);}
+		mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, color2, 3.5, true);}
 	}
 
 function Target::Draw(){
@@ -122,7 +121,7 @@ function Target::RemoveLife(){
 }
 
 function Target::Hit(){
-	mIsChangingColor = 1;
+	mHasBeenHit = true;
 	return !mKilled;
 }
 
@@ -169,20 +168,16 @@ function Target::UpdateTransition(mMainRoom){
 }
 
 function Target::UpdateColor(){
-	if(mIsChangingColor != -1){
-		if(mIsChangingColor == 1){
-			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, mHitColor, mColorTransitionTime, false);
-			if(!mKilled)
-				mAnimator.CreateScalingTransition(mObj, [1, 1, 1], [0.8, 0.8, 0.8], mColorTransitionTime, false, 3);
-			mHitTime = GetTime();
-			mIsChangingColor = 2;				
-		}
-		else if(mIsChangingColor == 2 && GetTime()-mHitTime > (mColorTransitionTime*1000)){
-			mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mHitColor, mColor, mColorTransitionTime, false);
-			if(!mKilled)
-				mAnimator.CreateScalingTransition(mObj, [0.8, 0.8, 0.8], [1,1,1], mColorTransitionTime, false, 3);
-			mIsChangingColor = -1;
-		}	
+	if(mHasBeenHit){
+		mHasBeenHit = false;
+		mAnimator.RemoveTransitionByObject(mObj.GetMesh(), 4);
+		mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mHitColor, mColor, mColorTransitionTime, false);
+		
+		if(!mKilled)
+			mAnimator.CreateScalingTransition(mObj, [1, 1, 1], {[0.75, 0.75, 0.75], [1,1,1]}, mColorTransitionTime/2.0, false);
+	}
+	else{
+		
 	}
 }
 

@@ -82,6 +82,15 @@ class Level6
 	var mWallsHolesObjs;
 	var mWallsHolesLife;
 	
+	var mCameraHudSize;
+	var mCameraHudObj;
+	var mCameraHit;
+	var mCameraHudColorAnimId;
+	var mCameraHitBoxObj;
+	var mCameraHitBoxSize;
+	
+	var mCameraHud;
+	
 	// Private functions
 	HandleLasers();
 	
@@ -126,7 +135,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
-	mCounterShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
+	mCounterShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; uniform float alpha; void main (void) { gl_FragColor = vec4(color, alpha); }", true);
 		
 	mControllersBeingUsedIndex = {0, 0};	
 	mControllersArray = {};	
@@ -200,13 +209,27 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	
 	mTargets = {};
+	aadd(mTargets, CreateTargetsBossStage(1));
 	aadd(mTargets, CreateTargetsStage0(10));
 	aadd(mTargets, CreateTargetsStage1(10));
-	aadd(mTargets, CreateTargetsBossStage(1));
 	
-	// Creating texts object for the scene
-//	mFrontText = Text("If you can't find your hands,\nmaybe you're looking in the wrong place", 2.0);
-//	mFrontText.Rotate(180, 0, 1, 0);
+	
+	mCameraHit = false;
+	mCameraHudColorAnimId = 9876;
+	mCameraHitBoxSize = 0.8*SCALE_FACTOR;
+	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxSize/2, -mCameraHitBoxSize/2], [mCameraHitBoxSize/2, mCameraHitBoxSize/2, mCameraHitBoxSize/2]));	
+	
+	mCameraHudObj = CvmObj();
+	mCameraHudSize = 1*SCALE_FACTOR;
+	mCameraHudObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-mCameraHudSize*1, -mCameraHudSize*0.5, 0], [mCameraHudSize*1, mCameraHudSize*0.5, 0], 2, 2)));
+	var txt = CVmText("Life ",0,0,"Walkway bold", 0);
+	var textObj = CVmObj();	
+	textObj.LinkToText(txt);	
+	var txtScale = 0.01;
+	textObj.SetScale([txtScale,txtScale,txtScale]);
+//	textObj.SetRotation(90,0,1,0);
+	mCameraHudObj.AddChild(textObj, -mCameraHudSize/2, -mCameraHudSize/2);		
+	
 }
 
 
@@ -315,11 +338,14 @@ function Level6::Render()
 			}
 				
 			mCounterShader.Start();
+				mCounterShader.SetParameter("alpha", 1.0);
 				mCounterShader.SetParameter("color", [1,0,0]);
 
 				foreach(var bullet in mBulletsArray){
 					bullet.Draw();	
 				}
+				
+//				mCameraHitBoxObj.DrawBoundingBox();
 				
 				mCounterShader.SetParameter("color", [0,0,0]);
 				foreach(var wallHole in mWallsHolesObjs)
@@ -334,14 +360,23 @@ function Level6::Render()
 						obj.Draw(VR_BBOX_ONLY);
 					}			
 				}
+				
+				glDepthMask(GL_FALSE);  // disable writes to Z-Buffer
+				glDisable(GL_DEPTH_TEST);  // disable depth-testing
+				mCounterShader.SetParameter("color", [1,1,1]);
+				var color = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId, 6);
+				var alpha = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId+1, 6);
+				if(mCameraHit && color != Void){
+					mCounterShader.SetParameter("color", color);	
+					mCounterShader.SetParameter("alpha", alpha);				
+				}
+				else{
+					mCounterShader.SetParameter("color", [1,1,1]);
+					mCounterShader.SetParameter("alpha", 0.0);
+					
+				}
+				mCameraHudObj.Draw();
 			mCounterShader.Stop();
-			
-			
-			// Drawing the texts
-//			mFrontText.Draw();
-//			mBackText.Draw();
-//			mLeftText.Draw();
-
 			break;
 		}
 	}
@@ -493,14 +528,24 @@ function Level6::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{			
     		HandleLasers();   
+    		mCameraHitBoxObj.SetPosition(cameraPosition - [0, mCameraHitBoxSize*0.2, 0]);
+    		mCameraHudObj.SetPosition(cameraPosition + mCamera.GetDirection()*mCameraHudSize);
+			var vec = Norm(mCameraHudObj.GetPosition() - cameraPosition);
+			var axis = -Norm(vec ^ [0, 1, 0]);
+			var angle = acos((Norm(vec) * [0, 1, 0])) * RAD_TO_GRAD - 90; 		
+			mCameraHudObj.SetRotation(angle, axis.x, axis.y, axis.z);
+			
+			
     					
 			foreach(var gun in mGuns)
 				gun.UpdateGun();
     		
+			var stageTargets = mTargets[0];
     		for(var i = 0; i < len(mBulletsArray); i++){
     			var bulletObj = mBulletsArray[i].GetObj();
     			var bulletMaxLife = mBulletsArray[i].GetMaxLife();
     			var bulletShotTIme = mBulletsArray[i].GetShotTime();
+    			var isEnemyBullet = mBulletsArray[i].IsEnemy();
     			
     			var isPointValid = mMainRoom.IsPointInRoom(bulletObj.GetPosition()) && !mElevator.IsPointInElevator(bulletObj.GetPosition());
     			
@@ -532,36 +577,40 @@ function Level6::UpdateLogic(dt)
     			}
     			else if(GetTime() - bulletShotTIme > bulletMaxLife){
 					adel(mBulletsArray, i);
-    			}	
-    		}
-    		
-			var stageTargets = mTargets[0];
-    		for(var i = 0; i < len(stageTargets); i++)
-    		{
-    			var target = stageTargets[i];    			
-    			var hasBeenHit = false;
-    			
-    			for(var j = 0; j < len(mBulletsArray) && !hasBeenHit; j++)
-    			{
-    				if(!mBulletsArray[j].IsEnemy()){
-	    				var bulletObj = mBulletsArray[j].GetObj();
-	    				
-	    				hasBeenHit = target.IsCollidingBBox(bulletObj);
-	    				
-	    				if(hasBeenHit) //if the laser hit something or has been in the system for too long
+    			}
+    			else if(isEnemyBullet){
+	    			var cameraHasBeenHit = mCameraHitBoxObj.IsCollidingBBox(bulletObj);
+	    			if(cameraHasBeenHit){
+	    				outputln("CAMERA HAS BEEN HIT");
+	    				mCameraHit = true;
+	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.5);
+	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.4, 0}, 0.5);
+	    			}    				
+    			}
+    			else if(!isEnemyBullet){    				
+		    		for(var j = 0; j < len(stageTargets); j++)
+		    		{		    			
+		    			var target = stageTargets[j];    			
+		    			var hasBeenHit = target.IsCollidingBBox(bulletObj);
+		    			
+		    			if(hasBeenHit) //if the laser hit something or has been in the system for too long
 	    				{
-	    					adel(mBulletsArray, j);    					
+	    					adel(mBulletsArray, i);    					
 	    					
 	    					if(target.Hit() && target.RemoveLife() <= 0){
-	    						output("KILLED");
+	    						outputln("ENEMY KILLED");
 	    						target.Kill();
 		    					mCounter = (mCounter + 1) % 100;
 								UpdateCounter(mCounter, false);	
 							}
-	    				}    				
-    				} 
+	    				}    
+		    		}
     			}
-    			  			
+    		}
+    		
+    		for(var i = 0; i < len(stageTargets); i++)
+    		{    			  
+    			var target = stageTargets[i];		
     			var enemyBullet = target.Shoot(cameraPosition);
     			if(enemyBullet != Void){
     				aadd(mBulletsArray, enemyBullet);	
@@ -826,22 +875,26 @@ function Level6::CounterKeyboardTesting(){
 
 function Level6::CreateTargetsStage0(numTargets){
 	var targets = {};
-	var meshes = {};
 	var cubeSizes = 4*SCALE_FACTOR;	
 	
-	var mesh =  CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-	AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
-	
-	mesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
-	AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
-	aadd(meshes, mesh);
-	
-	mesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes, 1);
-	AddToonShaderToMesh(mesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
-	aadd(meshes, mesh);
-	
 	for(var i = 0; i < numTargets; i++){		
-		var chosenMesh = meshes[Rand(len(meshes)-1)];
+		var chosenMesh;
+		switch(Rand(2)){
+			case 0:{
+				chosenMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				break;				
+			}case 1:{
+				chosenMesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				break;				
+			}case 2:{
+				chosenMesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes, 1);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				break;				
+			}
+		}
+		
 		var targetObj = CVmObj(chosenMesh);
 		
 		var roomPos = mMainRoom.GetPosition();		
@@ -854,7 +907,7 @@ function Level6::CreateTargetsStage0(numTargets){
 		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
 		
 		targetObj.SetPosition([posX, posY, posZ]);
-		aadd(targets, Target(targetObj, 2, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
+		aadd(targets, Target(targetObj, 3, 500, [1,1,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
 	}
 	return targets;
 }
