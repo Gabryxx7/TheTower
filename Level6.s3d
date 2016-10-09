@@ -90,6 +90,7 @@ class Level6
 	
 	var mCameraHudLife;
 	var mLife;
+	var mGunsEventTriggers;
 	
 	// Private functions
 	HandleLasers();
@@ -113,6 +114,7 @@ class Level6
 	CreateTargetsStage1(numTargets);
 	CreateTargetsBossStage(numTargets);
 	DrawHUD();
+	SwitchGuns();
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
@@ -140,6 +142,21 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 		
 	mControllersBeingUsedIndex = {0, 0};	
 	mControllersArray = {};	
+	
+	mGunsEventTriggers = {};
+	var size = 8*SCALE_FACTOR;
+	var cornerx = mMainRoom.GetRoomWidth()/2;
+	var cornerz = mMainRoom.GetRoomDepth()/2;
+	var offy = 0.05*SCALE_FACTOR;
+
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 0});
+	mGunsEventTriggers[0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 1});
+	mGunsEventTriggers[1].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 2});
+	mGunsEventTriggers[2].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 3});
+	mGunsEventTriggers[3].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
 	
 	var mLaserLength = 1.5;
 	var mLaserWidth = 0.035;
@@ -324,6 +341,10 @@ function Level6::Render()
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
 	
 	mElevator.Draw();
+	
+	foreach(var trigger in mGunsEventTriggers){
+		trigger.Draw();
+	}
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
 	if(mIsVrOn || mDebugVrOn){
@@ -999,4 +1020,8 @@ function Level6::DrawHUD(){
 	glDepthMask(GL_TRUE);
 	
 	glEnable( GL_LIGHTING );
+}
+
+function Level6::SwitchGuns(){
+	
 }
