@@ -32,6 +32,7 @@ class Gun{
 	Draw();
 	GetObj();
 	CreatePickupPoint(pos, rotation, axis);
+	Pickup();
 };
 
 function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, shootType, animator, animationId){
@@ -173,4 +174,9 @@ function Gun::CreatePickupPoint(pos, rotation, axis){
 	}
 	mGunObj.SetPosition(pos);
 	mAnimator.CreateRotatingTransition(mGunObj, 0, 360, [0,1,0], 2, true, false);
+}
+
+function Gun::Pickup(){
+	mAnimator.RemoveTransitionByObject(mGunObj, 1);
+	
 }

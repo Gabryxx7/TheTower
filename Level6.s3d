@@ -92,6 +92,7 @@ class Level6
 	var mLife;
 	var mGunsEventTriggers;
 	var mPickupGuns;
+	var mIsInsideGunTrigger;
 	
 	// Private functions
 	HandleLasers();
@@ -188,6 +189,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mPickupGuns[0].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
 	aadd(mPickupGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
 	mPickupGuns[1].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	mIsInsideGunTrigger = false;
 	
 	if(mIsVRon)
 	{
@@ -671,7 +673,26 @@ function Level6::UpdateLogic(dt)
 					foreach(var target in mTargets[0])
 						target.Create();
 				}
-			}	
+			}
+			
+			if(mGunsEventTriggers[0][0].IsPointInside(cameraPosition)){
+				if(!mIsInsideGunTrigger){
+					mIsInsideGunTrigger = true;
+					var tmp1 = mGuns[0];
+					var tmp2 = mGuns[1];
+					mPickupGuns[0].Pickup();
+					mPickupGuns[1].Pickup();
+					mGuns[0] = mPickupGuns[0];
+					mGuns[1] = mPickupGuns[1];
+					mPickupGuns[0] = tmp1;
+					mPickupGuns[1] = tmp2;
+					mPickupGuns[0].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+					mPickupGuns[1].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+					outputln("SwitchingGuns");				
+				}
+			}else{
+				mIsInsideGunTrigger = false;
+			}
 				
 			break;
 		}
