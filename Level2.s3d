@@ -115,6 +115,7 @@ class Level2
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	DrawHUD();
 };
 
 function Level2::Level2(isVRon, inputManager, soundManager)
@@ -1009,4 +1010,8 @@ function Level2::GetLevelPreview(){
 
 function Level2::GetLevelName(){
 	return "Ghost";
+}
+
+function Level2::DrawHUD(){
+	
 }

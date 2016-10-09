@@ -82,14 +82,14 @@ class Level6
 	var mWallsHolesObjs;
 	var mWallsHolesLife;
 	
-	var mCameraHudSize;
 	var mCameraHudObj;
 	var mCameraHit;
 	var mCameraHudColorAnimId;
 	var mCameraHitBoxObj;
 	var mCameraHitBoxSize;
 	
-	var mCameraHud;
+	var mCameraHudLife;
+	var mLife;
 	
 	// Private functions
 	HandleLasers();
@@ -112,6 +112,7 @@ class Level6
 	CreateTargetsStage0(numTargets);
 	CreateTargetsStage1(numTargets);
 	CreateTargetsBossStage(numTargets);
+	DrawHUD();
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
@@ -219,17 +220,23 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHitBoxSize = 0.8*SCALE_FACTOR;
 	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxSize/2, -mCameraHitBoxSize/2], [mCameraHitBoxSize/2, mCameraHitBoxSize/2, mCameraHitBoxSize/2]));	
 	
-	mCameraHudObj = CvmObj();
-	mCameraHudSize = 1*SCALE_FACTOR;
-	mCameraHudObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-mCameraHudSize*1, -mCameraHudSize*0.5, 0], [mCameraHudSize*1, mCameraHudSize*0.5, 0], 2, 2)));
-	var txt = CVmText("Life ",0,0,"Walkway bold", 0);
-	var textObj = CVmObj();	
-	textObj.LinkToText(txt);	
-	var txtScale = 0.01;
-	textObj.SetScale([txtScale,txtScale,txtScale]);
-//	textObj.SetRotation(90,0,1,0);
-	mCameraHudObj.AddChild(textObj, -mCameraHudSize/2, -mCameraHudSize/2);		
+	var txt = CVmText();
+	txt.Load("Life");
 	
+	mCameraHudLife = CvmText();
+	mLife = 100;
+	mCameraHudLife.Load(str(mLife));
+	
+	var obj1 = CvmObj();
+	var obj2 = CvmObj();
+	obj1.LinkToText(txt);	
+	obj2.LinkToText(mCameraHudLife);
+	
+	mCameraHudObj = CVmObj();	
+	mCameraHudObj.AddChild(obj1,0,0,0);	
+	mCameraHudObj.AddChild(obj2, 1.5, 0,0);
+	mCameraHudObj.SetScale(0.07, 0.08, 0.0);
+	mCameraHudObj.SetPosition(-0.99,-0.99,0.0);
 }
 
 
@@ -361,21 +368,7 @@ function Level6::Render()
 					}			
 				}
 				
-				glDepthMask(GL_FALSE);  // disable writes to Z-Buffer
-				glDisable(GL_DEPTH_TEST);  // disable depth-testing
-				mCounterShader.SetParameter("color", [1,1,1]);
-				var color = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId, 6);
-				var alpha = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId+1, 6);
-				if(mCameraHit && color != Void){
-					mCounterShader.SetParameter("color", color);	
-					mCounterShader.SetParameter("alpha", alpha);				
-				}
-				else{
-					mCounterShader.SetParameter("color", [1,1,1]);
-					mCounterShader.SetParameter("alpha", 0.0);
-					
-				}
-				mCameraHudObj.Draw();
+				
 			mCounterShader.Stop();
 			break;
 		}
@@ -528,14 +521,6 @@ function Level6::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{			
     		HandleLasers();   
-    		mCameraHitBoxObj.SetPosition(cameraPosition - [0, mCameraHitBoxSize*0.2, 0]);
-    		mCameraHudObj.SetPosition(cameraPosition + mCamera.GetDirection()*mCameraHudSize);
-			var vec = Norm(mCameraHudObj.GetPosition() - cameraPosition);
-			var axis = -Norm(vec ^ [0, 1, 0]);
-			var angle = acos((Norm(vec) * [0, 1, 0])) * RAD_TO_GRAD - 90; 		
-			mCameraHudObj.SetRotation(angle, axis.x, axis.y, axis.z);
-			
-			
     					
 			foreach(var gun in mGuns)
 				gun.UpdateGun();
@@ -583,8 +568,10 @@ function Level6::UpdateLogic(dt)
 	    			if(cameraHasBeenHit){
 	    				outputln("CAMERA HAS BEEN HIT");
 	    				mCameraHit = true;
-	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.5);
-	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.4, 0}, 0.5);
+	    				mLife--;
+						mCameraHudLife.Load(str(mLife));
+	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.4);
+	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.3, 0}, 0.4);
 	    			}    				
     			}
     			else if(!isEnemyBullet){    				
@@ -960,4 +947,47 @@ function Level6::CreateTargetsBossStage(numTargets){
 	}
 	
 	return targets;
+}
+
+function Level6::DrawHUD(){
+	var viewport = array(4);
+	viewport = glget(GL_VIEWPORT);
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, viewport[2], viewport[4], 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    
+    glEnable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    
+    glDisable( GL_LIGHTING );
+    
+    
+	var color = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId, 6);
+	var alpha = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId+1, 6);
+	if(color == Void || alpha == Void){
+		color = [1,1,1];
+		alpha = 0.0;			
+	}
+	
+	mCameraHudObj.Draw();
+    
+    glBegin(GL_QUADS);
+	    glColor(color.r, color.g, color.b, alpha);
+	    glVertex(-1.0, -1.0);
+	    glVertex(1.0, -1.0);
+	    glVertex(1.0, 1.0);
+	    glVertex(-1.0, 1.0);
+	glEnd();
+	
+	glMatrixMode(GL_PROJECTION);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	
+	glEnable( GL_LIGHTING );
 }

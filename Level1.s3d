@@ -146,6 +146,7 @@ class Level1
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	DrawHUD();
 };
 
 
@@ -1064,4 +1065,8 @@ function Level1::GetLevelPreview(){
 
 function Level1::GetLevelName(){
 	return "Colors";
+}
+
+function Level1::DrawHUD(){
+	
 }

@@ -140,6 +140,7 @@ class Level0
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	DrawHUD();
 };
 
 
@@ -1096,4 +1097,8 @@ function Level0::GetLevelPreview(){
 
 function Level0::GetLevelName(){
 	return "Start";
+}
+
+function Level0::DrawHUD(){
+	
 }

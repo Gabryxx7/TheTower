@@ -579,6 +579,8 @@ function GameManager::XVRRendering()
 	if(!mIsVRon)
 		DrawCrosshair();
 		
+	mCurrentLevel.DrawHUD();
+		
 	// If there is a fade transition going on or the level is ending I fade to black the screen (I check if the level is ending so that when it is
 	// and the animation of fading to black is over, the screen keeps being black)
 	if(mAnimator.HaveTransition(mFadeAnimationID, 6) || mEnding)
