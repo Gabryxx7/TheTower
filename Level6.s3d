@@ -151,6 +151,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var cornerz = mMainRoom.GetRoomDepth()/2;
 	var offy = 0.05*SCALE_FACTOR;
 
+	mIsInsideGunTrigger = false;
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[0][0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
@@ -178,18 +179,32 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
-	var shootType = 0;
-	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
+	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, 0, mAnimator, 991));
+	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, 0, mAnimator, 991));
 	
 	
-	var gun1 = Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992);
+	var gun1 = Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 0.75, 1, mAnimator, 992);
 	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-	var gun2 = Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992);
+	var gun2 = Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 0.75, 1, mAnimator, 992);
 	gun2.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
 	aadd(mGunsEventTriggers[0][1], gun1);
 	aadd(mGunsEventTriggers[0][1], gun2);
-	mIsInsideGunTrigger = false;
+	
+	
+	gun1 = Gun(gunMesh2, shootingDelay/2, recoil, mLaserMesh, bulletSpeed*3, bulletDistance, bulletLife, 0.75, 1, mAnimator, 992);
+	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	gun2 = Gun(gunMesh2, shootingDelay/2, recoil, mLaserMesh, bulletSpeed*3, bulletDistance, bulletLife, 0.75, 1, mAnimator, 992);
+	gun2.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	aadd(mGunsEventTriggers[1][1], gun1);
+	aadd(mGunsEventTriggers[1][1], gun2);
+	
+	
+	gun1 = Gun(gunMesh, shootingDelay/4, recoil, mLaserMesh, bulletSpeed/3, bulletDistance, bulletLife, 4, 0, mAnimator, 992);
+	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	gun2 = Gun(gunMesh, shootingDelay/4, recoil, mLaserMesh, bulletSpeed/3, bulletDistance, bulletLife, 4, 0, mAnimator, 992);
+	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	aadd(mGunsEventTriggers[2][1], gun1);
+	aadd(mGunsEventTriggers[2][1], gun2);
 	
 	if(mIsVRon)
 	{
@@ -574,6 +589,7 @@ function Level6::UpdateLogic(dt)
     			var bulletObj = mBulletsArray[i].GetObj();
     			var bulletMaxLife = mBulletsArray[i].GetMaxLife();
     			var bulletShotTIme = mBulletsArray[i].GetShotTime();
+    			var bulletPower = mBulletsArray[i].GetPower();
     			var isEnemyBullet = mBulletsArray[i].IsEnemy();
     			
     			var isPointValid = mMainRoom.IsPointInRoom(bulletObj.GetPosition()) && !mElevator.IsPointInElevator(bulletObj.GetPosition());
@@ -628,7 +644,7 @@ function Level6::UpdateLogic(dt)
 	    				{
 	    					adel(mBulletsArray, i);    					
 	    					
-	    					if(target.Hit() && target.RemoveLife() <= 0){
+	    					if(target.Hit() && target.RemoveLife(bulletPower) <= 0){
 	    						outputln("ENEMY KILLED");
 	    						target.Kill();
 		    					mCounter = (mCounter + 1) % 100;

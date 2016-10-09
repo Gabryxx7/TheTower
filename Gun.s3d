@@ -22,6 +22,7 @@ class Gun{
 	var mDelayAnimFactor;
 	var mLastShotTime;
 	var mIsShooting;
+	var mBulletPower;
 	
 	IsShooting();
 	UpdateGun();
@@ -35,7 +36,7 @@ class Gun{
 	Pickup();
 };
 
-function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, shootType, animator, animationId){
+function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletPower, shootType, animator, animationId){
 	mGunMesh = mesh;
 	mGunObj= CvmObj(mGunMesh);
 	mShootingDelayOrig = shootingDelay;
@@ -51,6 +52,7 @@ function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bul
 	mAnimator = animator;
 	mAnimationId = animationId;
 	mLastShotTime = GetTime();
+	mBulletPower = bulletPower;
 	
 	mIsShooting = false;
 	mIsRotated = false;
@@ -94,7 +96,7 @@ function Gun::Shoot(){
 			
 			mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
 			
-			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, [1,0,0])};			
+			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0])};			
 		}
 		else if(mShootType == 1){		
 			var startPoint = mGunObj.GetPosition();
@@ -126,9 +128,9 @@ function Gun::Shoot(){
 			tip = mGunObj.LocalToWorld([1, 0, -0.02]);			
 			mAnimator.CreateTransition(bulletObj2, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
 			
-			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, [1,0,0]),
-					Bullet(bulletObj1, GetTime(), mBulletMaxLife, false, [1,0,0]),
-					Bullet(bulletObj2, GetTime(), mBulletMaxLife, false, [1,0,0])};					
+			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0]),
+					Bullet(bulletObj1, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0]),
+					Bullet(bulletObj2, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0])};					
 		}
 	}
 }
