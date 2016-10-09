@@ -91,6 +91,7 @@ class Level6
 	var mCameraHudLife;
 	var mLife;
 	var mGunsEventTriggers;
+	var mPickupGuns;
 	
 	// Private functions
 	HandleLasers();
@@ -150,19 +151,20 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var offy = 0.05*SCALE_FACTOR;
 
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 0});
-	mGunsEventTriggers[0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
+	mGunsEventTriggers[0][0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 1});
-	mGunsEventTriggers[1].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
+	mGunsEventTriggers[1][0].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 2});
-	mGunsEventTriggers[2].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
+	mGunsEventTriggers[2][0].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 3});
-	mGunsEventTriggers[3].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
+	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
 	
 	var mLaserLength = 1.5;
 	var mLaserWidth = 0.035;
 	var mLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
 	mLaserMesh.Rotate(90,1,0,0);
 	
+	mPickupGuns = {};
 	mGuns = {};
 	var gunMesh = CVmNewMesh("scifiGun/SciFiGun.AAM");
 	gunMesh.Scale(0.03,0.03,0.03);
@@ -180,6 +182,12 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 //	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
 	aadd(mGuns, Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992));
 	aadd(mGuns, Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992));
+	
+	
+	aadd(mPickupGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
+	mPickupGuns[0].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	aadd(mPickupGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
+	mPickupGuns[1].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
 	
 	if(mIsVRon)
 	{
@@ -343,7 +351,7 @@ function Level6::Render()
 	mElevator.Draw();
 	
 	foreach(var trigger in mGunsEventTriggers){
-		trigger.Draw();
+		trigger[0].Draw();
 	}
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
@@ -353,9 +361,12 @@ function Level6::Render()
 	}
 
 	if(!mIsVrOn && !mDebugVrOn){
-		mGuns[0].Draw();
-		mGuns[1].Draw();	
+		foreach(var gun in mGUns)
+			gun.Draw();
 	}
+	
+	foreach(var gun in mPickupGuns)
+		gun.Draw();
 	
 	switch(mLevelStatus)
 	{
