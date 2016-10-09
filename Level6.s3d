@@ -151,13 +151,13 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var cornerz = mMainRoom.GetRoomDepth()/2;
 	var offy = 0.05*SCALE_FACTOR;
 
-	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 0});
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[0][0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
-	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 1});
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[1][0].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
-	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 2});
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[2][0].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
-	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), 3});
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
 	
 	var mLaserLength = 1.5;
@@ -179,16 +179,16 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
 	var shootType = 0;
-//	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-//	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-	aadd(mGuns, Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992));
-	aadd(mGuns, Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992));
+	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
+	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
 	
 	
-	aadd(mPickupGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-	mPickupGuns[0].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-	aadd(mPickupGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-	mPickupGuns[1].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	var gun1 = Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992);
+	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	var gun2 = Gun(gunMesh2, shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, mAnimator, 992);
+	gun2.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	aadd(mGunsEventTriggers[0][1], gun1);
+	aadd(mGunsEventTriggers[0][1], gun2);
 	mIsInsideGunTrigger = false;
 	
 	if(mIsVRon)
@@ -354,6 +354,9 @@ function Level6::Render()
 	
 	foreach(var trigger in mGunsEventTriggers){
 		trigger[0].Draw();
+		foreach(var gun in trigger[1]){
+			gun.Draw();			
+		}
 	}
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
@@ -675,25 +678,29 @@ function Level6::UpdateLogic(dt)
 				}
 			}
 			
-			if(mGunsEventTriggers[0][0].IsPointInside(cameraPosition)){
-				if(!mIsInsideGunTrigger){
-					mIsInsideGunTrigger = true;
-					var tmp1 = mGuns[0];
-					var tmp2 = mGuns[1];
-					mPickupGuns[0].Pickup();
-					mPickupGuns[1].Pickup();
-					mGuns[0] = mPickupGuns[0];
-					mGuns[1] = mPickupGuns[1];
-					mPickupGuns[0] = tmp1;
-					mPickupGuns[1] = tmp2;
-					mPickupGuns[0].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-					mPickupGuns[1].CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-					outputln("SwitchingGuns");				
+			var isInsideOne = false;
+			foreach(var trigger in mGunsEventTriggers){
+				if(trigger[0].IsPointInside(cameraPosition)){
+					isInsideOne = true;
+					if(!mIsInsideGunTrigger && len(trigger[1]) > 0){
+						mIsInsideGunTrigger = true;
+						var tmp1 = mGuns[0];
+						var tmp2 = mGuns[1];
+						trigger[1][0].Pickup();
+						trigger[1][1].Pickup();
+						mGuns[0] = trigger[1][0];
+						mGuns[1] = trigger[1][1];
+						trigger[1][0] = tmp1;
+						trigger[1][1] = tmp2;
+						trigger[1][0].CreatePickupPoint(trigger[0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+						trigger[1][1].CreatePickupPoint(trigger[0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+					}
 				}
-			}else{
-				mIsInsideGunTrigger = false;
 			}
-				
+			
+			if(!isInsideOne){
+				mIsInsideGunTrigger = false;				
+			}
 			break;
 		}
 		// Case where the level is ending: the only thing missing is the player inside the elevator
