@@ -148,7 +148,10 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	mGuns = {};
 	var gunMesh = CVmNewMesh("scifiGun/SciFiGun.AAM");
+	var gunMesh2 = CVmNewMesh("shotgun.AAM");
 	gunMesh.Scale(0.03,0.03,0.03);
+	gunMesh2.Scale(0.03,0.03,0.03);
+	gunMesh2.Rotate(180,0,1,0);
 	var shootingDelay = 100.0;
 	var recoil = 0.2*SCALE_FACTOR;
 	var bulletDistance = 1000;
@@ -156,7 +159,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletSpeed = 25;
 	var shootType = 0;
 	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 992));
+	aadd(mGuns, Gun(gunMesh2, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 992));
 	
 	if(mIsVRon)
 	{
@@ -221,7 +224,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxSize/2, -mCameraHitBoxSize/2], [mCameraHitBoxSize/2, mCameraHitBoxSize/2, mCameraHitBoxSize/2]));	
 	
 	var txt = CVmText();
-	txt.Load("Life");
+	txt.Load("+");
+	txt.SetColor(1,1,0);
 	
 	mCameraHudLife = CvmText();
 	mLife = 100;
@@ -234,8 +238,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	mCameraHudObj = CVmObj();	
 	mCameraHudObj.AddChild(obj1,0,0,0);	
-	mCameraHudObj.AddChild(obj2, 1.5, 0,0);
-	mCameraHudObj.SetScale(0.07, 0.08, 0.0);
+	mCameraHudObj.AddChild(obj2, 0.7, 0,0);
+	mCameraHudObj.SetScale(0.07, 0.1, 0.0);
 	mCameraHudObj.SetPosition(-0.99,-0.99,0.0);
 }
 
