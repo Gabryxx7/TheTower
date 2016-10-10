@@ -9,6 +9,7 @@ class Gun{
 	var mGunRotation;
 	var mRotationAxis;
 	
+	var mSingleShot;
 	var mShootingDelay;
 	var mShootingDelayOrig;
 	var mRecoilDepth;
@@ -40,9 +41,11 @@ class Gun{
 	Pickup();
 	LinkToController(controller);
 	UnlinkController();
+	GetShootType();
+	IsSingleShot();
 };
 
-function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletPower, shootType, animator, animationId){
+function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletPower, shootType, singleShot, animator, animationId){
 	mGunMesh = CvmNewMesh(meshName);
 	mGunObj= CvmObj(mGunMesh);
 	mShootingDelayOrig = shootingDelay;
@@ -53,6 +56,7 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 	mBulletMaxDistance = bulletMaxDistance;
 	mBulletMaxLife = bulletMaxLife;
 	mShootType = shootType;
+	mSingleShot = singleShot;
 	mDelayAnimFactor = 350;
 	mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
 	mAnimator = animator;
@@ -117,11 +121,11 @@ function Gun::Shoot(){
 			var bulletObj1 = CvmObj(mBulletMesh);
 			var bulletObj2 = CvmObj(mBulletMesh);
 			
-			bulletObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
-			bulletObj1.SetRotationMatrix(mGunObj.GetRotationMatrix());
-			bulletObj2.SetRotationMatrix(mGunObj.GetRotationMatrix());
 			
 			if(!mIsVive){
+				bulletObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
+				bulletObj1.SetRotationMatrix(mGunObj.GetRotationMatrix());
+				bulletObj2.SetRotationMatrix(mGunObj.GetRotationMatrix());
 				if(mIsRotated){
 					bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
 					bulletObj1.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
@@ -143,6 +147,10 @@ function Gun::Shoot(){
 				mAnimator.CreateTransition(bulletObj2, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
 			}
 			else{
+				var startPoint = mViveController.GetPosition();
+				bulletObj.SetRotationMatrix(mViveController.GetRotationMatrix());
+				bulletObj1.SetRotationMatrix(mViveController.GetRotationMatrix());
+				bulletObj2.SetRotationMatrix(mViveController.GetRotationMatrix());
 				mAnimator.CreateTransition(bulletObj, startPoint, mViveController.GetDirection()*mBulletMaxDistance, mBulletSpeed ,false, 0);
 				mAnimator.CreateTransition(bulletObj1, startPoint, (mViveController.GetDirection()-[0,0,0.02])*mBulletMaxDistance, mBulletSpeed ,false, 0);
 				mAnimator.CreateTransition(bulletObj2, startPoint, (mViveController.GetDirection()+[0,0,0.02])*mBulletMaxDistance, mBulletSpeed ,false, 0);				
@@ -219,4 +227,8 @@ function Gun::LinkToController(controller){
 
 function Gun::UnlinkController(){
 	mIsVive = false;
+}
+
+function Gun::IsSingleShot(){
+	return mSingleShot;
 }
