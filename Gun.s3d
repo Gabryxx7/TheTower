@@ -38,8 +38,8 @@ class Gun{
 	GetObj();
 	CreatePickupPoint(pos, rotation, axis);
 	Pickup();
-	EnableVive(controller);
-	DisableVive();
+	LinkToController(controller);
+	UnlinkController();
 };
 
 function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletPower, shootType, animator, animationId){
@@ -160,6 +160,11 @@ function Gun::IsShooting(){
 }
 
 function Gun::UpdateGun(){
+	if(mIsVive){
+		mGunObj.SetRotationMatrix(mViveController.GetRotationMatrix());
+		mGunObj.SetPosition(mViveController.GetPosition());	
+	}
+	
 	if(KeyPressed("q")){
 		mShootingDelay = mShootingDelayOrig/10;
 		mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
@@ -207,11 +212,11 @@ function Gun::Pickup(){
 	mAnimator.RemoveTransitionByObject(mGunObj, 1);
 }
 
-function Gun::EnableVive(controller){
+function Gun::LinkToController(controller){
 	mIsVive = true;
 	mViveController = controller;
 }
 
-function Gun::DisableVive(){
+function Gun::UnlinkController(){
 	mIsVive = false;
 }
