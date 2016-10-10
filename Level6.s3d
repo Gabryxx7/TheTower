@@ -404,17 +404,17 @@ function Level6::Render()
 	mElevator.Draw();
 	
 	foreach(var trigger in mGunsEventTriggers){
-		trigger[0].Draw();
+//		trigger[0].Draw();
 		foreach(var gun in trigger[1]){
 			gun.Draw();			
 		}
 	}
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
-	if(mIsVrOn || mDebugVrOn){
-		for(var i = 0; i < len(mControllersArray); i++)
-			mControllersArray[i].Draw();		
-	}
+//	if(mIsVrOn || mDebugVrOn){
+//		for(var i = 0; i < len(mControllersArray); i++)
+//			mControllersArray[i].Draw();		
+//	}
 
 	foreach(var gun in mGUns)
 		gun.Draw();
@@ -439,7 +439,7 @@ function Level6::Render()
 				
 			mCounterShader.Start();
 				mCounterShader.SetParameter("alpha", 1.0);
-				mCounterShader.SetParameter("color", [1,0,0]);
+					mCounterShader.SetParameter("color", bullet.GetColor());
 
 				foreach(var bullet in mBulletsArray){
 					bullet.Draw();	
@@ -804,6 +804,9 @@ function Level6::HandleLasers()
 			var controller = mControllersArray[i];
 			var gun = mGuns[i];
 			var usingController = mInputManager.IsPressingPrimaryButton(controller.GetIndex());
+//			if(i == 0)
+//				usingController = KeyPressed("Z");
+//			else
 			if(usingController){
 				if(gun.IsSingleShot()){
 					if(mControllersBeingUsedIndex[i] == 0){
