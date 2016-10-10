@@ -123,7 +123,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = false;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -775,38 +775,24 @@ function Level6::HandleLasers()
 {
 	// Now I check if the player is drawing; I first check if he pressed a button
 	var gunsBullets = {};
-	if(mIsVrOn || mDebugVrOn){
-		for(var i = 0; i < len(mGuns); i++){
-			var controller = mControllersArray[i];
-			var gun = mGuns[i];
-			var usingController = mInputManager.IsPressingPrimaryButton(controller.GetIndex());
-//			if(i == 0)
-//				usingController = KeyPressed("Z");
-//			else
-//				usingController = KeyPressed("X");
-			if(usingController){
-				if(gun.IsSingleShot()){
-					if(mControllersBeingUsedIndex[i] == 0){
-						mControllersBeingUsedIndex[i] = i+1;
-						aadd(gunsBullets, gun.Shoot());	
-					}			
-				}
-				else{
+	for(var i = 0; i < len(mGuns); i++){
+		var gun = mGuns[i];
+		var isPressing = (mIsVrOn || mDebugVrOn) ? mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex()) : mInputManager.IsPressingPrimaryButton();
+					
+		if(isPressing){
+			if(gun.IsSingleShot()){
+				if(mControllersBeingUsedIndex[i] == 0){
+					mControllersBeingUsedIndex[i] = i+1;
 					aadd(gunsBullets, gun.Shoot());	
 				}			
 			}
 			else{
-				if(!usingController && mControllersBeingUsedIndex[i] != 0)
-					mControllersBeingUsedIndex[i] = 0;
-			}
-		}
-	}
-	else{
-		if(mInputManager.IsPressingPrimaryButton()){
-			foreach(var gun in mGuns){
 				aadd(gunsBullets, gun.Shoot());	
-			}
-		}	
+			}			
+		}
+		else if(mControllersBeingUsedIndex[i] != 0){
+			mControllersBeingUsedIndex[i] = 0;
+		}
 	}
 	
 	foreach(var gunBullets in gunsBullets){
