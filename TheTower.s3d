@@ -1,10 +1,5 @@
-/*
- *	Ship Race VR
- *  (c) Carlo Casta 2007
- *
- *  ShipRaceVR.s3d - Application "Entry Point"
- */
-
+// #define _S3D_ALLOW_OBSOLETE_FUNCTIONS
+ 
 //global var VR_ON = false;
 var HMD = null;
 

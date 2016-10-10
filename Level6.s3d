@@ -375,7 +375,7 @@ function Level6::Render()
 					mCounterShader.SetParameter("alpha", 0.0);
 					
 				}
-				mCameraHudObj.Draw();
+//				mCameraHudObj.Draw();
 			mCounterShader.Stop();
 			break;
 		}

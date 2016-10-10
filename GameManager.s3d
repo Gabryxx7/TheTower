@@ -150,6 +150,11 @@ class GameManager
 	
 	var mLevelsPreloading;
 	
+	var mFbo;
+	var mPostProcessingBlurShader;
+	
+	var mScreenWidth;
+	var mScreenHeight;
 
 	// Private methods
 	XVRRendering();
@@ -169,7 +174,18 @@ function GameManager::GameManager(HMD)
 	
 	mIsVRon = mHMD.IsVRactive() == 1;
 //	mIsVRon = false;
-		
+
+	var viewport = array(4);
+	viewport = glget(GL_VIEWPORT);
+	
+	mScreenWidth = viewport[2];
+	mScreenHeight = viewport[3];
+	
+	mFbo = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
+	mFbo.EnableMipmaps();
+	
+	mPostProcessingBlurShader = CVmShaderProgram("postProcessingBlurShader.glsl");
+	
 	mGameStatus = STATUS_INGAME;
 		
 	mGameStarted = false;
@@ -397,10 +413,22 @@ function GameManager::Render()
 	//		mMenu.Render();
 			break;
 		case STATUS_ENDGAME:
-		case STATUS_INGAME:{
+		case STATUS_INGAME:
+		{
+			var viewport = array(4);
+			viewport = glget(GL_VIEWPORT);
+			
+			mScreenWidth = viewport[2];
+			mScreenHeight = viewport[3];
+			
 				
 			mCurrentLevel.SetupOpenglLights();
 				
+			if(true)
+			{
+				SceneBegin(mCamera);
+					mFbo.Start();
+			}
 				
 			SceneBegin(mCamera);
 			
@@ -430,6 +458,69 @@ function GameManager::Render()
 			}	
 				
 			SceneEnd();
+			
+			if(true)
+			{
+				mFbo.Stop();
+				glDisable(GL_ALPHA_TEST);
+				glDisable(GL_BLEND);
+				
+				
+				glClear(GL_DEPTH_BUFFER_BIT);
+			    glMatrixMode(GL_PROJECTION);
+			    glLoadIdentity();
+			    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
+			    glMatrixMode(GL_MODELVIEW);
+			    glLoadIdentity();
+			    
+			    
+//			    glEnable(GL_BLEND);
+//			    glDisable(GL_DEPTH_TEST);
+//			    glDepthMask(GL_FALSE);
+			    
+			    glDisable( GL_LIGHTING );
+			    
+			    glEnable(GL_TEXTURE_2D);
+			    
+			    SetActiveTexture(mFbo);
+			    
+			    static var value = 1.0;
+			    
+			    
+			    if(Keypressed("V"))
+			    {
+			    	value += 0.01;
+			    	outputln(value);
+			    }
+			    
+			    if(Keypressed("C"))
+			    {
+			    	value -= 0.01;
+			    	outputln(value);
+			    }
+			    
+			    mPostProcessingBlurShader.Start();
+			    	mPostProcessingBlurShader.SetParameter("value", value);
+			    
+			    glBegin(GL_QUADS);
+					glTexCoord(1, 1); 
+				    glVertex(1.0, 1.0);
+				    glTexCoord(0, 1); 
+				    glVertex(-1.0, 1.0);
+					glTexCoord(0, 0); 
+				    glVertex(-1.0, -1.0);
+				    glTexCoord(1, 0); 
+				    glVertex(1.0, -1.0);
+				    
+				glEnd();
+				
+				mPostProcessingBlurShader.Stop();
+				 
+//				glMatrixMode(GL_PROJECTION);
+//				glEnable(GL_DEPTH_TEST);
+//				glDepthMask(GL_TRUE);
+				SceneEnd();
+			}
 			break;
 			
 			}
@@ -575,14 +666,14 @@ function GameManager::XVRRendering()
 		mPlayAreaBoxShader.Stop();
 	}
 		
-	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
-	if(!mIsVRon)
-		DrawCrosshair();
-		
-	// If there is a fade transition going on or the level is ending I fade to black the screen (I check if the level is ending so that when it is
-	// and the animation of fading to black is over, the screen keeps being black)
-	if(mAnimator.HaveTransition(mFadeAnimationID, 6) || mEnding)
-		FadeToBlackScreen();
+//	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
+//	if(!mIsVRon)
+//		DrawCrosshair();
+//		
+//	// If there is a fade transition going on or the level is ending I fade to black the screen (I check if the level is ending so that when it is
+//	// and the animation of fading to black is over, the screen keeps being black)
+//	if(mAnimator.HaveTransition(mFadeAnimationID, 6) || mEnding)
+//		FadeToBlackScreen();
 }
 
 /*
