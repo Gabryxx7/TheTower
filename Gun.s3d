@@ -172,6 +172,57 @@ function Gun::Shoot(){
 					Bullet(bulletObj1, GetTime(), mBulletMaxLife, false, mBulletPower, [0,1,0]),
 					Bullet(bulletObj2, GetTime(), mBulletMaxLife, false, mBulletPower, [0,0,1])};					
 		}
+		else if(mShootType == 2){		
+			var startPoint = mGunObj.GetPosition();
+			var bulletObj = CvmObj(mBulletMesh);
+			var bulletObj1 = CvmObj(mBulletMesh);
+			var bulletObj2 = CvmObj(mBulletMesh);
+			
+			
+			if(!mIsVive){
+				bulletObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
+				bulletObj1.SetRotationMatrix(mGunObj.GetRotationMatrix());
+				bulletObj2.SetRotationMatrix(mGunObj.GetRotationMatrix());
+				if(mIsRotated){
+					bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+					bulletObj1.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+					bulletObj2.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+				}
+				
+				var center = mGunObj.LocalToWorld([0, 0, 0]);
+				var tip = mGunObj.LocalToWorld([1, 0, 0]);			
+				mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+				
+				
+				center = mGunObj.LocalToWorld([0, 0, 0]);
+				tip = mGunObj.LocalToWorld([1, 0, 0.02]);			
+				mAnimator.CreateTransition(bulletObj1, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+				
+				
+				center = mGunObj.LocalToWorld([0, 0, 0]);
+				tip = mGunObj.LocalToWorld([1, 0, -0.02]);			
+				mAnimator.CreateTransition(bulletObj2, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+			}
+			else{
+				var startPoint = mViveController.GetPosition();
+				bulletObj.SetRotationMatrix(mViveController.GetRotationMatrix());
+				bulletObj1.SetRotationMatrix(mViveController.GetRotationMatrix());
+				bulletObj1.Rotate(55,0,0,1);
+				bulletObj2.SetRotationMatrix(mViveController.GetRotationMatrix());
+				bulletObj2.Rotate(-55,0,0,1);
+				
+				var center = mGunObj.LocalToWorld([0, 0, 0]);
+				var tip = mGunObj.LocalToWorld([0, 0, -1]);		
+				mAnimator.CreateTransition(bulletObj, startPoint - [0, 0.16*SCALE_FACTOR,0], startPoint+(tip-center)*mBulletMaxDistance - [0, 0.16*SCALE_FACTOR,0], mBulletSpeed ,false, 0);			
+				mAnimator.CreateTransition(bulletObj1, startPoint - [0.08*SCALE_FACTOR,0,0], startPoint+(tip-center)*mBulletMaxDistance - [0.08*SCALE_FACTOR,0,0], mBulletSpeed ,false, 0);	
+				mAnimator.CreateTransition(bulletObj2, startPoint + [0.08*SCALE_FACTOR,0,0], startPoint+(tip-center)*mBulletMaxDistance+ [0.08*SCALE_FACTOR,0,0], mBulletSpeed ,false, 0);				
+			}
+			
+			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, mBulletPower, [1,1,0]),
+					Bullet(bulletObj1, GetTime(), mBulletMaxLife, false, mBulletPower, [1,1,0]),
+					Bullet(bulletObj2, GetTime(), mBulletMaxLife, false, mBulletPower, [1,1,0])};	
+			
+		}
 	}
 }
 
