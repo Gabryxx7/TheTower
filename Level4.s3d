@@ -182,6 +182,7 @@ class Level4
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	DrawHUD();
 };
 
 
@@ -1996,4 +1997,8 @@ function Level4::GetLevelPreview(){
 
 function Level4::GetLevelName(){
 	return "Timing";
+}
+
+function Level4::DrawHUD(){
+	
 }

@@ -82,14 +82,17 @@ class Level6
 	var mWallsHolesObjs;
 	var mWallsHolesLife;
 	
-	var mCameraHudSize;
 	var mCameraHudObj;
 	var mCameraHit;
 	var mCameraHudColorAnimId;
 	var mCameraHitBoxObj;
 	var mCameraHitBoxSize;
 	
-	var mCameraHud;
+	var mCameraHudLife;
+	var mLife;
+	var mGunsEventTriggers;
+	var mPickupGuns;
+	var mIsInsideGunTrigger;
 	
 	// Private functions
 	HandleLasers();
@@ -112,13 +115,15 @@ class Level6
 	CreateTargetsStage0(numTargets);
 	CreateTargetsStage1(numTargets);
 	CreateTargetsBossStage(numTargets);
+	DrawHUD(eye);
+	SwitchGuns();
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = false;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -140,43 +145,124 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mControllersBeingUsedIndex = {0, 0};	
 	mControllersArray = {};	
 	
+	mGunsEventTriggers = {};
+	var size = 8*SCALE_FACTOR;
+	var cornerx = mMainRoom.GetRoomWidth()/2;
+	var cornerz = mMainRoom.GetRoomDepth()/2;
+	var offy = 0.05*SCALE_FACTOR;
+
+	mIsInsideGunTrigger = false;
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
+	mGunsEventTriggers[0][0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
+	mGunsEventTriggers[1][0].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
+	mGunsEventTriggers[2][0].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
+	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
+	
 	var mLaserLength = 1.5;
 	var mLaserWidth = 0.035;
 	var mLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
 	mLaserMesh.Rotate(90,1,0,0);
 	
+	mPickupGuns = {};
 	mGuns = {};
-	var gunMesh = CVmNewMesh("scifiGun/SciFiGun.AAM");
-	gunMesh.Scale(0.03,0.03,0.03);
 	var shootingDelay = 100.0;
 	var recoil = 0.2*SCALE_FACTOR;
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
-	var shootType = 0;
-	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 991));
-	aadd(mGuns, Gun(gunMesh, shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, shootType, mAnimator, 992));
+	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, 0, true, mAnimator, 991));
+	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, 0, true, mAnimator, 991));
+	mGuns[0].GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	mGuns[1].GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	if(mIsVrOn || mDebugVrOn){
+		mGuns[0].GetObj().GetMesh().Rotate(90, 0,1,0);
+		mGuns[1].GetObj().GetMesh().Rotate(90, 0,1,0);	
+		mGuns[0].GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+		mGuns[1].GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+	}
+	
+	
+	var gun1 = Gun("shotgun.AAM", shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 0.75, 1, true, mAnimator, 992);
+	var gun2 = Gun("shotgun.AAM", shootingDelay*2, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 0.75, 1, true, mAnimator, 992);	
+	gun1.GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	gun2.GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	gun2.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);	
+	if(mIsVrOn || mDebugVrOn){
+		gun1.GetObj().GetMesh().Rotate(-90, 0, 1, 0);
+		gun2.GetObj().GetMesh().Rotate(-90, 0, 1, 0);	
+		gun1.GetObj().GetMesh().Translate(0, -0.2*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+		gun2.GetObj().GetMesh().Translate(0, -0.2*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+	}
+	else{
+		gun1.GetObj().GetMesh().Rotate(180, 0, 1, 0);
+		gun2.GetObj().GetMesh().Rotate(180, 0, 1, 0);	
+		gun1.GetObj().GetMesh().Translate(0, -0.25*SCALE_FACTOR, 0);
+		gun2.GetObj().GetMesh().Translate(0, -0.25*SCALE_FACTOR, 0);		
+	}
+	aadd(mGunsEventTriggers[0][1], gun1);
+	aadd(mGunsEventTriggers[0][1], gun2);
+	
+	
+	gun1 = Gun("shotgun.AAM", shootingDelay/2, recoil, mLaserMesh, bulletSpeed*3, bulletDistance, bulletLife, 0.75, 1, false, mAnimator, 992);
+	gun2 = Gun("shotgun.AAM", shootingDelay/2, recoil, mLaserMesh, bulletSpeed*3, bulletDistance, bulletLife, 0.75, 1, false, mAnimator, 992);
+	gun1.GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	gun2.GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	gun2.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);	
+	if(mIsVrOn || mDebugVrOn){
+		gun1.GetObj().GetMesh().Rotate(-90, 0, 1, 0);
+		gun2.GetObj().GetMesh().Rotate(-90, 0, 1, 0);	
+		gun1.GetObj().GetMesh().Translate(0, -0.2*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+		gun2.GetObj().GetMesh().Translate(0, -0.2*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+	}
+	else{
+		gun1.GetObj().GetMesh().Rotate(180, 0, 1, 0);
+		gun2.GetObj().GetMesh().Rotate(180, 0, 1, 0);
+		gun1.GetObj().GetMesh().Translate(0, -0.25*SCALE_FACTOR, 0);
+		gun2.GetObj().GetMesh().Translate(0, -0.25*SCALE_FACTOR, 0);			
+	}
+	aadd(mGunsEventTriggers[1][1], gun1);
+	aadd(mGunsEventTriggers[1][1], gun2);
+	
+	
+	gun1 = Gun("scifiGun/SciFiGun.AAM", shootingDelay/4, recoil, mLaserMesh, bulletSpeed/3, bulletDistance, bulletLife, 4, 0, false, mAnimator, 992);
+	gun2 = Gun("scifiGun/SciFiGun.AAM", shootingDelay/4, recoil, mLaserMesh, bulletSpeed/3, bulletDistance, bulletLife, 4, 0, false, mAnimator, 992);
+	gun1.GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	gun2.GetObj().GetMesh().Scale(0.03,0.03,0.03);
+	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);	
+	if(mIsVrOn || mDebugVrOn){
+		gun1.GetObj().GetMesh().Rotate(90, 0,1,0);
+		gun2.GetObj().GetMesh().Rotate(90, 0,1,0);
+		gun1.GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+		gun2.GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+	}
+	else{
+		
+	}
+	aadd(mGunsEventTriggers[2][1], gun1);
+	aadd(mGunsEventTriggers[2][1], gun2);
+	
+	
 	
 	if(mIsVRon)
 	{
-		mGuns[0].Rotate(90,0,1,0);
-		mGuns[1].Rotate(90,0,1,0);
-		var controller1 = mInputManager.GetController(1);
-		var controller2 = mInputManager.GetController(2);
-		controller1.SetCustomMesh(mGuns[0].GetObj());
-		controller2.SetCustomMesh(mGuns[1].GetObj());
-		aadd(mControllersArray, controller1);
-		aadd(mControllersArray, controller2);
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
+		mGuns[0].LinkToController(mControllersArray[0]);
+		mGuns[1].LinkToController(mControllersArray[1]);
 	}
 	else if(mDebugVrOn)
 	{
-		mGuns[0].Rotate(90,0,1,0);
-		mGuns[1].Rotate(90,0,1,0);
-		aadd(mControllersArray, ViveController(1, mGuns[0].GetObj()));
-		aadd(mControllersArray, ViveController(2, mGuns[1].GetObj()));
-//		aadd(mControllersArray, ViveController(1));
-//		aadd(mControllersArray, ViveController(2));
-		
+		aadd(mControllersArray, ViveController(1));
+		aadd(mControllersArray, ViveController(2));
+		mGuns[0].LinkToController(mControllersArray[0]);
+		mGuns[1].LinkToController(mControllersArray[1]);
+				
 		mDebugController = mControllersArray[0];
 		mDebugControllerHidden = false;
 		mDebugKeyhit = false;
@@ -209,9 +295,9 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	
 	mTargets = {};
-	aadd(mTargets, CreateTargetsBossStage(1));
 	aadd(mTargets, CreateTargetsStage0(10));
 	aadd(mTargets, CreateTargetsStage1(10));
+	aadd(mTargets, CreateTargetsBossStage(1));
 	
 	
 	mCameraHit = false;
@@ -219,17 +305,23 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHitBoxSize = 0.8*SCALE_FACTOR;
 	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxSize/2, -mCameraHitBoxSize/2], [mCameraHitBoxSize/2, mCameraHitBoxSize/2, mCameraHitBoxSize/2]));	
 	
-	mCameraHudObj = CvmObj();
-	mCameraHudSize = 1*SCALE_FACTOR;
-	mCameraHudObj.AddChild(CvmObj(CVmNewMesh(VRP_PLANE, 1, [-mCameraHudSize*1, -mCameraHudSize*0.5, 0], [mCameraHudSize*1, mCameraHudSize*0.5, 0], 2, 2)));
-	var txt = CVmText("Life ",0,0,"Walkway bold", 0);
-	var textObj = CVmObj();	
-	textObj.LinkToText(txt);	
-	var txtScale = 0.01;
-	textObj.SetScale([txtScale,txtScale,txtScale]);
-//	textObj.SetRotation(90,0,1,0);
-	mCameraHudObj.AddChild(textObj, -mCameraHudSize/2, -mCameraHudSize/2);		
+	var txt = CVmText();
+	txt.Load("+");
+	txt.SetColor(1,1,0);
 	
+	mCameraHudLife = CvmText();
+	mLife = 100;
+	mCameraHudLife.Load(str(mLife));
+	
+	var obj1 = CvmObj();
+	var obj2 = CvmObj();
+	obj1.LinkToText(txt);	
+	obj2.LinkToText(mCameraHudLife);
+	
+	mCameraHudObj = CVmObj();	
+	mCameraHudObj.AddChild(obj1,0,0,0);	
+	mCameraHudObj.AddChild(obj2, 0.7, 0,0);
+	mCameraHudObj.SetScale(0.07, 0.1, 0.0);
 }
 
 
@@ -310,17 +402,25 @@ function Level6::Render()
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
 	
 	mElevator.Draw();
+	
+	foreach(var trigger in mGunsEventTriggers){
+//		trigger[0].Draw();
+		foreach(var gun in trigger[1]){
+			gun.Draw();			
+		}
+	}
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
-	if(mIsVrOn || mDebugVrOn){
-		for(var i = 0; i < len(mControllersArray); i++)
-			mControllersArray[i].Draw();		
-	}
+//	if(mIsVrOn || mDebugVrOn){
+//		for(var i = 0; i < len(mControllersArray); i++)
+//			mControllersArray[i].Draw();		
+//	}
 
-	if(!mIsVrOn && !mDebugVrOn){
-		mGuns[0].Draw();
-		mGuns[1].Draw();	
-	}
+	foreach(var gun in mGUns)
+		gun.Draw();
+	
+	foreach(var gun in mPickupGuns)
+		gun.Draw();
 	
 	switch(mLevelStatus)
 	{
@@ -339,9 +439,9 @@ function Level6::Render()
 				
 			mCounterShader.Start();
 				mCounterShader.SetParameter("alpha", 1.0);
-				mCounterShader.SetParameter("color", [1,0,0]);
 
 				foreach(var bullet in mBulletsArray){
+					mCounterShader.SetParameter("color", bullet.GetColor());
 					bullet.Draw();	
 				}
 				
@@ -361,21 +461,7 @@ function Level6::Render()
 					}			
 				}
 				
-				glDepthMask(GL_FALSE);  // disable writes to Z-Buffer
-				glDisable(GL_DEPTH_TEST);  // disable depth-testing
-				mCounterShader.SetParameter("color", [1,1,1]);
-				var color = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId, 6);
-				var alpha = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId+1, 6);
-				if(mCameraHit && color != Void){
-					mCounterShader.SetParameter("color", color);	
-					mCounterShader.SetParameter("alpha", alpha);				
-				}
-				else{
-					mCounterShader.SetParameter("color", [1,1,1]);
-					mCounterShader.SetParameter("alpha", 0.0);
-					
-				}
-//				mCameraHudObj.Draw();
+				
 			mCounterShader.Stop();
 			break;
 		}
@@ -528,14 +614,6 @@ function Level6::UpdateLogic(dt)
 		case STATUS_LEVEL_STARTED:
 		{			
     		HandleLasers();   
-    		mCameraHitBoxObj.SetPosition(cameraPosition - [0, mCameraHitBoxSize*0.2, 0]);
-    		mCameraHudObj.SetPosition(cameraPosition + mCamera.GetDirection()*mCameraHudSize);
-			var vec = Norm(mCameraHudObj.GetPosition() - cameraPosition);
-			var axis = -Norm(vec ^ [0, 1, 0]);
-			var angle = acos((Norm(vec) * [0, 1, 0])) * RAD_TO_GRAD - 90; 		
-			mCameraHudObj.SetRotation(angle, axis.x, axis.y, axis.z);
-			
-			
     					
 			foreach(var gun in mGuns)
 				gun.UpdateGun();
@@ -545,6 +623,7 @@ function Level6::UpdateLogic(dt)
     			var bulletObj = mBulletsArray[i].GetObj();
     			var bulletMaxLife = mBulletsArray[i].GetMaxLife();
     			var bulletShotTIme = mBulletsArray[i].GetShotTime();
+    			var bulletPower = mBulletsArray[i].GetPower();
     			var isEnemyBullet = mBulletsArray[i].IsEnemy();
     			
     			var isPointValid = mMainRoom.IsPointInRoom(bulletObj.GetPosition()) && !mElevator.IsPointInElevator(bulletObj.GetPosition());
@@ -583,8 +662,10 @@ function Level6::UpdateLogic(dt)
 	    			if(cameraHasBeenHit){
 	    				outputln("CAMERA HAS BEEN HIT");
 	    				mCameraHit = true;
-	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.5);
-	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.4, 0}, 0.5);
+	    				mLife--;
+						mCameraHudLife.Load(str(mLife));
+	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.4);
+	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.3, 0}, 0.4);
 	    			}    				
     			}
     			else if(!isEnemyBullet){    				
@@ -597,7 +678,7 @@ function Level6::UpdateLogic(dt)
 	    				{
 	    					adel(mBulletsArray, i);    					
 	    					
-	    					if(target.Hit() && target.RemoveLife() <= 0){
+	    					if(target.Hit() && target.RemoveLife(bulletPower) <= 0){
 	    						outputln("ENEMY KILLED");
 	    						target.Kill();
 		    					mCounter = (mCounter + 1) % 100;
@@ -645,8 +726,40 @@ function Level6::UpdateLogic(dt)
 					foreach(var target in mTargets[0])
 						target.Create();
 				}
-			}	
-				
+			}
+			
+			var isInsideOne = false;
+			foreach(var trigger in mGunsEventTriggers){
+				if(trigger[0].IsPointInside(cameraPosition)){
+					isInsideOne = true;
+					if(!mIsInsideGunTrigger && len(trigger[1]) > 0){
+						mIsInsideGunTrigger = true;
+						var tmp1 = mGuns[0];
+						var tmp2 = mGuns[1];
+						trigger[1][0].Pickup();
+						trigger[1][1].Pickup();
+						if(mIsVrOn || mDebugVrOn){
+							mGuns[0].UnlinkController();
+							mGuns[1].UnlinkCOntroller();
+						}
+						mGuns[0] = trigger[1][0];
+						mGuns[1] = trigger[1][1];
+						trigger[1][0] = tmp1;
+						trigger[1][1] = tmp2;
+						trigger[1][0].CreatePickupPoint(trigger[0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+						trigger[1][1].CreatePickupPoint(trigger[0].GetPosition()+[0,3*SCALE_FACTOR, 0], -45, [1,0,0]);
+						
+						if(mIsVrOn || mDebugVrOn){
+							mGuns[0].LinkToController(mControllersArray[0]);
+							mGuns[1].LinkToController(mControllersArray[1]);
+						}
+					}
+				}
+			}
+			
+			if(!isInsideOne){
+				mIsInsideGunTrigger = false;				
+			}
 			break;
 		}
 		// Case where the level is ending: the only thing missing is the player inside the elevator
@@ -685,56 +798,48 @@ function Level6::UpdateLogic(dt)
 function Level6::HandleLasers()
 {
 	// Now I check if the player is drawing; I first check if he pressed a button
+	var gunsBullets = {};
 	if(mIsVrOn || mDebugVrOn){
-		var usingController1 = mInputManager.IsPressingPrimaryButton(1);
-		var usingController2 = mInputManager.IsPressingPrimaryButton(2);
-		
-		var firstTimeUsingController1 = usingController1 && mControllersBeingUsedIndex[0] == 0;
-		var firstTimeUsingController2 = mIsVRon && usingController2 && mControllersBeingUsedIndex[1] == 0;
-			 
-		if(firstTimeUsingController1 || firstTimeUsingController2)
-		{				
-			var index;
-			
-			if(firstTimeUsingController1)
-			{
-				index = 0;
-				mControllersBeingUsedIndex[index] = 1;
+		for(var i = 0; i < len(mGuns); i++){
+			var controller = mControllersArray[i];
+			var gun = mGuns[i];
+			var usingController = mInputManager.IsPressingPrimaryButton(controller.GetIndex());
+//			if(i == 0)
+//				usingController = KeyPressed("Z");
+//			else
+			if(usingController){
+				if(gun.IsSingleShot()){
+					if(mControllersBeingUsedIndex[i] == 0){
+						mControllersBeingUsedIndex[i] = i+1;
+						aadd(gunsBullets, gun.Shoot());	
+					}			
+				}
+				else{
+					aadd(gunsBullets, gun.Shoot());	
+				}			
 			}
-			else
-			{
-				index = 1;
-				mControllersBeingUsedIndex[index] = 2;
-			}
-			
-			var gun = mGuns[index];
-			
-			var gunBullet = gun.Shoot();
-			if(gunBullet != Void){
-				aadd(mBulletsArray, gunBullet);
+			else{
+				if(!usingController && mControllersBeingUsedIndex[i] != 0)
+					mControllersBeingUsedIndex[i] = 0;
 			}
 		}
-		// Case where the user stopped pressing a trigger
-		else
-		{
-			// If when the user stopped pressing the trigger of the first controller, I update the fact that the controller is not being used anymore
-			if(!usingController1 && mControllersBeingUsedIndex[0] != 0)
-				mControllersBeingUsedIndex[0] = 0;
-			
-			if(!usingController2 && mControllersBeingUsedIndex[1] != 0)
-				mControllersBeingUsedIndex[1] = 0;
-		}	
 	}
 	else{
 		if(mInputManager.IsPressingPrimaryButton()){
 			foreach(var gun in mGuns){
-				var gunBullet = gun.Shoot();	
-				
-				if(gunBullet != Void){
-					aadd(mBulletsArray, gunBullet);
-				}			
+				aadd(gunsBullets, gun.Shoot());	
 			}
 		}	
+	}
+	
+	foreach(var gunBullets in gunsBullets){
+		if(gunBullets != Void){
+			foreach(var bullet in gunBullets){
+				if(bullet != Void){
+					aadd(mBulletsArray, bullet);
+				}
+			}		
+		}
 	}
 }
 
@@ -960,4 +1065,60 @@ function Level6::CreateTargetsBossStage(numTargets){
 	}
 	
 	return targets;
+}
+
+function Level6::DrawHUD(eye){
+	if(!mIsVrOn)
+		mCameraHudObj.SetPosition(-0.99,-0.99,0.0);
+	else{
+		if(eye == 1)
+			mCameraHudObj.SetPosition(-0.35,-0.40,0.0);
+		else if(eye == 2){
+			mCameraHudObj.SetPosition(-0.46,-0.40,0.0);			
+		}
+	}
+	var viewport = array(4);
+	viewport = glget(GL_VIEWPORT);
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, viewport[2], viewport[4], 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    
+    glEnable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    
+    glDisable( GL_LIGHTING );
+    
+    
+	var color = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId, 6);
+	var alpha = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId+1, 6);
+	if(color == Void || alpha == Void){
+		color = [1,1,1];
+		alpha = 0.0;			
+	}
+	
+	mCameraHudObj.Draw();
+    
+    glBegin(GL_QUADS);
+	    glColor(color.r, color.g, color.b, alpha);
+	    glVertex(-1.0, -1.0);
+	    glVertex(1.0, -1.0);
+	    glVertex(1.0, 1.0);
+	    glVertex(-1.0, 1.0);
+	glEnd();
+	
+	glMatrixMode(GL_PROJECTION);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	
+	glEnable( GL_LIGHTING );
+}
+
+function Level6::SwitchGuns(){
+	
 }

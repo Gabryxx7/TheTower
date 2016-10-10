@@ -38,7 +38,7 @@ class Target{
 	GetLives();
 	Create();
 	Recreate();
-	RemoveLife();
+	RemoveLife(amount);
 	Update(mMainRoom);
 	UpdateTransition(mMainRoom);
 	UpdateColor();
@@ -116,8 +116,9 @@ function Target::Recreate(){
 	
 }
 
-function Target::RemoveLife(){
-	return --mLives;
+function Target::RemoveLife(amount){
+	mLives = mLives - amount;
+	return mLives;
 }
 
 function Target::Hit(){
@@ -217,7 +218,7 @@ function Target::Shoot(cameraPosition){
 		
 		mAnimator.CreateTransition(laserObj, pos, [cameraPosition.x-pos.x, cameraPosition.y-pos.y, cameraPosition.z-pos.z]*mLaserMaxDistance, mLaserSpeed, false, 0);
 		
-		return Bullet(laserObj, GetTime(), mLaserMaxLife, true, [1,0,0]);
+		return Bullet(laserObj, GetTime(), mLaserMaxLife, true, 1, [1,0,0]);
 	}
 	return null;
 } 

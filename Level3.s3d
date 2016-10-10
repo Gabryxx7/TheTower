@@ -123,6 +123,7 @@ class Level3
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	DrawHUD();
 };
 
 
@@ -1069,4 +1070,8 @@ function Level3::GetLevelPreview(){
 
 function Level3::GetLevelName(){
 	return "Chaos";
+}
+
+function Level3::DrawHUD(){
+	
 }

@@ -89,6 +89,7 @@ class Level5
 	GetLevelPreview();
 	GetLevelName();
 	GetLightDiffuse();
+	DrawHUD();
 };
 
 
@@ -613,6 +614,10 @@ function Level5::GetLevelName(){
 
 function Level5::GetLightDiffuse(){
 	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
+}
+
+function Level5::DrawHUD(){
+	
 }
 
 

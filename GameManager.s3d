@@ -157,7 +157,7 @@ class GameManager
 	var mScreenHeight;
 
 	// Private methods
-	XVRRendering();
+	XVRRendering(eye);
 	DrawCrosshair();
 	FadeToBlackScreen();
 	
@@ -424,7 +424,7 @@ function GameManager::Render()
 				
 			mCurrentLevel.SetupOpenglLights();
 				
-			if(true)
+			if(false)
 			{
 				SceneBegin(mCamera);
 					mFbo.Start();
@@ -436,7 +436,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-			XVRRendering();
+			XVRRendering(0);
 
 			if(mIsVRon)
 			{		
@@ -451,15 +451,15 @@ function GameManager::Render()
 						glClearColor(0.95, 0.95, 0.95, 1.0);
 					
 					mHMD.frame_left();
-						XVRRendering();
+						XVRRendering(1);
 					mHMD.frame_right();
-						XVRRendering();
+						XVRRendering(2);
 				mHMD.SceneEnd();
 			}	
 				
 			SceneEnd();
 			
-			if(true)
+			if(false)
 			{
 				mFbo.Stop();
 				glDisable(GL_ALPHA_TEST);
@@ -529,7 +529,7 @@ function GameManager::Render()
 	}
 }
 
-function GameManager::XVRRendering()
+function GameManager::XVRRendering(eye)
 {
 	// This makes the background white
 //	glClearColor(0.95, 0.95, 0.95, 1.0);
@@ -666,14 +666,16 @@ function GameManager::XVRRendering()
 		mPlayAreaBoxShader.Stop();
 	}
 		
-//	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
-//	if(!mIsVRon)
-//		DrawCrosshair();
-//		
-//	// If there is a fade transition going on or the level is ending I fade to black the screen (I check if the level is ending so that when it is
-//	// and the animation of fading to black is over, the screen keeps being black)
-//	if(mAnimator.HaveTransition(mFadeAnimationID, 6) || mEnding)
-//		FadeToBlackScreen();
+	// Drawing the crosshair and everything that is 2D after I'm finished with the 3D stuff, but only if the VR isn't on
+	if(!mIsVRon)
+		DrawCrosshair();
+		
+	mCurrentLevel.DrawHUD(eye);
+		
+	// If there is a fade transition going on or the level is ending I fade to black the screen (I check if the level is ending so that when it is
+	// and the animation of fading to black is over, the screen keeps being black)
+	if(mAnimator.HaveTransition(mFadeAnimationID, 6) || mEnding)
+		FadeToBlackScreen();
 }
 
 /*

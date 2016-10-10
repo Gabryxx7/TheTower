@@ -4,6 +4,7 @@ Class Bullet{
 	var mShotTime;
 	var mIsEnemyBullet;
 	var mColor;
+	var mPower;
 	
 	GetObj();
 	GetShotTime();
@@ -12,14 +13,16 @@ Class Bullet{
 	IsEnemy();
 	Draw();
 	LocalToWorld(pos);
+	GetPower();
 };
 
-function Bullet::Bullet(obj, shotTime, maxLife, isEnemyBullet, color){
+function Bullet::Bullet(obj, shotTime, maxLife, isEnemyBullet, power, color){
 	mObj = obj;
 	mShotTime = shotTime;
 	mMaxLife = maxLife;
 	mColor = color;
 	mIsEnemyBullet = isEnemyBullet;
+	mPower = power;
 }
 
 function Bullet::GetObj(){
@@ -48,4 +51,8 @@ function Bullet::Draw(){
 
 function Bullet::LocalToWorld(pos){
 	return mObj.LocalToWorld(pos);
+}
+
+function Bullet::GetPower(){
+	return mPower;
 }
