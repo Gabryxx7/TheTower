@@ -16,45 +16,30 @@ void main()
 [FRAGMENT SHADER]
 
 
-//uniform float rt_w; // render target width
-uniform float rt_h; // render target height
-//uniform float vx_offset;
-
 uniform sampler2D texture;
+//uniform float dimension;    // This has to be the texture height (i.e. screen height) for vertical gaussian blur, and the texture width for horizzontal blur
 
-const int kernel = 5;
+uniform vec2 resolution; // This has to be the texture height (i.e. screen height) for vertical gaussian blur, and the texture width for horizzontal blur
 
-//float offset[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
-//float weight[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
+float offset[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
+float weight[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
 
-float offset[5] = float[]( 0.0, 1.0, 2.0, 3.0, 4.0 );
-float weight[5] = float[]( 0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162 );
+//float offset[5] = float[]( 0.0, 1.0, 2.0, 3.0, 4.0 );
+//float weight[5] = float[]( 0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162 );
 
 uniform float value;
 
 void main() 
 { 
-	float rt_w = 1920.0;
-	float vx_offset = 0.50;
+	vec3 textureColor = texture2D(texture, vec2(gl_FragCoord) / resolution) * weight[0];
 	
-	vec3 tc = vec3(1.0, 0.0, 0.0);
-	
-    if (gl_TexCoord[0].x < (vx_offset - 0.01))
+    vec2 uv = gl_TexCoord[0].xy;
+        
+    for (int i=1; i<3; i++)
     {
-        vec2 uv = gl_TexCoord[0].xy;
-        
-        tc = texture2D(texture, uv).rgb * weight[0];
-        
-    	for (int i=0; i<kernel; i++) 
-    	{
-        	tc += texture2D(texture, uv + vec2(offset[i])/rt_w, 0.0).rgb * weight[i] / value;
-        	tc += texture2D(texture, uv - vec2(offset[i])/rt_w, 0.0).rgb * weight[i] / value;
-   	    }
-  	}
-  	else if (gl_TexCoord[0].x>=(vx_offset+0.01))
- 	{
-  		tc = texture2D(texture, gl_TexCoord[0].xy).rgb;
-  	}
+        textureColor += texture2D(texture, (vec2(gl_FragCoord) + vec2(0.0, offset[i])) / resolution) * weight[i];
+        textureColor += texture2D(texture, (vec2(gl_FragCoord) - vec2(0.0, offset[i])) / resolution) * weight[i];
+   	}
   	
-  	gl_FragColor = vec4(tc, 1.0);
+  	gl_FragColor = vec4(textureColor, 1.0);
 } 

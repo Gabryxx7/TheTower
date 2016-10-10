@@ -69,9 +69,10 @@ class Level6
 	var mLastCounterUpdate;
 	var mCounterShader;
 	
-//	var mFrontText;
-//	var mBackText; 
-//	var mLeftText; 
+	var mApplyPostProcessing;
+	var mPostProcessingBlurShader;
+	var mPostProcessingBlurShaderPasses;
+	var mPostProcessingBlurTimer;
 	
 	var mDebugController;
 	var mDebugControllerHidden;
@@ -109,6 +110,8 @@ class Level6
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+	
 	CounterKeyboardTesting();
 	UpdateCounter(num, toRandomPos);
 	
@@ -123,7 +126,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = true;
+	mDebugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -141,6 +144,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	mDrawingShader = CVmShaderProgram("drawingShader.glsl");
 	mCounterShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; uniform float alpha; void main (void) { gl_FragColor = vec4(color, alpha); }", true);
+		
+	mApplyPostProcessing = false;
+	mPostProcessingBlurShader = CVmShaderProgram("postProcessingBlurShader.glsl");
+	mPostProcessingBlurShaderPasses = 1;
+	mPostProcessingBlurTimer = 0;
 		
 	mControllersBeingUsedIndex = {0, 0};	
 	mControllersArray = {};	
@@ -618,6 +626,10 @@ function Level6::UpdateLogic(dt)
 						mCameraHudLife.Load(str(mLife));
 	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.4);
 	    				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.3, 0}, 0.4);
+	    				
+	    				mApplyPostProcessing = true;
+	    				mPostProcessingBlurTimer = GetTime();
+	    				mPostProcessingBlurShaderPasses = 0;
 	    			}    				
     			}
     			else if(!isEnemyBullet){    				
@@ -638,6 +650,18 @@ function Level6::UpdateLogic(dt)
 							}
 	    				}    
 		    		}
+    			}
+    		}
+    		
+    		if(mApplyPostProcessing)
+    		{
+    			if(GetTime() - mPostProcessingBlurTimer > 0.1)
+    			{
+    				mPostProcessingBlurTimer = GetTime();
+    				mPostProcessingBlurShaderPasses++;
+    				
+    				if(mPostProcessingBlurShaderPasses >= 30)
+		    			mApplyPostProcessing = false;
     			}
     		}
     		
@@ -851,6 +875,29 @@ function Level6::GetLevelPreview(){
 
 function Level6::GetLevelName(){
 	return "Ghost";
+}
+
+function Level6::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	var hasToApplyBlur = mApplyPostProcessing;
+	
+	if(hasToApplyBlur)
+	{
+		postProcessingShader = mPostProcessingBlurShader;
+		
+		var viewport = array(4);
+		viewport = glget(GL_VIEWPORT);
+		
+		var screenWidth = viewport[2];
+		var screenHeight = viewport[3];
+		
+		aadd(postProcessingShaderParametersStrings, "resolution");
+		aadd(postProcessingShaderParameters, [screenWidth, screenHeight]);
+		
+		passes = 1;
+	}
+	
+	return hasToApplyBlur;
 }
 
 function Level6::UpdateCounter(num, toRandomPos){

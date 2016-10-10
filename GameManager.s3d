@@ -151,7 +151,9 @@ class GameManager
 	var mLevelsPreloading;
 	
 	var mFbo;
+	var mTmpFbo;
 	var mPostProcessingBlurShader;
+	var mApplyingPostProcessing;
 	
 	var mScreenWidth;
 	var mScreenHeight;
@@ -183,6 +185,10 @@ function GameManager::GameManager(HMD)
 	
 	mFbo = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
 	mFbo.EnableMipmaps();
+	mTmpFbo = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
+	mTmpFbo.EnableMipmaps();
+	
+	mApplyingPostProcessing = false;
 	
 	mPostProcessingBlurShader = CVmShaderProgram("postProcessingBlurShader.glsl");
 	
@@ -424,11 +430,20 @@ function GameManager::Render()
 				
 			mCurrentLevel.SetupOpenglLights();
 				
-			if(false)
+			var postProcessingShader;
+			var passes;
+			var postProcessingShaderParametersStrings = {};
+			var postProcessingShaderParameters = {};
+			
+			if(mCurrentLevel.ApplyPostProcessing(&postProcessingShader, &passes, postProcessingShaderParametersStrings, postProcessingShaderParameters))
 			{
+				mApplyingPostProcessing = true;
+				
 				SceneBegin(mCamera);
 					mFbo.Start();
 			}
+			else
+				mApplyingPostProcessing = false;
 				
 			SceneBegin(mCamera);
 			
@@ -459,13 +474,104 @@ function GameManager::Render()
 				
 			SceneEnd();
 			
-			if(false)
-			{
-				mFbo.Stop();
+			if(mApplyingPostProcessing)
+			{				
+//				static var passes = 1;
+//				
+//			 	if(Keypressed("V"))
+//			    {
+//			    	passes += 1;
+//			    	outputln(passes);
+//			    }
+//			    
+//			    if(Keypressed("C"))
+//			    {
+//			    	passes -= 1;
+//			    	outputln(passes);
+//			    }
+
+				for(var i = 0; i < passes; i++)
+				{
+		    		glDisable(GL_ALPHA_TEST);
+					glDisable(GL_BLEND);
+					
+					glClear(GL_DEPTH_BUFFER_BIT);
+				    glMatrixMode(GL_PROJECTION);
+				    glLoadIdentity();
+				    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
+				    glMatrixMode(GL_MODELVIEW);
+				    glLoadIdentity();
+				    
+				    glDisable( GL_LIGHTING );
+				    glEnable(GL_TEXTURE_2D);
+		    
+		    		SetActiveTexture(mFbo);
+		    		
+		    		postProcessingShader.Start();
+			    	//	mPostProcessingBlurShader.SetParameter("value", value);
+			    	//	mPostProcessingBlurShader.SetParameter("dimension", mScreenWidth);
+			    	
+			    		for(var j = 0; j < len(postProcessingShaderParametersStrings); j++)
+			    		{
+			    			var paramString = postProcessingShaderParametersStrings[i];
+			    			var param = postProcessingShaderParameters[i];
+			    			
+			    			mPostProcessingBlurShader.SetParameter(paramString, param);
+			    		}
+			    		
+					    glBegin(GL_QUADS);
+							glTexCoord(1, 1); 
+						    glVertex(1.0, 1.0);
+						    glTexCoord(0, 1); 
+						    glVertex(-1.0, 1.0);
+							glTexCoord(0, 0); 
+						    glVertex(-1.0, -1.0);
+						    glTexCoord(1, 0); 
+						    glVertex(1.0, -1.0);
+						glEnd();
+					postProcessingShader.Stop();
+					
+					mFbo.Stop();
+				}
+				
+//				for(var i = 0; i < passes; i++)
+//				{
+//		    		glDisable(GL_ALPHA_TEST);
+//					glDisable(GL_BLEND);
+//					
+//					glClear(GL_DEPTH_BUFFER_BIT);
+//				    glMatrixMode(GL_PROJECTION);
+//				    glLoadIdentity();
+//				    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
+//				    glMatrixMode(GL_MODELVIEW);
+//				    glLoadIdentity();
+//				    
+//				    glDisable( GL_LIGHTING );
+//				    glEnable(GL_TEXTURE_2D);
+//		    
+//		    		SetActiveTexture(mFbo);
+//		    		
+//		    		mPostProcessingBlurShader.Start();
+//			    	//	mPostProcessingBlurShader.SetParameter("value", value);
+//			    	//	mPostProcessingBlurShader.SetParameter("dimension", mScreenWidth);
+//			    		
+//					    glBegin(GL_QUADS);
+//							glTexCoord(1, 1); 
+//						    glVertex(1.0, 1.0);
+//						    glTexCoord(0, 1); 
+//						    glVertex(-1.0, 1.0);
+//							glTexCoord(0, 0); 
+//						    glVertex(-1.0, -1.0);
+//						    glTexCoord(1, 0); 
+//						    glVertex(1.0, -1.0);
+//						glEnd();
+//					mPostProcessingBlurShader.Stop();
+//					mFbo.Stop();
+//				}
+				
 				glDisable(GL_ALPHA_TEST);
 				glDisable(GL_BLEND);
-				
-				
+						
 				glClear(GL_DEPTH_BUFFER_BIT);
 			    glMatrixMode(GL_PROJECTION);
 			    glLoadIdentity();
@@ -473,35 +579,11 @@ function GameManager::Render()
 			    glMatrixMode(GL_MODELVIEW);
 			    glLoadIdentity();
 			    
-			    
-//			    glEnable(GL_BLEND);
-//			    glDisable(GL_DEPTH_TEST);
-//			    glDepthMask(GL_FALSE);
-			    
 			    glDisable( GL_LIGHTING );
-			    
 			    glEnable(GL_TEXTURE_2D);
 			    
-			    SetActiveTexture(mFbo);
-			    
-			    static var value = 1.0;
-			    
-			    
-			    if(Keypressed("V"))
-			    {
-			    	value += 0.01;
-			    	outputln(value);
-			    }
-			    
-			    if(Keypressed("C"))
-			    {
-			    	value -= 0.01;
-			    	outputln(value);
-			    }
-			    
-			    mPostProcessingBlurShader.Start();
-			    	mPostProcessingBlurShader.SetParameter("value", value);
-			    
+	    		SetActiveTexture(mFbo);
+	    		
 			    glBegin(GL_QUADS);
 					glTexCoord(1, 1); 
 				    glVertex(1.0, 1.0);
@@ -511,15 +593,10 @@ function GameManager::Render()
 				    glVertex(-1.0, -1.0);
 				    glTexCoord(1, 0); 
 				    glVertex(1.0, -1.0);
-				    
 				glEnd();
-				
-				mPostProcessingBlurShader.Stop();
-				 
-//				glMatrixMode(GL_PROJECTION);
-//				glEnable(GL_DEPTH_TEST);
-//				glDepthMask(GL_TRUE);
 				SceneEnd();
+				
+				mApplyingPostProcessing = false;
 			}
 			break;
 			
