@@ -9,7 +9,7 @@
 # Faces: 17326
 #
 ####
-mtllib ./vr_controller_vive_1_5.obj.mtl
+mtllib ./vr_controller_vive_1_5.mtl
 
 vn 2.977196 0.038935 -0.339946
 v 0.021309 -0.002614 0.046358 0.752941 0.752941 0.752941

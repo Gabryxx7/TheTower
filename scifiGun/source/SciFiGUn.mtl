@@ -1,24 +1,25 @@
-#
-# Wavefront material file
-# Converted by Meshlab Group
-#
+# Blender MTL File: 'None'
+# Material Count: 2
 
 newmtl material_0
+Ns 0.000000
 Ka 0.200000 0.200000 0.200000
 Kd 0.749020 0.749020 0.749020
 Ks 1.000000 1.000000 1.000000
-Tr 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
 illum 2
-Ns 0.000000
 map_Kd C:\Users\Gabry\Desktop\ChumboScyFi_DIFF.png
-map_Bump C:\Users\\Gabry\Desktop\ChumboScyFi_NRM.png
-map_Ks C:\Users\Gabry\Desktop\ChumboScyFi_SPEC.png
+map_Bump C:\\Users\\Gabry\\Desktop\\ChumboScyFi_NRM.png
+map_Ks C:\\Users\\Gabry\\Desktop\\ChumboScyFi_SPEC.png
 
 newmtl material_1
+Ns 0.000000
 Ka 0.200000 0.200000 0.200000
 Kd 0.800000 0.800000 0.800000
 Ks 1.000000 1.000000 1.000000
-Tr 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
 illum 2
-Ns 0.000000
-
