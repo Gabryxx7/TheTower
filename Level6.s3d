@@ -230,25 +230,28 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	}
 	aadd(mGunsEventTriggers[1][1], gun1);
 	aadd(mGunsEventTriggers[1][1], gun2);
-//	
-//	
-//	gun1 = Gun("scifiGun/SciFiGun.AAM", shootingDelay/4, recoil, mLaserMesh, bulletSpeed/3, bulletDistance, bulletLife, 4, 0, false, mAnimator, 992);
-//	gun2 = Gun("scifiGun/SciFiGun.AAM", shootingDelay/4, recoil, mLaserMesh, bulletSpeed/3, bulletDistance, bulletLife, 4, 0, false, mAnimator, 992);
-//	gun1.GetObj().GetMesh().Scale(0.03,0.03,0.03);
-//	gun2.GetObj().GetMesh().Scale(0.03,0.03,0.03);
-//	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-//	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);	
-//	if(mIsVrOn || mDebugVrOn){
-//		gun1.GetObj().GetMesh().Rotate(90, 0,1,0);
-//		gun2.GetObj().GetMesh().Rotate(90, 0,1,0);
-//		gun1.GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
-//		gun2.GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
-//	}
-//	else{
-//		
-//	}
-//	aadd(mGunsEventTriggers[2][1], gun1);
-//	aadd(mGunsEventTriggers[2][1], gun2);
+	
+	
+	gun1 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed*2, bulletDistance, bulletLife, 0.25, 1, false, mAnimator, 992);
+	gun2 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed*2, bulletDistance, bulletLife, 0.25, 1, false, mAnimator, 992);
+	gun1.GetObj().GetMesh().Scale(0.02,0.02,0.02);
+	gun2.GetObj().GetMesh().Scale(0.02,0.02,0.02);
+	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);	
+	if(mIsVrOn || mDebugVrOn){
+		gun1.GetObj().GetMesh().Rotate(180, 0,1,0);
+		gun2.GetObj().GetMesh().Rotate(180, 0,1,0);
+		gun1.GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+		gun2.GetObj().GetMesh().Translate(0, -0.07*SCALE_FACTOR, 0.35*SCALE_FACTOR);
+	}
+	else{
+		gun1.GetObj().GetMesh().Rotate(180, 0, 1, 0);
+		gun2.GetObj().GetMesh().Rotate(180, 0, 1, 0);
+		gun1.GetObj().GetMesh().Translate(0, -0.25*SCALE_FACTOR, 0);
+		gun2.GetObj().GetMesh().Translate(0, -0.25*SCALE_FACTOR, 0);			
+	}
+	aadd(mGunsEventTriggers[2][1], gun1);
+	aadd(mGunsEventTriggers[2][1], gun2);
 	
 	
 	
