@@ -152,7 +152,7 @@ class GameManager
 	
 
 	// Private methods
-	XVRRendering();
+	XVRRendering(eye);
 	DrawCrosshair();
 	FadeToBlackScreen();
 	
@@ -408,7 +408,7 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
-			XVRRendering();
+			XVRRendering(0);
 
 			if(mIsVRon)
 			{		
@@ -423,9 +423,9 @@ function GameManager::Render()
 						glClearColor(0.95, 0.95, 0.95, 1.0);
 					
 					mHMD.frame_left();
-						XVRRendering();
+						XVRRendering(1);
 					mHMD.frame_right();
-						XVRRendering();
+						XVRRendering(2);
 				mHMD.SceneEnd();
 			}	
 				
@@ -438,7 +438,7 @@ function GameManager::Render()
 	}
 }
 
-function GameManager::XVRRendering()
+function GameManager::XVRRendering(eye)
 {
 	// This makes the background white
 //	glClearColor(0.95, 0.95, 0.95, 1.0);
@@ -579,7 +579,7 @@ function GameManager::XVRRendering()
 	if(!mIsVRon)
 		DrawCrosshair();
 		
-	mCurrentLevel.DrawHUD();
+	mCurrentLevel.DrawHUD(eye);
 		
 	// If there is a fade transition going on or the level is ending I fade to black the screen (I check if the level is ending so that when it is
 	// and the animation of fading to black is over, the screen keeps being black)

@@ -24,6 +24,10 @@ class Gun{
 	var mIsShooting;
 	var mBulletPower;
 	
+	var mViveController;
+	
+	var mIsVive;
+	
 	IsShooting();
 	UpdateGun();
 	SetRotationMatrix(mat);
@@ -34,10 +38,12 @@ class Gun{
 	GetObj();
 	CreatePickupPoint(pos, rotation, axis);
 	Pickup();
+	EnableVive(controller);
+	DisableVive();
 };
 
-function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletPower, shootType, animator, animationId){
-	mGunMesh = mesh;
+function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletPower, shootType, animator, animationId){
+	mGunMesh = CvmNewMesh(meshName);
 	mGunObj= CvmObj(mGunMesh);
 	mShootingDelayOrig = shootingDelay;
 	mShootingDelay = mShootingDelayOrig;
@@ -53,6 +59,7 @@ function Gun::Gun(mesh, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bul
 	mAnimationId = animationId;
 	mLastShotTime = GetTime();
 	mBulletPower = bulletPower;
+	mIsVive = false;
 	
 	mIsShooting = false;
 	mIsRotated = false;
@@ -88,13 +95,19 @@ function Gun::Shoot(){
 			var bulletObj = CvmObj(mBulletMesh);
 			
 			bulletObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
-			if(mIsRotated)
-				bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);
 			
-			var center = mGunObj.LocalToWorld([0, 0, 0]);
-			var tip = mGunObj.LocalToWorld([1, 0, 0]);
-			
-			mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+			if(!mIsVive){
+				if(mIsRotated)
+					bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);
+				
+				var center = mGunObj.LocalToWorld([0, 0, 0]);
+				var tip = mGunObj.LocalToWorld([1, 0, 0]);
+				
+				mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);			
+			}
+			else{
+				mAnimator.CreateTransition(bulletObj, startPoint, mViveController.GetDirection()*mBulletMaxDistance, mBulletSpeed ,false, 0);					
+			}
 			
 			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0])};			
 		}
@@ -108,25 +121,32 @@ function Gun::Shoot(){
 			bulletObj1.SetRotationMatrix(mGunObj.GetRotationMatrix());
 			bulletObj2.SetRotationMatrix(mGunObj.GetRotationMatrix());
 			
-			if(mIsRotated){
-				bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
-				bulletObj1.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
-				bulletObj2.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+			if(!mIsVive){
+				if(mIsRotated){
+					bulletObj.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+					bulletObj1.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+					bulletObj2.Rotate(mGunRotation, mRotationAxis.x, mRotationAxis.y, mRotationAxis.z);				
+				}
+				
+				var center = mGunObj.LocalToWorld([0, 0, 0]);
+				var tip = mGunObj.LocalToWorld([1, 0, 0]);			
+				mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+				
+				
+				center = mGunObj.LocalToWorld([0, 0, 0]);
+				tip = mGunObj.LocalToWorld([1, 0, 0.02]);			
+				mAnimator.CreateTransition(bulletObj1, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+				
+				
+				center = mGunObj.LocalToWorld([0, 0, 0]);
+				tip = mGunObj.LocalToWorld([1, 0, -0.02]);			
+				mAnimator.CreateTransition(bulletObj2, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
 			}
-			
-			var center = mGunObj.LocalToWorld([0, 0, 0]);
-			var tip = mGunObj.LocalToWorld([1, 0, 0]);			
-			mAnimator.CreateTransition(bulletObj, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
-			
-			
-			center = mGunObj.LocalToWorld([0, 0, 0]);
-			tip = mGunObj.LocalToWorld([1, 0, 0.02]);			
-			mAnimator.CreateTransition(bulletObj1, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
-			
-			
-			center = mGunObj.LocalToWorld([0, 0, 0]);
-			tip = mGunObj.LocalToWorld([1, 0, -0.02]);			
-			mAnimator.CreateTransition(bulletObj2, startPoint, startPoint+(tip-center)*mBulletMaxDistance, mBulletSpeed ,false, 0);
+			else{
+				mAnimator.CreateTransition(bulletObj, startPoint, mViveController.GetDirection()*mBulletMaxDistance, mBulletSpeed ,false, 0);
+				mAnimator.CreateTransition(bulletObj1, startPoint, (mViveController.GetDirection()-[0,0,0.02])*mBulletMaxDistance, mBulletSpeed ,false, 0);
+				mAnimator.CreateTransition(bulletObj2, startPoint, (mViveController.GetDirection()+[0,0,0.02])*mBulletMaxDistance, mBulletSpeed ,false, 0);				
+			}
 			
 			return {Bullet(bulletObj, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0]),
 					Bullet(bulletObj1, GetTime(), mBulletMaxLife, false, mBulletPower, [1,0,0]),
@@ -152,9 +172,14 @@ function Gun::UpdateGun(){
 	if(mIsShooting){
 		var translateValue = mAnimator.GetCurrentStateInTransition(mAnimationId,6);
 		if(translateValue != Void){
-			var center = mGunObj.LocalToWorld([0, 0, 0]);
-			var tip = mGunObj.LocalToWorld([-1, 0, 0]);
-			mGunObj.Translate((tip-center)*translateValue);			
+			if(!mIsVive){
+				var center = mGunObj.LocalToWorld([0, 0, 0]);
+				var tip = mGunObj.LocalToWorld([-1, 0, 0]);
+				mGunObj.Translate((tip-center)*translateValue);				
+			}
+			else{
+				mGunObj.Translate(-mViveController.GetDirection()*translateValue);					
+			}
 		}
 		else{
 			mIsShooting = false;
@@ -180,5 +205,13 @@ function Gun::CreatePickupPoint(pos, rotation, axis){
 
 function Gun::Pickup(){
 	mAnimator.RemoveTransitionByObject(mGunObj, 1);
-	
+}
+
+function Gun::EnableVive(controller){
+	mIsVive = true;
+	mViveController = controller;
+}
+
+function Gun::DisableVive(){
+	mIsVive = false;
 }
