@@ -1,0 +1,13 @@
+# Blender MTL File: 'None'
+# Material Count: 1
+
+newmtl 02___Default
+Ns 15.686275
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.693000 0.693000 0.693000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+refl C:\\Users\\Utente\\Documents\\VideoCopilot\\Materials\\Environment\\Town.png

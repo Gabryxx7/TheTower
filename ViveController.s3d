@@ -187,7 +187,7 @@ function ViveController::ViveController(controllerIndex, mesh)
 	
 	mTipLocalCoordinates = [0, -0.38 * SCALE_FACTOR, -0.20 * SCALE_FACTOR];
 	
-	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+//	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
 	
 	mIsActionAvailable = false;
 	

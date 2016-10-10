@@ -58,9 +58,7 @@ class Level3
 	
 	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
 	// draw the silhouettes for the portals' frames
-	var mSilhouetteShader;
 	var mSpotShader;
-	var mToonShader;
 	
 	// Booleans that indicate whether the elevator has appeared and if it's already open or not
 	var mIsElevatorPresent;
@@ -186,9 +184,7 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	
 	
 	// Instantiating the silhouette shader, to draw outlines
-	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
-	mSpotShader = CVmShaderProgram("spotShader.glsl");	
-	mToonShader = CVmShaderProgram("toonShader.glsl");		
+	mSpotShader = CVmShaderProgram("spotShader.glsl");		
 	
 //	testo = Text("Chaos cannot exist without order\nWhere order, cannot exist without chaos");
 	

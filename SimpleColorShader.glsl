@@ -5,8 +5,8 @@ void main(void){
 }
 
 [FRAGMENT SHADER]
-uniform vec3 color;
+uniform vec3 diffuse;
 
 void main (void){
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(diffuse, 1.0);
 }

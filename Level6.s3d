@@ -257,9 +257,9 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	
 	mTargets = {};
+	aadd(mTargets, CreateTargetsBossStage(3));
 	aadd(mTargets, CreateTargetsStage0(10));
 	aadd(mTargets, CreateTargetsStage1(10));
-	aadd(mTargets, CreateTargetsBossStage(1));
 	
 	
 	mCameraHit = false;
@@ -985,7 +985,6 @@ function Level6::CreateTargetsStage0(numTargets){
 				break;				
 			}
 		}
-		
 		var targetObj = CVmObj(chosenMesh);
 		
 		var roomPos = mMainRoom.GetPosition();		
@@ -998,7 +997,7 @@ function Level6::CreateTargetsStage0(numTargets){
 		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
 		
 		targetObj.SetPosition([posX, posY, posZ]);
-		aadd(targets, Target(targetObj, 3, 500, [1,1,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
+		aadd(targets, Target(targetObj, 3, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
 	}
 	return targets;
 }
@@ -1012,7 +1011,7 @@ function Level6::CreateTargetsStage1(numTargets){
 		// To create the star object I use a function from the "Utils" file
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
-		aadd(targets, Target(starObj, 10, 4000+(i*200), [1,1,1], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator));
+		aadd(targets, Target(starObj, 10, 4000+(i*200), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator));
 	}
 	
 	return targets;
@@ -1021,33 +1020,34 @@ function Level6::CreateTargetsStage1(numTargets){
 
 function Level6::CreateTargetsBossStage(numTargets){
 	var targets = {};
-	var cubeSizes = 6*SCALE_FACTOR;
-	var bossMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-	for(var i = 0; i < numTargets; i++){
-		var bossObj = CVmObj(bossMesh);
-		AddToonShaderToMesh(bossMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
-		var txtOffset = 0.001*SCALE_FACTOR;		
-		var txtScale = [0.8*SCALE_FACTOR, 0.8*SCALE_FACTOR, 0.8*SCALE_FACTOR];
-		var txt = CVmText("DA BOSS",0,0,"Walkway bold", 0);
-		var textObj = CVmObj();	
-		textObj.LinkToText(txt);	
-		textObj.SetScale(txtScale);
-		textObj.SetRotation(90,0,1,0);
-		bossObj.AddChild(textObj, cubeSizes/2+txtOffset,0,0);		
-		
-		textObj = CvmObj();
-		textObj.LinkToText(txt);	
-		textObj.SetScale(txtScale);
-	//	textObj.SetRotation(90,0,1,0);
-		bossObj.AddChild(textObj,0,0,txtOffset);	
-		
-		textObj = CvmObj();
-		textObj.LinkToText(txt);	
-		textObj.SetScale(txtScale);
-		textObj.SetRotation(180,0,1,0);
-		bossObj.AddChild(textObj,0,0,-cubeSizes-txtOffset);		
-		
-		aadd(targets, Target(bossObj, 50, 500, [0,0,1], [1,0,0], mEnemySpeed*1.4, true, true, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));		
+//	var cubeSizes = 6*SCALE_FACTOR;
+//	var bossMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+	for(var i = 0; i < numTargets; i++){	
+		var chosenMesh;
+		var color;
+		switch(i%3){
+			case 0:{
+				chosenMesh = CVmNewMesh("Enemies/SpaceInvader1.AAM");
+				color = [0.6, 0.1, 0.8];
+//				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,0,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				break;				
+			}case 1:{
+				chosenMesh = CVmNewMesh("Enemies/SpaceInvader2.AAM");
+				color = [0.2,0.9,0];
+//				AddToonShaderToMesh(chosenMesh, [1,1,1], [0,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SC3ALE_FACTOR, 1.0);
+				break;				
+			}case 2:{
+				chosenMesh = CVmNewMesh("Enemies/SpaceInvader3.AAM");
+				color = [0.4,0.2,0.95];
+//				AddToonShaderToMesh(chosenMesh, [1,1,1], [0,0,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				break;				
+			}
+		}
+		chosenMesh.ShaderAdd("SimpleColorShader.glsl", 0);
+		chosenMesh.ShaderSetParameter(0,"diffuse", 0, color);
+		chosenMesh.ShaderActivate(true);
+		chosenMesh.Scale(0.45, 0.45, 0.45);
+		aadd(targets, Target(CVmObj(chosenMesh), 50, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, false, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator));		
 	}
 	
 	return targets;
