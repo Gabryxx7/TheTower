@@ -100,7 +100,7 @@ class Level5
 function Level5::Level5(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;
-	debugVrOn = true;
+	debugVrOn = false;
 	controllerPressing = -1;
 	
 	mInputManager = inputManager;
@@ -233,15 +233,26 @@ function Level5::Render()
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
  	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
 
-	foreach(var wall in mWalls)
-		wall.Draw();
-	// We draw the main room
-	if(!mEnding || mElevator.IsElevatorOpen())
-		mMainRoom.Draw();
-
 // And the elevator, which is hidden at the start (so the draw won't do a thing at first)
 	mElevator.Draw();
 	
+	switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING:
+			break;
+		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_ENDING:
+		case STATUS_LEVEL_STARTED:
+		{
+			foreach(var wall in mWalls)
+				wall.Draw();
+			break;
+			
+			// We draw the main room
+			if(!mEnding || mElevator.IsElevatorOpen())
+				mMainRoom.Draw();
+		}
+	}
 	
 	if(mIsVRon || debugVrOn){
 		foreach(var controller in mControllersArray){
@@ -396,8 +407,8 @@ function Level5::UpdateLogic(dt)
 							var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
 							mControllersArray[checkingController].SetActionAvailable(true);
 							
-							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
-//							if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
+//							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
+							if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
 								controllerPressing = checkingController;
 								mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
 							}
@@ -498,8 +509,8 @@ function Level5::UpdateLogic(dt)
 							if(closerControllerIndex != -1 || controllerPressing >= 0){
 								var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
 								mControllersArray[checkingController].SetActionAvailable(true);
-							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
-//								if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
+//							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
+								if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
 									controllerPressing = checkingController;
 									mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
 								}

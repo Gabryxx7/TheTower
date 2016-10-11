@@ -111,7 +111,7 @@ function Target::Draw(){
 		mObj.SetScale(scale);
 	}
 	mObj.Draw();
-//	mObj.DrawBoundingBox();
+	mObj.DrawBoundingBox();
 }
 
 function Target::GetObj(){

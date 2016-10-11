@@ -449,7 +449,7 @@ function GameManager::Render()
 			 * A few thoughts: I can't find any downside to always render using the FBO and then its texture; currently I'm not doing that just in case
 			 * it's not how it's usally done, but it could be. If I were to always use the FBO I could delegate the whole post processing part to
 			 * the level, instead of making it pass the shader and the other parameters to the game manager, which would be way better than it is now */
-			if(mCurrentLevel.ApplyPostProcessing(&postProcessingShader, &passes, postProcessingShaderParametersStrings, postProcessingShaderParameters))
+			if(mCurrentLevel.ApplyPostProcessing(&postProcessingShader, &passes, postProcessingShaderParametersStrings, postProcessingShaderParameters) && !mIsVRon)
 			{
 				// If we have to apply post-processing to this frame, I state so
 				mApplyingPostProcessing = true;
@@ -467,7 +467,7 @@ function GameManager::Render()
 			glEnable(GL_NORMALIZE);
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			
+						
 			// Rendering the scene and applying post-processing to it (if it doesn't have to apply it this method won't do a thing)
 			XVRRendering(0);
 			ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
@@ -505,22 +505,22 @@ function GameManager::Render()
 					
 					mHMD.frame_left();
 					
-					if(mApplyingPostProcessing)
-					{
-						SceneBegin(mCamera);
-							mCurrentFbo.Start();
-					}
+//					if(mApplyingPostProcessing)
+//					{
+//						SceneBegin(mCamera);
+//							mCurrentFbo.Start();
+//					}
 						XVRRendering(1);
-						ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+//						ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 						
 					mHMD.frame_right();
-					if(mApplyingPostProcessing)
-					{
-						SceneBegin(mCamera);
-							mCurrentFbo.Start();
-					}
+//					if(mApplyingPostProcessing)
+//					{
+//						SceneBegin(mCamera);
+//							mCurrentFbo.Start();
+//					}
 						XVRRendering(2);
-						ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+//						ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 				mHMD.SceneEnd();
 			}	
 			
@@ -790,6 +790,7 @@ function GameManager::ApplyPostProcessing(postProcessingShader, passes, postProc
 		    glTexCoord(1, 0); 
 		    glVertex(1.0, -1.0);
 		glEnd();
+		
 		SceneEnd();
 	}
 }

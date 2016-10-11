@@ -125,6 +125,8 @@ class LevelMenu
 	GetOpenglTransformOffset();
 	SetupOpenglLights();
 	GetSelectedLevel();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+	DrawHUD();
 };
 
 
@@ -137,17 +139,17 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	mIsVRon = isVRon;	
 	debugVrOn = false;
 	
-	//Ampl: 28.3498 spacing: 0 size: 117.953 xP: 0.795 yp: 0.645 level: -144.3 viewDist: 255 velocity: 0.7
-	//Ampl: 49.5997 spacing: 0 size: 185.604 xP: 0.775 yp: 0.67 level: -209.304 viewDist: 437.5 velocity: -1.9
+	//Ampl: 70.6002 spacing: 0 size: 285.495 xP: 0.925 yp: 0.88 level: -200 viewDist: 493 velocity: -6.2
+
 	seaShaderEnabled = false;
-	seaAmplitude = 50;
+	seaAmplitude = 72;
 	seaAmountx = 75;
 	seaAmounty = 75;
-	seaViewDistance = 300;
+	seaViewDistance = 500;
 	seaSpacing = 0.0;
-	seaSize = 220;
-	seaXPeriod = 0.8;
-	seaYPeriod = 0.8;
+	seaSize = 286;
+	seaXPeriod = 0.925;
+	seaYPeriod = 0.925;
 	seaLevel = -200;
 	seaPosition = [0, seaLevel*SCALE_FACTOR, 0];
 	seaSmoothFading = false;
@@ -1157,4 +1159,14 @@ function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCent
 	}
 
 	glEnd();
+}
+
+function LevelMenu::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	return false;
+}
+
+function LevelMenu::DrawHUD()
+{
+	return false;
 }

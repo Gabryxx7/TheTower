@@ -92,7 +92,6 @@ class Level6
 	var mCameraHudLife;
 	var mLife;
 	var mGunsEventTriggers;
-	var mPickupGuns;
 	var mIsInsideGunTrigger;
 	
 	// Private functions
@@ -166,8 +165,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mGunsEventTriggers[1][0].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[2][0].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
-//	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
-//	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
+	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
 	
 	var mLaserLength = 1.5;
 	var mLaserWidth = 0.035;
@@ -177,15 +176,14 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var mLaserMeshRectangle = CVmNewMesh(VRP_BOX, 1, [-recSize.x/2, -recSize.y/2, -recSize.z/2], [recSize.x/2, recSize.y/2, recSize.z/2]);
 	mLaserMesh.Rotate(90,1,0,0);
 	
-	mPickupGuns = {};
 	mGuns = {};
 	var shootingDelay = 100.0;
 	var recoil = 0.2*SCALE_FACTOR;
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
-	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, 0, true, mAnimator, 991));
-	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed, bulletDistance, bulletLife, 1, 0, true, mAnimator, 991));
+	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, 3, 0, true, mAnimator, 991));
+	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, 3, 0, true, mAnimator, 991));
 	
 	
 	var gun1 = Gun("scifiGun/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, 0.5, 0, false, mAnimator, 992);
@@ -204,8 +202,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	aadd(mGunsEventTriggers[1][1], gun2);
 	
 	
-	gun1 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed*2, bulletDistance, bulletLife, 0.25, 1, false, mAnimator, 992);
-	gun2 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed*2, bulletDistance, bulletLife, 0.25, 1, false, mAnimator, 992);
+	gun1 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, 0.5, 1, false, mAnimator, 992);
+	gun2 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, 0.5, 1, false, mAnimator, 992);
 	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
 	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);	
 	aadd(mGunsEventTriggers[2][1], gun1);
@@ -257,8 +255,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	
 	
 	mTargets = {};
-	aadd(mTargets, CreateTargetsBossStage(4));
 	aadd(mTargets, CreateTargetsStage0(10));
+	aadd(mTargets, CreateTargetsBossStage(4));
 	aadd(mTargets, CreateTargetsStage1(10));
 	
 	
@@ -365,12 +363,6 @@ function Level6::Render()
 	
 	mElevator.Draw();
 	
-	foreach(var trigger in mGunsEventTriggers){
-//		trigger[0].Draw();
-		foreach(var gun in trigger[1]){
-			gun.Draw();			
-		}
-	}
 
 	// Drawing the controllers and their duplicates. If any controller is invisible, the draw will have no effect
 //	if(mIsVrOn || mDebugVrOn){
@@ -378,11 +370,6 @@ function Level6::Render()
 //			mControllersArray[i].Draw();		
 //	}
 
-	foreach(var gun in mGUns)
-		gun.Draw();
-	
-	foreach(var gun in mPickupGuns)
-		gun.Draw();
 	
 	switch(mLevelStatus)
 	{
@@ -390,8 +377,22 @@ function Level6::Render()
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
 		case STATUS_LEVEL_ENDING:
+			foreach(var controller in mControllersArray){
+				controller.Draw();
+			}		
 		case STATUS_LEVEL_STARTED:
-		{
+		{			
+			
+			
+			foreach(var trigger in mGunsEventTriggers){
+		//		trigger[0].Draw();
+				foreach(var gun in trigger[1]){
+					gun.Draw();			
+				}
+			}
+			foreach(var gun in mGuns)
+				gun.Draw();
+			
 			mMainRoom.Draw();
 			
 			if(len(mTargets) > 0){
@@ -704,6 +705,14 @@ function Level6::UpdateLogic(dt)
 					
 					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
 					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+					mGuns[0].UnlinkController();
+					mGuns[1].UnlinkController();	
+					mGuns[0].CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+					mGuns[1].CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition()+[0,3*SCALE_FACTOR, 0], -45, [1,0,0]);				
+					aadd(mGunsEventTriggers[3][1], mGuns[0]);
+					aadd(mGunsEventTriggers[3][1], mGuns[1]);	
+					adel(mGuns, 0);
+					adel(mGuns, 1);
     				mLevelStatus = STATUS_LEVEL_ENDING;
 				}
 				else{
@@ -1005,7 +1014,7 @@ function Level6::CreateTargetsStage0(numTargets){
 		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
 		
 		targetObj.SetPosition([posX, posY, posZ]);
-		aadd(targets, Target(targetObj, 3, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
+		aadd(targets, Target(targetObj, 2, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator));
 	}
 	return targets;
 }
@@ -1019,7 +1028,7 @@ function Level6::CreateTargetsStage1(numTargets){
 		// To create the star object I use a function from the "Utils" file
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
-		aadd(targets, Target(starObj, 10, 4000+(i*200), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator));
+		aadd(targets, Target(starObj, 5, 4000+(i*200), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator));
 	}
 	
 	return targets;
@@ -1064,7 +1073,7 @@ function Level6::CreateTargetsBossStage(numTargets){
 		chosenMesh.ShaderSetParameter(0,"diffuse", 0, color);
 		chosenMesh.ShaderSetParameter(0,"outlinecolor", 0, [0,0,0]);
 		chosenMesh.ShaderActivate(true);
-		aadd(targets, Target(CVmObj(chosenMesh), 50, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));		
+		aadd(targets, Target(CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));		
 	}
 	
 	return targets;

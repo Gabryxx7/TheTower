@@ -151,7 +151,7 @@ class Level0
 function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTranslationOffset, prevLightDiffuse)
 {
 	mIsVRon = isVRon;
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	mOpenglTranslationOffset = openglTranslationOffset;
 	
