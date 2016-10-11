@@ -456,7 +456,6 @@ function GameManager::Render()
 			if(mIsVRon)
 			{		
 				mHMD.SceneBegin();
-				
 					mCurrentLevel.SetupOpenglLights();
 					
 					glEnable (GL_BLEND);
@@ -475,21 +474,7 @@ function GameManager::Render()
 			SceneEnd();
 			
 			if(mApplyingPostProcessing)
-			{				
-//				static var passes = 1;
-//				
-//			 	if(Keypressed("V"))
-//			    {
-//			    	passes += 1;
-//			    	outputln(passes);
-//			    }
-//			    
-//			    if(Keypressed("C"))
-//			    {
-//			    	passes -= 1;
-//			    	outputln(passes);
-//			    }
-
+			{			
 				for(var i = 0; i < passes; i++)
 				{
 		    		glDisable(GL_ALPHA_TEST);
@@ -508,9 +493,7 @@ function GameManager::Render()
 		    		SetActiveTexture(mFbo);
 		    		
 		    		postProcessingShader.Start();
-			    	//	mPostProcessingBlurShader.SetParameter("value", value);
-			    	//	mPostProcessingBlurShader.SetParameter("dimension", mScreenWidth);
-			    	
+		    		
 			    		for(var j = 0; j < len(postProcessingShaderParametersStrings); j++)
 			    		{
 			    			var paramString = postProcessingShaderParametersStrings[i];
@@ -533,41 +516,6 @@ function GameManager::Render()
 					
 					mFbo.Stop();
 				}
-				
-//				for(var i = 0; i < passes; i++)
-//				{
-//		    		glDisable(GL_ALPHA_TEST);
-//					glDisable(GL_BLEND);
-//					
-//					glClear(GL_DEPTH_BUFFER_BIT);
-//				    glMatrixMode(GL_PROJECTION);
-//				    glLoadIdentity();
-//				    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
-//				    glMatrixMode(GL_MODELVIEW);
-//				    glLoadIdentity();
-//				    
-//				    glDisable( GL_LIGHTING );
-//				    glEnable(GL_TEXTURE_2D);
-//		    
-//		    		SetActiveTexture(mFbo);
-//		    		
-//		    		mPostProcessingBlurShader.Start();
-//			    	//	mPostProcessingBlurShader.SetParameter("value", value);
-//			    	//	mPostProcessingBlurShader.SetParameter("dimension", mScreenWidth);
-//			    		
-//					    glBegin(GL_QUADS);
-//							glTexCoord(1, 1); 
-//						    glVertex(1.0, 1.0);
-//						    glTexCoord(0, 1); 
-//						    glVertex(-1.0, 1.0);
-//							glTexCoord(0, 0); 
-//						    glVertex(-1.0, -1.0);
-//						    glTexCoord(1, 0); 
-//						    glVertex(1.0, -1.0);
-//						glEnd();
-//					mPostProcessingBlurShader.Stop();
-//					mFbo.Stop();
-//				}
 				
 				glDisable(GL_ALPHA_TEST);
 				glDisable(GL_BLEND);

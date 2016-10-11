@@ -146,6 +146,7 @@ class Level1
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 	DrawHUD();
 };
 
@@ -1066,6 +1067,12 @@ function Level1::GetLevelPreview(){
 function Level1::GetLevelName(){
 	return "Colors";
 }
+
+function Level1::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	return false;
+}
+
 
 function Level1::DrawHUD(){
 	
