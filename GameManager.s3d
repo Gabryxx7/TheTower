@@ -150,9 +150,12 @@ class GameManager
 	
 	var mLevelsPreloading;
 	
-	var mFbo;
-	var mTmpFbo;
-	var mPostProcessingBlurShader;
+	var mFboXVR;
+	var mTmpFboXVR;
+	var mFboVive;
+	var mTmpFboVive;
+	var mCurrentFbo;
+	var mCurrentTmpFbo;
 	var mApplyingPostProcessing;
 	
 	var mScreenWidth;
@@ -162,6 +165,7 @@ class GameManager
 	XVRRendering(eye);
 	DrawCrosshair();
 	FadeToBlackScreen();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 	
 	// Public methods
 	Render();
@@ -183,14 +187,16 @@ function GameManager::GameManager(HMD)
 	mScreenWidth = viewport[2];
 	mScreenHeight = viewport[3];
 	
-	mFbo = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
-	mFbo.EnableMipmaps();
-	mTmpFbo = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
-	mTmpFbo.EnableMipmaps();
+	// Creating the fbo for applying post-processing effects. Note that the size of the fbo can't be changed after the creation
+	mFboXVR = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
+	mFboXVR.EnableMipmaps();
 	
+	mTmpFboXVR = CVmFbo(VR_FBO_COLOR_Z, mScreenWidth, mScreenHeight);
+	mTmpFboXVR.EnableMipmaps();
+	
+	// Initially no post-processing is applied
 	mApplyingPostProcessing = false;
 	
-	mPostProcessingBlurShader = CVmShaderProgram("postProcessingBlurShader.glsl");
 	
 	mGameStatus = STATUS_INGAME;
 		
@@ -420,28 +426,39 @@ function GameManager::Render()
 			break;
 		case STATUS_ENDGAME:
 		case STATUS_INGAME:
-		{
-			var viewport = array(4);
-			viewport = glget(GL_VIEWPORT);
-			
-			mScreenWidth = viewport[2];
-			mScreenHeight = viewport[3];
-			
-				
+		{			
 			mCurrentLevel.SetupOpenglLights();
+			
+			mCurrentFbo = mFboXVR;
+			mCurrentTmpFbo = mTmpFboXVR;
 				
 			var postProcessingShader;
 			var passes;
 			var postProcessingShaderParametersStrings = {};
 			var postProcessingShaderParameters = {};
 			
+			/* Here's the deal with post-processing: in order to do post-processing (such as blurring the view), we need to render the scene
+			 * to a frame buffer object and then take its texture of the scene and render it to a quad as big as the screen using the orthographic 
+			 * projection. Not every level uses post-processing (currently only one does), so it's not always activated; this is why every level
+			 * has a method that tells the game manager whether it has to apply post processing or not; if it has to do it, the level has to
+			 * pass as paramaters the shader used to create the effect on the texture and a few other things.
+			 * So, to recap, if the method from the level returns true the game manager renders the scene to a FBO and then uses its texture
+			 * to apply the given shader.
+			 * So, at the beginning of the rendering we have to know if we're rendering to the FBO or directly to the screen, so that we can
+			 * start the FBO if it's needed.
+			 * A few thoughts: I can't find any downside to always render using the FBO and then its texture; currently I'm not doing that just in case
+			 * it's not how it's usally done, but it could be. If I were to always use the FBO I could delegate the whole post processing part to
+			 * the level, instead of making it pass the shader and the other parameters to the game manager, which would be way better than it is now */
 			if(mCurrentLevel.ApplyPostProcessing(&postProcessingShader, &passes, postProcessingShaderParametersStrings, postProcessingShaderParameters))
 			{
+				// If we have to apply post-processing to this frame, I state so
 				mApplyingPostProcessing = true;
 				
+				// I start the currently active fbo (either one for XVR or for the Vive), so that what comes next is rendered to this fbo
 				SceneBegin(mCamera);
-					mFbo.Start();
+					mCurrentFbo.Start();
 			}
+			// Otherwise I state that we don't have to apply any post-processing effects
 			else
 				mApplyingPostProcessing = false;
 				
@@ -451,7 +468,10 @@ function GameManager::Render()
 			glEnable (GL_BLEND);
 			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			
+			// Rendering the scene and applying post-processing to it (if it doesn't have to apply it this method won't do a thing)
 			XVRRendering(0);
+			ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+			
 
 			if(mIsVRon)
 			{		
@@ -464,91 +484,54 @@ function GameManager::Render()
 					if(mCurrentLevel.__GetName() == "LEVELMENU")				
 						glClearColor(0.95, 0.95, 0.95, 1.0);
 					
+					// Need to check if this procedure for creating the fbo with the correct resolution works on the Vive
+					if(mFboVive == Void)
+					{
+						var viewport = array(4);
+						viewport = glget(GL_VIEWPORT);
+						
+						var screenWidth = viewport[2];
+						var screenHeight = viewport[3];
+						
+						mFboVive = CVmFbo(VR_FBO_COLOR_Z, screenWidth, screenHeight);
+						mFboVive.EnableMipmaps();
+						
+						mTmpFboVive = CVmFbo(VR_FBO_COLOR_Z, screenWidth, screenHeight);
+						mTmpFboVive.EnableMipmaps();
+					}	
+					
+					mCurrentFbo = mFboVive;
+					mCurrentTmpFbo = mTmpFboVive;
+					
 					mHMD.frame_left();
+					
+					if(mApplyingPostProcessing)
+					{
+						SceneBegin(mCamera);
+							mCurrentFbo.Start();
+					}
 						XVRRendering(1);
+						ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+						
 					mHMD.frame_right();
+					if(mApplyingPostProcessing)
+					{
+						SceneBegin(mCamera);
+							mCurrentFbo.Start();
+					}
 						XVRRendering(2);
+						ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 				mHMD.SceneEnd();
 			}	
+			
+			if(mApplyingPostProcessing)
+				mApplyingPostProcessing = false;
 				
 			SceneEnd();
 			
-			if(mApplyingPostProcessing)
-			{			
-				for(var i = 0; i < passes; i++)
-				{
-		    		glDisable(GL_ALPHA_TEST);
-					glDisable(GL_BLEND);
-					
-					glClear(GL_DEPTH_BUFFER_BIT);
-				    glMatrixMode(GL_PROJECTION);
-				    glLoadIdentity();
-				    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
-				    glMatrixMode(GL_MODELVIEW);
-				    glLoadIdentity();
-				    
-				    glDisable( GL_LIGHTING );
-				    glEnable(GL_TEXTURE_2D);
-		    
-		    		SetActiveTexture(mFbo);
-		    		
-		    		postProcessingShader.Start();
-		    		
-			    		for(var j = 0; j < len(postProcessingShaderParametersStrings); j++)
-			    		{
-			    			var paramString = postProcessingShaderParametersStrings[i];
-			    			var param = postProcessingShaderParameters[i];
-			    			
-			    			mPostProcessingBlurShader.SetParameter(paramString, param);
-			    		}
-			    		
-					    glBegin(GL_QUADS);
-							glTexCoord(1, 1); 
-						    glVertex(1.0, 1.0);
-						    glTexCoord(0, 1); 
-						    glVertex(-1.0, 1.0);
-							glTexCoord(0, 0); 
-						    glVertex(-1.0, -1.0);
-						    glTexCoord(1, 0); 
-						    glVertex(1.0, -1.0);
-						glEnd();
-					postProcessingShader.Stop();
-					
-					mFbo.Stop();
-				}
-				
-				glDisable(GL_ALPHA_TEST);
-				glDisable(GL_BLEND);
-						
-				glClear(GL_DEPTH_BUFFER_BIT);
-			    glMatrixMode(GL_PROJECTION);
-			    glLoadIdentity();
-			    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
-			    glMatrixMode(GL_MODELVIEW);
-			    glLoadIdentity();
-			    
-			    glDisable( GL_LIGHTING );
-			    glEnable(GL_TEXTURE_2D);
-			    
-	    		SetActiveTexture(mFbo);
-	    		
-			    glBegin(GL_QUADS);
-					glTexCoord(1, 1); 
-				    glVertex(1.0, 1.0);
-				    glTexCoord(0, 1); 
-				    glVertex(-1.0, 1.0);
-					glTexCoord(0, 0); 
-				    glVertex(-1.0, -1.0);
-				    glTexCoord(1, 0); 
-				    glVertex(1.0, -1.0);
-				glEnd();
-				SceneEnd();
-				
-				mApplyingPostProcessing = false;
-			}
-			break;
 			
-			}
+			break;
+		}
 		default:
 			break;
 	}
@@ -701,6 +684,114 @@ function GameManager::XVRRendering(eye)
 	// and the animation of fading to black is over, the screen keeps being black)
 	if(mAnimator.HaveTransition(mFadeAnimationID, 6) || mEnding)
 		FadeToBlackScreen();
+}
+
+
+/*
+ * This method applies post-processing to the scene. It is assumed that the mCurrentFbo is still in execution and it already has the whole scene
+ * in its texture. The post-processing is applied with the given shader (which is directly passed from the current level) as many times
+ * as the "passes" variables, each time applied to the result of the last pass.
+ * The other 2 parameters are arrays containing the string names of the parameters of the shader and their value
+ */
+function GameManager::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	// I procede only if I have to actually apply post-processing
+	if(mApplyingPostProcessing)
+	{			
+		// I need to render the texture of the fbo to a quad as big as the screen using the orthographic projection since it's 2D.
+		// So I need to know the size of the screen, which I can obtain from the viewport
+		var viewport = array(4);
+		viewport = glget(GL_VIEWPORT);
+		
+		mCurrentFbo.Stop();
+		
+		var currentFbo = mCurrentTmpFbo;
+		var lastFbo = mCurrentFbo;
+		
+		outputln(passes);
+		
+		// I apply the shader to the texture "passes" number of times
+		for(var i = 0; i < passes; i++)
+		{
+			currentFbo.Start();
+			
+			// I'm just rendering a 2D texture, I don't need many opengl things for that
+    		glDisable(GL_ALPHA_TEST);
+			glDisable(GL_BLEND);
+		    glDisable(GL_LIGHTING);
+		    
+		    glEnable(GL_TEXTURE_2D);
+			
+			// Creating the orthographic projection
+			glClear(GL_DEPTH_BUFFER_BIT);
+		    glMatrixMode(GL_PROJECTION);
+		    glLoadIdentity();
+		    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
+		    glMatrixMode(GL_MODELVIEW);
+		    glLoadIdentity();
+		    
+    		// Activating the texture
+    		SetActiveTexture(lastFbo);
+    		
+    		// Activating the shader
+    		postProcessingShader.Start();
+				// Passing to the shader the given parameters
+	    		for(var j = 0; j < len(postProcessingShaderParametersStrings); j++)
+	    		{
+	    			var paramString = postProcessingShaderParametersStrings[j];
+	    			var param = postProcessingShaderParameters[j];
+	    			
+	    			postProcessingShader.SetParameter(paramString, param);
+	    		}
+	    		
+	    		// Creating a quad as big as the whole orthographic projection; to each vertex I pass the coordinate of the texture
+			    glBegin(GL_QUADS);
+					glTexCoord(1, 1); 
+				    glVertex(1.0, 1.0);
+				    glTexCoord(0, 1); 
+				    glVertex(-1.0, 1.0);
+					glTexCoord(0, 0); 
+				    glVertex(-1.0, -1.0);
+				    glTexCoord(1, 0); 
+				    glVertex(1.0, -1.0);
+				glEnd();
+			postProcessingShader.Stop();
+			
+			//
+			currentFbo.Stop();
+			
+			var tmp = currentFbo;
+			currentFbo = lastFbo;
+			lastFbo = tmp;
+		}
+		
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_BLEND);
+				
+		glClear(GL_DEPTH_BUFFER_BIT);
+	    glMatrixMode(GL_PROJECTION);
+	    glLoadIdentity();
+	    glOrtho(0, viewport[2], viewport[4], 0, 1, -1);
+	    glMatrixMode(GL_MODELVIEW);
+	    glLoadIdentity();
+	    
+	    glDisable( GL_LIGHTING );
+	    glEnable(GL_TEXTURE_2D);
+	    
+		SetActiveTexture(lastFbo);
+		
+	    glBegin(GL_QUADS);
+			glTexCoord(1, 1); 
+		    glVertex(1.0, 1.0);
+		    glTexCoord(0, 1); 
+		    glVertex(-1.0, 1.0);
+			glTexCoord(0, 0); 
+		    glVertex(-1.0, -1.0);
+		    glTexCoord(1, 0); 
+		    glVertex(1.0, -1.0);
+		glEnd();
+		SceneEnd();
+	}
 }
 
 /*

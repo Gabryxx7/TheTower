@@ -653,6 +653,14 @@ function Level6::UpdateLogic(dt)
     			}
     		}
     		
+//    		if(KeyPressed("C"))
+//    		{
+//    			mApplyPostProcessing = true;
+//    			mPostProcessingBlurShaderPasses = 9;
+//    		}
+//    		else
+//    			mApplyPostProcessing = false;
+    		
     		if(mApplyPostProcessing)
     		{
     			if(GetTime() - mPostProcessingBlurTimer > 0.1)
@@ -894,7 +902,7 @@ function Level6::ApplyPostProcessing(postProcessingShader, passes, postProcessin
 		aadd(postProcessingShaderParametersStrings, "resolution");
 		aadd(postProcessingShaderParameters, [screenWidth, screenHeight]);
 		
-		passes = 1;
+		passes = mPostProcessingBlurShaderPasses;
 	}
 	
 	return hasToApplyBlur;
