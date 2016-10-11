@@ -140,6 +140,7 @@ class Level0
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 	DrawHUD();
 };
 
@@ -1097,6 +1098,11 @@ function Level0::GetLevelPreview(){
 
 function Level0::GetLevelName(){
 	return "Start";
+}
+
+function Level0::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	return false;
 }
 
 function Level0::DrawHUD(){

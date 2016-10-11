@@ -121,6 +121,7 @@ class Level3
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
 	DrawHUD();
 };
 
@@ -1067,6 +1068,12 @@ function Level3::GetLevelPreview(){
 function Level3::GetLevelName(){
 	return "Chaos";
 }
+
+function Level3::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	return false;
+}
+
 
 function Level3::DrawHUD(){
 	
