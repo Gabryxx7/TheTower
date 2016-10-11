@@ -1134,4 +1134,121 @@ function GenerateNumberPositions(number, offset, size, spacing, direction){
 	return ret;
 }
 
+function CreateEnemyPositions(number, offset, size, spacing, direction){
+	var ret = {};
+	direction = valtype(direction) == "" ? 1 : direction;
+	size = valtype(size) != "A" && valtype(size) != "V" ? [size, size] : size;
+	spacing = valtype(spacing) != "A" && valtype(spacing) != "V" ? [spacing, spacing] : spacing;
+	
+	switch(number){	
+		case 0:
+			//Base
+			aadd(ret, [3*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [4*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-4*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-5*(size.x+spacing.x), 0*(size.y+spacing.y), 0] + offset);//
+						
+			aadd(ret, [0*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-4*(size.x+spacing.x), 1*(size.y+spacing.y), 0] + offset);//
+			
+			aadd(ret, [1*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 2*(size.y+spacing.y), 0] + offset);//
+			
+			aadd(ret, [0*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [4*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [5*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//			
+			aadd(ret, [-1*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-4*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-5*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-6*(size.x+spacing.x), 3*(size.y+spacing.y), 0] + offset);//
+			
+			aadd(ret, [0*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [3*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [4*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [5*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-1*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-4*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-5*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-6*(size.x+spacing.x), 4*(size.y+spacing.y), 0] + offset);//	
+			
+			aadd(ret, [0*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [4*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [5*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//			
+			aadd(ret, [-1*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-4*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-5*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-6*(size.x+spacing.x), 5*(size.y+spacing.y), 0] + offset);//
+			
+			
+			aadd(ret, [0*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [4*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//		
+			aadd(ret, [-1*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-3*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-4*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-5*(size.x+spacing.x), 6*(size.y+spacing.y), 0] + offset);//
+			
+			
+			aadd(ret, [0*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//	
+			aadd(ret, [-1*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			aadd(ret, [-2*(size.x+spacing.x), 7*(size.y+spacing.y), 0] + offset);//
+			break;
+	}
+	
+	if(direction == 2){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.z, tmp.y, tmp.x];
+		}
+	}
+	else if(direction == 3){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.y, tmp.x, tmp.z];
+		}
+	}else if(direction == -1){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [-tmp.x, tmp.y, tmp.z];
+		}
+	}else if(direction == -2){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.z, tmp.y, -tmp.x];
+		}
+	}else if(direction == -3){
+		var tmp;
+		for(var i = 0; i < len(ret); i++){
+			tmp = ret[i];
+			ret[i] = [tmp.y, -tmp.x, tmp.z];
+		}
+	}
+	
+	return ret;	
+}
+
 
