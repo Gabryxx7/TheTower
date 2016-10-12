@@ -381,18 +381,7 @@ function Level6::Render()
 				controller.Draw();
 			}		
 		case STATUS_LEVEL_STARTED:
-		{			
-			
-			
-			foreach(var trigger in mGunsEventTriggers){
-		//		trigger[0].Draw();
-				foreach(var gun in trigger[1]){
-					gun.Draw();			
-				}
-			}
-			foreach(var gun in mGuns)
-				gun.Draw();
-			
+		{		
 			mMainRoom.Draw();
 			
 			if(len(mTargets) > 0){
@@ -426,6 +415,17 @@ function Level6::Render()
 				
 				
 			mCounterShader.Stop();
+			
+			foreach(var trigger in mGunsEventTriggers){
+		//		trigger[0].Draw();
+				foreach(var gun in trigger[1]){
+					gun.Draw();			
+				}
+			}
+			
+			foreach(var gun in mGuns)
+				gun.Draw();
+			
 			break;
 		}
 	}
