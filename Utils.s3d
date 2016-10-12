@@ -195,6 +195,10 @@ function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight
 		pyramidHeight = 1.0 * SCALE_FACTOR + (Rand(8) / 10.0) * SCALE_FACTOR;
 	
 	var pyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
+	var cubeSize = pyramidHeight >= baseSize ? pyramidHeight : baseSize;
+	cubeSize += baseSize/2;
+	var boundingCubeMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSize, -cubeSize, -cubeSize], [cubeSize, cubeSize, cubeSize]);
+	boundingCubeMesh.Hide();
 	
 	if(color == Void)
 		color = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
@@ -203,7 +207,8 @@ function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight
 	ambient = valtype(ambient) == "" ? [0.04, 0.04, 0.04] : ambient;
 	AddToonShaderToMesh(pyramidMesh, ambient, color, [0.4, 0.4, 0.4], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
 	
-	var star = CVmObj(pyramidMesh);
+	var star = CVmObj(boundingCubeMesh);
+	var pyramidObj1 = CVmObj(pyramidMesh);
 	var pyramidObj2 = CVmObj(pyramidMesh);
 	var pyramidObj3 = CVmObj(pyramidMesh);
 	var pyramidObj4 = CVmObj(pyramidMesh);
@@ -216,6 +221,7 @@ function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight
 	pyramidObj5.Rotate(90, 1, 0, 0);
 	pyramidObj6.Rotate(-90, 1, 0, 0);
 	
+	star.AddChild(pyramidObj1);
 	star.AddChild(pyramidObj2, 0, -baseSize, 0);
 	star.AddChild(pyramidObj3, baseSize, -baseSize, 0);
 	star.AddChild(pyramidObj4, baseSize, 0, 0);
@@ -1249,6 +1255,44 @@ function CreateEnemyPositions(number, offset, size, spacing, direction){
 	}
 	
 	return ret;	
+}
+
+function GenerateColors(step){	
+	var colors = {};
+	var rgb = [1, 0, 0];
+	while(rgb[1] <= 1){
+		rgb += [0, 0.05, 0];
+		rgb -= [0.05, 0, 0];
+		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
+	}
+	
+	while(rgb[2] <= 1){
+		rgb += [0, 0, 0.05];
+		rgb -= [0, 0.05, 0];
+		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
+	}
+	
+	while(rgb[1] <= 1){
+		rgb += [0, 0.05, 0];
+		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
+	}
+	
+	while(rgb[0] <= 1){
+		rgb += [0.05, 0, 0];
+		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
+	}
+	
+	while(rgb[1] >= 0){
+		rgb -= [0, 0.05, 0];
+		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
+	}
+	
+	while(rgb[2] >= 0){
+		rgb -= [0, 0, 0.05];
+		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
+	}
+	
+	return colors;
 }
 
 

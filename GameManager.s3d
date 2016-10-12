@@ -204,6 +204,7 @@ function GameManager::GameManager(HMD)
 	mGameReady = false;
 	
 	mCamera = CameraGetCurrent();
+	mCamera.SetZNear(0.001);
 	mAnimator = Animator();
 	
 	mInputManager = InputManager(mIsVRon, mHMD, mJoystick);
