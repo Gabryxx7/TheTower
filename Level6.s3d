@@ -127,7 +127,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 {		
 	mTexture = CVmTexture("Level2Prev.png");
 	mIsVRon = isVRon;
-	mDebugVrOn = false;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -766,7 +766,8 @@ function Level6::UpdateLogic(dt)
 							isControllerInsideOneTrigger[i] = true;
 							if(!mIsControllerInsideTrigger[i] && len(trigger[1]) > 0){
 								mIsControllerInsideTrigger[i] = true;
-								mGuns[i] = trigger[1][i].Clone();
+								mGuns[i].Copy(trigger[1][i]);
+//								mGuns[i] = trigger[1][i].Cone();
 								mGuns[i].LinkToController(controller);				
 							}							
 						}

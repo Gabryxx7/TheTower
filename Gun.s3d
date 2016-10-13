@@ -304,7 +304,7 @@ function Gun::Copy(otherGun){
 	mBulletMaxDistance = otherGun.GetBulletMaxDistance();
 	mBulletMaxLife = otherGun.GetBUlletMaxLife();
 	mShootType = otherGun.GetShootType();
-	mSingleShot = otherGun.GetSingleShot();
+	mSingleShot = otherGun.IsSIngleShot();
 	mDelayAnimFactor = otherGun.GetDelayAnimFactor();
 	mShootAnimationTime = otherGun.GetShootAnimationTime();
 	mAnimator = otherGun.GetAnimator();
@@ -349,7 +349,7 @@ function Gun::GetBUlletMaxLife(){
 }
 
 function Gun::GetShootType(){
-	return mBulletMaxLife;
+	return mShootType;
 }
 
 function Gun::GetDelayAnimFactor(){
