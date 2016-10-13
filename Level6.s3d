@@ -93,7 +93,8 @@ class Level6
 	var mCameraHudLife;
 	var mLife;
 	var mGunsEventTriggers;
-	var mIsInsideGunTrigger;
+	var mIsCameraInsideTrigger;
+	var mIsControllerInsideTrigger;
 	
 	// Private functions
 	HandleLasers();
@@ -159,7 +160,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var cornerz = mMainRoom.GetRoomDepth()/2;
 	var offy = 0.05*SCALE_FACTOR;
 
-	mIsInsideGunTrigger = false;
+	mIsCameraInsideTrigger = false;
+	mIsControllerInsideTrigger = {false, false};
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
 	mGunsEventTriggers[0][0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {EventTrigger(size, size, 0), {}});
@@ -185,29 +187,41 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletSpeed = 25;
 	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
 	aadd(mGuns, Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));	
-	var colors = GenerateColors(0.025);
-	var gun1 = Gun("scifiGun/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 992);
-	var gun2 = Gun("scifiGun/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 992);	
+	
+	
+	var gun1 = Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
+	var gun2 = Gun("scifiGun/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 901);
 	gun2.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
 	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);	
 	aadd(mGunsEventTriggers[0][1], gun1);
 	aadd(mGunsEventTriggers[0][1], gun2);
 	
 	
-	gun1 = Gun("scifiGun/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 992);
-	gun2 = Gun("scifiGun/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 992);
+	
+		
+	var colors = GenerateColors(0.025);
+	gun1 = Gun("scifiGun/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000);
+	gun2 = Gun("scifiGun/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2001);	
 	gun2.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
 	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);	
 	aadd(mGunsEventTriggers[1][1], gun1);
 	aadd(mGunsEventTriggers[1][1], gun2);
 	
 	
-	gun1 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 992);
-	gun2 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 992);
-	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);	
+	gun1 = Gun("scifiGun/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000);
+	gun2 = Gun("scifiGun/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3001);
+	gun2.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);
+	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);	
 	aadd(mGunsEventTriggers[2][1], gun1);
-	aadd(mGunsEventTriggers[2][1], gun2);	
+	aadd(mGunsEventTriggers[2][1], gun2);
+	
+	
+	gun1 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4000);
+	gun2 = Gun("scifiGun/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4001);
+	gun1.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
+	gun2.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [-1,0,0]);	
+	aadd(mGunsEventTriggers[3][1], gun1);
+	aadd(mGunsEventTriggers[3][1], gun2);	
 	
 	if(mIsVRon)
 	{
@@ -743,37 +757,49 @@ function Level6::UpdateLogic(dt)
 				}
 			}
 			
-			var isInsideOne = false;
-			foreach(var trigger in mGunsEventTriggers){
-				if(trigger[0].IsPointInside(cameraPosition)){
-					isInsideOne = true;
-					if(!mIsInsideGunTrigger && len(trigger[1]) > 0){
-						mIsInsideGunTrigger = true;
-						var tmp1 = mGuns[0];
-						var tmp2 = mGuns[1];
-						trigger[1][0].Pickup();
-						trigger[1][1].Pickup();
-						if(mIsVrOn || mDebugVrOn){
-							mGuns[0].UnlinkController();
-							mGuns[1].UnlinkCOntroller();
-						}
-						mGuns[0] = trigger[1][0];
-						mGuns[1] = trigger[1][1];
-						trigger[1][0] = tmp1;
-						trigger[1][1] = tmp2;
-						trigger[1][0].CreatePickupPoint(trigger[0].GetPosition()+[0,3*SCALE_FACTOR, 0], 45, [1,0,0]);
-						trigger[1][1].CreatePickupPoint(trigger[0].GetPosition()+[0,3*SCALE_FACTOR, 0], -45, [1,0,0]);
-						
-						if(mIsVrOn || mDebugVrOn){
-							mGuns[0].LinkToController(mControllersArray[0]);
-							mGuns[1].LinkToController(mControllersArray[1]);
+			var isControllerInsideOneTrigger = {false, false};
+			if(mIsVrOn || mDebugVrOn){
+				for(var i = 0; i < len(mControllersArray); i++){
+					var controller = mControllersArray[i];
+					foreach(var trigger in mGunsEventTriggers){
+						if(trigger[0].IsPointInside(controller.GetPosition())){
+							isControllerInsideOneTrigger[i] = true;
+							if(!mIsControllerInsideTrigger[i] && len(trigger[1]) > 0){
+								mIsControllerInsideTrigger[i] = true;
+								mGuns[i] = trigger[1][i].Clone();
+								mGuns[i].LinkToController(controller);				
+							}							
 						}
 					}
 				}
-			}
 			
-			if(!isInsideOne){
-				mIsInsideGunTrigger = false;				
+				for(var i = 0; i < len(isControllerInsideOneTrigger); i++){
+					if(!isControllerInsideOneTrigger[i]){
+						mIsControllerInsideTrigger[i] = false;
+					}				
+				}				
+			}
+			else{
+				var isInsideOne = false;
+				foreach(var trigger in mGunsEventTriggers){
+					if(trigger[0].IsPointInside(cameraPosition)){
+						isInsideOne = true;
+						if(!mIsCameraInsideTrigger && len(trigger[1]) > 0){
+							mIsCameraInsideTrigger = true;
+							mGuns[0] = trigger[1][0].Clone();
+							mGuns[1] = trigger[1][1].Clone();
+							
+							if(mIsVrOn || mDebugVrOn){
+								mGuns[0].LinkToController(mControllersArray[0]);
+								mGuns[1].LinkToController(mControllersArray[1]);
+							}
+						}
+					}
+				}
+				
+				if(!isInsideOne){
+					mIsCameraInsideTrigger = false;				
+				}			
 			}
 			break;
 		}

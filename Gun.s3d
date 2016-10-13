@@ -2,6 +2,7 @@ class Gun{
 	var mAnimator;
 	var mAnimationId;
 	
+	var mMeshName;
 	var mGunMesh;
 	var mGunObj;	
 	
@@ -40,11 +41,29 @@ class Gun{
 	Pickup();
 	LinkToController(controller);
 	UnlinkController();
-	GetShootType();
+	Clone();
+	Copy(otherGun);
+	
+	GetMeshName();
+	GetMesh();
+	GetShootingDelay();
+	GetRecoilDepth();	
+	GetBulletMesh();
+	GetBulletSpeed();
+	GetBulletMaxDistance();
+	GetBUlletMaxLife();
 	IsSingleShot();
+	GetShootType();
+	GetDelayAnimFactor();
+	GetShootAnimationTime();
+	GetAnimator();
+	GetAnimationId();
+	GetBulletPower();	
+	GetBUlletCOlors();
 };
 
 function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId){
+	mMeshName = meshName;
 	mGunMesh = CvmNewMesh(meshName);
 	mGunObj= CvmObj(mGunMesh);
 	mShootingDelayOrig = shootingDelay;
@@ -266,4 +285,93 @@ function Gun::UnlinkController(){
 
 function Gun::IsSingleShot(){
 	return mSingleShot;
+}
+
+function Gun::Clone(){
+	return Gun(mMeshName, mShootingDelay, mRecoilDepth, mBulletMesh, mBulletSpeed, mBulletMaxDistance, mBulletMaxLife, mBulletColors, mBulletPower, mShootType, mSingleShot, mAnimator, mAnimationId+1);
+}
+
+function Gun::Copy(otherGun){
+	mMeshName = otherGun.GetMeshName();
+	mGunMesh = otherGun.GetMesh();
+	mGunObj= CvmObj(mGunMesh);
+	mShootingDelayOrig = otherGun.GetShootingDelay();
+	mShootingDelay = otherGun.GetShootingDelay();
+	mRecoilDepth = otherGun.GetRecoilDepth();
+	
+	mBulletMesh = otherGun.GetBulletMesh();
+	mBulletSpeed = otherGun.GetBulletSpeed();
+	mBulletMaxDistance = otherGun.GetBulletMaxDistance();
+	mBulletMaxLife = otherGun.GetBUlletMaxLife();
+	mShootType = otherGun.GetShootType();
+	mSingleShot = otherGun.GetSingleShot();
+	mDelayAnimFactor = otherGun.GetDelayAnimFactor();
+	mShootAnimationTime = otherGun.GetShootAnimationTime();
+	mAnimator = otherGun.GetAnimator();
+	mAnimationId = otherGun.GetAnimationId()+1;
+	mLastShotTime = GetTime();
+	mBulletPower = otherGun.GetBulletPower();	
+	mBulletColors = otherGun.GetBUlletCOlors();
+	mColorIndex = 0;	
+	mIsShooting = false;
+}
+
+function Gun::GetMeshName(){
+	return mMeshName;
+}
+
+function Gun::GetMesh(){
+	return mGunMesh;
+}
+
+function Gun::GetShootingDelay(){
+	return mShootingDelayOrig;
+}
+
+function Gun::GetRecoilDepth(){
+	return mRecoilDepth;
+}
+
+function Gun::GetBulletMesh(){
+	return mBulletMesh;
+}
+
+function Gun::GetBulletSpeed(){
+	return mBulletSpeed;
+}
+
+function Gun::GetBulletMaxDistance(){
+	return mBulletMaxDistance;
+}
+
+function Gun::GetBUlletMaxLife(){
+	return mBulletMaxLife;
+}
+
+function Gun::GetShootType(){
+	return mBulletMaxLife;
+}
+
+function Gun::GetDelayAnimFactor(){
+	return mDelayAnimFactor;
+}
+
+function Gun::GetShootAnimationTime(){
+	return mShootAnimationTime;
+}
+
+function Gun::GetAnimator(){
+	return mAnimator;
+}
+
+function Gun::GetAnimationId(){
+	return mAnimationId;
+}
+
+function Gun::GetBulletPower(){
+	return mBulletPower;
+}
+
+function Gun::GetBUlletCOlors(){
+	return mBulletColors;
 }
