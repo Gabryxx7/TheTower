@@ -28,6 +28,10 @@ class Gun{
 	
 	var mBulletColors;
 	var mColorIndex;
+	var mIsActionAvailable;
+	var mIsPowerEnabled;
+	
+	var mColorShader;
 	
 	IsShooting();
 	UpdateGun();
@@ -43,6 +47,8 @@ class Gun{
 	UnlinkController();
 	Clone();
 	Copy(otherGun);
+	SetACtionAvailable(isAvailable);
+	EnablePower(isPowerEnabled);
 	
 	GetMeshName();
 	GetMesh();
@@ -82,11 +88,15 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 	mLastShotTime = GetTime();
 	mBulletPower = bulletPower;
 	mIsVive = false;
+	mISActionAvailable = false;
+	mIsPowerEnabled = false;
 	
 	mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};
 	mColorIndex = 0;
 	
 	mIsShooting = false;
+	
+	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");
 }
 
 
@@ -255,7 +265,29 @@ function Gun::UpdateGun(){
 }
 
 function Gun::Draw(){
-	return mGunObj.Draw();
+	if(mIsActionAvailable || mIsPowerEnabled){
+		var scale = mGunObj.GetScale();
+		var color = [0,0,1];
+		if(mIsPowerEnabled)
+			color = [1,0,0];
+		
+		if(mIsActionAvailable)
+			color = [1,1,0];
+			
+		glCullFace (GL_FRONT);		 	
+		mGunObj.SetScale(scale + [0.02, 0.02, 0.02]);
+		
+		mColorShader.Start();
+			mColorShader.SetParameter("outlinecolor", [1,1,0]);
+			mColorShader.SetParameter("outline", 0);
+			mGunObj.Draw();
+		mColorShader.Stop();
+		
+		glCullFace (GL_BACK);  	
+		mGunObj.SetScale(scale);
+	}
+	
+	mGunObj.Draw();
 }
 
 function Gun::GetObj(){
@@ -374,4 +406,12 @@ function Gun::GetBulletPower(){
 
 function Gun::GetBUlletCOlors(){
 	return mBulletColors;
+}
+
+function Gun::SetACtionAvailable(isAvailable){
+	mISActionAvailable = isAvailable;
+}
+
+function Gun::EnablePower(isPowerEnabled){
+	mIsPowerEnabled = isPowerEnabled;
 }
