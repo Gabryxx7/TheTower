@@ -760,6 +760,7 @@ function Level6::UpdateLogic(dt)
 								isControllerInsideOneTrigger[i] = true;								
 								if(!mIsControllerInsideTrigger[i]){
 									mIsControllerInsideTrigger[i] = true;
+									mGuns[i].SwitchGunAnimation();	
 									mGuns[i].Copy(trigger[1]);
 									mGuns[i].LinkToController(controller);				
 								}							
@@ -780,10 +781,12 @@ function Level6::UpdateLogic(dt)
 					var distance = Modulus(trigger[0].GetPosition()-cameraPosition);
 					if(distance <= mPowerSphereRadius*2.6){
 						if(KeyPressed("N")){
-							mGuns[0].Copy(trigger[1]);							
+							mGuns[0].SwitchGunAnimation();	
+							mGuns[0].Copy(trigger[1]);						
 						}
 						
 						if(KeyPressed("M")){
+							mGuns[1].SwitchGunAnimation();	
 							mGuns[1].Copy(trigger[1]);							
 						}
 						
@@ -792,8 +795,10 @@ function Level6::UpdateLogic(dt)
 							isInside = true;								
 							if(!mIsCameraInsideTrigger){
 								mIsCameraInsideTrigger = true;
+								mGuns[0].SwitchGunAnimation();	
 								mGuns[0].Copy(trigger[1]);
-								mGuns[1].Copy(trigger[1]);			
+								mGuns[1].Copy(trigger[1]);	
+								mGuns[1].SwitchGunAnimation();			
 							}							
 						}
 					}

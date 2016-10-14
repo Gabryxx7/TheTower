@@ -4,7 +4,8 @@ class Gun{
 	
 	var mMeshName;
 	var mGunMesh;
-	var mGunObj;	
+	var mGunObj;
+	var mOldObj;	
 	
 	var mSingleShot;
 	var mShootingDelay;
@@ -30,6 +31,8 @@ class Gun{
 	var mColorIndex;
 	var mIsActionAvailable;
 	var mIsPowerEnabled;
+	var mIsSwitching;
+	var mSwitchGunTime;
 	
 	var mColorShader;
 	
@@ -49,6 +52,7 @@ class Gun{
 	Copy(otherGun);
 	SetACtionAvailable(isAvailable);
 	EnablePower(isPowerEnabled);
+	SwitchGunAnimation();
 	
 	GetMeshName();
 	GetMesh();
@@ -70,8 +74,9 @@ class Gun{
 
 function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId){
 	mMeshName = meshName;
-	mGunMesh = CvmNewMesh(meshName);
+	mGunMesh = CvmNewMesh(mMeshName);
 	mGunObj= CvmObj(mGunMesh);
+	mOldObj = CvmObj(mGunMesh);
 	mShootingDelayOrig = shootingDelay;
 	mShootingDelay = mShootingDelayOrig;
 	mRecoilDepth = recoilDepth;
@@ -90,6 +95,7 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 	mIsVive = false;
 	mISActionAvailable = false;
 	mIsPowerEnabled = false;
+	mIsSwitching = false;
 	
 	mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};
 	mColorIndex = 0;
@@ -237,6 +243,17 @@ function Gun::IsShooting(){
 }
 
 function Gun::UpdateGun(){
+	if(mIsSwitching){
+		mOldObj.SetPosition(mGunObj.GetPosition());
+		mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
+		if(!mAnimator.HaveTransition(mOldObj,2)){
+			mIsSwitching = false;
+			mGunObj.SetScale(0,0,0);
+			mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], 0.25, false);
+		}
+	}
+	
+	
 	if(mIsVive){
 		mGunObj.SetRotationMatrix(mViveController.GetRotationMatrix());
 		mGunObj.SetPosition(mViveController.GetPosition());	
@@ -265,8 +282,9 @@ function Gun::UpdateGun(){
 }
 
 function Gun::Draw(){
+	var objToDraw = mIsSwitching ? mOldObj : mGunObj;
 	if(mIsActionAvailable || mIsPowerEnabled){
-		var scale = mGunObj.GetScale();
+		var scale = objToDraw.GetScale();
 		var color = [0,0,1];
 		if(mIsPowerEnabled)
 			color = [1,0,0];
@@ -275,19 +293,19 @@ function Gun::Draw(){
 			color = [1,1,0];
 			
 		glCullFace (GL_FRONT);		 	
-		mGunObj.SetScale(scale + [0.02, 0.02, 0.02]);
+		objToDraw.SetScale(scale + [0.02, 0.02, 0.02]);
 		
 		mColorShader.Start();
 			mColorShader.SetParameter("outlinecolor", [1,1,0]);
 			mColorShader.SetParameter("outline", 0);
-			mGunObj.Draw();
+			objToDraw.Draw();
 		mColorShader.Stop();
 		
 		glCullFace (GL_BACK);  	
-		mGunObj.SetScale(scale);
+		objToDraw.SetScale(scale);
 	}
 	
-	mGunObj.Draw();
+	objToDraw.Draw();
 }
 
 function Gun::GetObj(){
@@ -414,4 +432,13 @@ function Gun::SetACtionAvailable(isAvailable){
 
 function Gun::EnablePower(isPowerEnabled){
 	mIsPowerEnabled = isPowerEnabled;
+}
+
+function Gun::SwitchGunAnimation(){
+	mIsSwitching = true;
+	mSwitchGunTime = GetTime();
+	mOldObj = CvmObj(mGunMesh);
+	mOldObj.SetPosition(mGunObj.GetPosition());
+	mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
+	mAnimator.CreateScalingTransition(mOldObj, [1,1,1], [0,0,0], 0.25, false);
 }
