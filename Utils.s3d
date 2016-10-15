@@ -1261,34 +1261,34 @@ function GenerateColors(step){
 	var colors = {};
 	var rgb = [1, 0, 0];
 	while(rgb[1] <= 1){
-		rgb += [0, 0.05, 0];
-		rgb -= [0.05, 0, 0];
+		rgb += [0, step, 0];
+		rgb -= [step, 0, 0];
 		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
 	}
 	
 	while(rgb[2] <= 1){
-		rgb += [0, 0, 0.05];
-		rgb -= [0, 0.05, 0];
+		rgb += [0, 0, step];
+		rgb -= [0, step, 0];
 		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
 	}
 	
 	while(rgb[1] <= 1){
-		rgb += [0, 0.05, 0];
+		rgb += [0, step, 0];
 		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
 	}
 	
 	while(rgb[0] <= 1){
-		rgb += [0.05, 0, 0];
+		rgb += [step, 0, 0];
 		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
 	}
 	
 	while(rgb[1] >= 0){
-		rgb -= [0, 0.05, 0];
+		rgb -= [0, step, 0];
 		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
 	}
 	
 	while(rgb[2] >= 0){
-		rgb -= [0, 0, 0.05];
+		rgb -= [0, 0, step];
 		aadd(colors, [rgb[0], rgb[1], rgb[2]]);
 	}
 	

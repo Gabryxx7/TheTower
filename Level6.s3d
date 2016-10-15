@@ -125,10 +125,9 @@ class Level6
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
-{		
-	mTexture = CVmTexture("Level2Prev.png");
+{
 	mIsVRon = isVRon;
-	mDebugVrOn = false;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -473,6 +472,8 @@ function Level6::UpdateLogic(dt)
 	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
 	if(!mIsVRon && mDebugVrOn)
 	{
+		mControllersArray[0].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+		mControllersArray[1].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
 		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
 		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
 		
@@ -795,24 +796,25 @@ function Level6::UpdateLogic(dt)
 				mGuns[0].SetActionAvailable(isNear);
 				mGuns[1].SetActionAvailable(isNear);				
 				mIsCameraInsideTrigger = isInside;
-				
-			 	if(len(mTargets[0]) < 1){
-	    			mCurrentStage++;
-	    			adel(mTargets, 0);
-	    			if(len(mTargets) <= 0){
-	    				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-						var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-						
-						mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-						mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-						adel(mGuns, 0);
-						adel(mGuns, 0);
-	    				mLevelStatus = STATUS_LEVEL_ENDING;
-					}
-					else{
-						foreach(var target in mTargets[0])
-							target.Create();
-					}
+			}
+			
+		 	if(len(mTargets[0]) < 1){
+    			mCurrentStage++;
+    			adel(mTargets, 0);
+    			if(len(mTargets) <= 0){
+    				outputln("ALL TARGETS KILLED");
+    				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+					
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+					adel(mGuns, 0);
+					adel(mGuns, 0);
+    				mLevelStatus = STATUS_LEVEL_ENDING;
+				}
+				else{
+					foreach(var target in mTargets[0])
+						target.Create();
 				}
 			}
 			break;
@@ -949,11 +951,11 @@ function Level6::GetLightDiffuse(){
 }
 
 function Level6::GetLevelPreview(){
-	return mTexture;
+	return CVmTexture("Level6Prev.png");;
 }
 
 function Level6::GetLevelName(){
-	return "Ghost";
+	return "War";
 }
 
 function Level6::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
