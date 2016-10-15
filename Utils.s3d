@@ -90,39 +90,51 @@ function FindIntersectionInPlane(raycastOrigin, raycastEnd, planePoint, planeNor
 {
 	var pointInPlane = Void;
 	
-	// I first need to check if the raycast intersects the plane. To do that, I first get the direction of the raycast and I normalize it. The idea is 
-	// to do the dot product between the direction of the raycast and the plane normal, and study the sign of the result. But this is not enough,
-	// since the plane has a physical point where it's placed in the space, so we also need to check whether the raycast starts from one side of the plane or the other
-	var raycastDirection = Norm(raycastOrigin - raycastEnd);
-	
-	// I get the direction between the starting point of the line and the plane, and normalize it. This helps me to find out on which side of the plane the ray
-	// starts, by doing the dot product with the normal. The result will have positive values if the ray starts from one side, and negative values from the other side
-	var directionToPlane = Norm(raycastOrigin - planePoint);
-	
-	// Doing the dot products
-	var raycastNormalProduct = raycastDirection * planeNormal;
-	var directionToPlaneNormalProduct = directionToPlane * planeNormal;
-	
-	// If the dot products have the same sign then the raycast is intersecting the plane. So, to check that easily I multiply the results and check the sign; if
-	// it's positive, the ray intersects the plane, so we can look for the contact point
-	if(raycastNormalProduct * directionToPlaneNormalProduct > 0)
-	{
-		/* Consider the ray as a line, with line equation r(t) = p0 + p1 * T where p0 is the starting point of the ray and p1 the ending point. To find the
-		 * contact point on the plane, we have to find the right T and solve the equation. 
-		 * Now consider a point q in the plane and the plane's normal n. For a point x to be on the plane this has to be true: n * (q - x) = 0 where the "*" 
-		 * is the dot product. This has to be true because all points in the plane have to be perpendicular to n, so if we take from the point q that we
-		 * know belongs to the plane and a random point x and take the vector that goes from one to the other, this vector has to be perpendicular to n for
-		 * x to be on the plane; so the dot product has to be zero.
-		 * Now, from that equation we need to substitute the "x" with the ray's equation:
-		 * n * (q - p0 - p1 * T) = 0 --> n * (q - p0) - n * p1 * T = 0 --> n * (q - p0) = n * p1 * T --> n * (q - p0) / (p1 * n) = T 
-		 * This is the equation we need to solve to get the right T; we have all the ingredients */
-		var T = planeNormal * (planePoint - raycastOrigin) / (planeNormal * raycastEnd);
-		
-		// Now that we have T, let's solve the ray's equation and we've got our point
-		pointInPlane = raycastOrigin + (raycastEnd * T);
-	}
-	
+	var v = raycastEnd - raycastOrigin;
+	var w = planePoint - raycastOrigin;
+
+	var k = (w * planeNormal) / (v * planeNormal);
+
+	if(k >= 0 && k <= 1)
+		pointInPlane = raycastOrigin + k * v;
+
 	return pointInPlane;
+	
+//	var pointInPlane = Void;
+//	
+//	// I first need to check if the raycast intersects the plane. To do that, I first get the direction of the raycast and I normalize it. The idea is 
+//	// to do the dot product between the direction of the raycast and the plane normal, and study the sign of the result. But this is not enough,
+//	// since the plane has a physical point where it's placed in the space, so we also need to check whether the raycast starts from one side of the plane or the other
+//	var raycastDirection = Norm(raycastOrigin - raycastEnd);
+//	
+//	// I get the direction between the starting point of the line and the plane, and normalize it. This helps me to find out on which side of the plane the ray
+//	// starts, by doing the dot product with the normal. The result will have positive values if the ray starts from one side, and negative values from the other side
+//	var directionToPlane = Norm(raycastOrigin - planePoint);
+//	
+//	// Doing the dot products
+//	var raycastNormalProduct = raycastDirection * planeNormal;
+//	var directionToPlaneNormalProduct = directionToPlane * planeNormal;
+//	
+//	// If the dot products have the same sign then the raycast is intersecting the plane. So, to check that easily I multiply the results and check the sign; if
+//	// it's positive, the ray intersects the plane, so we can look for the contact point
+//	if(raycastNormalProduct * directionToPlaneNormalProduct > 0)
+//	{
+//		/* Consider the ray as a line, with line equation r(t) = p0 + p1 * T where p0 is the starting point of the ray and p1 the ending point. To find the
+//		 * contact point on the plane, we have to find the right T and solve the equation. 
+//		 * Now consider a point q in the plane and the plane's normal n. For a point x to be on the plane this has to be true: n * (q - x) = 0 where the "*" 
+//		 * is the dot product. This has to be true because all points in the plane have to be perpendicular to n, so if we take from the point q that we
+//		 * know belongs to the plane and a random point x and take the vector that goes from one to the other, this vector has to be perpendicular to n for
+//		 * x to be on the plane; so the dot product has to be zero.
+//		 * Now, from that equation we need to substitute the "x" with the ray's equation:
+//		 * n * (q - p0 - p1 * T) = 0 --> n * (q - p0) - n * p1 * T = 0 --> n * (q - p0) = n * p1 * T --> n * (q - p0) / (p1 * n) = T 
+//		 * This is the equation we need to solve to get the right T; we have all the ingredients */
+//		var T = planeNormal * (planePoint - raycastOrigin) / (planeNormal * raycastEnd);
+//		
+//		// Now that we have T, let's solve the ray's equation and we've got our point
+//		pointInPlane = raycastOrigin + (raycastEnd * T);
+//	}
+//	
+//	return pointInPlane;
 }
 
 /*
