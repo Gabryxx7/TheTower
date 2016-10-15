@@ -501,7 +501,6 @@ function LevelMenu::Render()
 				seaShader.Stop();				
 			}
        		text1.Draw();	
-			mElevatorWall.Draw(VR_NO_CULLING);
 			mMenuRoom.Draw();
 	   		mMenuRoomHolder.Draw(VR_NO_CULLING);
 			
@@ -521,6 +520,7 @@ function LevelMenu::Render()
 		}
 		
 		levelPreviewFrame.Draw();
+		mElevatorWall.Draw(VR_NO_CULLING);
 			
 		break;
 	}
