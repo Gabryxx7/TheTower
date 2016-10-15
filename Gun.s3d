@@ -249,7 +249,7 @@ function Gun::UpdateGun(){
 		if(!mAnimator.HaveTransition(mOldObj,2)){
 			mIsSwitching = false;
 			mGunObj.SetScale(0,0,0);
-			mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], 0.25, false);
+			mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], mSwitchGunTime, false);
 		}
 	}
 	
@@ -436,9 +436,9 @@ function Gun::EnablePower(isPowerEnabled){
 
 function Gun::SwitchGunAnimation(){
 	mIsSwitching = true;
-	mSwitchGunTime = GetTime();
+	mSwitchGunTime = 0.15;
 	mOldObj = CvmObj(mGunMesh);
 	mOldObj.SetPosition(mGunObj.GetPosition());
 	mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
-	mAnimator.CreateScalingTransition(mOldObj, [1,1,1], [0,0,0], 0.25, false);
+	mAnimator.CreateScalingTransition(mOldObj, [1,1,1], [0,0,0], mSwitchGunTime, false);
 }
