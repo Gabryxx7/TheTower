@@ -58,6 +58,7 @@ class Level6
 	var mEnemyLaserMesh;
 	
 	var mTargets;
+	var mBossStageMeshes;
 	var mAnimatingTargets;
 	var mCurrentStage;
 	
@@ -102,6 +103,7 @@ class Level6
 	
 	var mTimeBeforeReset;
 	var mLostTime;
+	var mLastCounter;
 	
 	// Private functions
 	HandleGuns();
@@ -109,6 +111,7 @@ class Level6
 	CheckPickupGuns();
 	UpdateLasers(targets);
 	UpdateEnemies(targets);
+	UpdateStageStatus();
 	CounterKeyboardTesting();
 	UpdateCounter(num, toRandomPos);
 	
@@ -124,12 +127,13 @@ class Level6
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
-	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);	
 	
+	CreateMeshesBossStage();
 	
 	CreateTargetsStage0(numTargets);
 	CreateTargetsStage1(numTargets);
-	CreateTargetsBossStage(numTargets);
+	CreateTargetsBossStage();
 	DrawHUD(eye);
 	GenerateEnemies();
 };
@@ -280,6 +284,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mEnemySpeed = 5.0;
 	mEnemyLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
 	
+	CreateMeshesBossStage();
 	GenerateEnemies();
 	
 	mCameraHit = false;
@@ -310,6 +315,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mAnimatingTargets = {};
 	mTimeBeforeReset = 2000;
 	mLostTime = -1;
+	mLastCounter = 0;
 }
 
 
@@ -321,9 +327,12 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	foreach(var light in lights)
 		light.Disable();
 		
+//	mLight0Diffuse = [1, 1, 1];
+//	mLight1Diffuse = [0.612865, 0.0750434, 1.08279];
+//	mLight2Diffuse = [0.172785, 1.00443, 0.488585];
 	mLight0Diffuse = [1, 1, 1];
-	mLight1Diffuse = [0.612865, 0.0750434, 1.08279];
-	mLight2Diffuse = [0.172785, 1.00443, 0.488585];
+	mLight1Diffuse = [1, 1, 1];
+	mLight2Diffuse = [1, 1, 1];
 	
 	mLight0 = lights[0];
 	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
@@ -575,19 +584,46 @@ function Level6::UpdateLogic(dt)
 		}
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{    		
-			if(mLostTime > 0 && GetTIme() - mLostTime > mTimeBeforeReset){
-				GenerateEnemies();
-				mLostTime = -1;
-			}
-			
+		{
+			if(mAnimator.HaveTransition(GL_LIGHT0, 5))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT0, 5);
+				
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+				
+			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+				
 			HandleGuns();   
 			UpdateWallHoles();
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
-    		UpdateEnemies(mTargets[0]);
-    		
-    		if(mApplyPostProcessing)
+			
+			if(mLostTime > 0){
+					
+				if(GetTime() - mLostTime > mTimeBeforeReset/mLastCounter){
+					--mCounter;
+					UpdateCounter(mCounter, false);
+					mLostTime = GetTime();
+										
+					if(mCounter <= 0){
+						mLostTime = -1;	
+						GenerateEnemies();
+						foreach(var target in mTargets[0])
+							target.Create();
+						
+						mAnimator.CreateLightColorTransition(GL_LIGHT0, [1,0,0], mLight0Diffuse, mTimeBeforeReset/1000, 2);
+						mAnimator.CreateLightColorTransition(GL_LIGHT1, [1,0,0], mLight1Diffuse, mTimeBeforeReset/1000, 2);
+						mAnimator.CreateLightColorTransition(GL_LIGHT2, [1,0,0], mLight2Diffuse, mTimeBeforeReset/1000, 2);
+					}								
+				}
+			}		
+		 	else{
+    			UpdateEnemies(mTargets[0]);    			
+		 		UpdateStageStatus();		
+			}
+			
+			if(mApplyPostProcessing)
     		{
     			if(GetTime() - mPostProcessingBlurTimer > 0.1)
     			{
@@ -598,31 +634,6 @@ function Level6::UpdateLogic(dt)
 		    			mApplyPostProcessing = false;
     			}
     		}    		
-						
-		 	if(len(mTargets[0]) < 1){
-    			mCurrentStage++;
-    			adel(mTargets, 0);
-    			if(len(mTargets) <= 0){
-    				outputln("ALL TARGETS KILLED");
-    				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-					
-					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
-					foreach(var gun in mGuns){
-						gun.Destroy();
-					}
-					if(mIsVrON || mDebugVrOn){
-						mControllersArray[0].GetObj().SetScale([0,0,0]);
-						mControllersArray[1].GetObj().SetScale([0,0,0]);					
-					}
-    				mLevelStatus = STATUS_LEVEL_ENDING;
-				}
-				else{
-					foreach(var target in mTargets[0])
-						target.Create();
-				}
-			}
 			break;
 		}
 		// Case where the level is ending: the only thing missing is the player inside the elevator
@@ -774,7 +785,7 @@ function Level6::UpdateCounter(num, toRandomPos){
 			objs[i].SetRotation(0,0,0,1);
 			if(toRandomPos){
 				var randomPos = mCounterRandomMeshes[j].GenerateRandomPositions(mCounterBox, mCounterPositions[len(mCounterRandomMeshes)-j-1]); 
-				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.2, false, 1);
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.1, false, 1);
 			}else
 				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), finalPos[i], 0.2, false, 1);
 		}
@@ -872,14 +883,14 @@ function Level6::CreateTargetsStage1(numTargets){
 }
 
 
-function Level6::CreateTargetsBossStage(numTargets){
-	var targets = {};
+function Level6::CreateMeshesBossStage(){
+	mBossStageMeshes = {};
 //	var cubeSizes = 6*SCALE_FACTOR;
 //	var bossMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-	for(var i = 0; i < numTargets; i++){	
+	for(var i = 0; i < 4; i++){	
 		var chosenMesh;
 		var color;
-		switch(i%numTargets){
+		switch(i){
 			case 0:{
 				chosenMesh = CVmNewMesh("Enemies/S1.AAM");
 				chosenMesh.Scale(1.1, 1.1, 1.1);
@@ -911,10 +922,23 @@ function Level6::CreateTargetsBossStage(numTargets){
 		chosenMesh.ShaderSetParameter(0,"alpha", 0, 1.0);
 		chosenMesh.ShaderSetParameter(0,"outlinecolor", 0, [0,0,0]);
 		chosenMesh.ShaderActivate(true);
-		aadd(targets, Target(CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));		
+//		aadd(targetsMeshes, Target(CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));	
+		aadd(mBossStageMeshes, chosenMesh);		
 	}
 	
-	return targets;
+	return mBossStageMeshes;
+}
+
+
+function Level6::CreateTargetsBossStage(){
+	var targets = {};
+	foreach(var mesh in mBossStageMeshes){		
+		var color = [0,0,0];
+		mesh.ShaderGetUniformValue(0, 0, "diffuse", &color, null);
+		aadd(targets, Target(CVmObj(mesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));
+	}
+	
+	return targets;	
 }
 
 function Level6::DrawHUD(eye){
@@ -972,7 +996,7 @@ function Level6::DrawHUD(eye){
 function Level6::GenerateEnemies(){
 	mTargets = {};
 	aadd(mTargets, CreateTargetsStage0(2));
-	aadd(mTargets, CreateTargetsBossStage(4));
+	aadd(mTargets, CreateTargetsBossStage());
 	aadd(mTargets, CreateTargetsStage1(10));	
 }
 
@@ -1223,14 +1247,17 @@ function Level6::UpdateLasers(targets){
 				
 				if(mLife <= 0){
 					mLife = mDefaultLife;
-					mCounter = 0;
-					UpdateCounter(mCounter, true);
 					
 					foreach(var target in mTargets[0]){
 						target.Kill();
 						aadd(mAnimatingTargets, target);
 					}
+					mLastCounter = mCounter;
 					mLostTime = GetTime();
+					
+					mAnimator.CreateLightColorTransition(GL_LIGHT0, mLight0Diffuse, [1,0,0], mTimeBeforeReset/1000, 2);
+					mAnimator.CreateLightColorTransition(GL_LIGHT1, mLight1Diffuse, [1,0,0], mTimeBeforeReset/1000, 2);
+					mAnimator.CreateLightColorTransition(GL_LIGHT2, mLight2Diffuse, [1,0,0], mTimeBeforeReset/1000, 2);
 				}
 				mCameraHudLife.Load(str(mLife));
 			}    				
@@ -1278,4 +1305,32 @@ function Level6::UpdateEnemies(targets){
 		if(mAnimatingTargets[i].IsDead())
 			adel(mAnimatingTargets, i);
 	}
+}
+
+
+function Level6::UpdateStageStatus(){
+	if(len(mTargets[0]) < 1){
+		mCurrentStage++;
+		adel(mTargets, 0);
+		if(len(mTargets) <= 0){
+			outputln("ALL TARGETS KILLED");
+			var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+			var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+			
+			mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+			foreach(var gun in mGuns){
+				gun.Destroy();
+			}
+			if(mIsVrON || mDebugVrOn){
+				mControllersArray[0].GetObj().SetScale([0,0,0]);
+				mControllersArray[1].GetObj().SetScale([0,0,0]);					
+			}
+			mLevelStatus = STATUS_LEVEL_ENDING;
+		}
+		else{
+			foreach(var target in mTargets[0])
+				target.Create();
+		}
+	}	
 }
