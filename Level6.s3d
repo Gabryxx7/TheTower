@@ -93,10 +93,14 @@ class Level6
 	
 	var mCameraHudLife;
 	var mLife;
+	var mDefaultLife;
 	var mGunsEventTriggers;
 	var mPowerSphereRadius;
 	var mIsCameraInsideTrigger;
 	var mIsControllerInsideTrigger;
+	
+	var mTimeBeforeReset;
+	var mLostTime;
 	
 	// Private functions
 	HandleGuns();
@@ -132,7 +136,7 @@ class Level6
 function Level6::Level6(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;
-	mDebugVrOn = false;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -287,7 +291,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	txt.SetColor(1,1,0);
 	
 	mCameraHudLife = CvmText();
-	mLife = 100;
+	mDefaultLife = 2;
+	mLife = mDefaultLife;
 	mCameraHudLife.Load(str(mLife));
 	
 	var obj1 = CvmObj();
@@ -301,6 +306,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHudObj.SetScale(0.07, 0.1, 0.0);
 	
 	mAnimatingTargets = {};
+	mTimeBeforeReset = 2000;
+	mLostTime = -1;
 }
 
 
@@ -566,6 +573,11 @@ function Level6::UpdateLogic(dt)
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
 		{    		
+			if(mLostTime > 0 && GetTIme() - mLostTime > mTimeBeforeReset){
+				GenerateEnemies();
+				mLostTime = -1;
+			}
+			
 			HandleGuns();   
 			UpdateWallHoles();
 			CheckPickupGuns();	
@@ -964,9 +976,9 @@ function Level6::DrawHUD(eye){
 
 function Level6::GenerateEnemies(){
 	mTargets = {};
-	aadd(mTargets, CreateTargetsStage0(2));
-//	aadd(mTargets, CreateTargetsBossStage(4));
-//	aadd(mTargets, CreateTargetsStage1(10));	
+//	aadd(mTargets, CreateTargetsStage0(2));
+	aadd(mTargets, CreateTargetsBossStage(4));
+	aadd(mTargets, CreateTargetsStage1(10));	
 }
 
 
@@ -1194,7 +1206,7 @@ function Level6::UpdateLasers(targets){
 				mPostProcessingBlurShaderPasses = 0;
 				
 				if(mLife <= 0){
-					mLife = 100;
+					mLife = mDefaultLife;
 					mCounter = 0;
 					UpdateCounter(mCounter, true);
 					
@@ -1202,8 +1214,7 @@ function Level6::UpdateLasers(targets){
 						target.Kill();
 						aadd(mAnimatingTargets, target);
 					}
-					
-					GenerateEnemies();
+					mLostTime = GetTime();
 				}
 				mCameraHudLife.Load(str(mLife));
 			}    				
