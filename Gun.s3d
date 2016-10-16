@@ -272,7 +272,7 @@ function Gun::UpdateGun(){
 	if(mIsSwitching){
 		mOldObj.SetPosition(mGunObj.GetPosition());
 		mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
-		if(!mAnimator.HaveTransition(mOldObj,2)){
+		if(mOldObj.GetScale() == [0,0,0]){
 			mIsSwitching = false;
 			mGunObj.SetScale(0,0,0);
 			mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], mSwitchGunTime, false);

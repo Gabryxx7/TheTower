@@ -132,7 +132,7 @@ class Level6
 function Level6::Level6(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;
-	mDebugVrOn = true;
+	mDebugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -157,7 +157,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mPostProcessingBlurShaderPasses = 1;
 	mPostProcessingBlurTimer = 0;
 		
-	mControllersBeingUsedIndex = {0, 0};	
+	mControllersBeingUsedIndex = {};	
 	mControllersArray = {};	
 	
 	mGunsEventTriggers = {};
@@ -178,6 +178,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mGunsEventTriggers[2][0].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
 	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
 	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
+	mGunsEventTriggers[4][0].SetPosition([0, offy, -mMainRoom.GetRoomWidth()/2+size] + mTranslateFactor);
 	
 	var mLaserLength = 1.5;
 	var mLaserWidth = 0.035;
@@ -195,9 +197,13 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletSpeed = 25;
 	aadd(mGuns, Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
 	aadd(mGuns, Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));	
+//	aadd(mGuns, Gun("Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000));
 //	aadd(mGuns, Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
-//	aadd(mGuns, Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));	
-	
+//	aadd(mGuns, Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
+
+	foreach(var gun in mGuns){
+		aadd(mControllersBeingUsedIndex, 0);
+	}		
 	
 //	var gun1 = Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
 	var gun1 = Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
@@ -219,6 +225,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	gun1 = Gun("Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4000);
 	gun1.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition(), 0, [1,0,0]);
 	aadd(mGunsEventTriggers[3], gun1);	
+	
+	gun1 = CvmObj(CvmNewMesh("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam"));
+	gun1.SetPosition(mGunsEventTriggers[4][0].GetPosition());
+	mAnimator.CreateRotatingTransition(gun1, 0, 360, [0,1,0], 2, true, false);
+	aadd(mGunsEventTriggers[4], gun1);	
 	
 	if(mIsVRon)
 	{
@@ -481,10 +492,11 @@ function Level6::UpdateLogic(dt)
 		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
 	}
 	else if(!mIsVrOn && !mDebugVrOn){
-		mGuns[0].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
-		mGuns[1].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
-		mGuns[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
-		mGuns[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [0.5*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
+		for(var i = 0; i < len(mGuns); i++){
+			mGuns[i].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+			mGuns[i].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*(i-len(mGuns)/2)*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
+			
+		}
 	}
 	
 	mCameraHitBoxObj.SetPosition(cameraPosition-[0,0.1*SCALE_FACTOR,0]);
@@ -968,22 +980,18 @@ function Level6::HandleGuns()
 		mGuns[0].Destroy();
 		mControllersArray[0].GetObj().SetScale([0,0,0]);
 	}	
+	
 	if(KeyPressed("x")){		
 		mGuns[1].Destroy();
 		mControllersArray[1].GetObj().SetScale([0,0,0]);
 	}	
-	
-	for(var i = 0; i < len(mGuns); i++){
-		if(mGuns[i].IsDestroyed() && mControllersArray[i].GetObj().GetScale() == [0,0,0]){
-			mAnimator.CreateScalingTransition(mControllersArray[i].GetObj(), [0,0,0], [1,1,1], 0.25, false);					
-		}
-	}
 				
 	// Now I check if the player is drawing; I first check if he pressed a button
 	var gunsBullets = {};
 	for(var i = 0; i < len(mGuns); i++){
 		var gun = mGuns[i];
 		gun.UpdateGun();
+		
 		if(!gun.IsDestroyed()){
 			var isPressing = (mIsVrOn || mDebugVrOn) ? mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex()) : mInputManager.IsPressingPrimaryButton();
 						
@@ -1001,6 +1009,10 @@ function Level6::HandleGuns()
 			else if(mControllersBeingUsedIndex[i] != 0){
 				mControllersBeingUsedIndex[i] = 0;
 			}		
+		}
+		else if(gun.IsDestroyed() && (mDebugVrOn || mIsVrON)){
+			if(mControllersArray[i].GetObj().GetScale() == [0,0,0])
+				mAnimator.CreateScalingTransition(mControllersArray[i].GetObj(), [0.01, 0.01, 0.01], [1,1,1], 0.25, false);					
 		}
 	}
 	
@@ -1034,16 +1046,24 @@ function Level6::CheckPickupGuns(){
 						isControllerInsideOneTrigger[i] = true;								
 						if(!mIsControllerInsideTrigger[i]){
 							mIsControllerInsideTrigger[i] = true;
-							if(mGuns[i].IsDestroyed()){
-								outputln("RECREATE");
-								mGuns[i].Recreate();
-								mGuns[i].SwitchGunAnimation(mControllersArray[i].GetObj());	
-							}else{			
-								outputln("SWITCH");		
-								mGuns[i].SwitchGunAnimation();								
+							if(trigger[1].__GetName() == "GUN"){
+								if(mGuns[i].IsDestroyed()){
+									mGuns[i].Recreate();
+									mGuns[i].SwitchGunAnimation(mControllersArray[i].GetObj());	
+								}else{
+									mGuns[i].SwitchGunAnimation();								
+								}
+								mGuns[i].Copy(trigger[1]);
+								mGuns[i].LinkToController(controller);	
 							}
-							mGuns[i].Copy(trigger[1]);
-							mGuns[i].LinkToController(controller);				
+							else{
+								if(!mGuns[i].IsDestroyed()){
+									mGuns[i].Destroy();
+									if(mIsVrON || mDebugVrOn){
+										mControllersArray[i].GetObj().SetScale([0,0,0]);				
+									}								
+								}								
+							}	
 						}							
 					}
 				}
@@ -1073,11 +1093,17 @@ function Level6::CheckPickupGuns(){
 				if(distance <= mPowerSphereRadius*1.8){
 					isInside = true;								
 					if(!mIsCameraInsideTrigger){	
-						foreach(var gun in mGuns){
-							gun.SwitchGunAnimation();	
-							gun.Copy(trigger[1]);
-							
-						}	
+						if(trigger[1].__GetName() == "GUN"){
+							foreach(var gun in mGuns){
+								gun.SwitchGunAnimation();	
+								gun.Copy(trigger[1]);							
+							}							
+						}
+						else{
+							foreach(var gun in mGuns){
+								gun.Destroy();								
+							}						
+						}
 					}							
 				}
 			}
@@ -1089,8 +1115,7 @@ function Level6::CheckPickupGuns(){
 			}
 		}		
 					
-		if(!isInside)
-			mIsCameraInsideTrigger = false;
+		mIsCameraInsideTrigger = isInside;
 	}
 }
 
