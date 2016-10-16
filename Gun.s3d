@@ -35,6 +35,7 @@ class Gun{
 	var mSwitchGunTime;
 	
 	var mColorShader;
+	var mIsDestroyed;
 	
 	IsShooting();
 	UpdateGun();
@@ -52,7 +53,10 @@ class Gun{
 	Copy(otherGun);
 	SetACtionAvailable(isAvailable);
 	EnablePower(isPowerEnabled);
-	SwitchGunAnimation();
+	SwitchGunAnimation(oldObj);
+	Destroy();
+	IsDestroyed();
+	Recreate();
 	
 	GetMeshName();
 	GetMesh();
@@ -73,36 +77,58 @@ class Gun{
 };
 
 function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId){
-	mMeshName = meshName;
-	mGunMesh = CvmNewMesh(mMeshName);
-	mGunObj= CvmObj(mGunMesh);
-	mOldObj = CvmObj(mGunMesh);
-	mShootingDelayOrig = shootingDelay;
-	mShootingDelay = mShootingDelayOrig;
-	mRecoilDepth = recoilDepth;
-	mBulletMesh = bulletMesh;
-	mBulletSpeed = bulletSpeed;
-	mBulletMaxDistance = bulletMaxDistance;
-	mBulletMaxLife = bulletMaxLife;
-	mShootType = shootType;
-	mSingleShot = singleShot;
 	mDelayAnimFactor = 350;
-	mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
-	mAnimator = animator;
-	mAnimationId = animationId;
+	mSwitchGunTime = 0.15;	
+	mColorIndex = 0;	
 	mLastShotTime = GetTime();
-	mBulletPower = bulletPower;
 	mIsVive = false;
 	mISActionAvailable = false;
 	mIsPowerEnabled = false;
 	mIsSwitching = false;
+	mIsShooting = false;	
+	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");	
+	mIsDestroyed = false;
 	
-	mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};
-	mColorIndex = 0;
-	
-	mIsShooting = false;
-	
-	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");
+	if(len(meshName) > 1){
+		mMeshName = meshName;
+		mGunMesh = CvmNewMesh(mMeshName);
+		mGunObj= CvmObj(mGunMesh);
+		mOldObj = CvmObj(mGunMesh);
+		mShootingDelayOrig = shootingDelay;
+		mShootingDelay = mShootingDelayOrig;
+		mRecoilDepth = recoilDepth;
+		mBulletMesh = bulletMesh;
+		mBulletSpeed = bulletSpeed;
+		mBulletMaxDistance = bulletMaxDistance;
+		mBulletMaxLife = bulletMaxLife;
+		mShootType = shootType;
+		mSingleShot = singleShot;
+		mShootAnimationTime = mShootingDelay/mDelayAnimFactor;
+		mAnimationId = animationId;
+		mAnimator = animator;
+		mBulletPower = bulletPower;			
+		mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};	
+	}
+	else{
+		mMeshName = "";
+		mGunMesh = null;
+		mGunObj= null;
+		mOldObj = null;
+		mShootingDelayOrig = 0;
+		mShootingDelay = 0;
+		mRecoilDepth = 0;
+		mBulletMesh = null;
+		mBulletSpeed = 0;
+		mBulletMaxDistance = 0;
+		mBulletMaxLife = 0;
+		mShootType = 0;
+		mSingleShot = false;
+		mShootAnimationTime = 0;
+		mAnimationId = -1;
+		mAnimator = null;
+		mBulletPower = 0;			
+		mBulletColors = [0,0,0];			
+	}
 }
 
 
@@ -242,7 +268,7 @@ function Gun::IsShooting(){
 	return mIsShooting;
 }
 
-function Gun::UpdateGun(){
+function Gun::UpdateGun(){	
 	if(mIsSwitching){
 		mOldObj.SetPosition(mGunObj.GetPosition());
 		mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
@@ -251,8 +277,7 @@ function Gun::UpdateGun(){
 			mGunObj.SetScale(0,0,0);
 			mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], mSwitchGunTime, false);
 		}
-	}
-	
+	}	
 	
 	if(mIsVive){
 		mGunObj.SetRotationMatrix(mViveController.GetRotationMatrix());
@@ -296,6 +321,7 @@ function Gun::Draw(){
 		objToDraw.SetScale(scale + [0.02, 0.02, 0.02]);
 		
 		mColorShader.Start();
+			mColorShader.SetParameter("alpha", 1.0);
 			mColorShader.SetParameter("outlinecolor", [1,1,0]);
 			mColorShader.SetParameter("outline", 0);
 			objToDraw.Draw();
@@ -364,6 +390,7 @@ function Gun::Copy(otherGun){
 	mBulletColors = otherGun.GetBUlletCOlors();
 	mColorIndex = 0;	
 	mIsShooting = false;
+	mIsDestroyed = false;
 }
 
 function Gun::GetMeshName(){
@@ -434,11 +461,23 @@ function Gun::EnablePower(isPowerEnabled){
 	mIsPowerEnabled = isPowerEnabled;
 }
 
-function Gun::SwitchGunAnimation(){
+function Gun::SwitchGunAnimation(oldObj){
 	mIsSwitching = true;
-	mSwitchGunTime = 0.15;
-	mOldObj = CvmObj(mGunMesh);
+	mOldObj = oldObj == Void ? CvmObj(mGunMesh) : oldObj;
 	mOldObj.SetPosition(mGunObj.GetPosition());
 	mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
 	mAnimator.CreateScalingTransition(mOldObj, [1,1,1], [0,0,0], mSwitchGunTime, false);
+}
+
+function Gun::Destroy(){
+	mIsDestroyed = true;
+	mAnimator.CreateScalingTransition(mGunObj, [1,1,1], [0,0,0], 0.25, false);	
+}
+
+function Gun::IsDestroyed(){
+	return (mIsDestroyed && mGunObj.GetScale() == [0,0,0]);
+}
+
+function Gun::Recreate(){
+	mIsDestroyed = false;
 }
