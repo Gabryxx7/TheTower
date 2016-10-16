@@ -314,7 +314,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHudObj.SetScale(0.07, 0.1, 0.0);
 	
 	mAnimatingTargets = {};
-	mTimeBeforeReset = 2000;
+	mTimeBeforeReset = 3000;
 	mLostTime = -1;
 	mLastCounter = 0;
 	mLightColorTransitionId = 8957;
@@ -333,8 +333,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 //	mLight1Diffuse = [0.612865, 0.0750434, 1.08279];
 //	mLight2Diffuse = [0.172785, 1.00443, 0.488585];
 	mLight0Diffuse = [1, 1, 1];
-	mLight1Diffuse = [1, 1, 1];
-	mLight2Diffuse = [1, 1, 1];
+	mLight1Diffuse = [1.02546, 0.509065, 0.903289];
+	mLight2Diffuse = [0.0861419, 0.488434, 1.27123];
 	
 	mLight0 = lights[0];
 	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
@@ -592,19 +592,19 @@ function Level6::UpdateLogic(dt)
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
 			
-			if(mLostTime > 0){
-				if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
-					mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
-					
-				if(mAnimator.HaveTransition(mLightColorTransitionId+1, 6))
-					mLight1Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+1, 6);
-					
-				if(mAnimator.HaveTransition(mLightColorTransitionId+2, 6))
-					mLight2Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+2, 6);
-					
-				if(GetTime() - mLostTime > mTimeBeforeReset/mLastCounter){						
+			if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
+				mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
+				
+			if(mAnimator.HaveTransition(mLightColorTransitionId+1, 6))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+1, 6);
+				
+			if(mAnimator.HaveTransition(mLightColorTransitionId+2, 6))
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+2, 6);
+				
+			if(mLostTime > 0){					
+				if(GetTime() - mLostTime > mTimeBeforeReset/mLastCounter){	
 					--mCounter;
-					UpdateCounter(mCounter, false);
+					UpdateCounter(mCounter, true);
 					mLostTime = GetTime();
 										
 					if(mCounter <= 0){
@@ -835,15 +835,15 @@ function Level6::CreateTargetsStage0(numTargets){
 		switch(Rand(2)){
 			case 0:{
 				chosenMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
-				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
 				break;				
 			}case 1:{
 				chosenMesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
-				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
 				break;				
 			}case 2:{
 				chosenMesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes, 1);
-				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
 				break;				
 			}
 		}
@@ -992,9 +992,9 @@ function Level6::DrawHUD(eye){
 
 function Level6::GenerateEnemies(){
 	mTargets = {};
-	aadd(mTargets, CreateTargetsStage0(2));
+	aadd(mTargets, CreateTargetsStage0(10));
 	aadd(mTargets, CreateTargetsBossStage());
-	aadd(mTargets, CreateTargetsStage1(10));	
+	aadd(mTargets, CreateTargetsStage1(6));	
 }
 
 
