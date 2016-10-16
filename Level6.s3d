@@ -90,6 +90,7 @@ class Level6
 	var mCameraHudColorAnimId;
 	var mCameraHitBoxObj;
 	var mCameraHitBoxSize;
+	var mCameraHitBoxHeight;
 	
 	var mCameraHudLife;
 	var mLife;
@@ -280,7 +281,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHit = false;
 	mCameraHudColorAnimId = 9876;
 	mCameraHitBoxSize = 0.45*SCALE_FACTOR;
-	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxSize/2, -mCameraHitBoxSize/2], [mCameraHitBoxSize/2, mCameraHitBoxSize/2, mCameraHitBoxSize/2]));	
+	mCameraHitBoxHeight = 4.0 * SCALE_FACTOR;
+	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxHeight/2, -mCameraHitBoxSize], [mCameraHitBoxSize/2, mCameraHitBoxHeight/2, mCameraHitBoxSize]));	
 	
 	var txt = CVmText();
 	txt.Load("+");
@@ -499,7 +501,8 @@ function Level6::UpdateLogic(dt)
 		}
 	}
 	
-	mCameraHitBoxObj.SetPosition(cameraPosition-[0,0.1*SCALE_FACTOR,0]);
+//	mCameraHitBoxObj.SetPosition(cameraPosition-[0,0.1*SCALE_FACTOR,0]);
+	mCameraHitBoxObj.SetPosition(cameraPosition - [0, mCameraHitBoxHeight / 4.0, 0]);
 	
 	CounterKeyboardTesting();
 	
@@ -571,14 +574,6 @@ function Level6::UpdateLogic(dt)
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
     		UpdateEnemies(mTargets[0]);
-    		
-//    		if(KeyPressed("C"))
-//    		{
-//    			mApplyPostProcessing = true;
-//    			mPostProcessingBlurShaderPasses = 9;
-//    		}
-//    		else
-//    			mApplyPostProcessing = false;
     		
     		if(mApplyPostProcessing)
     		{
@@ -965,8 +960,8 @@ function Level6::DrawHUD(eye){
 function Level6::GenerateEnemies(){
 	mTargets = {};
 	aadd(mTargets, CreateTargetsStage0(2));
-//	aadd(mTargets, CreateTargetsBossStage(4));
-//	aadd(mTargets, CreateTargetsStage1(10));	
+	aadd(mTargets, CreateTargetsBossStage(4));
+	aadd(mTargets, CreateTargetsStage1(10));	
 }
 
 
@@ -1145,10 +1140,25 @@ function Level6::UpdateLasers(targets){
 			var normal;
 			var isWall;
 			
+			// I have to find out the direction of the bullet; I do so considering another point of the bullet and subtracting with the origin
 			var direction = Norm(bulletObj.GetPosition() - bulletObj.LocalToWorld([0, 0, -1]));
 			
-			var rayStart = bulletObj.GetPosition() - direction * mCamera.GetZFar();
-			var rayEnd = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+			var rayStart;
+			var rayEnd;
+			
+			// To find the intersection I consider an infinite ray along the direction of the bullet, but there is a problem: if we're intersecting
+		    // with the elevator, the ray must go in the opposite direction, otherwise it basically finds the intersection not in the wall
+		    // the bullet hit but as if it passed through the wall and hit the wall after it
+			if(mElevator.IsPointInElevator(bulletObj.GetPosition()))
+			{
+				rayStart = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+				rayEnd = bulletObj.GetPosition() - direction * mCamera.GetZFar();
+			}
+			else
+			{
+				rayStart = bulletObj.GetPosition() - direction * mCamera.GetZFar();
+				rayEnd = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+			}
 			
 			// I check the intersection with a wall, using as raycast the ray that starts at the point of the laser cone and ends
 			// at the base of the cone
@@ -1165,6 +1175,7 @@ function Level6::UpdateLasers(targets){
 				// Since the center of the box is at its feet, moving it at the coordinates of the previous point and then applying the rotation works perfectly
 				holeObj.SetPosition(contactPoint);
 				
+				// I check the normal vector in order to rotate the circle accordingly
 				if(abs(normal.x) == 1)
 					holeObj.SetRotation(90, 0, 0, 1);
 				else if(abs(normal.z) == 1)
@@ -1181,7 +1192,12 @@ function Level6::UpdateLasers(targets){
 			adel(mBulletsArray, i);
 		}
 		else if(isEnemyBullet){
-			var cameraHasBeenHit = mCameraHitBoxObj.IsCollidingBBox(bulletObj);
+//			var cameraHasBeenHit = mCameraHitBoxObj.IsCollidingBBox(bulletObj);
+			var rayStart = bulletObj.GetPosition();
+			var rayEnd = bulletObj.LocalToWorld([0, 1 * SCALE_FACTOR, 0]);
+			
+			var cameraHasBeenHit = mCameraHitBoxObj.IsColliding(rayStart, rayEnd);
+
 			if(cameraHasBeenHit){
 				outputln("CAMERA HAS BEEN HIT");
 				mCameraHit = true;
@@ -1235,7 +1251,8 @@ function Level6::UpdateEnemies(targets){
 	for(var i = 0; i < len(stageTargets); i++)
 	{    			  
 		var target = stageTargets[i];		
-		var enemyBullet = target.Shoot(cameraPosition);
+//		var enemyBullet = target.Shoot(cameraPosition);
+		var enemyBullet = target.Shoot(mCameraHitBoxObj.GetPosition());
 		if(enemyBullet != Void){
 			aadd(mBulletsArray, enemyBullet);	
 		}    			
