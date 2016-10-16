@@ -88,6 +88,11 @@ function IsObjectSelected(raycastOrigin, raycastEnd, object)
  */
 function FindIntersectionInPlane(raycastOrigin, raycastEnd, planePoint, planeNormal)
 {
+	/*
+	 * The code and the explanation for this implementation was found here: 
+	 * https://www.youtube.com/watch?v=fIu_8b2n8ZM
+	 * https://github.com/BSVino/MathForGameDevelopers/blob/line-plane-intersection/math/collision.cpp
+	 */
 	var pointInPlane = Void;
 	
 	var v = raycastEnd - raycastOrigin;
@@ -95,11 +100,16 @@ function FindIntersectionInPlane(raycastOrigin, raycastEnd, planePoint, planeNor
 
 	var k = (w * planeNormal) / (v * planeNormal);
 
+	// If k is between 0 and 1 there was an intersection, otherwise there wasn't
 	if(k >= 0 && k <= 1)
 		pointInPlane = raycastOrigin + k * v;
 
 	return pointInPlane;
 	
+	
+	/*
+	 * Below there is the old code, which I keep just in case; it assumed that there was an intersection and it found the contact point
+	 */
 //	var pointInPlane = Void;
 //	
 //	// I first need to check if the raycast intersects the plane. To do that, I first get the direction of the raycast and I normalize it. The idea is 
