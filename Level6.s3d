@@ -127,7 +127,7 @@ class Level6
 function Level6::Level6(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;
-	mDebugVrOn = true;
+	mDebugVrOn = false;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
@@ -186,7 +186,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var recoil = 0.2*SCALE_FACTOR;
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
-	var bulletSpeed = 25;
+	var bulletSpeed = 1000;
 	aadd(mGuns, Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
 	aadd(mGuns, Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));	
 //	aadd(mGuns, Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
@@ -609,18 +609,34 @@ function Level6::UpdateLogic(dt)
     			var bulletPower = mBulletsArray[i].GetPower();
     			var isEnemyBullet = mBulletsArray[i].IsEnemy();
     			
+    			// A point is valid if it's inside the room and outside the elevator
     			var isPointValid = mMainRoom.IsPointInRoom(bulletObj.GetPosition()) && !mElevator.IsPointInElevator(bulletObj.GetPosition());
     			
-    			if(!isPointValid){
-    				
+    			if(!isPointValid)
+    			{
     				var contactPoint;
     				var normal;
     				var isWall;
     				
+    				// I have to find out the direction of the bullet; I do so considering another point of the bullet and subtracting with the origin
     				var direction = Norm(bulletObj.GetPosition() - bulletObj.LocalToWorld([0, 0, -1]));
     				
-    				var rayStart = bulletObj.GetPosition() - direction * mCamera.GetZFar();
-    				var rayEnd = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+    				var rayStart;
+    				var rayEnd;
+    				    
+				    // To find the intersection I consider an infinite ray along the direction of the bullet, but there is a problem: if we're intersecting
+				    // with the elevator, the ray must go in the opposite direction, otherwise it basically finds the intersection not in the wall
+				    // the bullet hit but as if it passed through the wall and hit the wall after it
+    				if(mElevator.IsPointInElevator(bulletObj.GetPosition()))
+    				{
+    					rayStart = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+    					rayEnd = bulletObj.GetPosition() - direction * mCamera.GetZFar();
+    				}
+    				else
+    				{
+    					rayStart = bulletObj.GetPosition() - direction * mCamera.GetZFar();
+    					rayEnd = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+    				}
     				
     				// I check the intersection with a wall, using as raycast the ray that starts at the point of the laser cone and ends
     				// at the base of the cone
@@ -637,6 +653,7 @@ function Level6::UpdateLogic(dt)
 						// Since the center of the box is at its feet, moving it at the coordinates of the previous point and then applying the rotation works perfectly
 						holeObj.SetPosition(contactPoint);
 						
+						// I check the normal vector in order to rotate the circle accordingly
 						if(abs(normal.x) == 1)
 							holeObj.SetRotation(90, 0, 0, 1);
 						else if(abs(normal.z) == 1)
@@ -1210,6 +1227,6 @@ function Level6::DrawHUD(eye){
 function Level6::GenerateEnemies(){
 	mTargets = {};
 	aadd(mTargets, CreateTargetsStage0(2));
-//	aadd(mTargets, CreateTargetsBossStage(4));
-//	aadd(mTargets, CreateTargetsStage1(10));	
+	aadd(mTargets, CreateTargetsBossStage(4));
+	aadd(mTargets, CreateTargetsStage1(10));	
 }

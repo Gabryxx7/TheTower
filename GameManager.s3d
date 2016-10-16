@@ -283,7 +283,7 @@ function GameManager::GameManager(HMD)
 		 * Select if you want to start from the menu or not
 		 */
 		var testingLevel = 6;
-		var testWithMenu = true;		
+		var testWithMenu = false;		
 		
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 		
