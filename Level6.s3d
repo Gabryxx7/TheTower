@@ -104,6 +104,7 @@ class Level6
 	var mTimeBeforeReset;
 	var mLostTime;
 	var mLastCounter;
+	var mLightColorTransitionId;
 	
 	// Private functions
 	HandleGuns();
@@ -316,6 +317,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mTimeBeforeReset = 2000;
 	mLostTime = -1;
 	mLastCounter = 0;
+	mLightColorTransitionId = 8957;
 }
 
 
@@ -584,24 +586,23 @@ function Level6::UpdateLogic(dt)
 		}
 		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{
-			if(mAnimator.HaveTransition(GL_LIGHT0, 5))
-				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT0, 5);
-				
-			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
-				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
-				
-			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
-				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
-				
+		{				
 			HandleGuns();   
 			UpdateWallHoles();
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
 			
 			if(mLostTime > 0){
+				if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
+					mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
 					
-				if(GetTime() - mLostTime > mTimeBeforeReset/mLastCounter){
+				if(mAnimator.HaveTransition(mLightColorTransitionId+1, 6))
+					mLight1Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+1, 6);
+					
+				if(mAnimator.HaveTransition(mLightColorTransitionId+2, 6))
+					mLight2Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+2, 6);
+					
+				if(GetTime() - mLostTime > mTimeBeforeReset/mLastCounter){						
 					--mCounter;
 					UpdateCounter(mCounter, false);
 					mLostTime = GetTime();
@@ -611,10 +612,6 @@ function Level6::UpdateLogic(dt)
 						GenerateEnemies();
 						foreach(var target in mTargets[0])
 							target.Create();
-						
-						mAnimator.CreateLightColorTransition(GL_LIGHT0, [1,0,0], mLight0Diffuse, mTimeBeforeReset/1000, 2);
-						mAnimator.CreateLightColorTransition(GL_LIGHT1, [1,0,0], mLight1Diffuse, mTimeBeforeReset/1000, 2);
-						mAnimator.CreateLightColorTransition(GL_LIGHT2, [1,0,0], mLight2Diffuse, mTimeBeforeReset/1000, 2);
 					}								
 				}
 			}		
@@ -1252,12 +1249,12 @@ function Level6::UpdateLasers(targets){
 						target.Kill();
 						aadd(mAnimatingTargets, target);
 					}
+					mAnimator.CreateGenericTransition(mLightColorTransitionId, mLight0Diffuse, {[1,0,0], mLight0Diffuse}, mTimeBeforeReset/1000);
+					mAnimator.CreateGenericTransition(mLightColorTransitionId+1, mLight1Diffuse, {[1,0,0], mLight1Diffuse}, mTimeBeforeReset/1000);
+					mAnimator.CreateGenericTransition(mLightColorTransitionId+2, mLight2Diffuse, {[1,0,0], mLight2Diffuse}, mTimeBeforeReset/1000);
 					mLastCounter = mCounter;
 					mLostTime = GetTime();
 					
-					mAnimator.CreateLightColorTransition(GL_LIGHT0, mLight0Diffuse, [1,0,0], mTimeBeforeReset/1000, 2);
-					mAnimator.CreateLightColorTransition(GL_LIGHT1, mLight1Diffuse, [1,0,0], mTimeBeforeReset/1000, 2);
-					mAnimator.CreateLightColorTransition(GL_LIGHT2, mLight2Diffuse, [1,0,0], mTimeBeforeReset/1000, 2);
 				}
 				mCameraHudLife.Load(str(mLife));
 			}    				
