@@ -708,8 +708,6 @@ function GameManager::ApplyPostProcessing(postProcessingShader, passes, postProc
 		var currentFbo = mCurrentTmpFbo;
 		var lastFbo = mCurrentFbo;
 		
-		outputln(passes);
-		
 		// I apply the shader to the texture "passes" number of times
 		for(var i = 0; i < passes; i++)
 		{

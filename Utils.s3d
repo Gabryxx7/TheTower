@@ -108,7 +108,7 @@ function FindIntersectionInPlane(raycastOrigin, raycastEnd, planePoint, planeNor
 	
 	
 	/*
-	 * Below there is the old code, which I keep just in case; it assumed that there was an intersection and it found the contact point
+	 * Below there is the old code, which I keep just in case; it ASSUMED that there was an intersection and it found the contact point
 	 */
 //	var pointInPlane = Void;
 //	
