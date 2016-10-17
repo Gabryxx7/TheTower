@@ -884,7 +884,7 @@ function Level6::CreateTargetsStage1(numTargets){
 		// To create the star object I use a function from the "Utils" file
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
 		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
-		aadd(targets, Target(starObj, 5, 3000+(i*600), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator, "Star"));
+		aadd(targets, Target(starObj, 5, 3000+(i*600), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator, false, "Star"));
 	}
 	
 	return targets;
