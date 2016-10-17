@@ -5,6 +5,7 @@ Class Bullet{
 	var mIsEnemyBullet;
 	var mColor;
 	var mPower;
+	var mBulletId;
 	
 	GetObj();
 	GetShotTime();
@@ -14,15 +15,21 @@ Class Bullet{
 	Draw();
 	LocalToWorld(pos);
 	GetPower();
+	GetID();
 };
 
-function Bullet::Bullet(obj, shotTime, maxLife, isEnemyBullet, power, color){
+function Bullet::Bullet(obj, shotTime, maxLife, isEnemyBullet, power, color, id){
 	mObj = obj;
 	mShotTime = shotTime;
 	mMaxLife = maxLife;
 	mColor = color;
 	mIsEnemyBullet = isEnemyBullet;
 	mPower = power;
+	mBulletId = id;
+}
+
+function Bullet::GetID(){
+	return mBulletId;
 }
 
 function Bullet::GetObj(){

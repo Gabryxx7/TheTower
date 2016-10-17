@@ -36,6 +36,8 @@ class Gun{
 	
 	var mColorShader;
 	var mIsDestroyed;
+	var mBulletIdPrefix;
+	var mBulletIndex;
 	
 	IsShooting();
 	UpdateGun();
@@ -74,13 +76,14 @@ class Gun{
 	GetAnimationId();
 	GetBulletPower();	
 	GetBUlletCOlors();
+	GetIdPrefix();
 };
 
-function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId){
+function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId, bulletIdPrefix){
 	mDelayAnimFactor = 350;
 	mSwitchGunTime = 0.15;	
 	mColorIndex = 0;	
-	mLastShotTime = GetTime();
+	mLastShotTime = 0;
 	mIsVive = false;
 	mISActionAvailable = false;
 	mIsPowerEnabled = false;
@@ -88,6 +91,7 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 	mIsShooting = false;	
 	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");	
 	mIsDestroyed = false;
+	mBulletIndex = 0;		
 	
 	if(len(meshName) > 1){
 		mMeshName = meshName;
@@ -107,7 +111,8 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 		mAnimationId = animationId;
 		mAnimator = animator;
 		mBulletPower = bulletPower;			
-		mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};	
+		mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};
+		mBulletIdPrefix = bulletIdPrefix;
 	}
 	else{
 		mMeshName = "";
@@ -127,7 +132,7 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 		mAnimationId = -1;
 		mAnimator = null;
 		mBulletPower = 0;			
-		mBulletColors = [0,0,0];			
+		mBulletColors = [0,0,0];	
 	}
 }
 
@@ -256,7 +261,7 @@ function Gun::Shoot(){
 		}
 		
 		for(var i = 0; i < len(bulletsArray); i++){
-			aadd(ret, Bullet(bulletsArray[i], GetTime(), mBulletMaxLife, false, mBulletPower, mBulletColors[mColorIndex]));
+			aadd(ret, Bullet(bulletsArray[i], GetTime(), mBulletMaxLife, false, mBulletPower, mBulletColors[mColorIndex], (mBulletIdPrefix+" "+str(mBulletIndex++))));
 			mColorIndex = (mColorIndex+1)%(len(mBulletColors));
 		}	
 		
@@ -385,12 +390,17 @@ function Gun::Copy(otherGun){
 	mShootAnimationTime = otherGun.GetShootAnimationTime();
 	mAnimator = otherGun.GetAnimator();
 	mAnimationId = otherGun.GetAnimationId()+1;
-	mLastShotTime = GetTime();
+	mLastShotTime = 0;
 	mBulletPower = otherGun.GetBulletPower();	
 	mBulletColors = otherGun.GetBUlletCOlors();
+	mBulletIdPrefix = otherGun.GetIdPrefix();
 	mColorIndex = 0;	
 	mIsShooting = false;
 	mIsDestroyed = false;
+}
+
+function Gun::GetIdPrefix(){
+	return mBulletIdPrefix;
 }
 
 function Gun::GetMeshName(){
