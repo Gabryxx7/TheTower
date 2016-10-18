@@ -60,6 +60,8 @@ class Gun{
 	Recreate();
 	IsSwitching();
 	
+	GetPosition();
+	
 	GetMeshName();
 	GetMesh();
 	GetShootingDelay();
@@ -487,4 +489,8 @@ function Gun::SwitchGunAnimation(oldObj){
 
 function Gun::IsSwitching(){
 	return mIsSwitching;
+}
+
+function Gun::GetPosition(){
+	return mGunObj.GetPosition();
 }

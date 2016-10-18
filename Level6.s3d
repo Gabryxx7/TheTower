@@ -98,8 +98,7 @@ class Level6
 	var mDefaultLife;
 	var mGunsEventTriggers;
 	var mPowerSphereRadius;
-	var mIsCameraInsideTrigger;
-	var mIsControllerInsideTrigger;
+	var mIsGunInsideTrigger;
 	
 	var mTimeBeforeReset;
 	var mLostTime;
@@ -176,8 +175,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var cornerz = mMainRoom.GetRoomDepth()/2;
 	var offy = 5*SCALE_FACTOR;
 
-	mIsCameraInsideTrigger = false;
-	mIsControllerInsideTrigger = {false, false};
+	mIsGunInsideTrigger = {false, false};
 	mPowerSphereRadius = 2*SCALE_FACTOR;
 	var gunSphereMesh = CvmNewMesh(VRP_SPHERE, 30, mPowerSphereRadius, 1);
 	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
@@ -452,7 +450,10 @@ function Level6::Render()
 			
 			for(var i = 0; i < len(mGuns); i++){
 				if(mGuns[i].GetID() == "Vive" && !mGuns[i].IsSwitching()){
-					mControllersArray[i].Draw();
+					if(mIsVrOn || mDebugVrOn){
+//						outputln("DRAWING CONTROLLER");
+						mControllersArray[i].Draw();						
+					}
 				}
 				else{
 					mGuns[i].Draw();
@@ -514,8 +515,7 @@ function Level6::UpdateLogic(dt)
 	else if(!mIsVrOn && !mDebugVrOn){
 		for(var i = 0; i < len(mGuns); i++){
 			mGuns[i].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
-			mGuns[i].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*(i-len(mGuns)/2)*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);
-			
+			mGuns[i].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*(i-len(mGuns)/2)*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);			
 		}
 	}
 	
@@ -1041,9 +1041,9 @@ function Level6::HandleGuns()
 	var gunsBullets = {};
 	for(var i = 0; i < len(mGuns); i++){
 		var gun = mGuns[i];
-		gun.UpdateGun();
+			gun.UpdateGun();
 		
-		if(!gun.GetID() == "Vive"){
+		if(gun.GetID() != "Vive"){
 			var isPressing = false;
 			if(mIsVrOn || mDebugVrOn){
 				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
@@ -1083,78 +1083,47 @@ function Level6::HandleGuns()
 }
 
 function Level6::CheckPickupGuns(){
-	if(mIsVrOn || mDebugVrOn){
-		var isControllerInsideOneTrigger = {};
-		var isControllerNearOneTrigger = {};	
-		foreach(var gun in mGuns){
-			aadd(isControllerInsideOneTrigger, false);
-			aadd(isControllerNearOneTrigger, false);
-		}	
-			
-		for(var i = 0; i < len(mControllersArray); i++){
-			var controller = mControllersArray[i];
-			var gun = mGuns[i];
-			foreach(var trigger in mGunsEventTriggers){
-				var distance = Modulus(trigger[0].GetPosition()-controller.GetPosition());
-				if(distance <= mPowerSphereRadius*1.5){
-					isControllerNearOneTrigger[i] = true;
-					if(distance <= mPowerSphereRadius){
-						isControllerInsideOneTrigger[i] = true;								
-						if(!mIsControllerInsideTrigger[i]){
-							mIsControllerInsideTrigger[i] = true;
-							if(trigger[1].GetID() != gun.GetID()){
-								gun.Copy(trigger[1]);	
-								gun.SwitchGunAnimation();	
-								gun.LinkToController(controller);								
-							}
-						}							
-					}
-				}
-			}
-		}
+	var isGunInsideOneTrigger = {};
+	var isGunNearOneTrigger = {};	
+	foreach(var gun in mGuns){
+		aadd(isGunInsideOneTrigger, false);
+		aadd(isGunNearOneTrigger, false);
+	}	
 		
-		for(var i = 0; i < len(mGuns); i++){
-			if(mGuns[i].GetID() == "Vive" && (mIsVrOn || mDebugVrOn)){
-				mControllersArray[i].SetActionAvailable(isControllerNearOneTrigger[i]);
-			}
-			else{
-				mGuns[i].SetActionAvailable(isControllerNearOneTrigger[i]);
-			}
-		}
-		
-		for(var i = 0; i < len(isControllerInsideOneTrigger); i++){
-			mIsControllerInsideTrigger[i] = isControllerInsideOneTrigger[i];
-		}
-	}
-	else{
-		var isInside = false;
-		var isNear = false;
+	for(var i = 0; i < len(mGuns); i++){
+		var gun = mGuns[i];
 		foreach(var trigger in mGunsEventTriggers){
-			var distance = Modulus(trigger[0].GetPosition()-cameraPosition);
-			if(distance <= mPowerSphereRadius*2.6){				
-				isNear = true;
-				if(distance <= mPowerSphereRadius*1.8){
-					isInside = true;								
-					if(!mIsCameraInsideTrigger){	
-						mIsCameraInsideTrigger = true;
-						foreach(var gun in mGuns){	
-							if(trigger[1].GetID() != gun.GetID()){
-								gun.Copy(trigger[1]);	
-								gun.SwitchGunAnimation();								
-							}						
-						}							
+			var distance = Modulus(trigger[0].GetPosition()-gun.GetPosition());
+			if(distance <= mPowerSphereRadius*1.5){
+				isGunNearOneTrigger[i] = true;
+				if(distance <= mPowerSphereRadius){
+					isGunInsideOneTrigger[i] = true;								
+					if(!mIsGunInsideTrigger[i]){
+						mIsGunInsideTrigger[i] = true;
+						if(trigger[1].GetID() != gun.GetID()){
+							gun.Copy(trigger[1]);	
+							gun.SwitchGunAnimation();	
+							if(mIsVrOn || mDebugVrOn)
+								gun.LinkToController(mControllersArray[i]);								
+						}
 					}							
 				}
 			}
 		}
-		
-		foreach(var gun in mGuns){
-			if(gun.GetID() == "Vive"){
-				gun.SetActionAvailable(isNear);				
-			}
-		}		
-					
-		mIsCameraInsideTrigger = isInside;
+	}
+	
+	for(var i = 0; i < len(mGuns); i++){
+		if(mGuns[i].GetID() == "Vive"){
+			if(mIsVrOn || mDebugVrOn)
+				mControllersArray[i].SetActionAvailable(isGunNearOneTrigger[i]);
+		}
+		else{
+			mGuns[i].SetActionAvailable(isGunNearOneTrigger[i]);
+		}
+	}
+	
+	for(var i = 0; i < len(isGunInsideOneTrigger); i++){
+		mIsGunInsideTrigger[i] = isGunInsideOneTrigger[i];
 	}
 }
 
