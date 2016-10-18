@@ -287,8 +287,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	GenerateEnemies();
 	
 	mCameraHudColorAnimId = 9876;
-	mCameraHitBoxSize = 0.45*SCALE_FACTOR;
-	mCameraHitBoxHeight = 4.0 * SCALE_FACTOR;
+	mCameraHitBoxSize = 2.0*SCALE_FACTOR;
+	mCameraHitBoxHeight = 3.0 * SCALE_FACTOR;
 	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxHeight/2, -mCameraHitBoxSize], [mCameraHitBoxSize/2, mCameraHitBoxHeight/2, mCameraHitBoxSize]));	
 	
 	var txt = CVmText();
@@ -871,7 +871,7 @@ function Level6::CreateTargetsStage0(numTargets){
 		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
 		
 		targetObj.SetPosition([posX, posY, posZ]);
-		aadd(targets, Target(targetObj, 2, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator, bulletid));
+		aadd(targets, Target(targetObj, 2, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator, false, bulletid));
 	}
 	return targets;
 }
@@ -1015,9 +1015,9 @@ function Level6::DrawHUD(eye){
 
 function Level6::GenerateEnemies(){
 	mTargets = {};
-//	aadd(mTargets, CreateTargetsStage0(10));
+	aadd(mTargets, CreateTargetsStage0(8));
 	aadd(mTargets, CreateTargetsBossStage());
-	aadd(mTargets, CreateTargetsStage1(6));	
+	aadd(mTargets, CreateTargetsStage1(8));	
 }
 
 
