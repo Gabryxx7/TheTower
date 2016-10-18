@@ -451,7 +451,7 @@ function Level6::Render()
 			
 			
 			for(var i = 0; i < len(mGuns); i++){
-				if(mGuns[i].GetIdPrefix() == "Vive" && !mGuns[i].IsSwitching()){
+				if(mGuns[i].GetID() == "Vive" && !mGuns[i].IsSwitching()){
 					mControllersArray[i].Draw();
 				}
 				else{
@@ -1043,7 +1043,7 @@ function Level6::HandleGuns()
 		var gun = mGuns[i];
 		gun.UpdateGun();
 		
-		if(!gun.GetIdPrefix() == "Vive"){
+		if(!gun.GetID() == "Vive"){
 			var isPressing = (mIsVrOn || mDebugVrOn) ? mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex()) : mInputManager.IsPressingPrimaryButton();
 						
 			if(isPressing){
@@ -1094,7 +1094,7 @@ function Level6::CheckPickupGuns(){
 						isControllerInsideOneTrigger[i] = true;								
 						if(!mIsControllerInsideTrigger[i]){
 							mIsControllerInsideTrigger[i] = true;
-							if(trigger[1].GetIdPrefix() != gun.GetIdPrefix()){
+							if(trigger[1].GetID() != gun.GetID()){
 								gun.Copy(trigger[1]);	
 								gun.SwitchGunAnimation();	
 								gun.LinkToController(controller);								
@@ -1106,7 +1106,7 @@ function Level6::CheckPickupGuns(){
 		}
 		
 		for(var i = 0; i < len(mGuns); i++){
-			if(mGuns[i].GetIdPrefix() == "Vive" && (mIsVrOn || mDebugVrOn)){
+			if(mGuns[i].GetID() == "Vive" && (mIsVrOn || mDebugVrOn)){
 				mControllersArray[i].SetActionAvailable(isControllerNearOneTrigger[i]);
 			}
 			else{
@@ -1130,7 +1130,7 @@ function Level6::CheckPickupGuns(){
 					if(!mIsCameraInsideTrigger){	
 						mIsCameraInsideTrigger = true;
 						foreach(var gun in mGuns){	
-							if(trigger[1].GetIdPrefix() != gun.GetIdPrefix()){
+							if(trigger[1].GetID() != gun.GetID()){
 								gun.Copy(trigger[1]);	
 								gun.SwitchGunAnimation();								
 							}						
@@ -1141,7 +1141,7 @@ function Level6::CheckPickupGuns(){
 		}
 		
 		foreach(var gun in mGuns){
-			if(gun.GetIdPrefix() == "Vive"){
+			if(gun.GetID() == "Vive"){
 				gun.SetActionAvailable(isNear);				
 			}
 		}		

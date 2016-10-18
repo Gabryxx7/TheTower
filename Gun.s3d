@@ -37,7 +37,7 @@ class Gun{
 	var mSwitchGunTime;
 	
 	var mColorShader;
-	var mBulletIdPrefix;
+	var mID;
 	var mBulletIndex;
 	
 	IsShooting();
@@ -76,10 +76,10 @@ class Gun{
 	GetAnimationId();
 	GetBulletPower();	
 	GetBUlletCOlors();
-	GetIdPrefix();
+	GetID();
 };
 
-function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId, bulletIdPrefix){
+function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId, ID){
 	mDelayAnimFactor = 350;
 	mSwitchGunTime = 0.15;	
 	mColorIndex = 0;	
@@ -112,7 +112,7 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 		mAnimator = animator;
 		mBulletPower = bulletPower;			
 		mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};
-		mBulletIdPrefix = bulletIdPrefix;
+		mID = ID;
 	}
 	else{
 		mMeshName = "";
@@ -261,7 +261,7 @@ function Gun::Shoot(){
 		}
 		
 		for(var i = 0; i < len(bulletsArray); i++){
-			aadd(ret, Bullet(bulletsArray[i], GetTime(), mBulletMaxLife, false, mBulletPower, mBulletColors[mColorIndex], (mBulletIdPrefix+" "+str(mBulletIndex++))));
+			aadd(ret, Bullet(bulletsArray[i], GetTime(), mBulletMaxLife, false, mBulletPower, mBulletColors[mColorIndex], (mID+" "+str(mBulletIndex++))));
 			mColorIndex = (mColorIndex+1)%(len(mBulletColors));
 		}	
 		
@@ -361,6 +361,7 @@ function Gun::Pickup(){
 
 function Gun::LinkToController(controller){
 	mIsVive = true;
+	animationId += controller.GetIndex();
 	mViveController = controller;
 }
 
@@ -398,13 +399,13 @@ function Gun::Copy(otherGun, oldObj){
 	mLastShotTime = 0;
 	mBulletPower = otherGun.GetBulletPower();	
 	mBulletColors = otherGun.GetBUlletCOlors();
-	mBulletIdPrefix = otherGun.GetIdPrefix();
+	mID = otherGun.GetID();
 	mColorIndex = 0;	
 	mIsShooting = false;
 }
 
-function Gun::GetIdPrefix(){
-	return mBulletIdPrefix;
+function Gun::GetID(){
+	return mID;
 }
 
 function Gun::GetMeshName(){
