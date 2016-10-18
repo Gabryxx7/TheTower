@@ -31,11 +31,12 @@ class Gun{
 	var mColorIndex;
 	var mIsActionAvailable;
 	var mIsPowerEnabled;
+	
 	var mIsSwitching;
+	var mRenderOldObj;
 	var mSwitchGunTime;
 	
 	var mColorShader;
-	var mIsDestroyed;
 	var mBulletIdPrefix;
 	var mBulletIndex;
 	
@@ -52,13 +53,12 @@ class Gun{
 	LinkToController(controller);
 	UnlinkController();
 	Clone();
-	Copy(otherGun);
+	Copy(otherGun, oldObj);
 	SetACtionAvailable(isAvailable);
 	EnablePower(isPowerEnabled);
 	SwitchGunAnimation(oldObj);
-	Destroy();
-	IsDestroyed();
 	Recreate();
+	IsSwitching();
 	
 	GetMeshName();
 	GetMesh();
@@ -89,8 +89,8 @@ function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed,
 	mIsPowerEnabled = false;
 	mIsSwitching = false;
 	mIsShooting = false;	
-	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");	
-	mIsDestroyed = false;
+	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");
+	mRenderOldObj = false;
 	mBulletIndex = 0;		
 	
 	if(len(meshName) > 1){
@@ -278,9 +278,13 @@ function Gun::UpdateGun(){
 		mOldObj.SetPosition(mGunObj.GetPosition());
 		mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
 		if(mOldObj.GetScale() == [0,0,0]){
-			mIsSwitching = false;
-			mGunObj.SetScale(0,0,0);
-			mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], mSwitchGunTime, false);
+			if(mGunObj.GetScale() == [0,0,0]){
+				mRenderOldObj = false;
+				mAnimator.CreateScalingTransition(mGunObj, [0,0,0], [1,1,1], mSwitchGunTime, false);			
+			}
+			else if(mGunObj.GetScale() == [1,1,1]){
+				mIsSwitching = false;
+			}
 		}
 	}	
 	
@@ -312,7 +316,7 @@ function Gun::UpdateGun(){
 }
 
 function Gun::Draw(){
-	var objToDraw = mIsSwitching ? mOldObj : mGunObj;
+	var objToDraw = mRenderOldObj ? mOldObj : mGunObj;
 	if(mIsActionAvailable || mIsPowerEnabled){
 		var scale = objToDraw.GetScale();
 		var color = [0,0,1];
@@ -372,10 +376,11 @@ function Gun::Clone(){
 	return Gun(mMeshName, mShootingDelay, mRecoilDepth, mBulletMesh, mBulletSpeed, mBulletMaxDistance, mBulletMaxLife, mBulletColors, mBulletPower, mShootType, mSingleShot, mAnimator, mAnimationId+1);
 }
 
-function Gun::Copy(otherGun){
+function Gun::Copy(otherGun, oldObj){
 	mMeshName = otherGun.GetMeshName();
 	mGunMesh = otherGun.GetMesh();
 	mGunObj= CvmObj(mGunMesh);
+	mOldObj = oldObj == Void ? CvmObj(mGunMesh) : oldObj;
 	mShootingDelayOrig = otherGun.GetShootingDelay();
 	mShootingDelay = otherGun.GetShootingDelay();
 	mRecoilDepth = otherGun.GetRecoilDepth();
@@ -396,7 +401,6 @@ function Gun::Copy(otherGun){
 	mBulletIdPrefix = otherGun.GetIdPrefix();
 	mColorIndex = 0;	
 	mIsShooting = false;
-	mIsDestroyed = false;
 }
 
 function Gun::GetIdPrefix(){
@@ -473,21 +477,13 @@ function Gun::EnablePower(isPowerEnabled){
 
 function Gun::SwitchGunAnimation(oldObj){
 	mIsSwitching = true;
-	mOldObj = oldObj == Void ? CvmObj(mGunMesh) : oldObj;
+	mRenderOldObj = true;
 	mOldObj.SetPosition(mGunObj.GetPosition());
 	mOldObj.SetRotationMatrix(mGunObj.GetRotationMatrix());
+	mGunObj.SetScale([0,0,0]);
 	mAnimator.CreateScalingTransition(mOldObj, [1,1,1], [0,0,0], mSwitchGunTime, false);
 }
 
-function Gun::Destroy(){
-	mIsDestroyed = true;
-	mAnimator.CreateScalingTransition(mGunObj, [1,1,1], [0,0,0], 0.25, false);	
-}
-
-function Gun::IsDestroyed(){
-	return (mIsDestroyed && mGunObj.GetScale() == [0,0,0]);
-}
-
-function Gun::Recreate(){
-	mIsDestroyed = false;
+function Gun::IsSwitching(){
+	return mIsSwitching;
 }
