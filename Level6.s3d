@@ -83,6 +83,8 @@ class Level6
 	
 	var mTranslateFactor;
 		
+	var mViveControllerDummyObj;	
+		
 	var mWallsHolesObjs;
 	var mWallsHolesLife;
 	
@@ -197,6 +199,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var recSize = [0.02*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.4*SCALE_FACTOR];
 	var mLaserMeshRectangle = CVmNewMesh(VRP_BOX, 1, [-recSize.x/2, -recSize.y/2, -recSize.z/2], [recSize.x/2, recSize.y/2, recSize.z/2]);
 	mLaserMesh.Rotate(90,1,0,0);
+	
+	mViveControllerDummyObj = {CvmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam")), CvmObj(CVmNewMesh("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam"))};
 	
 	mGuns = {};
 	var shootingDelay = 100.0;
@@ -626,7 +630,7 @@ function Level6::UpdateLogic(dt)
     			UpdateEnemies(mTargets[0]);    			
 		 		UpdateStageStatus();		
 			}
-			
+						
 			if(mApplyPostProcessing)
     		{
     			if(GetTime() - mPostProcessingBlurTimer > 0.1)
@@ -1061,8 +1065,8 @@ function Level6::HandleGuns()
 			}		
 		}
 		else if(gun.IsDestroyed() && (mDebugVrOn || mIsVrON)){
-			if(mControllersArray[i].GetObj().GetScale() == [0,0,0])
-				mAnimator.CreateScalingTransition(mControllersArray[i].GetObj(), [0.01, 0.01, 0.01], [1,1,1], 0.25, false);					
+			if(mViveControllerDummyObj[i].GetScale() == [0,0,0])
+				mAnimator.CreateScalingTransition(mViveControllerDummyObj[i], [0.01, 0.01, 0.01], [1,1,1], 0.25, false);					
 		}
 	}
 	
@@ -1088,6 +1092,7 @@ function Level6::CheckPickupGuns(){
 			
 		for(var i = 0; i < len(mControllersArray); i++){
 			var controller = mControllersArray[i];
+			var gun = mGuns[i];
 			foreach(var trigger in mGunsEventTriggers){
 				var distance = Modulus(trigger[0].GetPosition()-controller.GetPosition());
 				if(distance <= mPowerSphereRadius*1.5){
@@ -1097,20 +1102,20 @@ function Level6::CheckPickupGuns(){
 						if(!mIsControllerInsideTrigger[i]){
 							mIsControllerInsideTrigger[i] = true;
 							if(trigger[1].__GetName() == "GUN"){
-								if(mGuns[i].IsDestroyed()){
-									mGuns[i].Recreate();
-									mGuns[i].SwitchGunAnimation(mControllersArray[i].GetObj());	
+								if(gun.IsDestroyed()){
+									gun.Recreate();
+									gun.SwitchGunAnimation(mViveControllerDummyObj[i]);	
 								}else{
-									mGuns[i].SwitchGunAnimation();								
+									gun.SwitchGunAnimation();								
 								}
-								mGuns[i].Copy(trigger[1]);
-								mGuns[i].LinkToController(controller);	
+								gun.Copy(trigger[1]);
+								gun.LinkToController(controller);	
 							}
 							else{
-								if(!mGuns[i].IsDestroyed()){
-									mGuns[i].Destroy();
+								if(!gun.IsDestroyed()){
+									gun.Destroy();
 									if(mIsVrON || mDebugVrOn){
-										mControllersArray[i].GetObj().SetScale([0,0,0]);				
+										mViveControllerDummyObj[i].SetScale([0,0,0]);				
 									}								
 								}								
 							}	
@@ -1303,18 +1308,19 @@ function Level6::UpdateLasers(targets){
 		}
 	}
 	
-	for(var i = 0; i < len(bulletsToRemoveIndeces); i++){
+	for(var i = 0; i < len(bulletsToRemoveIndeces) && len(mBulletsArray)>0; i++){
 		var indexToRemove = bulletsToRemoveIndeces[i];
+//		output("REMOVING index: " +str(indexToRemove-i) +" OrigIndex: " +str(indexToRemove) +" Removed: " +str(i));
+//		outputln(mBulletsArray[indexToRemove-i].GetId());
 //		output("[");
 //		foreach(var bullet in mBulletsArray)
 //			output(bullet.GetId()+", ");			
 //		outputln("]");
-//		outputln("REMOVING " + mBulletsArray[indexToRemove-i].GetId());
 		adel(mBulletsArray, indexToRemove-i);
 //		output("[");
 //		foreach(var bullet in mBulletsArray)
 //			output(bullet.GetId()+", ");			
-//		outputln("]");
+//		outputln("]\n");
 	}
 }
 

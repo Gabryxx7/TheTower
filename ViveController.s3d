@@ -270,12 +270,12 @@ function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed
 			trackpadObj.SetRotation(0,0,0,1);	
 		}
 		
-		if(isSystemPressed == 0){
-			systemButtonObj.SetPosition(systemPos - [0, systemDepth, 0]);
-		}
-		else{
-			systemButtonObj.SetPosition(systemPos);		
-		}
+//		if(isSystemPressed == 0){
+//			systemButtonObj.SetPosition(systemPos - [0, systemDepth, 0]);
+//		}
+//		else{
+//			systemButtonObj.SetPosition(systemPos);		
+//		}
 	
 	}
 }
