@@ -361,7 +361,7 @@ function Gun::Pickup(){
 
 function Gun::LinkToController(controller){
 	mIsVive = true;
-	animationId += controller.GetIndex();
+	mAnimationId += controller.GetIndex();
 	mViveController = controller;
 }
 

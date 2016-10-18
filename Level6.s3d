@@ -1044,7 +1044,15 @@ function Level6::HandleGuns()
 		gun.UpdateGun();
 		
 		if(!gun.GetID() == "Vive"){
-			var isPressing = (mIsVrOn || mDebugVrOn) ? mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex()) : mInputManager.IsPressingPrimaryButton();
+			var isPressing = false;
+			if(mIsVrOn || mDebugVrOn){
+				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
+//				isPressing = i == 0 ? KeyPressed("N") : KeyPressed("M"); 
+			}
+			else{
+				isPressing = mInputManager.IsPressingPrimaryButton();
+//				isPressing = i == 0 ? KeyPressed("N") : KeyPressed("M"); 
+			}
 						
 			if(isPressing){
 				if(gun.IsSingleShot()){
