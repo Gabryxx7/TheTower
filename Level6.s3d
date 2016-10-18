@@ -452,7 +452,6 @@ function Level6::Render()
 			
 			for(var i = 0; i < len(mGuns); i++){
 				if(mGuns[i].GetIdPrefix() == "Vive" && !mGuns[i].IsSwitching()){
-					outputln("RENDERING CONTROLLER");
 					mControllersArray[i].Draw();
 				}
 				else{
@@ -1095,9 +1094,11 @@ function Level6::CheckPickupGuns(){
 						isControllerInsideOneTrigger[i] = true;								
 						if(!mIsControllerInsideTrigger[i]){
 							mIsControllerInsideTrigger[i] = true;
-							gun.Copy(trigger[1]);	
-							gun.SwitchGunAnimation();	
-							gun.LinkToController(controller);
+							if(trigger[1].GetIdPrefix() != gun.GetIdPrefix()){
+								gun.Copy(trigger[1]);	
+								gun.SwitchGunAnimation();	
+								gun.LinkToController(controller);								
+							}
 						}							
 					}
 				}
@@ -1129,8 +1130,10 @@ function Level6::CheckPickupGuns(){
 					if(!mIsCameraInsideTrigger){	
 						mIsCameraInsideTrigger = true;
 						foreach(var gun in mGuns){	
-							gun.Copy(trigger[1]);	
-							gun.SwitchGunAnimation();						
+							if(trigger[1].GetIdPrefix() != gun.GetIdPrefix()){
+								gun.Copy(trigger[1]);	
+								gun.SwitchGunAnimation();								
+							}						
 						}							
 					}							
 				}
