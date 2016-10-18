@@ -81,7 +81,7 @@ class Gun{
 	GetID();
 };
 
-function Gun::Gun(meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId, ID){
+function Gun::Gun(ID, meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId){
 	mDelayAnimFactor = 350;
 	mSwitchGunTime = 0.15;	
 	mColorIndex = 0;	

@@ -203,8 +203,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
-	aadd(mGuns, Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 901, "Pistol"));
-	aadd(mGuns, Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 902, "Pistol"));	
+	aadd(mGuns, Gun("Pistol", "Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 901));
+	aadd(mGuns, Gun("Pistol", "Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 902));	
 //	aadd(mGuns, Gun("Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000));
 //	aadd(mGuns, Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
 //	aadd(mGuns, Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 991));
@@ -214,27 +214,27 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	}		
 	
 //	var gun1 = Gun("Weapons/V1/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
-	var gun1 = Gun("Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900, "Pistol");
+	var gun1 = Gun("Pistol", "Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
 	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[0], gun1);	
 		
 	var colors = GenerateColors(0.025);
 //	gun1 = Gun("Weapons/V1/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000);
-	gun1 = Gun("Weapons/V2/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000, "Mgun");
+	gun1 = Gun("Mgun", "Weapons/V2/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000);
 	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[1], gun1);	
 	
 //	gun1 = Gun("Weapons/V1/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000);
-	gun1 = Gun("Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000, "Cannon");
+	gun1 = Gun("Cannon", "Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000);
 	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[2], gun1);	
 	
 //	gun1 = Gun("Weapons/V1/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4000);
-	gun1 = Gun("Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4000, "Shotgun");
+	gun1 = Gun("Shotgun", "Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4000);
 	gun1.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition(), 0, [1,0,0]);
 	aadd(mGunsEventTriggers[3], gun1);	
 	
-	gun1 = Gun("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900, "Vive");
+	gun1 = Gun("Vive", "Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
 	gun1.CreatePickupPoint(mGunsEventTriggers[4][0].GetPosition(), 0, [1,0,0]);
 	mViveGun = gun1;
 	aadd(mGunsEventTriggers[4], gun1);	
@@ -1041,7 +1041,7 @@ function Level6::HandleGuns()
 	var gunsBullets = {};
 	for(var i = 0; i < len(mGuns); i++){
 		var gun = mGuns[i];
-			gun.UpdateGun();
+		gun.UpdateGun();
 		
 		if(gun.GetID() != "Vive"){
 			var isPressing = false;
