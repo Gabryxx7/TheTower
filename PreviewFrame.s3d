@@ -60,7 +60,7 @@ function PreviewFrame::PreviewFrame(animator, wallWidth, wallHeight, borderThick
 	mPreviewFrameMaterial.Ambient = [0, 0, 0];
 	mPreviewFrameMaterial.Shininess = 0.05;
 	mPreviewFrameMaterial.Specular = [0,0,0];
-	mPreviewFrameMaterial.SetTexture(CVmTexture("thetower.png"));
+	mPreviewFrameMaterial.SetTexture(CVmTexture("Textures/thetower.png"));
 	
 	glassMesh.SetMaterial(mPreviewFrameMaterial);
 	verticalBorderMesh.SetMaterial(mMaterial);

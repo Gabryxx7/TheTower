@@ -107,16 +107,16 @@ function ViveController::ViveController(controllerIndex, mesh)
 	mInvisibleShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { discard; }", true);
 	
 	if(!mUsingCustomMesh){
-		fullControllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam");
+		fullControllerMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam");
 		
-		controllerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Body/body.aam");
-		buttonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Button/button.aam");
-		ledMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Led/led.aam");
-		leftGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");
-		rightGripMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
-		systemButtonMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
-		trackpadMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
-		triggerMesh = CVmNewMesh("Vive_Controller_Mesh/Exported/Trigger/trigger.aam");	
+		controllerMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Body/body.aam");
+		buttonMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Button/button.aam");
+		ledMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Led/led.aam");
+		leftGripMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");
+		rightGripMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
+		systemButtonMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
+		trackpadMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
+		triggerMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Trigger/trigger.aam");	
 		
 		
 		mBoundingBoxControllerObj = CVmObj(fullControllerMesh);
@@ -158,7 +158,7 @@ function ViveController::ViveController(controllerIndex, mesh)
 		trackpadObj.AddChild(trackpadPointObj);
 		trackpadObj.SetPivotPoint(trackpadCenterOffset);
 		
-		trackpadPointMesh.ShaderAdd("alphaShader.glsl", 0);
+		trackpadPointMesh.ShaderAdd("Shaders/alphaShader.glsl", 0);
 		trackpadPointMesh.ShaderActivate(true);
 		trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
 		
@@ -187,7 +187,7 @@ function ViveController::ViveController(controllerIndex, mesh)
 	
 	mTipLocalCoordinates = [0, -0.38 * SCALE_FACTOR, -0.20 * SCALE_FACTOR];
 	
-//	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+//	mSilhouetteShader = CVmShaderProgram("Shaders/silhouetteShader.glsl");
 	
 	mIsActionAvailable = false;
 	

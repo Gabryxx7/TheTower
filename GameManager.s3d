@@ -26,15 +26,15 @@ global var SCALE_FACTOR = 0.2;
 #include "Gun.s3d"
 #include "ButtonsWall.s3d"
 #include "MarcelloUtils.s3d"
-#include "Level0.s3d"
-#include "LevelMenu.s3d"
-#include "Level1.s3d"
-#include "Level2.s3d"
-#include "Level3.s3d"
-#include "Level4.s3d"
-#include "Level5.s3d"
-#include "Level6.s3d"
-#include "InputManager.s3d"
+#include "Levels/Level0.s3d"
+#include "Levels/LevelMenu.s3d"
+#include "Levels/Level1.s3d"
+#include "Levels/Level2.s3d"
+#include "Levels/Level3.s3d"
+#include "Levels/Level4.s3d"
+#include "Levels/Level5.s3d"
+#include "Levels/Level6.s3d"
+#include "InputManagers/InputManager.s3d"
 
 
 /*
@@ -283,7 +283,7 @@ function GameManager::GameManager(HMD)
 		 * Select if you want to start from the menu or not
 		 */
 		var testingLevel = 6;
-		var testWithMenu = false;		
+		var testWithMenu = true;		
 		
 		mCamera.SetPosition(0, 6.0 * SCALE_FACTOR, -2.0 * SCALE_FACTOR);
 		
@@ -291,19 +291,19 @@ function GameManager::GameManager(HMD)
 
 		var levelSelectors = {};
 		if(testingLevel == 0 || testingLevel == -1)
-			aadd(levelSelectors, {"Start", CVmTexture("Level0Prev.png")});
+			aadd(levelSelectors, {"Start", CVmTexture("Textures/Level0Prev.png")});
 		if(testingLevel == 1 || testingLevel == -1)
-			aadd(levelSelectors, {"Colors", CVmTexture("Level1Prev.png")});
+			aadd(levelSelectors, {"Colors", CVmTexture("Textures/Level1Prev.png")});
 		if(testingLevel == 2 || testingLevel == -1)
-			aadd(levelSelectors, {"Ghost", CVmTexture("Level2Prev.png")});
+			aadd(levelSelectors, {"Ghost", CVmTexture("Textures/Level2Prev.png")});
 		if(testingLevel == 3 || testingLevel == -1)
-			aadd(levelSelectors, {"Chaos", CVmTexture("Level3Prev.png")});
+			aadd(levelSelectors, {"Chaos", CVmTexture("Textures/Level3Prev.png")});
 		if(testingLevel == 4 || testingLevel == -1)
-			aadd(levelSelectors, {"Timing", CVmTexture("Level4Prev.png")});
+			aadd(levelSelectors, {"Timing", CVmTexture("Textures/Level4Prev.png")});
 		if(testingLevel == 5 || testingLevel == -1)
-			aadd(levelSelectors, {"Wall", CVmTexture("Level5Prev.png")});	
+			aadd(levelSelectors, {"Wall", CVmTexture("Textures/Level5Prev.png")});	
 		if(testingLevel == 6 || testingLevel == -1)
-			aadd(levelSelectors, {"War", CVmTexture("Level6Prev.png")});
+			aadd(levelSelectors, {"War", CVmTexture("Textures/Level6Prev.png")});
 		
 		if(mLevelsPreloading){
 			if(testingLevel == 0 || testingLevel == -1)
@@ -341,13 +341,13 @@ function GameManager::GameManager(HMD)
 		mCurrentLevelNumber = 0;
 		
 		var levelSelectors = {};
-		aadd(levelSelectors, {"Start", CVmTexture("Level0Prev.png")});
-		aadd(levelSelectors, {"Colors", CVmTexture("Level1Prev.png")});
-		aadd(levelSelectors, {"Ghost", CVmTexture("Level2Prev.png")});
-		aadd(levelSelectors, {"Chaos", CVmTexture("Level3Prev.png")});
-		aadd(levelSelectors, {"Wall", CVmTexture("Level5Prev.png")});
-		aadd(levelSelectors, {"War", CVmTexture("Level6Prev.png")});
-		aadd(levelSelectors, {"Timing", CVmTexture("Level4Prev.png")});
+		aadd(levelSelectors, {"Start", CVmTexture("Textures/Level0Prev.png")});
+		aadd(levelSelectors, {"Colors", CVmTexture("Textures/Level1Prev.png")});
+		aadd(levelSelectors, {"Ghost", CVmTexture("Textures/Level2Prev.png")});
+		aadd(levelSelectors, {"Chaos", CVmTexture("Textures/Level3Prev.png")});
+		aadd(levelSelectors, {"Wall", CVmTexture("Textures/Level5Prev.png")});
+		aadd(levelSelectors, {"War", CVmTexture("Textures/Level6Prev.png")});
+		aadd(levelSelectors, {"Timing", CVmTexture("Textures/Level4Prev.png")});
 		
 		aadd(mLevels, mLevel0);
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
@@ -379,10 +379,10 @@ function GameManager::GameManager(HMD)
 	mControllerBeingUsedIndex = 0;
 	
 	// Shaders used to render the dashed line and the circle for the teleportation feature
-	mDashedLineShader = CVmShaderProgram("dashedLineShader.glsl");
-	mPositionCircleShader = CVmShaderProgram("positionCircleShader.glsl");
-	mPlayAreaTeleportBoxShader = CVmShaderProgram("playAreaTeleportBoxShader.glsl");
-	mPlayAreaBoxShader = CVmShaderProgram("playAreaBoxShader.glsl");
+	mDashedLineShader = CVmShaderProgram("Shaders/dashedLineShader.glsl");
+	mPositionCircleShader = CVmShaderProgram("Shaders/positionCircleShader.glsl");
+	mPlayAreaTeleportBoxShader = CVmShaderProgram("Shaders/playAreaTeleportBoxShader.glsl");
+	mPlayAreaBoxShader = CVmShaderProgram("Shaders/playAreaBoxShader.glsl");
 
 	
 	// Offset used for the teleportation feature rendering

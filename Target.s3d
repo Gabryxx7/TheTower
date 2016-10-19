@@ -98,8 +98,9 @@ function Target::Target(mesh, lives, shootDelay, color, hitColor, laserColor, sp
 	
 	if(mColorTransition){
 		var color2 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-		mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, color2, 3.5, true);}
+//		mAnimator.CreateToonShaderColorTransition(mObj.GetMesh(), mColor, color2, 3.5, true);
 	}
+}
 
 function Target::Draw(){
 	if(mWithBorders){

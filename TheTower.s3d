@@ -22,39 +22,37 @@ var dt = 0;
 /* Download essential files for game menus */
 function OnDownload()
 {
-	FileDownload("silhouetteShader.glsl");
-	FileDownload("toonShader.glsl");
-	FileDownload("spotShader.glsl");
-	FileDownload("antishader.glsl");
-	FileDownload("dashedLineShader.glsl");
-	FileDownload("positionCircleShader.glsl");
-	FileDownload("drawingShader.glsl");
-	FileDownload("colorModulatorShader.glsl");
-	FileDownload("provaMesh.AAM");
-	FileDownload("data.zip");
-	FileDownload("Sci-fi-thing.aam");
-	FileDownload("thetower.png");
-	FileDownload("Level0Prev.png");
-	FileDownload("Level1Prev.png");
-	FileDownload("Level2Prev.png");
-	FileDownload("Level3Prev.png");
-	FileDownload("Level4Prev.png");
+	FileDownload("Shaders/silhouetteShader.glsl");
+	FileDownload("Shaders/toonShader.glsl");
+	FileDownload("Shaders/spotShader.glsl");
+	FileDownload("Shaders/antishader.glsl");
+	FileDownload("Shaders/dashedLineShader.glsl");
+	FileDownload("Shaders/positionCircleShader.glsl");
+	FileDownload("Shaders/drawingShader.glsl");
+	FileDownload("Shaders/colorModulatorShader.glsl");
+	FileDownload("Meshes/Sci-fi-thing.aam");
+	FileDownload("Textures/thetower.png");
+	FileDownload("Textures/Level0Prev.png");
+	FileDownload("Textures/Level1Prev.png");
+	FileDownload("Textures/Level2Prev.png");
+	FileDownload("Textures/Level3Prev.png");
+	FileDownload("Textures/Level4Prev.png");
 	FileDownload("sounds/Interstellar - First Step.mp3");
 	FileDownload("sounds/Deadmau5 Ft Rob Swire - Ghosts n Stuff.mp3");
 	
 	/** VIVE MESH LOADING */	
-	FileDownload("Vive_Controller_Mesh/Exported/Body/body.aam");	
-	FileDownload("Vive_Controller_Mesh/Exported/Button/button.aam");
-	FileDownload("Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam.aam");	
-	FileDownload("Vive_Controller_Mesh/Exported/Led/led.aam");	
-	FileDownload("Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");	
-	FileDownload("Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
-	FileDownload("Vive_Controller_Mesh/Exported/Scroll_Wheel/scroll_wheel.aam");	
-	FileDownload("Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
-	FileDownload("Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
-	FileDownload("Vive_Controller_Mesh/Exported/Trackpad_Scroll_Cut/trackpad_scroll_cut.aam");
-	FileDownload("Vive_Controller_Mesh/Exported/Trackpad_touch/trackpad_touch.aam");
-	FileDownload("Vive_Controller_Mesh/Exported/Trigger/trigger.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Body/body.aam");	
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Button/button.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam.aam");	
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Led/led.aam");	
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");	
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Scroll_Wheel/scroll_wheel.aam");	
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Trackpad_Scroll_Cut/trackpad_scroll_cut.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Trackpad_touch/trackpad_touch.aam");
+	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Trigger/trigger.aam");
 }
 
 /* Init system - Start GameManager */

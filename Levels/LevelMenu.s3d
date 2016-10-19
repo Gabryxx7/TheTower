@@ -1,0 +1,1172 @@
+
+#define STATUS_LEVEL_STARTED 2
+
+class LevelMenu
+{	
+	var mDt;
+	
+	var seaShader;
+	var seaShaderEnabled;
+	var seaAmplitude;
+	var seaPosition;
+	var seaAmountx;
+	var seaAmounty;
+	var seaViewDistance;
+	var seaSpacing;
+	var seaSize;
+	var seaXPeriod;
+	var seaYPeriod;
+	var seaLevel;
+	var seaSmoothFading;
+	var seaVelocity;
+	var seaType;
+	
+	var cloudDt;
+	var cameraPosition;
+	
+	var mElevator;
+	var mElevatorCover;
+	var mElevatorCoverDoors;
+	var elevatorOpen;
+	
+	var wallThickness;
+	var mElevatorWall;
+	var mElevatorWallDoors;
+	var menuRoom_WidthFar;
+	var menuRoom_WidthSide;
+	var menuRoom_Height;
+	var menuRoom_BordersThickness ;
+	var mMenuRoomHolder;
+	
+	var mWalkWay;
+	var mWalkdistance;
+	var mWalkWaySize;
+	var walkwayStarted;
+	var walkWayTrigger;
+	
+	var mIsVRon;
+	var debugVrOn;
+	var mControllersArray;
+	
+	var mDebugControllerHidden;
+	var mDebugKeyHit;
+	
+	var levelSelectors;
+	var levelPreviewFrame;
+	var levelPreviewPlane;
+	var mSelectedLevel;
+	
+	var numberOfLevels;
+	var towerLevelHeight;
+	var towerLevelWidth;
+	var towerConnectionsHeight;
+	var towerConnectionsWidth;
+	var towerLevels;
+	var towerConnectionos;
+	var towerPosition;
+	
+	// Booleans that indicate if the level is starting or ending
+	var mEnding;
+	var mIsLevelCompleted;
+	var mEndTimer;
+	
+	var mLevelStatus;
+	
+	// Manager for user inputs
+	var mInputManager;
+	
+	// "Animator" object; used to create transitions and rotations for the objects
+	var mAnimator;
+	
+	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
+	var mSoundManager;
+	
+	// Active camera
+	var mCamera;
+	
+	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
+	var mLight0;
+	var mLight1;
+	var mLight2;
+	
+	var mLight0Position;
+	var mLight1Position;
+	var mLight2Position;
+	
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
+	
+	
+	// "Room" object that contains the whole room
+	var mMenuRoom;
+	var text1;
+	
+	// Shader to display silhouettes around object. Normally a "Room" object would to that, but the portals are a special case, and we need to manually
+	// draw the silhouettes for the portals' frames
+	var mSpotShader;
+	var mToonShader;
+	var mAlphaShader;
+			
+	var mOpenglTranslationOffset;
+	
+	// Private functions
+	FadeToBlackScreen(fadeIn);
+	DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor);
+	DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, mTopColor, mBottomColor, seaSmoothFading, speed);
+	
+	// Public functions
+	Init(lights, elevator, openglTranslationOffset);
+	Render();
+	UpdateLogic(dt);
+	IsLevelCompleted();
+	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	SetOpenglTransformOffset(mOpenglTranslationOffset);
+	GetOpenglTransformOffset();
+	SetupOpenglLights();
+	GetSelectedLevel();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+	DrawHUD();
+};
+
+
+/*
+ * Constructor. Takes as parameter the input manager of the application
+ */
+function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, elevator)
+{		
+	mElevator = elevator;
+	mIsVRon = isVRon;	
+	debugVrOn = false;
+	
+	//Ampl: 70.6002 spacing: 0 size: 285.495 xP: 0.925 yp: 0.88 level: -200 viewDist: 493 velocity: -6.2
+
+	seaShaderEnabled = false;
+	seaAmplitude = 72;
+	seaAmountx = 75;
+	seaAmounty = 75;
+	seaViewDistance = 500;
+	seaSpacing = 0.0;
+	seaSize = 286;
+	seaXPeriod = 0.925;
+	seaYPeriod = 0.925;
+	seaLevel = -200;
+	seaPosition = [0, seaLevel*SCALE_FACTOR, 0];
+	seaSmoothFading = false;
+	seaVelocity = -6.2;
+	seaType = 1;
+		
+	seaShader = CVmShaderProgram("Shaders/SeaShader.glsl");
+	mDt = 0;
+	cloudDt = 0;
+		
+	mControllersArray = {};
+		
+	if(mIsVRon)
+	{
+		aadd(mControllersArray, inputManager.GetController(1));
+		aadd(mControllersArray, inputManager.GetController(2));
+	}
+	else if(debugVrOn)
+	{
+		// If no VR is on, I create a debug controller, needed to check collisions. It will work just like a real controller, for the logic of the game I mean
+		mDebugControllerHidden = false;
+		mDebugKeyHit = false;
+		aadd(mControllersArray, ViveController(1));
+	}
+	
+	mSelectedLevel = -1;
+	
+	mToonShader = CVmShaderProgram("Shaders/toonShader.glsl");	
+	mAlphaShader = CVmShaderProgram("Shaders/colorModulatorShader.glsl");	
+	
+	mInputManager = inputManager;
+	mSoundManager = soundManager;	
+		
+	// Creating the object that will handle transitions and rotations of objects
+	mAnimator = Animator();
+	
+	// Creating the main room
+	menuRoom_WidthFar = 45 * SCALE_FACTOR;
+	menuRoom_WidthSide = 45 * SCALE_FACTOR;
+	menuRoom_Height = 19 * SCALE_FACTOR;
+	
+	menuRoom_BordersThickness =  1*SCALE_FACTOR;
+	mMenuRoom = Room(menuRoom_WidthFar, menuRoom_WidthSide, menuRoom_Height, true, 0,2, true, true, true, false, true, false, true);
+//	mMenuRoom.Rotate(-90,0,1,0);
+//	mMenuRoom.SetPosition([menuRoom_WidthSide/2,menuRoom_Height/2,0]);
+	
+	var roomMaterial = CVmMaterial();
+	roomMaterial.Ambient = [0.2, 0.2, 0.2,1];
+	roomMaterial.Diffuse = [0.1,0.1,0.1,1];
+	roomMaterial.Emission = [0.0,0.05,0.2,1];
+	roomMaterial.Shininess = 0.4;
+	roomMaterial.Specular = [0.02,0.2,0.2,1];
+	mMenuRoom.SetMaterial(roomMaterial);
+	var mMenuRoomHolderMesh = CVmNewMesh(VRP_BOX,1, [-(15*SCALE_FACTOR)/2, 100*SCALE_FACTOR, -15*SCALE_FACTOR/2], [(15*SCALE_FACTOR)/2, 0, 15*SCALE_FACTOR/2]);
+	mMenuRoomHolderMesh.SetMaterial(roomMaterial);
+	mMenuRoomHolder = CVmObj(mMenuRoomHolderMesh);
+	mMenuRoomHolder.SetPosition([0,-100*SCALE_FACTOR-0.005*SCALE_FACTOR, 0]);
+	
+	var txt = CVmText();
+	txt.Load("THE TOWER");
+	txt.SetScale(8  * SCALE_FACTOR, 8  * SCALE_FACTOR);
+	txt.SetColor(1, 1, 1);
+					
+	text1 = CVmObj();
+	text1.LinkToText(txt);
+	text1.rotate(-90,0,1,0);
+	// Adding each text to its portal room
+	text1.SetPosition(menuRoom_WidthSide/2-(0.1*SCALE_FACTOR), menuRoom_Height/3, -menuRoom_WidthFar/3-(2.5*SCALE_FACTOR));	
+	
+	towerLevelHeight = 20*SCALE_FACTOR;
+	towerLevelWidth =  55*SCALE_FACTOR;
+//	towerConnectionsHeight = towerLevelHeight * 0.6;
+	towerConnectionsHeight = mElevator.GetRoomHeight()+0.005*SCALE_FACTOR;
+	towerConnectionsWidth = towerLevelWidth * 0.70;
+	
+	towerLevels = CVmObj();
+	numberOfLevels = 27;
+	var towerMaterial = CVmMaterial();
+	towerMaterial.Ambient = [0.3, 0.3, 0.3,1];
+	towerMaterial.Diffuse = [0.5,0.5,0.5,1];
+	towerMaterial.Emission = [0.0,0.05,0.2,1];
+	towerMaterial.Shininess = 0.4;
+	towerMaterial.Specular = [0.02,0.2,0.2,1];
+	var towerRoomMesh = CVmNewMesh(VRP_BOX,1, [-towerLevelWidth/2, -towerLevelHeight/2, 0], [towerLevelWidth/2, towerLevelHeight/2, 0], towerLevelWidth);
+	towerRoomMesh.SetMaterial(towerMaterial);
+	var towerConnectionMesh = CVmNewMesh(VRP_BOX,1, [-towerConnectionsWidth/2, -towerConnectionsHeight/2, 0], [towerConnectionsWidth/2, towerConnectionsHeight/2, 0], towerConnectionsWidth);
+	towerConnectionMesh.SetMaterial(towerMaterial);
+	for(var i = 0; i < numberOfLevels; i++){
+		towerLevels.AddChild(CVmObj(towerRoomMesh), 0, (towerConnectionsHeight + towerLevelHeight)*i,0);
+		
+		if(i != numberOfLevels-1 && i != numberOfLevels/2)
+//		if(i != numberOfLevels-1)
+			towerLevels.AddChild(CVmObj(towerConnectionMesh), 0, (towerConnectionsHeight/2 + towerLevelHeight/2) +(towerConnectionsHeight + towerLevelHeight)*i - 0.005*SCALE_FACTOR, -towerLevelWidth/2 + towerConnectionsWidth/2);
+	}
+	
+	towerPosition =[-200*SCALE_FACTOR, -(towerLevelHeight+towerConnectionsHeight)*(numberOfLevels/2)-towerLevelHeight/2, towerLevelWidth/2]; 
+	towerLevels.SetPosition(towerPosition);
+//	towerLevels.SetRotation(32, 0,1,0);
+
+	mElevatorCover = CVmObj();
+	wallThickness = 0.025*SCALE_FACTOR;
+	var coverOffset = 0.005*SCALE_FACTOR;
+	
+	var elevSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), mElevator.GetRoomHeight(), 0], wallThickness);
+	var elevBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth());
+	var elevCoverBackMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], towerConnectionsWidth);
+	var elevCoverFrontMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], towerConnectionsWidth/2-mElevator.GetRoomWidth()/2);
+	var elevCoverSideMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [towerConnectionsWidth, mElevator.GetRoomHeight()+wallThickness, 0], wallThickness);
+	var elevFloorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomDepth(), wallThickness, 0], mElevator.GetRoomWidth());	
+	var elevLeftDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR);
+	var elevRightDoorMesh = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [wallThickness, mElevator.GetRoomHeight()+wallThickness, 0], mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
+	elevSideMesh.SetMaterial(towerMaterial);
+	elevBackMesh.SetMaterial(towerMaterial);
+	elevCoverBackMesh.SetMaterial(towerMaterial);
+	elevCoverSideMesh.SetMaterial(towerMaterial);
+	elevCoverFrontMesh.SetMaterial(towerMaterial);
+	elevFloorMesh.SetMaterial(towerMaterial);
+	elevLeftDoorMesh.SetMaterial(towerMaterial);
+	elevRightDoorMesh.SetMaterial(towerMaterial);
+	var elevLeftDoor = CvmObj(elevLeftDoorMesh);
+	var elevRightDoor = CvmObj(elevRightDoorMesh);
+	mElevatorCoverDoors = {};
+	aadd(mElevatorCoverDoors, elevLeftDoor);
+	aadd(mElevatorCoverDoors, elevRightDoor);
+	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,-mElevator.GetRoomWidth());
+	mElevatorCover.AddChild(CvmObj(elevSideMesh),0,0,0);
+	mElevatorCover.AddChild(CvmObj(elevBackMesh),0,0,0);
+	mElevatorCover.AddChild(CvmObj(elevCoverBackMesh), -(mElevator.GetRoomWidth()+towerConnectionsWidth/2), 0, -mElevator.GetRoomWidth()/2 + towerConnectionsWidth/2);
+	mElevatorCover.AddChild(CvmObj(elevCoverSideMesh), -(mElevator.GetRoomWidth()+towerConnectionsWidth/2), 0, -mElevator.GetRoomWidth()/2 + towerConnectionsWidth/2);
+	mElevatorCover.AddChild(CvmObj(elevCoverSideMesh), -(mElevator.GetRoomWidth()+towerConnectionsWidth/2), 0, -mElevator.GetRoomWidth()/2 - towerConnectionsWidth/2);
+	mElevatorCover.AddChild(CvmObj(elevCoverFrontMesh), mElevator.GetRoomDepth(), 0, -mElevator.GetRoomWidth());
+	mElevatorCover.AddChild(CvmObj(elevCoverFrontMesh), mElevator.GetRoomDepth(), 0, towerConnectionsWidth/2-mElevator.GetRoomWidth()/2);
+	mElevatorCover.AddChild(elevLeftDoor,mElevator.GetRoomDepth(),0,0);
+	mElevatorCover.AddChild(elevRightDoor,mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR);
+	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,0,0);
+	mElevatorCover.AddChild(CvmObj(elevFloorMesh),0,mElevator.GetRoomHeight(),0);	
+	mElevatorCover.SetPosition([towerPosition.x+mElevator.GetRoomWidth(), 0, +mElevator.GetRoomWidth()/2]);
+	elevatorOpen = false;
+	
+	var mElevatorWallMeshes = {};
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-menuRoom_WidthFar/2, -(menuRoom_Height/2 - mElevator.GetRoomHeight()/2), 0], [menuRoom_WidthFar/2, +(menuRoom_Height/2 - mElevator.GetRoomHeight()/2), 0], 2, 2));
+	aadd(mElevatorWallMeshes, CVmNewMesh(VRP_PLANE, 1, [-(menuRoom_WidthFar/2-mElevator.GetRoomWidth()/2)/2, -(mElevator.GetRoomHeight())/2, 0], [(menuRoom_WidthFar/2-mElevator.GetRoomWidth()/2)/2, +(mElevator.GetRoomHeight())/2, 0], 2, 2));
+	mElevatorWall = CVmObj();
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[0]), 0, (menuRoom_Height/2 + mElevator.GetRoomHeight()/2),-menuRoom_WidthSide/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), (menuRoom_WidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -menuRoom_WidthSide/2);
+	mElevatorWall.AddChild(CVmObj(mElevatorWallMeshes[1]), -(menuRoom_WidthFar/2+mElevator.GetRoomWidth()/2)/2, mElevator.GetRoomHeight()/2, -menuRoom_WidthSide/2);
+	var elevLeftDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+wallThickness, 0], wallThickness);
+	var elevRightDoorMeshGlass = CVmNewMesh(VRP_BOX,1, [0, 0, 0], [mElevator.GetRoomWidth()/2-0.005*SCALE_FACTOR, mElevator.GetRoomHeight()+wallThickness, 0], wallThickness);
+	elevLeftDoorMeshGlass.SetMaterial(towerMaterial);
+	elevRightDoorMeshGlass.SetMaterial(towerMaterial);
+	var elevLeftDoorGlass = CvmObj(elevLeftDoorMeshGlass);
+	var elevRightDoorGlass = CvmObj(elevRightDoorMeshGlass);
+	mElevatorWallDoors = {};
+	aadd(mElevatorWallDoors, elevLeftDoorGlass);
+	aadd(mElevatorWallDoors, elevRightDoorGlass);
+	mElevatorWall.AddChild(elevLeftDoorGlass, -mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2);
+	mElevatorWall.AddChild(elevRightDoorGlass, 0, 0,-menuRoom_WidthSide/2+wallThickness*2);	
+	mElevatorWall.SetRotation(90,0,1,0);
+	var glassWallMaterial = CVmMaterial();	
+	glassWallMaterial.Ambient = [0.2, 0.2, 0.2,1];
+	glassWallMaterial.Diffuse = [0.2,0.2,0.8,1];
+	glassWallMaterial.Emission = [0.2,0.2,0.8,1];
+	glassWallMaterial.Shininess = 0.4;
+	glassWallMaterial.Transparency = 0.3;
+	glassWallMaterial.Specular = [0.02,0.2,0.2,1];
+	mElevatorWallMeshes[0].SetMaterial(glassWallMaterial);
+	mElevatorWallMeshes[1].SetMaterial(glassWallMaterial);
+	
+
+//	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-(distance/2), 0.25*SCALE_FACTOR, 0], [distance/2, 0, 0], mElevator.GetRoomWidth());
+	walkwayStarted = false;	
+	mWalkWaySize = [10*SCALE_FACTOR, 0.5*SCALE_FACTOR, mElevator.GetRoomWidth()];
+	var walkwayMesh = CVmNewMesh(VRP_BOX,1, [-mWalkWaySize.x/2, -mWalkWaySize.y/2, -mWalkWaySize.z/2], [mWalkWaySize.x/2, mWalkWaySize.y/2, mWalkWaySize.z/2]);
+	mWalkWay = CVmObj(walkwayMesh);
+	walkwayMesh.SetMaterial(towerMaterial);
+	mWalkWay.SetPosition(-menuRoom_WidthSide/2-mWalkWaySize.x/2, -mWalkWaySize.y/2, 0);
+	mWalkdistance = -abs((-menuRoom_WidthSide/2-mWalkWaySize.x) - (towerPosition.x + towerLevelWidth/2));
+	walkWayTrigger = EventTrigger(mWalkWaySize.x-2*SCALE_FACTOR, mWalkWaySize.z-2*SCALE_FACTOR, 0); 
+	walkWayTrigger.SetPosition(mWalkWay.GetPosition());
+	
+	levelSelectors = {};
+	var elementsPerRow = 2;	
+	var objScale = 2.5;
+	var txtSize = 0.125*objScale;
+	var spacingx = 1.70*SCALE_FACTOR*objScale;
+	var spacingy = 0.55*SCALE_FACTOR*objScale;
+	var width = 3.0*SCALE_FACTOR*objScale;
+	var height = 1.0*SCALE_FACTOR*objScale;
+	var thickness = 0.1*SCALE_FACTOR*objScale;	
+	var pos = [-menuRoom_WidthSide/2 + (width+thickness*2)/2, (height + spacingy)/2, -menuRoom_WidthSide/2];
+	var offset = [3.15*SCALE_FACTOR, 0.65*SCALE_FACTOR, 0.01*SCALE_FACTOR];
+	
+	for(var i = 0; i < len(mLevels); i++){		
+		if( i > 0 && (i % elementsPerRow) == 0){
+			pos.y += (height+thickness*2) + spacingy;
+			
+			if(i >= len(mLevels) - elementsPerRow && len(mLevels) % elementsPerRow != 0)
+				pos.x = -menuRoom_WidthSide/2 + (width+thickness*2) + spacingx/2;
+			else
+				pos.x = -menuRoom_WidthSide/2 + (width+thickness*2)/2;
+		}	
+		
+		if(i % elementsPerRow != 0)
+			pos.x += width + thickness*2 + spacingx;	
+			
+		var selector = LevelMenuSelector(mAnimator, mLevels[i][0], mLevels[i][1], pos + offset, width, height, thickness, [1,1,1], [1,0,0], [0,0,1], 0.9, txtSize);
+		aadd(levelSelectors, selector);
+	}
+	
+	var previewSize = [13*SCALE_FACTOR, 13*SCALE_FACTOR, 0.30*SCALE_FACTOR];
+	var previewOffset = [3*SCALE_FACTOR, 0*SCALE_FACTOR, 0.01*SCALE_FACTOR];
+	levelPreviewFrame = PreviewFrame(mAnimator, previewSize.x, previewSize.y, previewSize.z, 0, 2, [1,0,0], [0,0,1], 1);
+	levelPreviewFrame.SetPosition(menuRoom_WidthSide/2 - previewSize.x/2 -previewOffset.x, menuRoom_Height/2 + previewOffset.y, -menuRoom_WidthSide/2+previewOffset.z);
+}
+
+
+ 
+ function LevelMenu::Init(lights, elevator, openglTransformOffset)
+{	
+	mOpenglTranslationOffset = openglTransformOffset;
+	
+	foreach(var light in lights)
+		light.Disable();
+		
+	mLight0Position = [towerPosition.x + 3*SCALE_FACTOR, menuRoom_Height*2, -2*SCALE_FACTOR];
+	mLight1Position = [towerPosition.x + 3*SCALE_FACTOR, -menuRoom_Height*2, 2*SCALE_FACTOR];
+	mLight2Position = [0,menuRoom_Height/2,0];
+	
+	mLight0Diffuse = [0.5, 0.5, 0.5];
+	mLight1Diffuse = [0.5, 0.5, 0.5];
+//	mLight0Diffuse = [1, 0, 0];
+//	mLight1Diffuse = [0, 0, 1];
+	mLight2Diffuse = [0.8, 0.8, 0.8];
+	
+	mLight0 = lights[0];
+	mLight0.SetPosition(mLight0Position);
+	mLight0.SetDiffuse(mLight0Diffuse[0], mLight0Diffuse[1], mLight0Diffuse[2]);
+	mLight0.Enable();
+	
+	mLight1 = lights[1];
+	mLight1.SetPosition(mLight1Position);
+	mLight1.SetDiffuse(mLight1Diffuse[0], mLight1Diffuse[1], mLight1Diffuse[2]);
+	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetPosition(mLight2Position);
+	mLight2.SetDiffuse(mLight2Diffuse[0], mLight2Diffuse[1], mLight2Diffuse[2]);
+	mLight2.Enable();
+	
+	
+	// Retrieving the input manager and setting the initial camera's position
+	mCamera = mInputManager.GetActiveCamera();	
+//	mCamera.SetPosition(-menuRoom_WidthSide/2 +(2*SCALE_FACTOR), 6.0 * SCALE_FACTOR, 0 * SCALE_FACTOR);
+//	mCamera.SetDirection(1,0,0);
+	
+	mEnding = false;
+	mIsLevelCompleted = false;
+	
+	var lightPos = mLight1.GetPosition();
+		
+	mLevelStatus = STATUS_LEVEL_STARTED;
+}
+
+
+/* ****************************************************** *
+ * **************** RENDER METHODS ********************** *
+ * ****************************************************** */
+
+/*
+ * Render method
+ */
+function LevelMenu::Render()
+{		
+//	glTranslate(mOpenglTranslationOffset);
+	
+	switch(mLevelStatus)
+	{
+		case STATUS_LEVEL_STARTED:
+       		DrawGrid([1,1,1], false, false, false, false, true, true);
+			seaPosition = [towerPosition.x/2, seaLevel*SCALE_FACTOR, towerPosition.z-towerLevelWidth/2];
+       		if(!seaShaderEnabled){
+				DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0.25, 0.40, 1], [0.4, 0.55, 1], [0.1, 0.25, 1], seaSmoothFading, seaVelocity);		
+//				DrawPointCloud(seaType, seaAmountx, seaAmounty, seaViewDistance, seaPosition, seaAmplitude*SCALE_FACTOR, seaSpacing*SCALE_FACTOR, seaSize*SCALE_FACTOR, seaXPeriod, seaYPeriod, [0, 0, 1], [1, 0, 0], [1, 1, 0], seaSmoothFading, seaVelocity);		
+			}
+			else{
+				var x = 0;
+				var z = 0;	
+				var alpha = 0;
+				var beta = 0;	
+				var mSize = seaSize*SCALE_FACTOR;
+				var mAmplitude = seaAmplitude*SCALE_FACTOR;
+				if(cloudDt >= 3.14){
+					cloudDt = 0;	
+				}
+					
+				cloudDt += 0.035/(5-seaVelocity);
+			
+				seaShader.Start();				
+					seaShader.SetParameter("baseColor", [0.35, 0.5, 1]);
+					seaShader.SetParameter("topColor", [1, 1, 0]);
+					seaShader.SetParameter("bottomColor", [1, 0, 0]);
+					seaShader.SetParameter("clearColor", [0.95, 0.95, 0.95]);
+					seaShader.SetParameter("seaPos", seaPosition);
+					seaShader.SetParameter("camPos", cameraPosition);
+					seaShader.SetParameter("amplitude", mAmplitude);
+					seaShader.SetParameter("viewDistance", seaViewDistance);
+					seaShader.SetParameter("size", mSize);
+					seaShader.SetParameter("phase", cloudDt);
+				seaShader.Stop();	
+					
+					glBegin(GL_QUADS);
+					for(var i = -seaAmounty/2; i < seaAmounty/2; i++){
+						beta = 0;
+						alpha += seaXPeriod;
+						x = i*(seaSpacing+mSize/2)+seaPosition.x;	
+						if(abs(cameraPosition.x-x) < seaViewDistance){ ///if it is not visible here it won't be visibile on the other side e
+							for(var j = seaAmountx/2; j > -seaAmountx/2; j--){
+								beta += seaYPeriod;
+								z = j*(seaSpacing+mSize/2)+seaPosition.z;
+								if(abs(cameraPosition.z-z) < seaViewDistance){
+									seaShader.Start();	
+									seaShader.SetParameter("alpha", alpha);	
+									seaShader.SetParameter("beta", beta+seaYPeriod);
+									seaShader.Stop();	
+									glVertex(x,seaPosition.y,z);
+															
+									seaShader.Start();		
+									seaShader.SetParameter("alpha", alpha);	
+									seaShader.SetParameter("beta", beta);	
+									glVertex(x,seaPosition.y,z+mSize/2);
+									seaShader.Stop();	
+									
+									seaShader.Start();	
+									seaShader.SetParameter("alpha", alpha+seaXPeriod);	
+									seaShader.SetParameter("beta", beta+seaYPeriod);		
+									glVertex(x+mSize/2,seaPosition.y,z+mSize/2);
+									seaShader.Stop();	
+									
+									seaShader.Start();	
+									seaShader.SetParameter("alpha", alpha+seaXPeriod);	
+									seaShader.SetParameter("beta", beta+seaYPeriod);		
+									glVertex(x+mSize/2,seaPosition.y,z);	
+									seaShader.Stop();	
+								}
+							}							
+						}				
+					}
+					glEnd();
+				seaShader.Stop();				
+			}
+       		text1.Draw();	
+			mMenuRoom.Draw();
+	   		mMenuRoomHolder.Draw(VR_NO_CULLING);
+			
+			glEnable(GL_FOG);
+		 	glFog(GL_FOG_MODE, GL_EXP);
+		 	glFog(GL_FOG_START, 1);
+		 	glFog(GL_FOG_END, 1);
+	 		glFog(GL_FOG_DENSITY, seaLevel <= 0 ? 0.15f : 0.4f);
+	 		glFog(GL_FOG_COLOR, seaLevel <= 0 ? [0.95,0.95,0.95] : [0.4, 0.7, 1]);		
+		   		towerLevels.Draw(VR_NO_CULLING);
+		   		mWalkWay.Draw(VR_NO_CULLING);
+		   		mElevatorCover.Draw();
+			glDisaBle(GL_FOG);
+		
+		for(var i = 0; i < len(levelSelectors); i++){
+			levelSelectors[i].Draw();		
+		}
+		
+		levelPreviewFrame.Draw();
+		mElevatorWall.Draw(VR_NO_CULLING);
+			
+		break;
+	}
+	
+	if(mIsVRon || debugVrOn){
+		var raycastOrigin;
+		var raycastEnd;
+		foreach(var controller in mControllersArray){
+			controller.Draw();
+//			if(mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+				raycastOrigin = controller.GetPosition();
+				raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
+				glLineWidth(3); 		
+				glColor([0,0,1]); 
+				
+				// I draw the ray as a simple opengl line
+				glBegin(GL_LINES);
+					glVertex(raycastOrigin);
+					glVertex(raycastEnd);		
+				glEnd();				
+//			}
+		}
+		
+	}
+}
+
+
+/* ****************************************************** *
+ * **************** LOGIC METHODS ********************** *
+ * ****************************************************** */
+  
+/*
+ * Updates the logic of the game
+ * 
+ * dt: (float) delta time, i.e. the time between the last update and this one
+ */
+function LevelMenu::UpdateLogic(dt)
+{ 
+	// First off, let's update the player's position and orientation
+	mInputManager.UpdateCamera();
+	mInputManager.UpdateControllers(mOpenglTranslationOffset);
+	
+	cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	
+	switch(mLevelStatus)
+	{
+		// This is the case where the level is starting and the elevator is moving up
+		
+		// Case where the player is out of the elevator. It's the main status of the level
+		case STATUS_LEVEL_STARTED:
+		{					
+			if(debugVrOn)			
+				mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR);	
+				
+			var res = false;
+			var levelPointed = false;
+			for(var i = 0; i < len(levelSelectors) && !levelPointed; i++){
+				res = false;
+				if(mIsVrOn || debugVrOn){
+					foreach(var controller in mControllersArray){
+						if(!res){
+							res = levelSelectors[i].IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
+							if(res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+								outputln("Level selected");
+								levelPointed = true;
+								levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
+								
+								if(mSelectedLevel >= 0)
+									levelSelectors[mSelectedLevel].IsSelected(false);	
+													
+								levelSelectors[i].IsSelected(true);
+								mSelectedLevel = i;
+								mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+								mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);							
+							}			
+						}					
+					}
+				}else{					
+					res = levelSelectors[i].IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());		
+					if(res && mInputManager.IsPressingPrimaryButton()){
+						levelPointed = true;
+						levelPreviewFrame.ChangeImage(levelSelectors[i].GetImage());
+						if(mSelectedLevel >= 0)
+							levelSelectors[mSelectedLevel].IsSelected(false);	
+											
+						levelSelectors[i].IsSelected(true);
+						mSelectedLevel = i;
+						mAnimator.CreateTransition(mElevatorWallDoors[0],[-mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], [-mElevator.GetRoomWidth(), 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+						mAnimator.CreateTransition(mElevatorWallDoors[1],[0, 0,-menuRoom_WidthSide/2+wallThickness*2], [+mElevator.GetRoomWidth()/2, 0,-menuRoom_WidthSide/2+wallThickness*2], 1, false);
+		
+						break;								
+					}				
+				}
+			}			
+			
+//			if(!levelPointed){
+//				if(mIsVrOn || debugVrOn){
+//					foreach(var controller in mControllersArray){
+//						if(mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+//							outputln("No level pointed");
+//							if(mSelectedLevel >= 0)
+//								levelSelectors[mSelectedLevel].IsSelected(false);									
+//							
+//							mSelectedLevel = -1;							
+//						}
+//					}
+//				}
+//				else{
+//					if(mInputManager.IsPressingPrimaryButton()){
+//						if(mSelectedLevel >= 0)
+//							levelSelectors[mSelectedLevel].IsSelected(false);									
+//						
+//						mSelectedLevel = -1;							
+//					}					
+//				}
+//			}
+			
+			res = false;
+			if(mIsVrOn || debugVrOn){
+				foreach(var controller in mControllersArray){
+					if(!res){
+						res = levelPreviewFrame.IsBeingPointedBy(controller, controller.GetPosition(), mCamera.GetZFar());	
+						if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton(controller.GetIndex())){
+							levelPreviewFrame.IsSelected(true);
+							mIsLevelCompleted = true;
+						}						
+					}				
+				}				
+			}else{
+				res = levelPreviewFrame.IsBeingPointedBy(mCamera, cameraPosition, mCamera.GetZFar());
+				if(mSelectedLevel >= 0 && res && mInputManager.IsPressingPrimaryButton()){
+					levelPreviewFrame.IsSelected(true);
+					mIsLevelCompleted = true;
+				}				
+			}					
+						
+			var range = 5*SCALE_FACTOR;
+			if(walkWayTrigger.IsPointInside(cameraPosition) && mWalkWay.GetPosition().x >= towerPosition.x + towerLevelWidth/2 + mWalkWaySize.x/2){
+				var increment = mWalkDistance / 8.0;
+
+				mOpenglTranslationOffset.x -= increment * dt;
+				
+				var walkwayPos = mWalkWay.GetPosition();
+				
+				walkwayPos.x += increment * dt;
+				mWalkWay.SetPosition(walkwayPos);
+				walkWayTrigger.SetPosition(walkwayPos);
+				
+				if(!mIsLevelCompleted && mWalkWay.GetPosition().x <= towerPosition.x / 2.0)
+					mIsLevelCompleted = true;
+			}
+			
+			range = 170*SCALE_FACTOR;
+			if(cameraPosition.x <= towerPosition.x+towerLevelWidth/2+range/2 && 
+			   cameraPosition.x >= towerPosition.x+towerLevelWidth/2-range/2  && !elevatorOpen
+			){
+				elevatorOpen = true;
+				mAnimator.CreateTransition(mElevatorCoverDoors[0],[mElevator.GetRoomDepth(),0,0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], 2, false);
+				mAnimator.CreateTransition(mElevatorCoverDoors[1],[mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], 2, false);
+			}
+			
+			range = 5*SCALE_FACTOR;
+			if(cameraPosition.x <= mElevatorCover.GetPosition().x + mElevator.GetRoomWidth() - range/2 &&
+			   cameraPosition.x >= mElevatorCover.GetPosition().x + range/2 &&
+			   cameraPosition.z <= mElevatorCover.GetPosition().z + mElevator.GetRoomWidth()/2 - range/2 &&
+			   cameraPosition.z >= mElevatorCover.GetPosition().z - mElevator.GetRoomWidth()/2 + range/2){
+				elevatorOpen = false;
+				mIsLevelCompleted = true;
+				mAnimator.CreateTransition(mElevatorCoverDoors[0], [mElevator.GetRoomDepth(),0,mElevator.GetRoomWidth()/2], [mElevator.GetRoomDepth(),0,0], 1, false);
+				mAnimator.CreateTransition(mElevatorCoverDoors[1], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()+0.005*SCALE_FACTOR], [mElevator.GetRoomDepth(),0,-mElevator.GetRoomWidth()/2+0.005*SCALE_FACTOR], 1, false);
+			
+			}
+			break;
+		}
+	}
+			
+		
+	if(KeyPressed("1")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaAmplitude -= 0.05;
+	}if(KeyPressed("2")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaAmplitude += 0.05;
+	}if(KeyPressed("3")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaSpacing -= 0.01;
+	}if(KeyPressed("4")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaSpacing += 0.01;
+	}if(KeyPressed("5")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaSize -= 0.05;
+	}if(KeyPressed("6")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaSize += 0.05;
+	}if(KeyPressed("7")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaXPeriod -= 0.005;
+	}if(KeyPressed("8")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaXPeriod += 0.005;
+	}if(KeyPressed("9")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaYPeriod -= 0.005;
+	}if(KeyPressed("0")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaYPeriod += 0.005;
+	}if(KeyPressed("z")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaLevel -= 0.1;
+	}if(KeyPressed("x")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaLevel += 0.1;
+	}if(KeyPressed("c")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaViewDistance -= 0.5;
+	}if(KeyPressed("v")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaViewDistance += 0.5;
+	}if(KeyPressed("n")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaVelocity -= 0.1;
+	}if(KeyPressed("m")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaVelocity += 0.1;
+	}if(KeyPressed("b")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaSmoothFading = !seaSmoothFading;	
+	}if(KeyPressed("t")){
+		outputln("Ampl: " + str(seaAmplitude) + " spacing: " + str(seaSpacing) + " size: " + str(seaSize) + " xP: " + str(seaXPeriod) + " yp: " + str(seaYPeriod) + " level: " + str(seaLevel) + " viewDist: " + str(seaViewDistance) + " velocity: " + str(seaVelocity));
+		seaType = ++seatype % 2;
+	}
+	if(KeyPressed("h")){
+		seaShaderEnabled = !seaShaderEnabled;
+	}
+	
+	
+	// I update the methods of the managers
+	mAnimator.UpdateTransitions(dt);
+	mSoundManager.UpdateMusic(dt);
+	mDt = dt;
+}
+
+
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
+function LevelMenu::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+{
+	var intersectedPlane = -1;
+
+	if(mSelectedLevel != -1)
+	{
+		contactPoint = IsObjectSelected(rayOrigin, rayEnd, mWalkWay);
+		
+		if(contactPoint != Void)
+		{
+			intersectedPlane = 0;
+			normal = [0, 1, 0];
+		}
+	}
+	
+	if(intersectedPlane == -1)
+		intersectedPlane = mMenuRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+	
+//		intersectedPlane = mWalkWay.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);		
+	
+		
+	isWall = true;
+	
+	return intersectedPlane == 0;
+}
+
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function LevelMenu::IsLevelCompleted()
+{
+	return mIsLevelCompleted;
+}
+
+function LevelMenu::GetSelectedLevel()
+{
+	return mSelectedLevel;
+}
+
+function LevelMenu::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
+}
+
+function LevelMenu::SetOpenglTransformOffset(openglTransformOffset)
+{
+	mOpenglTranslationOffset = openglTransformOffset;
+}
+
+function LevelMenu::SetupOpenglLights()
+{
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	
+	// Note: might need to SUBTRACT mOpenglTranslationOffset to each axis position
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
+}
+
+
+function LevelMenu::DrawGrid(gridCOlor, drawFront, drawBack, drawLeft, drawRight, drawRoof, drawFloor)
+{
+   /* let's not mess up current OpenGL status */
+//   glPushAttrib(GL_LIGHTING_BIT | GL_LINE_BIT | GL_CURRENT_BIT);
+  
+   glLineWidth(4);
+   glDisable(GL_LIGHTING);
+   glColor(gridCOlor);
+   var max = menuRoom_WidthFar / 2.0;
+   var min = -max;    
+   var step = menuRoom_WidthFar / 13.0;
+   var offset = (0.005*SCALE_FACTOR);
+   glBegin(GL_LINES);
+   for(var n = 0; n < 3; n++){
+		switch(n){
+			//Roof an floor
+			case 0: {
+				var y = 0; 
+				for(var j = (drawFloor ? 0 : menuRoom_Height); j <= (drawRoof ? menuRoom_Height : 0); j+=menuRoom_Height){
+					for (var i = min; i <= max; i += step)
+	         		{
+	         			if(j == 0)
+	         				y = offset;
+	         			else if( j == menuRoom_Height)
+	         				y = menuRoom_Height-offset;
+	         			else
+	         				y = j;
+	         				
+		                glVertex(i, y, max);
+		                glVertex(i, y, min);
+		               
+		                glVertex(max, y, i);
+		                glVertex(min, y, i);
+	                }	                
+                }
+			 	break;
+			 }
+			//side walls
+			case 1:{
+				var z = 0;
+				for(var j = (drawLeft ? -1 : 1); j < (drawRight ? 2: 0); j+=2){
+					for (var i = min; i <= max; i += step)
+	         		{
+	         			if(j < 0)
+	         				z = offset;
+	         			else if( j > 0)
+	         				z = -offset;
+	         			else
+	         				z = 0;
+		                glVertex(i, max, j*menuRoom_WidthFar/2+z);
+		                glVertex(i, min, j*menuRoom_WidthFar/2+z);
+		               
+		                glVertex(max, i, j*menuRoom_WidthFar/2+z);
+		                glVertex(min, i, j*menuRoom_WidthFar/2+z);
+	                }
+                }
+			 	break;
+			 }
+			//side walls
+			case 2:{
+				var x = 0;
+				for(var j = (drawBack ? -1 : 1); j < (drawFront ? 2 : 0); j+=2){
+					for (var i = min; i <= max; i += step)
+	         		{
+	         			if(j < 0)
+	         				x = offset;
+	         			else if( j > 0)
+	         				x = -offset;
+	         			else
+	         				x = 0;
+		                glVertex(j*menuRoom_WidthSide/2+x, max, i);
+		                glVertex(j*menuRoom_WidthSide/2+x, min, i);
+		               
+		                glVertex(j*menuRoom_WidthSide/2+x, i, max);
+		                glVertex(j*menuRoom_WidthSide/2+x, i, min);
+	                }
+                }
+			 	break;
+			 }
+		}
+	}    
+   glEnd();
+  
+   /* polite restoration of previous OpenGL status */
+   glPopAttrib();   
+}
+
+function LevelMenu::DrawPointCloud(type, mAmountx, mAmounty, viewDistance, mCenter, mYRange, mSPacing, mSize, mYPeriod, mXPeriod, mColor, mTopColor, mBottomColor, smoothFading, speed){
+
+/**A * sin(B * x + C) + D
+
+	A is amplitude
+	B is period
+	C moves the wave along the x-axis
+	D moves the wave along the y-axis
+**/
+	var a = 0;
+	var b = 0;
+	var alpha = 0;
+	var x = 0;
+	var y = 0;
+	var z = 0;
+	var yDist = 0;
+	var distFromCamera = 0;
+	var finalColor = [0,0,0];
+	var fadingColor = [0,0,0];
+	var clearColor = [0.95, 0.95, 0.95];
+	if(cloudDt >= 3.14){
+		cloudDt = 0;	
+	}
+		
+	cloudDt += 0.035/(5-speed);
+	//The center is in (mAmount/2, mAmount/2)
+	if(type == -1){
+		glPointSize(mSize);
+		glBegin(GL_POINTS);
+		for(var j = 0; j < mAmountx; j++){
+			a = 0;
+			b += mYPeriod;
+			z = -(j-mAmountx/2)*mSpacing+mCenter.z;
+			if(abs(cameraPosition.z-z) < viewDistance){
+				for(var i = 0; i < mAmounty; i++){
+					x = (i-mAmounty/2)*mSpacing+mCenter.x;
+					if(abs(cameraPosition.x-x) < viewDistance){					
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+						
+						alpha = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2);
+						
+						glColor(mColor.r, mColor.g, mColor.b, 1-alpha/viewDistance);
+						glVertex(x,y,z);	
+						
+						a += mXPeriod;				
+					}
+				}		
+			}
+		}	
+	}
+	else if(type == 0){
+		glBegin(GL_QUADS);
+		for(var i = -mAmounty/2; i < mAmounty/2; i++){
+			b = 0;
+			a += mXPeriod;
+			x = i*(mSpacing+mSize/2)+mCenter.x;	
+			if(abs(cameraPosition.x-x) < viewDistance){
+				for(var j = mAmountx/2; j > -mAmountx/2; j--){
+					b += mYPeriod;
+					z = j*(mSpacing+mSize/2)+mCenter.z;
+					if(abs(cameraPosition.z-z) < viewDistance){		
+						alpha = 1;
+						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance;
+						distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;
+						finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+						finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+						finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+						finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+						finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+						finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+						glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+						glVertex(x,y,z);
+						
+						if(smoothFading){														
+							y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+							glVertex(x,y,z+mSize/2);
+							
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+							glVertex(x+mSize/2,y,z+mSize/2);
+							
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+							glVertex(x+mSize/2,y,z);		
+						}
+						else{							
+							y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;		
+							glVertex(x,y,z+mSize/2);
+							
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;		
+							glVertex(x+mSize/2,y,z+mSize/2);
+							
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;		
+							glVertex(x+mSize/2,y,z);						
+						}
+					}
+				}			
+			}
+		}		
+	}
+	else if(type == 1){
+		glBegin(GL_QUADS);
+		for(var i = -mAmounty/2; i < mAmounty/2; i++){
+			b = 0;
+			a += mXPeriod;
+			x = i*(mSpacing+mSize/2)+mCenter.x;	
+			if(abs(cameraPosition.x-x) < viewDistance){ ///if it is not visible here it won't be visibile on the other side either
+				for(var j = mAmountx/2; j > -mAmountx/2; j--){
+					b += mYPeriod;
+					z = j*(mSpacing+mSize/2)+mCenter.z;
+					if(abs(cameraPosition.z-z) < viewDistance){
+						distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z)^2)/viewDistance;
+						distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+						alpha = 1;						
+						
+						y = mYRange*cos(a+cloudDt)*cos(b+cloudDt+mYperiod)+mCenter.y;	
+						yDist = (y-mCenter.y)/mYRange;						
+						if(yDist < 0){
+							yDist = -yDist;
+							fadingColor = mBottomColor;
+						}else{
+							fadingColor = mTopColor;
+						}
+						finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+						finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+						finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+						finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+						finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+						finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+						glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+						glVertex(x,y,z);
+						
+						if(smoothFading){
+							y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+							yDist = (y-mCenter.y)/mYRange;
+							if(yDist < 0){
+								yDist = -yDist;
+								fadingColor = mBottomColor;
+							}else{
+								fadingColor = mTopColor;
+							}
+							distFromCamera = sqrt((cameraPosition.x-x)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+							glVertex(x, y, z+mSize/2);
+							
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
+							yDist = (y-mCenter.y)/mYRange;
+							if(yDist < 0){
+								yDist = -yDist;
+								fadingColor = mBottomColor;
+							}else{
+								fadingColor = mTopColor;
+							}
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z-mSize/2)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+							glVertex(x+mSize/2,y,z+mSize/2);
+							
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
+							yDist = (y-mCenter.y)/mYRange;
+							if(yDist < 0){
+								yDist = -yDist;
+								fadingColor = mBottomColor;
+							}else{
+								fadingColor = mTopColor;
+							}
+							distFromCamera = sqrt((cameraPosition.x-x-mSize/2)^2 + (cameraPosition.z-z)^2)/viewDistance;
+							distFromCamera = distFromCamera > 1 ? 1 : distFromCamera;
+							finalColor.r = yDist*fadingColor.r + (1-yDist)*mColor.r;
+							finalColor.r += (clearColor.r-finalColor.r)*distFromCamera;
+							finalColor.g = yDist*fadingColor.g + (1-yDist)*mColor.g;
+							finalColor.g += (clearColor.g-finalColor.g)*distFromCamera;
+							finalColor.b = yDist*fadingColor.b + (1-yDist)*mColor.b;
+							finalColor.b += (clearColor.b-finalColor.b)*distFromCamera;
+							glColor(finalColor.r, finalColor.g, finalColor.b, alpha);
+							glVertex(x+mSize/2, y, z);								
+						}	
+						else{
+							y = mYRange*cos(a+cloudDt)*cos(b+cloudDt)+mCenter.y;
+							glVertex(x, y, z+mSize/2);
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt)+mCenter.y;
+							glVertex(x+mSize/2,y,z+mSize/2);
+							y = mYRange*cos(a+cloudDt+mXPeriod)*cos(b+cloudDt+mYperiod)+mCenter.y;
+							glVertex(x+mSize/2, y, z);																
+						}	
+					}
+				}			
+			}
+		}	
+	}
+
+	glEnd();
+}
+
+function LevelMenu::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	return false;
+}
+
+function LevelMenu::DrawHUD()
+{
+	return false;
+}

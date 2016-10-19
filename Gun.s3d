@@ -91,7 +91,7 @@ function Gun::Gun(ID, meshName, shootingDelay, recoilDepth, bulletMesh, bulletSp
 	mIsPowerEnabled = false;
 	mIsSwitching = false;
 	mIsShooting = false;	
-	mColorShader = CVMShaderProgram("SimpleColorShader.glsl");
+	mColorShader = CVMShaderProgram("Shaders/SimpleColorShader.glsl");
 	mRenderOldObj = false;
 	mBulletIndex = 0;		
 	

@@ -1,0 +1,640 @@
+class Level5
+{
+	var mIsVRon;
+	var debugVrOn;
+	
+	// Booleans that indicate if the level is starting or ending
+	var mStarting;
+	var mEnding;
+	var mIsLevelCompleted;
+	var mEndTimer;
+	var mLevelStatus;
+	
+	// When the player steps into the elevator, this constant hold the time (in milliseconds) until the next level is rendered
+	var mTimeToEnd;
+	
+	// Manager for user inputs
+	var mInputManager;
+	
+	// "Animator" object; used to create transitions and rotations for the objects
+	var mAnimator;
+	
+	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
+	var mSoundManager;
+	
+	// Active camera
+	var mCamera;
+	
+	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
+	var mLight0;
+	var mLight1;	
+	var mLight2;
+	
+	var mLight0Position;
+	var mLight1Position;
+	var mLight2Position;
+	var mLight0Diffuse;
+	var mLight1Diffuse;
+	var mLight2Diffuse;
+	
+	// "Room" object that contains the whole room
+	var mMainRoom;
+	
+	// Arrays that contain the reference to the portal rooms, the portal frames (i.e. the rectangle's where we can see the portals' rooms) 
+	// and the normals of the frames
+	var mPortalFrames;
+	var mPortalFramesNormals;
+	var mPortalFramesGlassWalls;	
+	// This array contains the reference to the currently visible portal's frames
+	var mCurrentlyVisiblePortalFrames;
+		
+	// Booleans that indicate whether the elevator has appeared and if it's already open or not
+	var mIsElevatorPresent;
+	var mIsElevatorOpen;
+	
+	// "Room" object that represent the elevator
+	var mElevator;	
+	
+	var mElevatorFinalPosition;
+	var mElevatorTravelDistance;
+	var mElevatorTravelTime;
+	var mCameraYoffset;	
+	var mOpenglTranslationOffset;	
+	var mPreviousOpenglTranslationOffset;
+	
+	// Vive controllers
+	var mControllersArray;
+	
+	var mTranslateFactor;
+
+	var mWalls;
+	var timeFromLastKey;
+	var mAnimations;
+	var mAnimatingWalls;
+	var mWallsAnimationTime;
+	
+	var controllerPressing;
+	
+	// Private functions	
+	// Public functions
+	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
+	Render();
+	UpdateLogic(dt);
+	IsLevelCompleted();
+	GetElevator();
+	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
+	GetOpenglTransformOffset();
+	SetOpenglTransformOffset(mOpenglTranslationOffset);
+	SetupOpenglLights();
+	GetLevelPreview();
+	GetLevelName();
+	GetLightDiffuse();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
+	DrawHUD();
+};
+
+
+/*
+ * Constructor. Takes as parameter the input manager of the application
+ */
+function Level5::Level5(isVRon, inputManager, soundManager)
+{
+	mIsVRon = isVRon;
+	debugVrOn = false;
+	controllerPressing = -1;
+	
+	mInputManager = inputManager;
+	mSoundManager = soundManager;
+	
+	mTranslateFactor = [0.0, 0.0, -20.0 * SCALE_FACTOR];
+	mControllersArray = {};
+	if(debugVrOn){
+		aadd(mControllersArray, ViveController(1));
+		aadd(mControllersArray, ViveCOntroller(2));
+	}
+	else if(isVrOn){		
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
+	}
+		
+	// Creating the object that will handle transitions and rotations of objects
+	mAnimator = Animator();
+	
+	// Creating the main room
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, true);
+	
+	mMainRoom.Translate(mTranslateFactor.x,  mTranslateFactor.y, mTranslateFactor.z);
+		
+	// At start, the elevator is not present, nor its doors are open
+	mIsElevatorPresent = false;
+	mIsElevatorOpen = false;
+	
+	var wallSize = [1.4*SCALE_FACTOR, 1.4*SCALE_FACTOR, 10*SCALE_FACTOR];
+	var spacing = 0.7*SCALE_FACTOR;
+	var amount = [10, 10];
+//	var amount = [36, 15];
+	
+	mWalls = {};
+	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
+	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,1, [1, 0.7, 0.7], [0,0,1]));
+
+	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,-1, [0.7, 1, 0.7], [1,0,1]));
+	
+	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x)/2] + mTranslateFactor;
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,2, [0.7, 0.7, 1], [1,0,0]));
+
+	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2)] + mTranslateFactor;
+	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,-2, [0.7, 1, 1], [1,1,0]));
+	
+	foreach(var wall in mWalls){
+		wall.ComputeAnimations(5);
+		wall.ComputeCode(1, [0,5]); //first param: number of buttons to press, second param: row range
+	}
+	
+	timeFromLastKey = 0;
+	mAnimations = {false, false, false, false};
+	mWallsAnimationTime = -1;
+	mAnimatingWalls = 0;
+	
+}
+
+function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset){
+	
+	mOpenglTranslationOffset = openglTransformOffset;
+	
+	foreach(var light in lights)
+		light.Disable();
+	
+	mLight0Diffuse = [1,1,1];
+	mLight1Diffuse = [0.9,0.5,0.2];
+	mLight2Diffuse = [0.2,0.8,1.3];
+	
+	mLight0 = lights[0];
+	mLight0.SetDiffuse(mLight0Diffuse);
+	mLight0.Enable();
+	
+	mLight1 = lights[1];
+	mLight1.SetDiffuse(mLight1Diffuse);
+	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetDiffuse(mLight2Diffuse);
+	mLight2.Enable();
+	
+	mElevator = elevator;
+	
+	mCamera = mInputManager.GetActiveCamera();
+
+	mEnding = false;
+	mIsLevelCompleted = false;
+	mTimeToEnd = 2500;
+	
+	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
+	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
+
+	mElevatorFinalPosition = mElevator.GetPosition()+[0,0.005*SCALE_FACTOR, 0];
+	
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
+	
+	mLight0Position = mLight0.GetPosition();
+	mLight1Position = mLight1.GetPosition();
+	mLight2Position = mLight2.GetPosition();
+		
+	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
+	mAnimator.CreateRotationAroundPointTransition(mLight1, mElevator.GetPosition()-[32*SCALE_FACTOR, 0, 0*SCALE_FACTOR],  mElevator.GetPosition(), 240, true, true, true);
+	mAnimator.CreateRotationAroundPointTransition(mLight2, mElevator.GetPosition()+[32*SCALE_FACTOR, 0, 0*SCALE_FACTOR],  mElevator.GetPosition(), 240, true, true, false);
+	
+	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
+	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
+	mOpenglTranslationOffset.y += mElevatorTravelDistance;
+	
+	mLevelStatus = STATUS_ELEVATOR_MOVING;
+	
+	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
+	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
+	
+}
+
+/* ****************************************************** *
+ * **************** RENDER METHODS ********************** *
+ * ****************************************************** */
+
+
+/*
+ * Render method
+ */
+function Level5::Render()
+{			
+	// To avoid problems with the lights when using teleportation and the Vive, I reset the light's position to their current place at each frame		
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
+
+// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
+	mElevator.Draw();
+	
+	switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING:
+			break;
+		case STATUS_ELEVATOR_ARRIVED:
+		case STATUS_LEVEL_ENDING:
+		case STATUS_LEVEL_STARTED:
+		{
+			foreach(var wall in mWalls)
+				wall.Draw();
+			
+			// We draw the main room
+			mMainRoom.Draw();
+			break;
+		}
+	}
+	
+	if(mIsVRon || debugVrOn){
+		foreach(var controller in mControllersArray){
+			controller.Draw();
+//			controller.DrawBoundingBox();			
+		}
+	}
+}
+
+/* ****************************************************** *
+ * **************** LOGIC METHODS ********************** *
+ * ****************************************************** */
+ 
+ 
+/*
+ * Updates the logic of the game
+ * 
+ * dt: (float) delta time, i.e. the time between the last update and this one
+ */
+function Level5::UpdateLogic(dt)
+{
+	
+	// First off, let's update the player's position and orientation and the controllers (if they're not present nothing will be done)
+	mInputManager.UpdateCamera();
+	mInputManager.UpdateControllers(mOpenglTranslationOffset);
+	
+	// Getting the camera position, minus the opengl offset used for teleporting
+	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	
+	if(debugVrOn && !mIsVrOn){
+		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 2.5 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
+		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 2.5 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);
+	}
+	
+	
+//	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
+//	// I restore the previous porision. Very badly written code
+//	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
+//		mInputManager.RestoreCameraPosition();
+//	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
+//       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
+//       	    !mIsElevatorPresent)
+//   	    mInputManager.RestoreCameraPosition();
+//
+//    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
+//    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
+//    	mInputManager.RestoreCameraPosition();
+    	
+    switch(mLevelStatus)
+	{
+		case STATUS_ELEVATOR_MOVING: 
+		{			
+		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
+		    	mInputManager.RestoreCameraPosition();
+			
+			var elevatorPos = mElevator.GetPosition();
+
+			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0)
+			{
+				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + mTranslateFactor;
+				
+				mLight0.SetPosition(mLight0Position);
+				mLight1.SetPosition(mLight1Position);
+				mLight2.SetPosition(mLight2Position);
+			}
+			
+			mOpenglTranslationOffset.y -= mCameraYoffset * dt;
+			
+		    mOpenglTranslationOffset.x += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+		    mOpenglTranslationOffset.y += Rand(1) == 0 ? Rand(2)/500.0 : -Rand(2)/500.0;
+			
+			if(elevatorPos.y >= mElevatorFinalPosition.y)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+				
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+				
+				mLevelStatus = STATUS_ELEVATOR_ARRIVED;
+				
+				mOpenglTranslationOffset = mPreviousOpenglTranslationOffset;
+			}
+	
+			break;
+		}	
+		
+		case STATUS_ELEVATOR_ARRIVED:
+		{
+			if(!mElevator.IsPointInElevator(cameraPosition))
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				mLevelStatus = STATUS_LEVEL_STARTED;
+			}
+			
+			break;
+		}	
+		
+		case STATUS_LEVEL_STARTED:
+		{
+			//Immediate Level completion
+			if(KeyPressed("F")){
+				for(var i = 0; i < len(mWalls); i++){
+					mWalls[i].StartAnimation();
+					mAnimatingWalls += 1;	
+					if(mAnimatingWalls == len(mWalls)){
+						outputln("LEVEL COMPLETED");
+						mWallsAnimationTime = GetTime();
+						mAnimatingWalls = 0;	
+						// I switch status
+						mLevelStatus = STATUS_LEVEL_ENDING;
+					}					
+				}
+			}
+			
+			mLight1Position = mLight1.GetPosition();
+			mLight2Position = mLight2.GetPosition();
+			
+			//For each wall
+			var wallFound = false;
+			for(var i = 0; i < len(mWalls) && !wallFound; i++){
+				if(!mWalls[i].IsCompleted()){ //If it is not completed
+					if(mIsVrOn || debugVrOn){
+						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
+						var minDistance = range;
+						var closerControllerIndex = -1;
+						
+						if(controllerPressing < 0){
+							for(var j = 0; j < len(mControllersArray); j++){
+								var controllerDistance = mWalls[i].IsInRangeOfActiveButton(mControllersArray[j].GetPosition(), range);
+	
+								if(controllerDistance <= minDistance){
+									mControllersArray[j].SetActionAvailable(true);
+									minDistance = controllerDistance;
+									closerControllerIndex = j;	
+									wallFound = true;			
+								}
+								else{
+									mControllersArray[j].SetActionAvailable(false);								
+								}			
+							}
+						}
+						
+						if(closerControllerIndex != -1 || controllerPressing >= 0){
+							var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
+							mControllersArray[checkingController].SetActionAvailable(true);
+							
+//							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
+							if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
+								controllerPressing = checkingController;
+								mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
+							}
+							else{
+								controllerPressing = -1;			
+								mWalls[i].StopMoving();	
+							}						
+						}		
+					}
+					else{
+						var range = 2.5; //I check whether the camera or the vive is in the range of an active button or not
+						if(mWalls[i].IsInRangeOfActiveButton(cameraPosition, range) <= range){
+							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
+								mWalls[i].MoveButtonInRange(cameraPosition, false);						
+							}
+							else{	
+								mWalls[i].StopMoving();
+							}
+						}
+					}
+						
+					if(mWalls[i].IsCompleted()){
+						outputln("Wall " + str(i) +" COMPLETED");
+					}
+				}
+				else{
+					if(!mWalls[i].IsAnimating()){
+						if(mWalls[i].IsNotInWallRange(cameraPosition, 5*SCALE_FACTOR)){
+							mWalls[i].StartAnimation();
+							mAnimatingWalls += 1;	
+							if(mAnimatingWalls == len(mWalls)){
+								mWallsAnimationTime = GetTime();
+								mAnimatingWalls = 0;	
+								// I switch status
+								mLevelStatus = STATUS_LEVEL_ENDING;
+							}	
+						}
+					}			
+				}
+			}
+			break;
+		}
+		case STATUS_LEVEL_ENDING:
+		{
+			
+			if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 500 && mAnimatingWalls < len(mWalls)){
+				mWalls[mAnimatingWalls].StopAnimation();
+				mWalls[mAnimatingWalls].EnableFreePlay();
+				mAnimatingWalls++;
+				mWallsAnimationTime = GetTime();
+				
+				if(mAnimatingWalls >= len(mWalls)-1){
+					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+					
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);					
+				}
+			}
+			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
+			if(mAnimatingWalls >= len(mWalls)-1){
+				if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+				{
+					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+	
+					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+									
+					// If the player is in, I start the timer to end the level
+					mEnding = true;
+					mEndTimer = GetTime();
+				}
+				else{
+					var wallFound = false;
+					for(var i = 0; i < len(mWalls) && !wallFound; i++){
+						if(mIsVrOn || debugVrOn){
+							var range = 1; //I check whether the camera or the vive is in the range of an active button or not
+							var minDistance = range;
+							var closerControllerIndex = -1;
+							
+							if(controllerPressing < 0){
+								for(var j = 0; j < len(mControllersArray); j++){
+									var controllerDistance = mWalls[i].ActivateClosestButton(mControllersArray[j].GetPosition(), range);
+		
+									if(controllerDistance <= minDistance){
+										mControllersArray[j].SetActionAvailable(true);
+										minDistance = controllerDistance;
+										closerControllerIndex = j;	
+										wallFound = true;			
+									}
+									else{
+										mControllersArray[j].SetActionAvailable(false);								
+									}			
+								}
+							}
+							
+							if(closerControllerIndex != -1 || controllerPressing >= 0){
+								var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
+								mControllersArray[checkingController].SetActionAvailable(true);
+//							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
+								if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
+									controllerPressing = checkingController;
+									mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
+								}
+								else{
+									controllerPressing = -1;			
+									mWalls[i].StopMoving();	
+								}						
+							}		
+						}
+						else{
+							var range = 2.5; //I check whether the camera or the vive is in the range of an active button or not
+							if(mWalls[i].ActivateClosestButton(cameraPosition, range) <= range){
+								if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
+									mWalls[i].MoveButtonInRange(cameraPosition, false);						
+								}
+								else{	
+									mWalls[i].StopMoving();
+								}
+							}
+						}
+					}
+				}			
+			}
+			
+			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
+			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+				mIsLevelCompleted = true;
+				
+							
+			break;
+		}
+	}
+	
+	// I update the methods of the managers
+	mAnimator.UpdateTransitions(dt);
+	mSoundManager.UpdateMusic(dt);
+}
+
+/*
+ * This method checks where the given ray intersects the world, and returns true if that position is valid for the player
+ * 
+ * rayOrigin: (vector) starting point of the ray
+ * rayEnd: (vector) starting point of the ray
+ * contactPoint: (vector) if the ray intersects something, this parameter will be filled up with the information (needs to be passed as reference, with &)
+ * normal: (vector) if the ray intersects something, this parameter will be filled up with the normal to the intersected plane (needs to be passed as reference, with &)
+ * isWall: (boolean) if the ray intersects something, this parameter will be true if the interception was in a wall (needs to be passed as reference, with &)
+ */
+function Level5::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall)
+{
+	var intersectedPlane = -1;
+
+	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+
+	if(intersectedPlane == -1)
+		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
+	isWall = true;
+	
+	return intersectedPlane == 0;
+}
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function Level5::IsLevelCompleted()
+{
+	return mIsLevelCompleted;
+}
+
+function Level5::GetOpenglTransformOffset()
+{
+	return mOpenglTranslationOffset; 
+}
+
+function Level5::SetOpenglTransformOffset(openglTransformOffset)
+{
+	mOpenglTranslationOffset = openglTransformOffset; 
+}
+
+/*
+ * Method called by the GameManager to check if the level is completed
+ */
+function Level5::GetElevator()
+{
+	return mElevator;
+}
+
+
+function Level5::SetupOpenglLights()
+{
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	
+	// Note: might need to SUBTRACT mOpenglTranslationOffset to each axis position
+	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
+ 	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]); 
+ 	
+	glLight(GL_LIGHT0, GL_DIFFUSE, mLight0Diffuse); 
+	glLight(GL_LIGHT1, GL_DIFFUSE, mLight1Diffuse); 
+	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
+}
+
+
+function Level5::GetLevelPreview(){
+	return CVmTexture("Textures/Level5Prev.png");;
+}
+
+function Level5::GetLevelName(){
+	return "Wall";
+}
+
+function Level5::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
+}
+
+function Level5::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
+{
+	return false;
+}
+
+
+function Level5::DrawHUD(){
+	
+}
+
+

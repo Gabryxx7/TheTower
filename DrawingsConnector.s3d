@@ -103,22 +103,22 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mConnectorAlpha = 1.0;
 	
 	// I get the mesh and scale it
-	mConnectorMesh = CVmNewMesh("Sci-fi-thing.aam");
+	mConnectorMesh = CVmNewMesh("Meshes/Sci-fi-thing.aam");
 	mConnectorMesh.Scale(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 	
 	// Shader for the first (the "arm" of the object), second subset (the column) and the third one (that is basically the lights on the circle above)
 	if(USE_TOON_SHADER == 2)
 	{		
-		mConnectorMesh.ShaderAdd("antishader.glsl", 0);
-		mConnectorMesh.ShaderAdd("antishader.glsl", 1);
-		mConnectorMesh.ShaderAdd("antishader.glsl", 2);
+		mConnectorMesh.ShaderAdd("Shaders/antishader.glsl", 0);
+		mConnectorMesh.ShaderAdd("Shaders/antishader.glsl", 1);
+		mConnectorMesh.ShaderAdd("Shaders/antishader.glsl", 2);
 		mConnectorMesh.ShaderActivate(true);
 	}
 	else if(USE_TOON_SHADER == 1)
 	{
-		mConnectorMesh.ShaderAdd("toonShader.glsl", 0);
-		mConnectorMesh.ShaderAdd("toonShader.glsl", 1);
-		mConnectorMesh.ShaderAdd("toonShader.glsl", 2);
+		mConnectorMesh.ShaderAdd("Shaders/toonShader.glsl", 0);
+		mConnectorMesh.ShaderAdd("Shaders/toonShader.glsl", 1);
+		mConnectorMesh.ShaderAdd("Shaders/toonShader.glsl", 2);
 		mConnectorMesh.ShaderActivate(true);		
 	}
 	else if(USE_TOON_SHADER == 0)
@@ -178,21 +178,21 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	mLightBottomCircleMesh = CVmNewMesh(VRP_CIRCLE, 30, bottomCircleRadius, 1);  
 
 	// Each mesh has the same shader, with the same color
-	mLightConeMesh.ShaderAdd("colorModulatorShader.glsl", 0);
+	mLightConeMesh.ShaderAdd("Shaders/colorModulatorShader.glsl", 0);
 	mLightConeMesh.ShaderActivate(true);
 	mLightConeMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);		
 	mLightConeMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightConeMesh.ShaderSetParameter(0, "time", 0, 0);
 	mLightConeMesh.ShaderSetParameter(0, "alpha", 0, mLightConeDefaultAlpha);
 	
-	mLightTopCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
+	mLightTopCircleMesh.ShaderAdd("Shaders/colorModulatorShader.glsl", 0);
 	mLightTopCircleMesh.ShaderActivate(true);		
 	mLightTopCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
 	mLightTopCircleMesh.ShaderSetParameter(0, "time", 0, 0);
 	mLightTopCircleMesh.ShaderSetParameter(0, "alpha", 0, mLightConeDefaultAlpha);
 	
-	mLightBottomCircleMesh.ShaderAdd("colorModulatorShader.glsl", 0);
+	mLightBottomCircleMesh.ShaderAdd("Shaders/colorModulatorShader.glsl", 0);
 	mLightBottomCircleMesh.ShaderActivate(true);		
 	mLightBottomCircleMesh.ShaderSetParameter(0, "startingColor", 0, mLightConeDefaultColor);
 	mLightBottomCircleMesh.ShaderSetParameter(0, "finalColor", 0, mLightConeDefaultColor);
@@ -219,7 +219,7 @@ function DrawingsConnector::DrawingsConnector(lightColor, lightsRangeMin, lights
 	// Creating the shader for the silhouette; the silhouetteShader is actually unused for now. Since the object is kind of weird looking, it works
 	// really bad unless the offset for the silhouette is very very low. I found that by creating a shader that simply draws black (the mBorderShader)
 	// and by enlarging the mesh a little bit, use the shader and then reset the scale and draw it normally gives better results for this particular object
-	mSilhouetteShader = CVmShaderProgram("silhouetteShader.glsl");
+	mSilhouetteShader = CVmShaderProgram("Shaders/silhouetteShader.glsl");
 	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform float alpha; void main (void) { gl_FragColor = vec4(0.0, 0.0, 0.0, alpha); }", true);
 }
 

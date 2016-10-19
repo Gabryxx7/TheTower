@@ -1,0 +1,152 @@
+
+// 1 -> Keyboard
+// 2 -> Gamepad
+// 3 -> HTC Vive
+#define USE_INPUT_MANAGER 2
+
+#include <InputManagers/KeyboardManager.s3d>
+#include <InputManagers/GamepadManager.s3d>
+#include <InputManagers/ViveManager.s3d>
+
+/*
+ * This class works as an interface between the game and whatever it's being used for inputs. It will instantiates the corresponding 
+ * manager that will handle the actual inputs, and will communicate with the game when needed
+ */
+class InputManager
+{
+	var mIsVRon;
+	
+	// Actual input manager used
+	var mManager;
+	
+	// Camera that the chosen input manager will update. It needs to be passed AFTER the creation of the InputManager object
+	var mCamera;
+	
+	// Previous camera position, in case it gets moved to a wrong position and needs to be moved back at the last good position
+	var mPreviousCameraPosition;
+	
+	// Public functions
+	UpdateCamera();
+	UpdateControllers(openglTranslationOffset);
+	RestoreCameraPosition();
+	SetActiveCamera(camera);
+	GetActiveCamera();
+	IsPressingPrimaryButton(controllerIndex);
+	IsPressingSecondaryButton(controllerIndex);
+	IsGripPressed(controllerIndex);
+	GetController(controllerIndex);
+	HasPressedMenuButton(controllerIndex);
+	VibrateController(controllerIndex, microseconds);
+	GetPlayAreaSize();
+};
+
+
+/*
+ * Constructor
+ */
+function InputManager::InputManager(isVRon, HMD, joystick)
+{
+	mIsVRon = isVRon;
+	
+	if(mIsVRon)
+		mManager = ViveManager(HMD);
+	else
+	{
+		if(!joystick.Enabled)
+			mManager = KeyboardManager();
+		else
+			mManager = GamepadManager(joystick);
+	}
+}
+
+/*
+ * Method that updates the camera's orientation (i.e. the direction the use is looking at) and position
+ */
+function InputManager::UpdateCamera()
+{
+	// Saving the current position, in case the new movement will not be valid to the game. It's the game's job to check that
+	mPreviousCameraPosition = mCamera.GetPosition();
+	
+	mManager.UpdateCamera();
+}
+
+function InputManager::UpdateControllers(openglTranslationOffset)
+{
+	mManager.UpdateControllers(openglTranslationOffset);
+}
+
+
+/*
+ * Method that restores the camera's position to the last correct position used
+ */
+function InputManager::RestoreCameraPosition()
+{
+	mCamera.SetPosition(mPreviousCameraPosition);
+}
+
+/*
+ * Method that activates the camera that will be updated by the manager
+ */
+function InputManager::SetActiveCamera(camera)
+{
+	mCamera = camera;
+	
+	mManager.SetActiveCamera(camera);
+}
+
+
+/*
+ * Method that returns the active camera
+ */
+function InputManager::GetActiveCamera()
+{	
+	return mCamera;
+}
+
+function InputManager::IsPressingPrimaryButton(controllerIndex)
+{
+	return mManager.IsPressingPrimaryButton(controllerIndex);
+}
+
+function InputManager::IsPressingSecondaryButton(controllerIndex)
+{
+	return mManager.IsPressingSecondaryButton(controllerIndex);
+}
+
+function InputManager::IsGripPressed(controllerIndex)
+{
+	return mManager.IsGripPressed(controllerIndex);
+}
+
+function InputManager::HasPressedMenuButton(controllerIndex)
+{
+	return mManager.HasPressedMenuButton(controllerIndex);
+}
+
+function InputManager::GetController(controllerIndex)
+{
+	return mManager.GetController(controllerIndex);
+}
+
+/*
+ * This method is meaningful only if the Vive is connected; otherwise it does nothing
+ */
+function InputManager::VibrateController(controllerIndex, microseconds)
+{
+	if(mIsVRon)
+		mManager.VibrateController(controllerIndex, microseconds);
+}
+
+/*
+ * This method is meaningful only if the Vive is connected; otherwise it does nothing.
+ * It returns the playable area for the player (defined by the Vive's lighthouse system), in meters.
+ * 
+ * return: vector[2]: the x is the width, the y is the depth of the play area
+ */
+function InputManager::GetPlayAreaSize()
+{
+	if(mIsVRon)
+		return mManager.GetPlayAreaSize();
+	else
+		return [4.0, 4.0];
+}
