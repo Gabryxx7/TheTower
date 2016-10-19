@@ -657,8 +657,12 @@ function Level6::UpdateLogic(dt)
 			}
 			
 			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
-			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+			if(mEnding && GetTime() - mEndTimer > mTimeToEnd){
 				mIsLevelCompleted = true;
+				foreach(var controller in mControllersArray){					
+					controller.SetActionAvailable(false);
+				}
+			}
 			
 			break;
 		}
