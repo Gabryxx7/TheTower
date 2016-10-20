@@ -11,6 +11,7 @@ global var SCALE_FACTOR = 0.2;
 
 
 #include "Utils.s3d"
+#include "StarThing.s3d"
 #include "Text.s3d"
 #include "VirtualKeyboard.s3d"
 #include "Numpad.s3d"

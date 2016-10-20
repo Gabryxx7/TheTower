@@ -374,7 +374,8 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	for(var i = 0; i < starObjectsNumber; i++)
 	{
 		// To create the star object I use a function from the "Utils" file
-		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+		var star = StarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
+		var starObj = star.GetObj();
 		
 		// Creating 2 random colors to change over time
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];

@@ -203,14 +203,14 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
-	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 901));
-	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 902));
+	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 901));
+	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 902));
 
 	foreach(var gun in mGuns){
 		aadd(mControllersBeingUsedIndex, 0);
 	}		
 	
-	var gun1 = Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
+	var gun1 = Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 900);
 	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[0], gun1);	
 		
@@ -219,11 +219,11 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[1], gun1);	
 	
-	gun1 = Gun("Cannon", "Meshes/Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 0.75, 2, true, mAnimator, 3000);
+	gun1 = Gun("Cannon", "Meshes/Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 1, 2, true, mAnimator, 3000);
 	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[2], gun1);	
 	
-	gun1 = Gun("Shotgun", "Meshes/Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.35, 1, false, mAnimator, 4000);
+	gun1 = Gun("Shotgun", "Meshes/Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.5, 1, false, mAnimator, 4000);
 	gun1.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition(), 0, [1,0,0]);
 	aadd(mGunsEventTriggers[3], gun1);	
 	
@@ -280,7 +280,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	GenerateEnemies();
 	
 	mCameraHudColorAnimId = 9876;
-	mCameraHitBoxSize = 2.0*SCALE_FACTOR;
+	mCameraHitBoxSize = 1.5*SCALE_FACTOR;
 	mCameraHitBoxHeight = 3.0 * SCALE_FACTOR;
 	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxHeight/2, -mCameraHitBoxSize], [mCameraHitBoxSize/2, mCameraHitBoxHeight/2, mCameraHitBoxSize]));	
 	
@@ -833,7 +833,7 @@ function Level6::CounterKeyboardTesting(){
 
 function Level6::CreateTargetsStage0(numTargets){
 	var targets = {};
-	var cubeSizes = 4*SCALE_FACTOR;	
+	var cubeSizes = 3.5*SCALE_FACTOR;	
 	var bulletid;
 	
 	for(var i = 0; i < numTargets; i++){		
@@ -868,7 +868,7 @@ function Level6::CreateTargetsStage0(numTargets){
 		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
 		
 		targetObj.SetPosition([posX, posY, posZ]);
-		aadd(targets, Target(targetObj, 2, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator, false, bulletid));
+		aadd(targets, Target(bulletid, chosenMesh, targetObj, 2, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator, false));
 	}
 	return targets;
 }
@@ -881,8 +881,8 @@ function Level6::CreateTargetsStage1(numTargets){
 	{
 		// To create the star object I use a function from the "Utils" file
 		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-		var starObj = CreateStarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
-		aadd(targets, Target(starObj, 5, 3000+(i*600), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator, false, "Star"));
+		var star = StarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
+		aadd(targets, Target("Star"+str(i), star.GetMesh(), star.GetObj(), 5, 3000+(i*600), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator, false));
 	}
 	
 	return targets;
@@ -927,8 +927,7 @@ function Level6::CreateMeshesBossStage(){
 		chosenMesh.ShaderSetParameter(0,"diffuse", 0, color);
 		chosenMesh.ShaderSetParameter(0,"alpha", 0, 1.0);
 		chosenMesh.ShaderSetParameter(0,"outlinecolor", 0, [0,0,0]);
-		chosenMesh.ShaderActivate(true);
-//		aadd(targetsMeshes, Target(CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));	
+		chosenMesh.ShaderActivate(true);	
 		aadd(mBossStageMeshes, chosenMesh);		
 	}
 	
@@ -952,7 +951,7 @@ function Level6::CreateTargetsBossStage(){
 			bulletId = "InvaderD";
 		var color = [0,0,0];
 		mesh.ShaderGetUniformValue(0, 0, "diffuse", &color, null);
-		aadd(targets, Target(CVmObj(mesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true, bulletId));
+		aadd(targets, Target(bulletId, mesh, CVmObj(mesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));
 	}
 	
 	return targets;	
@@ -1012,9 +1011,9 @@ function Level6::DrawHUD(eye){
 
 function Level6::GenerateEnemies(){
 	mTargets = {};
-	aadd(mTargets, CreateTargetsStage0(8));
-	aadd(mTargets, CreateTargetsBossStage());
-	aadd(mTargets, CreateTargetsStage1(8));	
+//	aadd(mTargets, CreateTargetsStage0(9));
+//	aadd(mTargets, CreateTargetsBossStage()); //n = 4
+	aadd(mTargets, CreateTargetsStage1(12));	
 }
 
 
@@ -1035,7 +1034,7 @@ function Level6::HandleGuns()
 	}	
 				
 	// Now I check if the player is drawing; I first check if he pressed a button
-	var gunsBullets = {};
+	var gunsBullets = {{},{}};
 	for(var i = 0; i < len(mGuns); i++){
 		var gun = mGuns[i];
 		gun.UpdateGun();
@@ -1043,23 +1042,28 @@ function Level6::HandleGuns()
 		if(gun.GetID() != "Vive"){
 			var isPressing = false;
 			if(mIsVrOn || mDebugVrOn){
-				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
-//				isPressing = i == 0 ? KeyPressed("N") : KeyPressed("M"); 
+//				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
+				isPressing = i == 0 ? KeyPressed("Q") : KeyPressed("E"); 
 			}
 			else{
 				isPressing = mInputManager.IsPressingPrimaryButton();
-//				isPressing = i == 0 ? KeyPressed("N") : KeyPressed("M"); 
+//				isPressing = i == 0 ? KeyPressed("Q") : KeyPressed("E"); 
 			}
 						
 			if(isPressing){
 				if(gun.IsSingleShot()){
 					if(mControllersBeingUsedIndex[i] == 0){
 						mControllersBeingUsedIndex[i] = i+1;
-						aadd(gunsBullets, gun.Shoot());	
+						gunsBullets[i] = gun.Shoot();	
 					}			
 				}
 				else{
-					aadd(gunsBullets, gun.Shoot());	
+					gunsBullets[i] = gun.Shoot();	
+				}
+				
+				outputln(len(gunsBullets[i]));
+				if(len(gunsBullets[i]) > 0 && mIsVrOn){
+					mInputManager.VibrateController(mControllersArray[i].GetIndex(), 500);
 				}			
 			}
 			else if(mControllersBeingUsedIndex[i] != 0){
@@ -1069,13 +1073,11 @@ function Level6::HandleGuns()
 	}
 	
 	foreach(var gunBullets in gunsBullets){
-		if(gunBullets != Void){
-			foreach(var bullet in gunBullets){
-				if(bullet != Void){
-					aadd(mBulletsArray, bullet);
-				}
-			}		
-		}
+		foreach(var bullet in gunBullets){
+			if(bullet != Void){
+				aadd(mBulletsArray, bullet);
+			}
+		}	
 	}
 }
 

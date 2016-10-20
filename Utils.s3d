@@ -200,60 +200,6 @@ function AddToonShaderToMesh(mesh, ambient, diffuse, specular, shininess, lights
 }
 
 /*
- * This is an auxiliary function that creates cone-thing objects, used in Level0 and Level4
- * 
- * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the object
- * lightsRangeMax: (integer) the max number of the range of opengl lights that have to be used in the cel shader to render the object
- * baseSize: optional (float) the base size of the object; if not defined, a random one will be chosen
- * pyramidHeight: optional (float) height of a single pyramid in the object; if not defined, a random one will be chosen
- * color: optional (vector[3]) the color of the object; if not defined, a random one will be chosen
- */
-function CreateStarThing(lightsRangeMin, lightsRangeMax, baseSize, pyramidHeight, color, ambient)
-{
-	if(baseSize == Void)
-		baseSize = 0.3 * SCALE_FACTOR + (Rand(4) / 10.0) * SCALE_FACTOR;
-		
-	if(pyramidHeight == Void)
-		pyramidHeight = 1.0 * SCALE_FACTOR + (Rand(8) / 10.0) * SCALE_FACTOR;
-	
-	var pyramidMesh = CVmNewMesh(VRP_PYRAMID, 120, baseSize, pyramidHeight);
-	var cubeSize = pyramidHeight >= baseSize ? pyramidHeight : baseSize;
-	cubeSize += baseSize/2;
-	var boundingCubeMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSize, -cubeSize, -cubeSize], [cubeSize, cubeSize, cubeSize]);
-	boundingCubeMesh.Hide();
-	
-	if(color == Void)
-		color = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
-	
-//	mesh, ambient, diffuse, specular, shininess, lightsRangeMin, lightsRangeMax, scaleFactor, alpha
-	ambient = valtype(ambient) == "" ? [0.04, 0.04, 0.04] : ambient;
-	AddToonShaderToMesh(pyramidMesh, ambient, color, [0.4, 0.4, 0.4], 50, lightsRangeMin, lightsRangeMax, SCALE_FACTOR, 1.0);
-	
-	var star = CVmObj(boundingCubeMesh);
-	var pyramidObj1 = CVmObj(pyramidMesh);
-	var pyramidObj2 = CVmObj(pyramidMesh);
-	var pyramidObj3 = CVmObj(pyramidMesh);
-	var pyramidObj4 = CVmObj(pyramidMesh);
-	var pyramidObj5 = CVmObj(pyramidMesh);
-	var pyramidObj6 = CVmObj(pyramidMesh);
-	
-	pyramidObj2.Rotate(90, 0, 0, 1);
-	pyramidObj3.Rotate(180, 0, 0, 1);
-	pyramidObj4.Rotate(270, 0, 0, 1);
-	pyramidObj5.Rotate(90, 1, 0, 0);
-	pyramidObj6.Rotate(-90, 1, 0, 0);
-	
-	star.AddChild(pyramidObj1);
-	star.AddChild(pyramidObj2, 0, -baseSize, 0);
-	star.AddChild(pyramidObj3, baseSize, -baseSize, 0);
-	star.AddChild(pyramidObj4, baseSize, 0, 0);
-	star.AddChild(pyramidObj5, 0, -baseSize, 0);
-	star.AddChild(pyramidObj6, 0, 0, -baseSize);
-
-	return star;
-}
-
-/*
  * This is an auxiliary function that creates cone-thing objects, used in Level0 and Level4; works just like CreateStarThing()
  * 
  * lightsRangeMin: (integer) the min number of the range of opengl lights that have to be used in the cel shader to render the object
