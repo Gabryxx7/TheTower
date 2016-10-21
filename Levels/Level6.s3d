@@ -587,7 +587,7 @@ function Level6::UpdateLogic(dt)
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
 			
-			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2))
+			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2) || KeyPressed("T"))
 				mTimeWarpFactor = 0.2;
 			else
 				mTimeWarpFactor = 1.0; 
@@ -1141,7 +1141,7 @@ function Level6::UpdateWallHoles(){
 
 function Level6::UpdateLasers(targets){
 	var stageTargets = targets == Void ? {} : targets;
-	for(var i = len(mBulletsArray)-1; i >= 0 ; i--){
+	for(var i = len(mBulletsArray)-1; i >= 0 && len(mBulletsArray) > 0; i--){
 		var bulletObj = mBulletsArray[i].GetObj();
 		var bulletMaxLife = mBulletsArray[i].GetMaxLife();
 		var bulletShotTIme = mBulletsArray[i].GetShotTime();
