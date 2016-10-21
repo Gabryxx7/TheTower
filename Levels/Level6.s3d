@@ -746,7 +746,8 @@ function Level6::GetLevelName(){
 
 function Level6::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
 {
-	var hasToApplyBlur = mApplyPostProcessing;
+//	var hasToApplyBlur = mApplyPostProcessing;
+	var hasToApplyBlur = false;
 	
 	if(hasToApplyBlur)
 	{
@@ -1135,9 +1136,8 @@ function Level6::UpdateWallHoles(){
 }
 
 function Level6::UpdateLasers(targets){
-	var bulletsToRemoveIndeces = {};
 	var stageTargets = targets == Void ? {} : targets;
-	for(var i = 0; i < len(mBulletsArray); i++){
+	for(var i = len(mBulletsArray)-1; i >= 0 ; i--){
 		var bulletObj = mBulletsArray[i].GetObj();
 		var bulletMaxLife = mBulletsArray[i].GetMaxLife();
 		var bulletShotTIme = mBulletsArray[i].GetShotTime();
@@ -1199,7 +1199,7 @@ function Level6::UpdateLasers(targets){
 				aadd(mWallsHolesObjs, {holeObj, GetTime()});
 			}
 			
-			aadd(bulletsToRemoveIndeces, i);
+			adel(mBulletsArray, i);
 		}
 		else if(isEnemyBullet){
 //			var cameraHasBeenHit = mCameraHitBoxObj.IsCollidingBBox(bulletObj);
@@ -1232,7 +1232,7 @@ function Level6::UpdateLasers(targets){
 					mLostTime = GetTime();					
 				}
 				
-				aadd(bulletsToRemoveIndeces, i);
+				adel(mBulletsArray, i);
 			}    				
 		}
 		else if(!isEnemyBullet){    				
@@ -1250,28 +1250,13 @@ function Level6::UpdateLasers(targets){
 						UpdateCounter(mCounter, false);	
 					}
 					
-					aadd(bulletsToRemoveIndeces, i);
+					adel(mBulletsArray, i);
 				}    
     		}
 		}
 		else if(GetTime() - bulletShotTIme > bulletMaxLife){
-			aadd(bulletsToRemoveIndeces, i);
+			adel(mBulletsArray, i);
 		}
-	}
-	
-	for(var i = 0; i < len(bulletsToRemoveIndeces) && len(mBulletsArray)>0; i++){
-		var indexToRemove = bulletsToRemoveIndeces[i];
-//		output("REMOVING index: " +str(indexToRemove-i) +" OrigIndex: " +str(indexToRemove) +" Removed: " +str(i));
-//		outputln(mBulletsArray[indexToRemove-i].GetId());
-//		output("[");
-//		foreach(var bullet in mBulletsArray)
-//			output(bullet.GetId()+", ");			
-//		outputln("]");
-		adel(mBulletsArray, indexToRemove-i);
-//		output("[");
-//		foreach(var bullet in mBulletsArray)
-//			output(bullet.GetId()+", ");			
-//		outputln("]\n");
 	}
 }
 

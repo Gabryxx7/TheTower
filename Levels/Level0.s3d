@@ -401,7 +401,7 @@ function Level0::Level0(isVRon, inputManager, soundManager, lights, openglTransl
 	mElevator = Elevator(elevatorWidth, elevatorDepth, elevatorHeight, mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y);
 		
 	// Positioning the room so that is right behind the first portal frame
-	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, 0, elevatorDepth - 0.04 * SCALE_FACTOR]);
+	mElevator.SetPosition(portalFrameObj1.GetPosition() - [0, -0.005*SCALE_FACTOR, elevatorDepth - 0.04 * SCALE_FACTOR]);
 				
 	// At start I hide the elevator; it will appear later
 	mElevator.Hide();
