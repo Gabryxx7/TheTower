@@ -43,6 +43,37 @@
 //		(vec, fpos, lpos, ind)		- Sorts the vector 'vec', starting from the initial position 'fpos' to the ending position 'lpos'. The result is stored
 //									  in the vector 'ind' which contains the ordered indices (vec[ind[fpos]] is the first element of the ordered vector, etc.
 //
+//
+//		Animator class				- Allows to create customizable animations.
+//										There are different types of animations:
+//											-Transition animation from point to point(s)
+//											-Rotation animation from angle to angle(s)
+//											-Scaling animation from scaling array to scaling array(s)
+//											-Rotation Around point
+//											-Mesh "diffuse" parameter animation, from value to value(s)
+//											-Light color transition from value to value
+//											-Generic value transition (tracked with an animationId), from value or array to value(s) or array(s)
+//
+//										For each of the above animations it is possible to define:
+//											-Looping: Decide whether the animation will stop after it reach the desired value or the last value of the array, or it will cycle until removed
+//											-Time: How long the animation from a value to another value will last
+//											-Easing: The kind of easing in or out desired:
+//												-linear
+//												-cubic
+//												-quadratic
+//
+//										Besides, it is also possible to:
+//											-Track value state given the obj or the animationID (if generic) associated with the animation
+//											-Remove animation given the obj or the animationID (if generic) associated with the animation
+//											-Check whether the object or an animationID has or not an animation associated
+//
+//
+//		ViveController class		- Create a Vive Controller Obj that will take care of:
+//										-Updating the status of the controller like:
+//											-Visual feedback of botton status (e.g touchpad coordinates or grip pressure)
+//										-Computing the correct BoundingBox
+//										-Highlighting the controller when an action is available
+//
 // ******************************************************************************************************************************************
 
 
@@ -608,6 +639,1695 @@ function qsort (vettore, prim, ult, indices)
 	
 	return v;			
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define NORMAL_TRANSITION 0
+#define ROTATING_TRANSITION 1
+#define SCALING_TRANSITION 2
+#define ROTATION_AROUND_POINT_TRANSITION 3
+#define COLOR_TRANSITION 4
+#define LIGHT_COLOR_TRANSITION 5
+#define GENERIC_TRANSITION 6
+
+#define LINEAR 0
+#define QUADRATIC_IN 1
+#define QUADRATIC_OUT 2
+#define QUADRATIC_IN_OUT 3
+#define CUBIC_IN 4
+#define CUBIC_OUT 5
+#define CUBIC_IN_OUT 6
+
+/*
+ * This class handles simple transitions and rotations of CVmObj objects.
+ * To use the class, the user must create a Animator object; then by calling its method he can create transitions and rotations of any CVmObject. The
+ * animation will start as soon it is created.
+ * The user must call "UpdateTransitions(dt)" in the logic method so that the class can update the objects positions.
+ * 
+ * NOTE: every transition works in the LOCAL coordinate system of the object, meaning that the starting point and ending point (or waypoints) of the transition
+ * must be given in the local coordinate system of the object. If, for example, you have to move an object toward another that is in another coordinate system,
+ * you first need to obtain the coordinate of this second object in the coordinate system of the first object.
+ * 
+ * Another way to do it would be to not use the SetPosition() of objects, but the Translate method; in that case, the user has to pass as parameters of
+ * endpoints not coordinates, but translation vectors. For instance, in the example above, the user would convert both objects positions in world coordinates
+ * using LocalToWorld() method, and then take the difference of the 2 positions. The result will be the translate vector to pass as endpoint
+ */
+class Animator
+{
+	// List of objects that currently have an active transition/rotation
+	var mObjects;                  
+	
+	// List of starting positions for every transition. For rotations, it contains the starting angle   
+	var mStartingPositions; 
+	var mEndPositions;
+	var mCurrentPositions;
+	
+	// For every transition, this array contains the easing function used for the transition; the default function is linear interpolation
+	var mEasingFunctionArray;
+	
+	// For every object added to the class, this array contains a boolean that states whether the object's transition/rotation is looping or not
+	var mIsLoopArray;
+	
+	// For every transition/rotation active, this array the time specified by the user for the animation
+	var mTimeArray;
+	
+	// For each transition, this array contains the time passed from the start of the transition
+	var mTimeElapsedArray;
+	
+	// Scale factor: used to slow down, speed up or stop animations (the default value is 1)
+	var mScaleFactorArray;
+	
+	// List of radius for rotation-around-point transitions
+	var mRadiusArray;
+	
+	// This array contains the speed of the increments for certain transitions
+	var mSpeedArray;
+	
+	// These arrays indicate whether the given object has waypoints (so its transition is a "path"), and in that case which are the waypoints 
+	// and the counter that states what is the next waypoint to visit. These arrays are only used for transitions, and for rotation objects
+	// their corresponding values are empty
+	var mHasWaypointsArray;
+	var mWaypointsArray;
+	var mWaypointsCounterArray;
+	
+	// These arrays are used in case of rotation objects. For each element they indicate what is the final angle they have to reach,
+	// what is the delta angle (i.e. the difference between the starting angle and the current angle they're at), the axis around which they have to rotate to
+	// (it's actually a vector [x, y, z]), and whether they have to reverse the rotation when they reach the limit (this is checked only if the rotation is set 
+	// to be a loop). These arrays are meaningful only for rotations, so for common transitions they're empty
+	var mFinalAngleArray;
+	var mAngleDeltaArray;
+	var mAxisArray;
+	var mReverseArray;
+	
+	// For each object it contains the type of transition (0 == normal transition, 1 == rotation, 2 == scaling, 3 == rotation around point)
+	var mTransitionTypeArray;
+	
+	
+	// Boolean used to indicate whether the waypoints of transitions are inverted or not
+	var mAreTransitionsInverted;
+	
+	
+	// Public functions
+	CreateTransition(object, startingPos, endingPos, time, loop, easingType);
+	
+	CreatePathTransition(object, waypoints, time, loop, easingType);
+	CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
+	CreateScalingTransition(object, startingScale, endingScale, time, loop, easingType);
+	CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise);
+	CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop, easingType);
+	CreateLightColorTransition(openglLight, startingColor, endingColor, time, easingType);
+	CreateGenericTransition(transitionId, startingValue, endingValue, time, easingType);
+	
+	GetCurrentStateInTransition(object, transitionType);
+	ChangeScaleFactors(newFactor);
+	RemoveTransitionByObject(object, isRotating);
+	HaveTransition(object, isType);
+	
+	InvertTransitions();
+	UpdateTransitions(dt);
+	UpdateValue(timeElapsed, duration, startingValue, endingValue, easeType);
+	RemoveTransitionByIndex(index);
+};
+
+/* Constructor */
+function Animator::Animator()
+{
+	mObjects = {};
+	mStartingPositions = {};
+	mEndPositions = {};
+	mCurrentPositions = {};
+	mEasingFunctionArray = {};
+	mIsLoopArray = {};
+	mTimeArray = {};
+	mTimeElapsedArray = {};
+	mScaleFactorArray = {};
+	mRadiusArray = {};
+	mSpeedArray = {};
+	
+	mHasWaypointsArray = {};
+	mWaypointsArray = {};
+	mWaypointsCounterArray = {};
+	
+	mTransitionTypeArray = {};
+	mFinalAngleArray = {};
+	mAxisArray = {};
+	mAngleDeltaArray = {};
+	mReverseArray = {};
+	
+	mAreTransitionsInverted = false;
+}
+
+/* Method that creates a transition from startingPos to endingPos in the given time. Ending pos can be an array of positions, and if it is it will
+ * create a path transition instead; in that case "time" will be the time to get from one waypoint to the other, and if "loop" is true when the object
+ * will reach the last waypoint it will go back to startingPos and start the transition all over again
+ * 
+ * object: (CVmObj) the object to move
+ * startingPos: (vector) starting position
+ * endingPos: (vector or array of vectors; es.: {[0, 10, 0], [10, 10, 0]}) ending position
+ * time: (float) the time it has to move from start to end (expressed in seconds)
+ * loop: (boolean) whether the transition has to loop or not
+ */
+function Animator::CreateTransition(object, startingPos, endingPos, time, loop, easingType)
+{
+	// If there is already a transition active for the object, I remove it ("false" indicates a movement transition); if there isn't this doesn't do anything
+	RemoveTransitionByObject(object, NORMAL_TRANSITION);
+	RemoveTransitionByObject(object, ROTATION_AROUND_POINT_TRANSITION);
+	
+	// For starter, I move the object to the starting position, in case it wasn't there already
+	object.SetPosition(startingPos);
+	
+	// Adding the things needed to update the object's position
+	aadd(mObjects, object);
+	aadd(mCurrentPositions, startingPos);
+	aadd(mStartingPositions, startingPos);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, time);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	if(easingType == Void)
+		aadd(mEasingFunctionArray, LINEAR);
+	else
+		aadd(mEasingFunctionArray, easingType);
+	
+	aadd(mTransitionTypeArray, NORMAL_TRANSITION);
+	
+	var endPoint = endingPos;
+	
+	// To incorporate both common transitions and path transitions (i.e. with waypoints), I check the type of "endingPos". In fact, if it's a common transition
+	// it will be a vector, otherwise an array of vectors (actually, I'm assuming it's vectors; I'm trusting the user here).
+	// So if the type is "A" (Array), I populate the waypoints' arrays with useful things
+	if(valtype(endingPos) == "A")
+	{
+		// The first waypoint is the current end point, so I get it to do some computations soon
+		endPoint = endingPos[0];
+		
+		// I'm creating a waypoints array that contains all waypoints, including the starting position, to make the update of the object's position easier
+		var waypoints = {startingPos};
+		
+		// I add each waypoint to this array
+		foreach(var waypoint in endingPos)
+		{
+			aadd(waypoints, waypoint);
+		}
+		
+		// I state that this object has waypoints, and I'm passing the waypoints. I'm also starting the waypointsCounter (i.e. the variable that says what is
+		// the next waypoint) to 2, since the first is the starting position and the second is the waypoint I'm already traveling to
+		aadd(mHasWaypointsArray, true);
+		aadd(mWaypointsArray, waypoints);
+		aadd(mWaypointsCounterArray, 2);
+	}
+	else
+	{		
+		// If this object doesn't have transitions, I state so by putting "false" in the array; I also save the ending position in the waypoints array, even though
+		// technically there are no waypoints (but it saves space)
+		aadd(mHasWaypointsArray, false);
+		aadd(mWaypointsArray, endingPos);
+		aadd(mWaypointsCounterArray, 0);
+	}
+	
+	aadd(mEndPositions, endPoint);
+	
+	// Since this is a transition, the arrays regarding rotation are filled with random things since they won't be used. I fill them anyway in order
+	// to have a 1:1 ratio between transitions and rotations array, so that I can reuse the same arrays for the things that are common between
+	// transitions and rotations
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+	aadd(mSpeedArray, 0);
+	aadd(mRadiusArray, 0);
+}
+
+/* Method that creates a rotation from startingAngle to finalAngle around the given axis in the given time. 
+ * 
+ * object: (CVmObj) the object to move
+ * startingAngle: (float) starting angle
+ * finalAngle: (float) final angle
+ * axis: (vector) the axis around which to rotate (i.e. [0, 1, 0])
+ * time: (float) the time it has to move from start to end (expressed in seconds)
+ * loop: (boolean) whether the rotation has to loop or not
+ * reverse: (boolean) this is only checked if loop == true; in that case if reverse is true the loop will go back and forth from startingAngle to finalAngle
+ */
+function Animator::CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse)
+{		
+	// If there is already a transition active for the object, I remove it ("true" indicates a rotation transition); if there isn't this doesn't do anything
+	RemoveTransitionByObject(object, ROTATING_TRANSITION);
+
+	// First off, I'm setting the starting rotation
+//	object.SetRotation(startingAngle, axis);
+	
+	aadd(mObjects, object);
+	aadd(mCurrentPositions, startingAngle);
+	aadd(mStartingPositions, startingAngle);
+	aadd(mEndPositions, finalAngle);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, time);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	aadd(mEasingFunctionArray, LINEAR);
+	
+	// I state that this object has a rotation
+	aadd(mTransitionTypeArray, ROTATING_TRANSITION);
+	
+	// Computing the speed of the rotation, based on the given time
+	var speed = (finalAngle - startingAngle) / (time);
+	
+	// I am adding the speed to the mXSpeedArray, even though the X doesn't really fit; I do so tho avoid creating a completely new array
+	aadd(mSpeedArray, speed);
+	
+	// Filling some useful arrays
+	aadd(mFinalAngleArray, finalAngle);
+	aadd(mAxisArray, axis);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, reverse);
+	
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, 0);
+	aadd(mWaypointsCounterArray, 0);
+	aadd(mRadiusArray, 0);
+}
+
+
+/*
+ * This method creates scaling transitions; the code is pretty much the same as for movement transitions
+ */
+function Animator::CreateScalingTransition(object, startingScale, endingScale, time, loop, easingType)
+{		
+	RemoveTransitionByObject(object, SCALING_TRANSITION);
+	
+	// First off, I'm setting the starting scale
+	object.SetScale(startingScale);
+	
+	aadd(mObjects, object);
+	aadd(mCurrentPositions, startingScale);
+	aadd(mStartingPositions, startingScale);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, time);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	if(easingType == Void)
+		aadd(mEasingFunctionArray, LINEAR);
+	else
+		aadd(mEasingFunctionArray, easingType);
+	
+	// I state that this object is scaling
+	aadd(mTransitionTypeArray, SCALING_TRANSITION);
+	
+	var endScale = endingScale;
+	
+	if(valtype(endingScale) == "A")
+	{
+		endScale = endingScale[0];
+		
+		var waypoints = {startingScale};
+		
+		foreach(var waypoint in endingScale)
+			aadd(waypoints, waypoint);		
+
+		aadd(mHasWaypointsArray, true);
+		aadd(mWaypointsArray, waypoints);
+		aadd(mWaypointsCounterArray, 2);
+	}
+	else
+	{		
+		aadd(mHasWaypointsArray, false);
+		aadd(mWaypointsArray, endingScale);
+		aadd(mWaypointsCounterArray, 0);
+	}
+	
+	aadd(mEndPositions, endScale);
+
+	
+	// Arrays not used; filled with useless stuff
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+	aadd(mSpeedArray, 0);
+	aadd(mRadiusArray, 0);
+}
+
+
+/*
+ * This method creates rotation-around-point transitions; the code is pretty much the same as for simple rotation transitions
+ */
+function Animator::CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise)
+{		
+	randomness = (valtype(randomness) == "") ? false : randomness;
+	
+	RemoveTransitionByObject(object, ROTATION_AROUND_POINT_TRANSITION);
+	
+	object.SetPosition(centerPoint);
+	
+	aadd(mObjects, object);
+	aadd(mCurrentPositions, centerPoint);
+	aadd(mStartingPositions, centerPoint);
+	aadd(mEndPositions, 360);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, period);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	aadd(mEasingFunctionArray, LINEAR);
+	
+	aadd(mAxisArray, 0.0);  // This is actually the starting angle of the rotation; it's always 0; I don't want to create another array just for this
+	
+	// I state that this object is a rotation-around-point
+	aadd(mTransitionTypeArray, ROTATION_AROUND_POINT_TRANSITION);
+
+	// Radius of the circle	
+	var radius = Modulus(centerPoint - startingPoint);
+	
+	// Angular velocity; I convert the total degrees of the circle to radiants because the speed will be used to update angles that are in radiants
+	var speed = (360.0 * GRAD_TO_RAD) / period;
+	
+	if(randomness)
+		speed = radius * (360.0 * GRAD_TO_RAD) / (period / 2.0);
+		
+		
+	if(clockwise != Void && !clockwise)
+		speed = -speed;
+	
+	aadd(mRadiusArray, radius);
+	
+	// I am adding the speed to the mSpeedArray, even though the X doesn't really fit; I do so tho avoid creating a completely new array
+	aadd(mSpeedArray, speed);
+		
+	// Filling some useful arrays
+	aadd(mFinalAngleArray, 360.0);
+	aadd(mAngleDeltaArray, 0);
+	
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, 0);
+	aadd(mWaypointsCounterArray, 0);
+	aadd(mReverseArray, 0);
+}
+
+/*
+ * This method creates a color transition for meshes that have the toon shader (it's assumed that they have it already).
+ * The transition works pretty much like the scaling transition for example, except that there are not waypoints here
+ */
+function Animator::CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop, easingType)
+{
+	RemoveTransitionByObject(mesh, COLOR_TRANSITION);
+	
+	// First off, I'm setting the starting color
+	mesh.ShaderSetParameter(0, "diffuse", 0, startingColor);
+	
+	aadd(mObjects, mesh);
+	aadd(mCurrentPositions, startingColor);
+	aadd(mStartingPositions, startingColor);
+	aadd(mEndPositions, endingColor);
+	aadd(mIsLoopArray, loop);
+	aadd(mTimeArray, time);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	if(easingType == Void)
+		aadd(mEasingFunctionArray, LINEAR);
+	else
+		aadd(mEasingFunctionArray, easingType);
+	
+	// I state that this object has a color transition
+	aadd(mTransitionTypeArray, COLOR_TRANSITION);
+	
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, startingColor);
+	aadd(mWaypointsCounterArray, 0);
+	
+	// Arrays not used; filled with useless stuff
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+	aadd(mSpeedArray, 0);
+	aadd(mRadiusArray, 0);
+}
+
+
+function Animator::CreateLightColorTransition(openglLight, startingColor, endingColor, time, easingType)
+{
+	RemoveTransitionByObject(openglLight, LIGHT_COLOR_TRANSITION);
+	
+	// First off, I'm setting the starting color
+	glLight(openglLight, GL_DIFFUSE, startingColor); 
+	
+	aadd(mObjects, openglLight);
+	aadd(mCurrentPositions, startingColor);
+	aadd(mStartingPositions, startingColor);
+	aadd(mEndPositions, endingColor);
+	aadd(mIsLoopArray, false);
+	aadd(mTimeArray, time);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	if(easingType == Void)
+		aadd(mEasingFunctionArray, LINEAR);
+	else
+		aadd(mEasingFunctionArray, easingType);
+	
+	// I state that this object has a color transition
+	aadd(mTransitionTypeArray, LIGHT_COLOR_TRANSITION);
+	
+	aadd(mHasWaypointsArray, false);
+	aadd(mWaypointsArray, startingColor);
+	aadd(mWaypointsCounterArray, 0);
+
+	// Arrays not used; filled with useless stuff
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+	aadd(mSpeedArray, 0);
+	aadd(mRadiusArray, 0);
+}
+
+
+/*
+ * This method creates scaling transitions; the code is pretty much the same as for movement transitions
+ */
+function Animator::CreateGenericTransition(transitionId, startingValue, endingValue, time, easingType)
+{		
+	var id = transitionId;
+	
+	RemoveTransitionByObject(id, GENERIC_TRANSITION);
+		
+	aadd(mObjects, id);
+	aadd(mCurrentPositions, startingValue);
+	aadd(mStartingPositions, startingValue);
+	aadd(mIsLoopArray, false);
+	aadd(mTimeArray, time);
+	aadd(mTimeElapsedArray, 0);
+	aadd(mScaleFactorArray, 1.0);
+	
+	if(easingType == Void)
+		aadd(mEasingFunctionArray, LINEAR);
+	else
+		aadd(mEasingFunctionArray, easingType);
+	
+	aadd(mTransitionTypeArray, GENERIC_TRANSITION);
+	
+	var endValue = endingValue;
+	
+	if(valtype(endingValue) == "A")
+	{
+		endValue = endingValue[0];
+		
+		var waypoints = {startingValue};
+		
+		foreach(var waypoint in endingValue)
+			aadd(waypoints, waypoint);		
+
+		aadd(mHasWaypointsArray, true);
+		aadd(mWaypointsArray, waypoints);
+		aadd(mWaypointsCounterArray, 2);
+	}
+	else
+	{		
+		aadd(mHasWaypointsArray, false);
+		aadd(mWaypointsArray, endValue);
+		aadd(mWaypointsCounterArray, 0);
+	}
+	
+	aadd(mEndPositions, endValue);
+
+	// Arrays not used; filled with useless stuff
+	aadd(mAxisArray, 0);
+	aadd(mFinalAngleArray, 0);
+	aadd(mAngleDeltaArray, 0);
+	aadd(mReverseArray, false);
+	aadd(mSpeedArray, 0);
+	aadd(mRadiusArray, 0);
+}
+
+/*
+ * This method as to be called by the caller in its "update" function, so that the objects' positions will be constantly updated
+ * 
+ * dt: (float) the delta time, i.e. the time from the last frame to the current frame
+ */
+function Animator::UpdateTransitions(dt)
+{
+	// Iterating over all the objects that have active transitions/rotations
+	for(var i = 0; i < len(mObjects); i++)
+	{
+		var object = mObjects[i];
+		
+		mTimeElapsedArray[i] += dt * mScaleFactorArray[i];
+		
+		var duration = mTimeArray[i];
+		var timeElapsed = mTimeElapsedArray[i];
+		var easingType = mEasingFunctionArray[i];
+		
+		// Case where this object is a transition object and NOT a rotation one
+		if(mTransitionTypeArray[i] == NORMAL_TRANSITION)
+		{
+			// Getting some useful information from the arrays
+			var currentPosition = object.GetPosition();
+			var startingPosition = mStartingPositions[i];
+			var endPosition = mEndPositions[i];
+			
+			// Computing the new position
+			currentPosition = UpdateValue(timeElapsed, duration, startingPosition, endPosition, easingType);
+
+			// Setting the new position
+			object.SetPosition(currentPosition);
+	
+			// Now I compute the distance traveled from the starting position to the current one; if it's greater or equal than the total distance, I'm done
+			if(timeElapsed >= duration)
+			{
+				object.SetPosition(endPosition);
+				mTimeElapsedArray[i] = 0;
+								
+				// Actually, if the objects has waypoints, I'm not done since there might be more waypoints to travel to
+				if(mHasWaypointsArray[i])
+				{
+					// Getting all the waypoints
+					var waypoints = mWaypointsArray[i];
+					
+					// If waypoints are inverted and we reached the first one (which now is the last) and the transition isn't looping, I end the transition
+					if(mAreTransitionsInverted && mWaypointsCounterArray[i] == 0 && !mIsLoopArray[i]) 
+						RemoveTransitionByIndex(i);
+					// Checking if there is still at least one waypoints to travel to
+					else if(mWaypointsCounterArray[i] < len(waypoints))
+					{
+						// In that case I take the new waypoint and I set as new starting position the current one
+						var endpoint = waypoints[mWaypointsCounterArray[i]];
+						mStartingPositions[i] = currentPosition;
+						mEndPositions[i] = endpoint;
+
+						// Now I have to change the counter to point to the transition I will have to visit after the current one (i.e., if I have waypoints
+						// X, Y and Z and I'm moving from X to Y, the counter will point to Z); this changes whether waypoints are reversed or not; in that 
+						// case we must decrement the counter, otherwise increment it
+						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+							mWaypointsCounterArray[i]--;
+						else if(mAreTransitionsInverted)
+							mWaypointsCounterArray[i] = len(waypoints) - 1;
+						else
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
+						
+						// If we're also looping, we take the modulo of the counter so that we start from the beginning (this is only useful if we're incrementing)
+						if(mIsLoopArray[i])
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
+					}
+					// If it reached all waypoints and the object isn't looping, I remove it from the active transitions
+					else
+						RemoveTransitionByIndex(i);
+				}
+				// If the object doesn't have waypoints but is looping, I invert the sign of the direction and putting as starting position the current one;
+				// I also save the final position in the mWaypointsArray, although technically it doesn't have waypoints.
+				// The rest (distance to travel, speed and so on) obviously stays the same
+				else if(mIsLoopArray[i])
+			    {
+				 	mWaypointsArray[i] = mStartingPositions[i];
+				 	mEndPositions[i] = mStartingPositions[i];
+				 	mStartingPositions[i] = currentPosition;
+				}
+				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
+				else
+					RemoveTransitionByIndex(i);
+			}
+		}
+		// If the object has not a transition but a rotation, it's a bit different
+		else if(mTransitionTypeArray[i] == ROTATING_TRANSITION)
+		{
+			// Taking some useful stuff
+			var speed = mSpeedArray[i];
+			var axis = mAxisArray[i];
+			var startingAngle = mStartingPositions[i];
+			var finalAngle = mFinalAngleArray[i];
+			var currentAngle = mAngleDeltaArray[i];
+			
+			// The increment is set by the speed and the delta time
+			var increment = speed * dt * mScaleFactorArray[i];
+			
+			// I rotate the object with the previously computed speed around the given axis
+			object.Rotate(increment, axis);
+			
+			// I update the current angle with the absolute value of the current increment; I always consider the angle positive to simplify computations
+			// in case the rotation is in a loop and also needs to be reversed.
+			// If the transitions are inverted, I decrement
+			if(!mAreTransitionsInverted)
+				currentAngle += abs(increment);
+			else
+				currentAngle -= abs(increment);
+			
+			// If the transitions are inverted, we're NOT looping and the angle reached the starting angle, I end the transition
+			if(mAreTransitionsInverted && !mIsLoopArray[i] && currentAngle <= startingAngle)
+				RemoveTransitionByIndex(i);
+			// If the current angle is greater or equal then the total angle distance it has to rotate to, we're done (almost)
+			else if(currentAngle >= abs(finalAngle - startingAngle))
+			{				
+				// If the object has to loop and also reverse (i.e. go back from the final angle to the starting angle and repeat), I invert the speed 
+				// value so that it rotates in the opposite direction and reset the delta value so I can check again the angle distance
+				if(mIsLoopArray[i] && mReverseArray[i])
+				{
+					mSpeedArray[i] = -speed;
+					mAngleDeltaArray[i] = 0;
+				}
+				// If is looping but not reversing, I simply reset the delta value so that it keeps rotating forever
+				else if(mIsLoopArray[i])
+					mAngleDeltaArray[i] = 0;
+				// If it's not looping, I remove the object from the active objects
+				else
+					RemoveTransitionByIndex(i);
+			}
+			// Otherwise, if it didn't reach the end, I update the delta value with the current angle
+			else
+				mAngleDeltaArray[i] = currentAngle;
+		}
+		// Case where we have a scaling transition
+		else if(mTransitionTypeArray[i] == SCALING_TRANSITION)
+		{
+			// Getting some useful information from the arrays
+			var currentScale = object.GetScale();
+			var startingScale = mStartingPositions[i];
+			var endScale = mEndPositions[i];
+			
+			currentScale = UpdateValue(timeElapsed, mTimeArray[i], startingScale, endScale, easingType);
+			
+			object.SetScale(currentScale);
+			
+			if(timeElapsed >= duration)
+			{
+				object.SetScale(endScale);
+				mTimeElapsedArray[i] = 0;
+				
+				if(mHasWaypointsArray[i])
+				{
+					var waypoints = mWaypointsArray[i];
+					
+					if(mAreTransitionsInverted && mWaypointsCounterArray[i] == 0 && !mIsLoopArray[i]) 
+						RemoveTransitionByIndex(i);
+					else if(mWaypointsCounterArray[i] < len(waypoints))
+					{
+						var newEndScale = waypoints[mWaypointsCounterArray[i]];
+						mStartingPositions[i] = currentScale;
+						mEndPositions[i] = newEndScale;
+						
+						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+							mWaypointsCounterArray[i]--;
+						else if(mAreTransitionsInverted)
+							mWaypointsCounterArray[i] = len(waypoints) - 1;
+						else
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
+						
+						if(mIsLoopArray[i])
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
+					}
+					else
+						RemoveTransitionByIndex(i);
+				}
+				// If the object doesn't have waypoints but is looping, I invert the sign of the direction and putting as starting position the current one;
+				// I also save the final position in the mWaypointsArray, although technically it doesn't have waypoints.
+				// The rest (distance to travel, speed and so on) obviously stays the same
+				else if(mIsLoopArray[i])
+			    {
+				 	mWaypointsArray[i] = mStartingPositions[i];
+				 	mEndPositions[i] = mStartingPositions[i];
+					mStartingPositions[i] = endScale;
+				}
+				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
+				else
+					RemoveTransitionByIndex(i);
+			}
+		}
+		// Case where the transition has type rotation-around-point; code is very similar to the case of simple rotations
+		else if(mTransitionTypeArray[i] == ROTATION_AROUND_POINT_TRANSITION)
+		{
+			var speed = mSpeedArray[i];
+			var startingAngle = mAxisArray[i];
+			var centerPoint = mStartingPositions[i];
+			var finalAngle = mFinalAngleArray[i];
+			var currentAngle = mAngleDeltaArray[i];
+			var radius = mRadiusArray[i];
+
+			var currentPosition = object.GetPosition();
+			
+			// I update the position as if the object was a point moving around in a circle with z as the y and x as the x
+			currentPosition.x = cos(currentAngle) * radius + centerPoint.x;
+			currentPosition.z = sin(currentAngle) * radius + centerPoint.z;
+			
+			object.SetPosition(currentPosition);
+			
+			// The increment is set by the speed and the delta time
+			var increment = speed * dt * mScaleFactorArray[i];
+						
+			// I update the current angle with the value of the current increment
+			currentAngle += increment;
+							
+			// If the transitions are inverted, we're NOT looping and the angle reached the starting angle, I end the transition
+			if(mAreTransitionsInverted && !mIsLoopArray[i] && currentAngle <= startingAngle)
+				RemoveTransitionByIndex(i);
+			// If the current angle (which is in radiants, so I need to convert it to degrees) is greater or equal then the total angle distance
+			// it has to rotate to, we're done (almost)
+			else if(abs(currentAngle) * RAD_TO_GRAD >= abs(finalAngle - startingAngle))
+			{				
+				// If is looping, I simply reset the delta value so that it keeps rotating forever
+				if(mIsLoopArray[i])
+					mAngleDeltaArray[i] = 0;
+				else
+					RemoveTransitionByIndex(i);
+			}
+			// Otherwise, if it didn't reach the end, I update the delta value with the current angle
+			else
+				mAngleDeltaArray[i] = currentAngle;
+		}
+		// Case where we have a color transition; in this case the "object" is actually a mesh
+		else if(mTransitionTypeArray[i] == COLOR_TRANSITION)
+		{
+			// I get the current color; I could get the current color from the shader, but the XVR method to do so doesn't work	
+			var currentColor = mCurrentPositions[i];
+			
+			// Getting some useful information from the arrays
+			var startingColor = mStartingPositions[i];
+			var endingColor = mEndPositions[i];
+			
+			currentColor = UpdateValue(timeElapsed, duration, startingColor, endingColor, easingType);
+			
+			// Saving the current color
+			mCurrentPositions[i] = currentColor;
+			
+			object.ShaderSetParameter(0, "diffuse", 0, currentColor);
+	
+			if(timeElapsed >= duration)
+			{				
+				object.ShaderSetParameter(0, "diffuse", 0, endingColor);
+				mTimeElapsedArray[i] = 0;
+				
+				if(mIsLoopArray[i])
+			    {
+				 	mCurrentPositions[i] = endingColor;
+				 	mEndPositions[i] = startingColor;
+				 	mStartingPositions[i] = endingColor;
+				}
+				else
+					RemoveTransitionByIndex(i);
+			}
+		}
+		else if(mTransitionTypeArray[i] == LIGHT_COLOR_TRANSITION)
+		{
+			// I get the current color; I could get the current color from the shader, but the XVR method to do so doesn't work	
+			var currentColor = mCurrentPositions[i];
+			
+			// Getting some useful information from the arrays
+			var startingColor = mStartingPositions[i];
+			var endingColor = mEndPositions[i];
+			
+			currentColor = UpdateValue(timeElapsed, duration, startingColor, endingColor, easingType);
+			
+			// Saving the current color
+			mCurrentPositions[i] = currentColor;
+			
+			glLight(object, GL_DIFFUSE, currentColor); 
+	
+			if(timeElapsed >= duration)
+			{				
+				glLight(object, GL_DIFFUSE, endingColor); 
+				mTimeElapsedArray[i] = 0;
+								
+				RemoveTransitionByIndex(i);
+			}
+		}
+		// Case where we have a scaling transition
+		else if(mTransitionTypeArray[i] == GENERIC_TRANSITION)
+		{
+			// Getting some useful information from the arrays
+			var currentValue = mCurrentPositions[i];
+			var startingValue = mStartingPositions[i];
+			var endValue = mEndPositions[i];
+
+			currentValue = UpdateValue(timeElapsed, mTimeArray[i], startingValue, endValue, easingType);
+		
+			mCurrentPositions[i] = currentValue;
+						
+			if(timeElapsed >= mTimeArray[i])
+			{
+				mCurrentPositions[i] = endValue;
+				mTimeElapsedArray[i] = 0;
+				
+				if(mHasWaypointsArray[i])
+				{
+					var waypoints = mWaypointsArray[i];
+					
+					if(mAreTransitionsInverted && mWaypointsCounterArray[i] == 0 && !mIsLoopArray[i]) 
+						RemoveTransitionByIndex(i);
+					else if(mWaypointsCounterArray[i] < len(waypoints))
+					{
+						var newEndValue = waypoints[mWaypointsCounterArray[i]];
+						mStartingPositions[i] = currentValue;
+						mEndPositions[i] = newEndValue;		
+
+						if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+							mWaypointsCounterArray[i]--;
+						else if(mAreTransitionsInverted)
+							mWaypointsCounterArray[i] = len(waypoints) - 1;
+						else
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] + 1;
+						
+						if(mIsLoopArray[i])
+							mWaypointsCounterArray[i] = mWaypointsCounterArray[i] % len(waypoints);
+					}
+					else
+						RemoveTransitionByIndex(i);
+				}
+				else if(mIsLoopArray[i])
+			    {
+				 	mWaypointsArray[i] = mStartingPositions[i];
+				 	mCurrentPositions[i] = mStartingPositions[i];
+				 	mEndPositions[i] = mStartingPositions[i];
+					mStartingPositions[i] = endValue;
+				}
+				// If the object doesn't have waypoints and isn't looping, I simply remove it from the active transitions
+				else
+					RemoveTransitionByIndex(i);
+			}
+		}
+	}
+}
+
+/*
+ * This method updates the value of the given animation, according to the easing function used for that transition.
+ * 
+ * timeElapsed: (float) the time elapsed from the beginning of the animation
+ * duration: (float) the total time for this animation
+ * startingValue: (vector or float) the starting value for this animation
+ * endingValue: (vector or float) the ending value for this animation
+ * easeType: (integer) the type of easing function to use; the default value is "linear"
+ * 
+ * returns: the new value that should be used to update the state of the animation
+ */
+function Animator::UpdateValue(timeElapsed, duration, startingValue, endingValue, easeType)
+{
+	var value;
+	var timeElapsedNormalized = timeElapsed / duration;
+	var valueSpan = endingValue - startingValue;	
+	
+	// The easing functions implemented here are common for these kind of things. In particular they were taken partly by this page: http://gizma.com/easing/
+	// and by the code of the AndEngine, which implemented them a bit differently sometimes and it worked best for my case
+	switch(easeType)
+	{
+		case LINEAR:
+		{
+			// For the linear interpolation I simply consider the time elapsed from the beginning of the animation and the ending value for the animation.
+			// By normalizing the time elapsed I basically take the "current frame" for this value, which I multiply with the difference between the
+			// starting value and the ending one
+			value = startingValue + timeElapsedNormalized * valueSpan;
+			break;
+		}
+		case QUADRATIC_IN:
+		{
+			value = startingValue + (timeElapsedNormalized ^ 2) * valueSpan;
+			break;
+		}
+		case QUADRATIC_OUT:
+		{
+			value = startingValue + (-timeElapsedNormalized * (timeElapsedNormalized - 2)) * (valueSpan);
+			break;
+		}
+		case QUADRATIC_IN_OUT:
+		{
+			if(timeElapsedNormalized < 0.5)
+				value = startingValue + (0.5 * (2.0 * timeElapsedNormalized) ^ 2) * valueSpan;
+			else
+			{
+				var newPercentage = 2.0 * timeElapsedNormalized - 1;
+				value = startingValue + (0.5 + 0.5 * (-newPercentage * (newPercentage - 2))) * valueSpan;
+				
+			}
+			
+			break;
+		}
+		case CUBIC_IN:
+		{
+			value = startingValue + (timeElapsedNormalized ^ 3) * valueSpan;
+			break;
+		}
+		case CUBIC_OUT:
+		{
+			timeElapsedNormalized--;
+			value = startingValue + (timeElapsedNormalized ^ 3 + 1) * valueSpan;
+			break;
+		}
+		case CUBIC_IN_OUT:
+		{
+			timeElapsedNormalized /= 2.0;
+			
+			if(timeElapsedNormalized < 1)
+				value = startingValue + (timeElapsedNormalized ^ 3) * (valueSpan / 2.0);
+			else
+			{
+				timeElapsedNormalized -= 2.0;
+				value = startingValue + (timeElapsedNormalized ^ 3 + 2) * (valueSpan / 2.0);;
+			}
+			break;
+		}
+	}
+	
+	
+	return value;
+}
+
+function Animator::GetCurrentStateInTransition(object, transitionType)
+{
+	var found = false;
+	
+	for(var i = 0; i < len(mObjects) && !found; i++)
+	{
+		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
+		
+		if(found && mTransitionTypeArray[i] == transitionType)
+			return mCurrentPositions[i];
+		else
+			found = false;
+	}
+	
+	return Void;
+}
+
+/*
+ * This method changes che scaling factor used when updating the objects positions. Higher values means that the objects will move faster, while lower values
+ * means slower objects. The default value is 1; below 1 they get slower.
+ * 
+ * newFactor: (float) the new factor; must be a positive number. 
+ * 					  If it's 0, the objects will be static; 
+ * 					  if it's between 0 and 1, the objects will be slower;
+ * 				      if it's 1, the objects will move normally;
+ * 				      if it's between 1 and infinite, the objects will move faster.
+ */
+function Animator::ChangeScaleFactors(newFactor)
+{
+	// I change the scaling factor for every object
+	for(var i = 0; i < len(mScaleFactorArray); i++)
+		mScaleFactorArray[i] = newFactor;
+}
+
+/*
+ * This method will invert the directions of EVERY transitions (both movements and rotations); calling it twice will put things as they were
+ */
+function Animator::InvertTransitions()
+{
+	// I update the boolean that tells whether we're inverting or not
+	mAreTransitionsInverted = !mAreTransitionsInverted;
+		
+	// Scanning all the objects; we need to update some things for every type of transitions we have
+	for(var i = 0; i < len(mObjects); i++)
+	{
+		// If it's a moving transition
+		if(mTransitionTypeArray[i] == NORMAL_TRANSITION)
+		{
+			// If it has waypoints we need to change the current waypoint's starting poisition with the ending position, and invert the directions;
+			// i.e., if we're moving from A to B with direction 1, we need to use as new starting position B and ending position A, with direction -1.
+			// These information are needed in order to the determine where the object needs to stop; simply inverting the direction doesn't work
+			if(mHasWaypointsArray[i])
+			{		
+				var waypoints = mWaypointsArray[i];
+				
+				var newStartingPosCounter = 0;
+				
+				// Finding the new starting point is a bit messy; the whole thing could have been handled better. Basically if we're going backwards we need
+				// to take as starting position the previous one in the counter of the waypoints, but I need to make sure that if the counter is at position 0
+				// it goes to the last waypoint instead. Otherwise, if we're going forward (and previously we were going backward) I simply increment
+				// the counter and do the modulo operation so that we start at the beginning of the array if we're at the end
+				if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+					newStartingPosCounter = mWaypointsCounterArray[i] - 1;
+				else if(mAreTransitionsInverted)
+					newStartingPosCounter = len(waypoints) - 1;
+				else 
+					newStartingPosCounter = (mWaypointsCounterArray[i] + 1) % len(waypoints);
+					
+				// Setting the new ending position
+				mEndPositions[i] = mStartingPositions[i];
+					
+				// Setting the new starting position from the counter we found
+				mStartingPositions[i] = waypoints[newStartingPosCounter];
+				
+				var newWaypointsCounter = newStartingPosCounter;
+				
+				// Now I need to find the new counter, i.e. the index of the waypoint we're going to move to next. NEXT. Not the waypoint we're moving to now.
+				// It's a bit confusing and I could have handle it better. To find the new counter we start from the index of the starting position.
+				// The counter needs to point 2 indices AFTER this index, but depending whether we're reversing of going forward it's 2 indices before or after
+				// this one. So I need to check the cases and make sure that the counter remains in the boundaries of the array
+				if(mAreTransitionsInverted)
+				{
+					if(newWaypointsCounter > 1)
+						newWaypointsCounter -= 2;
+					else if (newWaypointsCounter == 1)
+						newWaypointsCounter = len(waypoints) - 1;
+					else
+						newWaypointsCounter = len(waypoints) - 2;
+				}
+				else
+					newWaypointsCounter = (newWaypointsCounter + 2) % len(waypoints);
+	
+				// Setting the new counter
+				mWaypointsCounterArray[i] = newWaypointsCounter;
+			}
+			// If the object doesn't have waypoints...
+			else
+			{
+				// I swap the starting position with the ending position (which is held in the mWaypointsArray to save space), so we can check 
+				// in the update method if the object reached the end of the transition or not
+				var tmp = mStartingPositions[i];
+				mEndPositions[i] = mStartingPositions[i];
+			 	mStartingPositions[i] = mWaypointsArray[i];
+			 	mWaypointsArray[i] = tmp;
+			}
+		}
+		// If the object is involved in a rotation transition, I simply need to invert its speed, so it goes backward
+		else if(mTransitionTypeArray[i] == ROTATING_TRANSITION)
+			mSpeedArray[i] = -mSpeedArray[i];
+		else if(mTransitionTypeArray[i] == SCALING_TRANSITION)
+		{
+			if(mHasWaypointsArray[i])
+			{		
+				var waypoints = mWaypointsArray[i];
+				
+				var newStartingPosCounter = 0;
+				
+				// Finding the new starting point is a bit messy; the whole thing could have been handled better. Basically if we're going backwards we need
+				// to take as starting position the previous one in the counter of the waypoints, but I need to make sure that if the counter is at position 0
+				// it goes to the last waypoint instead. Otherwise, if we're going forward (and previously we were going backward) I simply increment
+				// the counter and do the modulo operation so that we start at the beginning of the array if we're at the end
+				if(mAreTransitionsInverted && mWaypointsCounterArray[i] > 0)
+					newStartingPosCounter = mWaypointsCounterArray[i] - 1;
+				else if(mAreTransitionsInverted)
+					newStartingPosCounter = len(waypoints) - 1;
+				else 
+					newStartingPosCounter = (mWaypointsCounterArray[i] + 1) % len(waypoints);
+					
+				// Setting the new ending scale
+				mEndPositions[i] = mStartingPositions[i];
+				
+				// Setting the new starting position from the counter we found
+				mStartingPositions[i] = waypoints[newStartingPosCounter];
+				
+				var newWaypointsCounter = newStartingPosCounter;
+				
+				// Now I need to find the new counter, i.e. the index of the waypoint we're going to move to next. NEXT. Not the waypoint we're moving to now.
+				// It's a bit confusing and I could have handle it better. To find the new counter we start from the index of the starting position.
+				// The counter needs to point 2 indices AFTER this index, but depending whether we're reversing of going forward it's 2 indices before or after
+				// this one. So I need to check the cases and make sure that the counter remains in the boundaries of the array
+				if(mAreTransitionsInverted)
+				{
+					if(newWaypointsCounter > 1)
+						newWaypointsCounter -= 2;
+					else if (newWaypointsCounter == 1)
+						newWaypointsCounter = len(waypoints) - 1;
+					else
+						newWaypointsCounter = len(waypoints) - 2;
+				}
+				else
+					newWaypointsCounter = (newWaypointsCounter + 2) % len(waypoints);
+	
+				// Setting the new counter
+				mWaypointsCounterArray[i] = newWaypointsCounter;
+			}
+			// If the object doesn't have waypoints...
+			else
+			{
+				// I swap the starting position with the ending position (which is held in the mWaypointsArray to save space), so we can check 
+				// in the update method if the object reached the end of the transition or not
+				var tmp = mStartingPositions[i];
+				mEndPositions[i] = mStartingPositions[i];
+			 	mStartingPositions[i] = mWaypointsArray[i];
+			 	mWaypointsArray[i] = tmp;
+			}
+		}
+		// If the object is involved in a rotation-around-point transition, I simply need to invert its speed, so it goes backward
+		else if(mTransitionTypeArray[i] == ROTATION_AROUND_POINT_TRANSITION)
+			mSpeedArray[i] = -mSpeedArray[i];
+		// If it's a color transition, I do the same as with scaling transitions, except that in this case there are no waypoints
+		else if(mTransitionTypeArray[i] == COLOR_TRANSITION)
+		{
+			var tmp = mStartingPositions[i];
+		 	mEndPositions[i] = mStartingPositions[i];
+		 	mStartingPositions[i] = mWaypointsArray[i];
+		 	mWaypointsArray[i] = tmp;
+		}
+	}
+}
+
+/*
+ * This (public) method that removes an object from the active transitions/rotations. To use it, you have to specify the type of transition (rotating or not)
+ */
+function Animator::RemoveTransitionByObject(object, isType)
+{
+	var found = false;
+	
+	for(var i = 0; i < len(mObjects) && !found; i++)
+	{
+		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
+		
+		if(found && mTransitionTypeArray[i] == isType)
+			RemoveTransitionByIndex(i);
+		else
+			found = false;
+	}
+}
+
+function Animator::HaveTransition(object, isType)
+{
+	var found = false;
+	for(var i = 0; i < len(mObjects) && !found; i++)
+	{
+		found = valtype(mObjects[i]) == valtype(object) && mObjects[i] == object;
+
+		if(found && mTransitionTypeArray[i] == isType)
+			return true;
+		else
+			found = false;
+	}
+	return false;
+}
+
+/*
+ * This (private) method removes an object's informations from every array, basically deactivating it
+ */
+function Animator::RemoveTransitionByIndex(index)
+{
+	adel(mObjects, index);
+	adel(mStartingPositions, index);
+	adel(mCurrentPositions, index);
+	adel(mEndPositions, index);
+	adel(mIsLoopArray, index);
+	adel(mTimeArray, index);
+	adel(mTimeElapsedArray, index);
+	adel(mSpeedArray, index);
+	adel(mRadiusArray, index);
+	
+	adel(mEasingFunctionArray, index);
+	
+	adel(mScaleFactorArray, index);
+	
+	adel(mHasWaypointsArray, index);
+	adel(mWaypointsArray, index);
+	adel(mWaypointsCounterArray, index);
+	
+	adel(mTransitionTypeArray, index);
+	adel(mFinalAngleArray, index);
+	adel(mAxisArray, index);
+	adel(mAngleDeltaArray, index);
+	adel(mReverseArray, index);
+}
+
+
+
+
+
+
+ 
+class ViveController
+{
+	var mUsingCustomMesh;
+	var mViveController;
+	var mBoundingBoxControllerObj;
+	
+	var mControllerIndex;
+
+	// Shader to draw the silhouettes of the objects contained in the ViveController
+	var mSilhouetteShader;
+	
+	var mIsActionAvailable;
+	
+	var mTipLocalCoordinates;
+	
+	var mBoundingBox;
+	
+	var mWidth;
+	var mHeight;
+	var mDepth;
+	
+	var mIsVisible;
+	
+	var mInvisibleShader;
+	var mBorderShader;
+	
+	var controllerMesh;
+	var buttonMesh;
+	var ledMesh;
+	var leftGripMesh;
+	var rightGripMesh;
+	var systemButtonMesh;
+	var trackpadMesh;
+	var triggerMesh;
+	
+	var bodyObj;
+	var buttonObj;
+	var ledObj;
+	var leftGripObj;
+	var rightGripObj;
+	var systemButtonObj;
+	var trackpadObj;
+	var triggerObj;
+	
+	var trackpadPointPos;
+	var trackpadPointMesh;
+	var trackpadPointObj;
+	
+	var buttonDepth;
+	var systemDepth;
+	var trackpadDepth;
+	var gripDepth;
+	var leftGripPos;
+	var rightGripPos;
+	var systemButtonPos;
+	var trackpadPos;
+	var trackpadCenterOffset;
+	var buttonPos;
+	var systemPos;
+	var triggerRange;
+	var trackpadPointRange;
+	
+	var timeSinceLastTouch;
+	var trackPointTime;
+	var trackpointAlpha;
+	
+	var mCustomMesh;
+	var mCustomObj;
+	
+	// Public functions
+	Draw();
+	DrawBoundingBox();
+	GetObj();
+	GetBBoxObj();
+	GetIndex();
+	SetActionAvailable(isActionAvailable);
+	GetControllerTipCoordinates();
+	GetDirection();
+	SetPosition(position);
+	Translate(transl);
+	GetPosition();
+	SetRotationMatrix(matrix);
+	GetRotationMatrix();
+	Rotate(angle, x, y, z);
+	SetRotation(angle, x, y, z);
+	LocalToWorld(point);
+	Hide();
+	Unhide();
+	SetScale(x, y, z);
+	IsVisible();
+	GetBoundingBox();
+	GetWidth();
+	GetHeight();
+	GetDepth();
+	IsCollidingBBox(object);
+	UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed);
+	SetCustomMesh(mesh);
+};
+
+
+function ViveController::ViveController(controllerIndex, mesh)
+{
+	mControllerIndex = controllerIndex;
+	var fullControllerMesh;
+	mUsingCustomMesh = !(mesh == Void);
+	mInvisibleShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { discard; }", true);
+	
+	if(!mUsingCustomMesh){
+		fullControllerMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam");
+		
+		controllerMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Body/body.aam");
+		buttonMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Button/button.aam");
+		ledMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Led/led.aam");
+		leftGripMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Left_grip/l_grip.aam");
+		rightGripMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Right_Grip/r_grip.aam");
+		systemButtonMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/System_Button/sys_button.aam");
+		trackpadMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Trackpad/trackpad.aam");
+		triggerMesh = CVmNewMesh("Meshes/Vive_Controller_Mesh/Exported/Trigger/trigger.aam");	
+		
+		
+		mBoundingBoxControllerObj = CVmObj(fullControllerMesh);
+		
+		bodyObj = CVmObj(controllerMesh);
+		buttonObj = CVmObj(buttonMesh);
+		ledObj = CVmObj(ledMesh);
+		leftGripObj = CVmObj(leftGripMesh);
+		leftGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
+		
+		rightGripObj = CVmObj(rightGripMesh);
+		rightGripObj.SetPivotPoint(0, 0.2*SCALE_FACTOR, 0.375*SCALE_FACTOR);
+		
+		systemButtonObj = CVmObj(systemButtonMesh);
+		trackpadObj = CVmObj(trackpadMesh);
+		triggerObj = CVmObj(triggerMesh);
+		triggerObj.SetPivotPoint(0, -0.12*SCALE_FACTOR, 0.22*SCALE_FACTOR);
+		
+		buttonPos = buttonObj.GetPosition();
+		systemPos = systemButtonObj.GetPosition();
+		leftGripPos = leftGripObj.GetPosition();
+		rightGripPos = rightGripObj.GetPosition();
+		systemButtonPos = systemButtonObj.GetPosition();
+		trackpadPos = trackpadObj.GetPosition();
+		trackpadCenterOffset = [0.0045*SCALE_FACTOR, 0.015*SCALE_FACTOR, 0.245*SCALE_FACTOR];
+		triggerRange = -55;
+		trackpadPointRange = [0.098*SCALE_FACTOR, -0.098*SCALE_FACTOR]; //for the x: -1 is left and 1 is right; for the y: -1 is bottom and 1 is top
+		
+		systemDepth = 0.0075*SCALE_FACTOR;
+		buttonDepth = 0.0075*SCALE_FACTOR;
+		trackpadDepth = 4.5;
+		gripDepth = 0.007*SCALE_FACTOR;
+		
+		trackPointTime = 400;
+		trackpointAlpha = 1;
+		trackpadPointMesh = CVmNewMesh(VRP_SPHERE, 60, 0.008*SCALE_FACTOR, 1.2);
+		trackpadPointObj = CVmObj(trackpadPointMesh);
+		trackpadPointPos = trackpadPos + trackpadCenterOffset;
+		trackpadObj.AddChild(trackpadPointObj);
+		trackpadObj.SetPivotPoint(trackpadCenterOffset);
+		
+		trackpadPointMesh.ShaderAdd("Shaders/alphaShader.glsl", 0);
+		trackpadPointMesh.ShaderActivate(true);
+		trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, 1.0);
+		
+		mViveController = CVmObj();
+		mViveController.AddChild(bodyObj);
+		mViveController.AddChild(buttonObj);
+		mViveController.AddChild(ledObj);
+		mViveController.AddChild(leftGripObj);
+		mViveController.AddChild(rightGripObj);
+		mViveController.AddChild(systemButtonObj);
+		mViveController.AddChild(triggerObj);
+		mViveController.AddChild(trackpadObj);
+		
+		mBoundingBox = fullControllerMesh.GetBoundingBox();
+		var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
+		var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
+		
+		mWidth = abs(point2.x - point1.x);
+		mHeight = abs(point2.y - point1.y);
+		mDepth = abs(point2.z - point1.z);
+	}
+	else{		
+		SetCustomMesh(mesh);
+	}
+	
+	
+	mTipLocalCoordinates = [0, -0.38 * SCALE_FACTOR, -0.20 * SCALE_FACTOR];
+	
+//	mSilhouetteShader = CVmShaderProgram("Shaders/silhouetteShader.glsl");
+	
+	mIsActionAvailable = false;
+	
+	mIsVisible = true;
+	
+	mBorderShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "void main (void) { gl_FragColor = vec4(0.8, 0.8, 0.0, 1.0); }", true);
+		
+	timeSinceLastTouch = 0;
+}
+
+/*
+ * This method updates the visual status of the vive controller
+ */
+function ViveController::UpdateStatus(touchPadCoord, triggerCoord, isMenuPressed, isTriggerPressed, isGripPressed, isTouchpadPressed, isSystemPressed){
+	if(mUsingCustomMesh){
+		return;
+	}else{		
+		if(touchPadCoord[0] == 0 && touchPadCoord[1] == 0) {
+			var elapsedTime = GetTime() - timeSinceLastTouch; 
+			if(elapsedTime > trackPointTime){
+				trackpointAlpha = 0;
+				trackpadPointObj.Hide();	
+			}
+			else if(trackpointAlpha > 0){	
+				trackpointAlpha -= 0.025; //1/400 = 0.025, I don't know why but the floats are not working, I cannot use like trackPointTime/elapsedTime, no idea why
+			}
+		}
+		else{
+			trackpadPointObj.Unhide();
+			timeSinceLastTouch = GetTime();
+			trackpointAlpha = 1;
+			var yOffsetFactor = (touchPadCoord[1] > 0 ? touchPadCoord[1]: touchPadCoord[1]*0.4);
+			yOffsetFactor += abs(touchPadCoord[0])*0.3;
+			trackpadPointPos = trackpadPos + [trackpadCenterOffset.x, trackpadCenterOffset.y*yOffsetFactor+0.026*SCALE_FACTOR, trackpadCenterOffset.z] + [touchPadCoord[0] * trackpadPointRange[0], 0, touchPadCoord[1] * trackpadPointRange[1]];	
+			trackpadPointObj.SetPosition(trackpadPointPos);
+		}
+	//	trackpadPointMesh.ModulateMaterials(1,1,1,trackpointAlpha);
+		trackpadPointMesh.ShaderSetParameter(0, "alpha", 0, trackpointAlpha);
+	
+		if(triggerCoord[0] > 0){
+			if(isTriggerPressed < 1){
+				triggerObj.SetRotation(triggerRange * triggerCoord[0], 1, 0, 0);
+				triggerObj.SetPosition(0,0, 0.009 * triggerCoord[0]*SCALE_FACTOR);
+			}else{
+	//			triggerObj.SetPosition(0,0,0.009*SCALE_FACTOR);
+	//			triggerObj.SetRotation(triggerRange, 1, 0, 0);			
+			}
+		}
+		else
+			triggerObj.SetRotation(0, 1, 0, 0);
+		
+		if(isMenuPressed > 0){
+			buttonObj.SetPosition(buttonPos - [0, buttonDepth, 0]);
+		}
+		else{
+			buttonObj.SetPosition(buttonPos);		
+		}
+		
+		if(isGripPressed > 0){
+	//		leftGripObj.SetPosition(leftGripPos + [gripDepth, 0, 0]);
+	//		rightGripObj.SetPosition(rightGripPos - [gripDepth, 0, 0]);
+			leftGripObj.SetRotation(2.5,0,1,0);
+			rightGripObj.SetRotation(-2.5,0,1,0);
+		}
+		else{
+	//		leftGripObj.SetPosition(leftGripPos);
+	//		rightGripObj.SetPosition(rightGripPos);	
+			leftGripObj.SetRotation(0,0,1,0);
+			rightGripObj.SetRotation(0,0,1,0);
+		}
+		
+		if(isTouchpadPressed > 0){
+	//		trackpadObj.SetPosition(trackpadPos - [0, 0.012*SCALE_FACTOR, 0]);
+			trackpadObj.SetRotation(-trackpadDepth*touchPadCoord[1], 1, 0, 0);
+			trackpadObj.Rotate(-trackpadDepth*touchPadCoord[0], 0, 0, 1);
+		}
+		else{
+	//		trackpadObj.SetPosition(trackpadPos);	
+			trackpadObj.SetRotation(0,1,0,0);		
+			trackpadObj.SetRotation(0,0,0,1);	
+		}
+		
+//		if(isSystemPressed == 0){
+//			systemButtonObj.SetPosition(systemPos - [0, systemDepth, 0]);
+//		}
+//		else{
+//			systemButtonObj.SetPosition(systemPos);		
+//		}
+	
+	}
+}
+
+/*
+ * This method draws the ViveController and any objects that was added to it. It makes sure to draw each object's silhouette and on top of it
+ * the object itself using any shader that was added to it
+ */
+function ViveController::Draw()
+{
+	if(mIsActionAvailable)
+	{
+    	glCullFace (GL_FRONT);
+    	
+		mViveController.SetScale(1.03 , 1.03, 1.03);
+	
+		mBorderShader.Start();		
+			mViveController.Draw();
+		mBorderShader.Stop();
+	
+		// Now I draw the front faces
+		glCullFace (GL_BACK);
+		
+		// Reactivate the shader and reset the scale
+		mViveController.SetScale(1.0, 1.0, 1.0);
+	}
+	
+	mInvisibleShader.Start();	
+		mBoundingBoxControllerObj.Draw();
+	mInvisibleShader.Stop();
+	
+//	mViveController.Draw(VR_NO_CHILDREN | VR_NO_CULLING);
+	mViveController.Draw(VR_NO_CULLING);
+}
+
+function ViveController::DrawBoundingBox(){
+	mBoundingBoxControllerObj.DrawBoundingBox();
+}
+
+function ViveController::GetObj()
+{
+	return mViveController;
+}
+
+function ViveController::GetBBoxObj()
+{
+	return mBoundingBoxControllerObj;
+}
+
+function ViveController::GetIndex()
+{
+	return mControllerIndex;
+}
+
+function ViveController::SetActionAvailable(isActionAvailable)
+{
+	mIsActionAvailable = isActionAvailable;
+}
+
+function ViveController::GetControllerTipCoordinates()
+{
+	return mViveController.LocalToWorld(mTipLocalCoordinates);
+}
+
+function ViveController::GetDirection()
+{
+	var center = mViveController.LocalToWorld([0, 0, 0]);
+	var tip = mViveController.LocalToWorld([0, 0, -1]);
+	return (tip - center);
+}
+
+function ViveController::SetPosition(position)
+{
+	mViveController.SetPosition(position);
+	mBoundingBoxControllerObj.SetPosition(position);
+}
+
+function ViveController::GetPosition()
+{
+	return mViveController.GetPosition();
+}
+
+function ViveController::SetRotationMatrix(matrix)
+{
+	mViveController.SetRotationMatrix(matrix);
+	mBoundingBoxControllerObj.SetRotationMatrix(matrix);
+}
+
+function ViveController::GetRotationMatrix()
+{
+	return mViveController.GetRotationMatrix();
+}
+
+
+function ViveController::Rotate(angle, x, y, z)
+{
+	mViveController.RotateAbs(angle, x, y, z);
+	mBoundingBoxControllerObj.RotateAbs(angle, x, y, z);
+}
+
+function ViveController::SetRotation(angle, x, y, z)
+{
+	mViveController.SetRotation(angle, x, y, z);
+	mBoundingBoxControllerObj.SetRotation(angle, x, y, z);
+}
+
+function ViveController::LocalToWorld(point)
+{
+	return mViveController.LocalToWorld(point);
+}
+
+function ViveController::Hide()
+{
+	mViveController.Hide();
+	mIsVisible = false;
+}
+
+function ViveController::Unhide()
+{
+	mViveController.Unhide();
+	mIsVisible = true;
+}
+
+function ViveController::SetScale(x, y, z)
+{
+	mViveController.SetScale(x, y, z);
+	mBoundingBoxControllerObj.SetScale(x, y, z);
+}
+
+function ViveController::IsVisible()
+{
+	return mIsVisible;
+}
+
+function ViveController::GetBoundingBox()
+{
+	return mBoundingBox;
+}
+
+function ViveController::GetWidth()
+{
+	return mWidth;
+}
+
+function ViveController::GetHeight()
+{
+	return mHeight;
+}
+
+function ViveController::GetDepth()
+{
+	return mDepth;
+}
+
+function ViveController::Translate(transl){
+	mViveController.Translate(transl);
+}
+
+function ViveController::IsCollidingBBox(object)
+{
+	return mBoundingBoxControllerObj.IsCollidingBBox(object);
+}
+
+function ViveController::SetCustomMesh(mesh){	
+	mUsingCustomMesh = true;
+	if(mesh.__GetName() == "CVMNEWMESH" || mesh.__GetName() == "CVMMESH"){
+		mCustomMesh = mesh;
+		mCustomObj = CVmObj(mesh);
+	}
+	else{
+		mCustomObj = mesh;
+		mCustomMesh = mCustomObj.GetMesh();
+	}
+	mCustomMesh.CenterBoundingBox ();
+	
+//	mViveController = CVmObj();
+//	mViveController.AddChild(mCustomObj,0,0,0);
+	
+	mViveController = mCustomObj;
+	
+	
+	mBoundingBoxControllerObj = mCustomObj;
+	
+	mBoundingBox = mCustomMesh.GetBoundingBox();
+	var point1 = [mBoundingBox[0], mBoundingBox[1], mBoundingBox[2]];
+	var point2 = [mBoundingBox[3], mBoundingBox[4], mBoundingBox[5]];
+	
+	mWidth = abs(point2.x - point1.x);
+	mHeight = abs(point2.y - point1.y);
+	mDepth = abs(point2.z - point1.z);
+}
+
+
 
 
 #endif
