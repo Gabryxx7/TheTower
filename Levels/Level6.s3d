@@ -1042,12 +1042,12 @@ function Level6::HandleGuns()
 		if(gun.GetID() != "Vive"){
 			var isPressing = false;
 			if(mIsVrOn || mDebugVrOn){
-//				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
-				isPressing = i == 0 ? KeyPressed("Q") : KeyPressed("E"); 
+				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
+//				isPressing = i == 0 ? KeyPressed("E") : KeyPressed("Q"); 
 			}
 			else{
 				isPressing = mInputManager.IsPressingPrimaryButton();
-//				isPressing = i == 0 ? KeyPressed("Q") : KeyPressed("E"); 
+//				isPressing = i == 0 ? KeyPressed("E") : KeyPressed("Q"); 
 			}
 						
 			if(isPressing){

@@ -156,13 +156,13 @@ function Gun::SetPosition(x,y,z){
 }
 
 function Gun::Shoot(){
+	var ret = {};
 	if(GetTime() - mLastShotTime > mShootingDelay){
 		mIsShooting = true;
 		mLastShotTime = GetTime();
 		mAnimator.CreateGenericTransition(mAnimationId, 0, {mRecoilDepth,0}, mShootAnimationTime, 2);
 		
 		var bulletsArray = {};
-		var ret = {};
 		if(mShootType == 0){			
 			var bulletObj = CvmObj(mBulletMesh);
 			var startPoint = mGunObj.GetPosition();
@@ -266,9 +266,9 @@ function Gun::Shoot(){
 			aadd(ret, Bullet(bulletsArray[i], GetTime(), mBulletMaxLife, false, mBulletPower, mBulletColors[mColorIndex], (mID+" "+str(mBulletIndex++))));
 			mColorIndex = (mColorIndex+1)%(len(mBulletColors));
 		}	
-		
-		return ret;	
 	}
+	
+	return ret;
 }
 
 function Gun::IsShooting(){
