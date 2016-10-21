@@ -106,7 +106,7 @@ class LevelMenu
 	// draw the silhouettes for the portals' frames
 	var mSpotShader;
 	var mToonShader;
-	var mAlphaShader;
+	var mColorShader;
 			
 	var mOpenglTranslationOffset;
 	
@@ -137,7 +137,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 {		
 	mElevator = elevator;
 	mIsVRon = isVRon;	
-	debugVrOn = false;
+	debugVrOn = true;
 	
 	//Ampl: 70.6002 spacing: 0 size: 285.495 xP: 0.925 yp: 0.88 level: -200 viewDist: 493 velocity: -6.2
 
@@ -157,6 +157,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	seaType = 1;
 		
 	seaShader = CVmShaderProgram("Shaders/SeaShader.glsl");
+	mColorShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; void main (void) { gl_FragColor = vec4(color, 1.0); }", true);
 	mDt = 0;
 	cloudDt = 0;
 		
@@ -177,8 +178,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 	
 	mSelectedLevel = -1;
 	
-	mToonShader = CVmShaderProgram("Shaders/toonShader.glsl");	
-	mAlphaShader = CVmShaderProgram("Shaders/colorModulatorShader.glsl");	
+	mToonShader = CVmShaderProgram("Shaders/toonShader.glsl");
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;	
@@ -534,13 +534,16 @@ function LevelMenu::Render()
 				raycastOrigin = controller.GetPosition();
 				raycastEnd = controller.GetPosition() + controller.GetDirection() * mCamera.GetZFar();
 				glLineWidth(3); 		
-				glColor([0,0,1]); 
+				glColor(0,0,1); 
 				
-				// I draw the ray as a simple opengl line
-				glBegin(GL_LINES);
-					glVertex(raycastOrigin);
-					glVertex(raycastEnd);		
-				glEnd();				
+				mColorShader.Start();
+					mColorShader.SetParameter("color", [0.5,0.5,1]);
+					// I draw the ray as a simple opengl line
+					glBegin(GL_LINES);
+						glVertex(raycastOrigin);
+						glVertex(raycastEnd);		
+					glEnd();
+				mColorShader.Stop();				
 //			}
 		}
 		

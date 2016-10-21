@@ -41,7 +41,7 @@ class SoundManager
 	// Public functions for music
 	SetMusic(name, volume, fadeIn, fadeInTime);
 	FadeOutAndSetMusic(timeFadeOut, newMusicName, newMusicVolume, newMusicFadeIn, newMusicTimeFadeIn);
-	PlayMusic();
+	PlayMusic(loop);
 	StopMusic();
 	PauseMusic();
 	SetMusicVolume(value);
@@ -233,9 +233,12 @@ function SoundManager::UpdateMusic(dt)
 	}	
 }
 
-function SoundManager::PlayMusic()
+function SoundManager::PlayMusic(loop)
 {
-	mMusic.Play(true);
+	if(loop == Void)
+		mMusic.Play(true);
+		
+	mMusic.Play(loop);
 }
 
 function SoundManager::StopMusic()

@@ -1061,7 +1061,6 @@ function Level6::HandleGuns()
 					gunsBullets[i] = gun.Shoot();	
 				}
 				
-				outputln(len(gunsBullets[i]));
 				if(len(gunsBullets[i]) > 0 && mIsVrOn){
 					mInputManager.VibrateController(mControllersArray[i].GetIndex(), 500);
 				}			

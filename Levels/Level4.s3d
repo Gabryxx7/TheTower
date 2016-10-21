@@ -1580,12 +1580,12 @@ function Level4::UpdateLogic(dt)
 						// If the music hasn't reached volume 0 yet, I create a more rapid fade out effect and transition to the new music (without fade in);
 						// otherwise, I simply set the new music
 						if(mSoundManager.GetMusicVolume() > 0)
-							mSoundManager.FadeOutAndSetMusic(0.2, "sounds/Interstellar - First Step.mp3", 0.95, false);
+							mSoundManager.FadeOutAndSetMusic(0.2, "sounds/Interstellar Official Soundtrack - First Step.mp3", 0.95, false);
 						else
-							mSoundManager.SetMusic("sounds/Interstellar - First Step.mp3", 0.95, false);
+							mSoundManager.SetMusic("sounds/Interstellar Official Soundtrack - First Step.mp3", 0.95, false);
 							
 						// I start the music again
-						mSoundManager.PlayMusic();
+						mSoundManager.PlayMusic(false);
 						
 						// I move the light0 (which is the one involved in the animation) so that is outside of the main room, at the same level as the camera
 						mLight0Position = [0, cameraPosition.y, mGlassWall.GetPosition().z - 65.0 * SCALE_FACTOR];
