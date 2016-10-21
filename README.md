@@ -1,6 +1,5 @@
 #TheTower
-![alt text](https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png "The Tower Logo")
-<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png" alt="The Tower Logo" width="50"/>
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png" alt="The Tower Logo" width="150"/>
 Virtual Reality game using XVR engine and HTC Vive, final project of the "Ambienti Virtuali" course
 
 The main idea of the game is a puzzle, a tower with many different levels whose completion will open the elevator's doors to reach the next level.
@@ -9,12 +8,19 @@ The main idea of the game is a puzzle, a tower with many different levels whose 
 The game has actually a total of **8 levels**:
 
 - **LevelMenu**: This level will show a list of all the levels allowing the player to choose one of the levels to play. 
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level0Prev.png" alt="Level 0 Prev" width="100"/>
 - **Level0**: Probably the most important level in the game, creates the elevator and initialize variables used by other levels.
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level1Prev.png" alt="Level 1 Prev" width="100"/>
 - **Level1**: Drawing level. It's called like that because of the 3d drawing by means of the vive controllers. The player will have to connect all of the light color cones in the correct order to proceed.
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level2Prev.png" alt="Level 2 Prev" width="100"/>
 - **Level2**: Drawing Level. Same as Level1 but with slightly different mechanics.
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level3Prev.png" alt="Level 3 Prev" width="100"/>
 - **Level3**: The player will find himself in a small room with flying moving objects and an invisible floor. Tiles will appear from the depth as the player moves around the room. Each path completion will animate the same color objects in order to form a number. All of the numbers will then form a code to be typed in the numpad besides the elevator.
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level5Prev.png" alt="Level 5 Prev" width="100"/>
 - **Level4**: This is an easy level mainly created to exploit the vive controllers capabilites. The player will have to move back the outermost blocks at the same level as the others.
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level6Prev.png" alt="Level 6 Prev" width="100"/>
 - **Level5**: FPS style level. The player will have to shoot targets (still or moving), choosing among different weapons
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level4Prev.png" alt="Level 4 Prev" width="100"/>
 - **Level6**: This one is tricky and will lead to the end of the game.
 	
 ###Main Classes
