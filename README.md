@@ -12,7 +12,7 @@ The game has actually a total of **8 levels**:
 - **Level0**: Probably the most important level in the game, creates the elevator and initialize variables used by other levels.
 <img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level0Prev.png" alt="Level 0 Prev" width="150"/>
 
-- **Level1**: Drawing level. It's called like that because of the 3d drawing by means of the vive controllers. The player will have to connect all of the light color cones in the correct order to proceed.
+- **Level1**: Drawing level. It's called like that because of the 3d drawing by means of the vive controllers. The player will have to connect all of the light color cones in the correct order to proceed.<br/>
 <img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level1Prev.png" alt="Level 1 Prev" width="150"/>
 
 - **Level2**: Drawing Level. Same as Level1 but with slightly different mechanics.
