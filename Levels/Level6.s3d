@@ -59,7 +59,7 @@ class Level6
 	var mEnemyLaserMesh;
 	
 	var mTargets;
-	var mBossStageMeshes;
+	var mBackupTargets;
 	var mAnimatingTargets;
 	var mCurrentStage;
 	
@@ -105,6 +105,8 @@ class Level6
 	var mLastCounter;
 	var mLightColorTransitionId;
 	
+	var mTimeWarpFactor;
+	
 	// Private functions
 	HandleGuns();
 	UpdateWallHoles();
@@ -127,15 +129,13 @@ class Level6
 	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
-	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);	
-	
-	CreateMeshesBossStage();
-	
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);		
 	CreateTargetsStage0(numTargets);
 	CreateTargetsStage1(numTargets);
 	CreateTargetsBossStage();
 	DrawHUD(eye);
 	GenerateEnemies();
+	ResetTargets();
 };
 
 function Level6::Level6(isVRon, inputManager, soundManager)
@@ -151,6 +151,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mEnding = false;
 	mIsLevelCompleted = false;
 	mTimeToEnd = 2500;
+	
+	mTimeWarpFactor = 1.0;
 		
 	mAnimator = Animator();
 	
@@ -276,7 +278,6 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mEnemySpeed = 5.0;
 	mEnemyLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
 	
-	CreateMeshesBossStage();
 	GenerateEnemies();
 	
 	mCameraHudColorAnimId = 9876;
@@ -291,7 +292,7 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	mCameraHudLife = CvmText();
 	mDefaultLife = 100;
 //	mLife = mDefaultLife;
-	mLife = 50;
+	mLife = 5;
 	mCameraHudLife.Load(str(mLife));
 	
 	var obj1 = CvmObj();
@@ -513,6 +514,7 @@ function Level6::UpdateLogic(dt)
 	}
 	
 //	mCameraHitBoxObj.SetPosition(cameraPosition-[0,0.1*SCALE_FACTOR,0]);
+	mCameraHitBoxObj.SetRotationMatrix(mCamera.GetRotationMatrix());
 	mCameraHitBoxObj.SetPosition(cameraPosition - [0, mCameraHitBoxHeight / 4.0, 0]);
 	
 	CounterKeyboardTesting();
@@ -585,6 +587,13 @@ function Level6::UpdateLogic(dt)
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
 			
+			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2))
+				mTimeWarpFactor = 0.2;
+			else
+				mTimeWarpFactor = 1.0; 
+				
+			mAnimator.ChangeScaleFactors(mTimeWarpFactor);
+			
 			if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
 				mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
 				
@@ -600,7 +609,7 @@ function Level6::UpdateLogic(dt)
 					mCameraHudLife.Load(str(Int(mLife)));				
 				}				
 				
-				var timeBetweenCountersUpdate = mTimeBeforeReset/(mLastCounter > 0 ? mLastCounter : 1);		
+				var timeBetweenCountersUpdate = (mTimeBeforeReset / mTimeWarpFactor)/(mLastCounter > 0 ? mLastCounter : 1);		
 				if(GetTime() - mLostTime > timeBetweenCountersUpdate){	
 					if(mCounter > 0){
 						--mCounter;
@@ -610,7 +619,7 @@ function Level6::UpdateLogic(dt)
 										
 					if(mCounter <= 0){
 						mLostTime = -1;	
-						GenerateEnemies();
+						ResetTargets();
 						foreach(var target in mTargets[0])
 							target.Create();
 					}								
@@ -889,38 +898,36 @@ function Level6::CreateTargetsStage1(numTargets){
 	return targets;
 }
 
-
-function Level6::CreateMeshesBossStage(){
-	mBossStageMeshes = {};
-//	var cubeSizes = 6*SCALE_FACTOR;
-//	var bossMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+function Level6::CreateTargetsBossStage(){
+	var targets = {};
+	var bulletId;
+	var chosenMesh;
+	var color;
 	for(var i = 0; i < 4; i++){	
-		var chosenMesh;
-		var color;
 		switch(i){
-			case 0:{
+			case 0:{		
+				bulletId = "InvaderA";		
 				chosenMesh = CVmNewMesh("Meshes/Enemies/S1.AAM");
 				chosenMesh.Scale(1.1, 1.1, 1.1);
 				color = [0.2,0.1,1];
-//				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,0,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
 				break;				
 			}case 1:{
+				bulletId = "InvaderB";
 				chosenMesh = CVmNewMesh("Meshes/Enemies/S2.AAM");
 				chosenMesh.Scale(0.2, 0.2, 0.2);
 				color = [1,1,0];
-//				AddToonShaderToMesh(chosenMesh, [1,1,1], [0,1,0], [0.4, 0.4, 0.4], 50, 0, 2, SC3ALE_FACTOR, 1.0);
 				break;				
 			}case 2:{
+				bulletId = "InvaderC";
 				chosenMesh = CVmNewMesh("Meshes/Enemies/S3.AAM");
 				chosenMesh.Scale(0.2, 0.2, 0.2);
 				color = [0,1,0.2];
-//				AddToonShaderToMesh(chosenMesh, [1,1,1], [0,0,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
 				break;				
 			}case 3:{
+				bulletId = "InvaderD";
 				chosenMesh = CVmNewMesh("Meshes/Enemies/S5.AAM");
 				chosenMesh.Scale(0.1, 0.1, 0.1);
 				color = [0,1,1];
-//				AddToonShaderToMesh(chosenMesh, [1,1,1], [0,0,0], [0.4, 0.4, 0.4], 50, 0, 2, SCALE_FACTOR, 1.0);
 				break;				
 			}
 		}
@@ -929,32 +936,8 @@ function Level6::CreateMeshesBossStage(){
 		chosenMesh.ShaderSetParameter(0,"alpha", 0, 1.0);
 		chosenMesh.ShaderSetParameter(0,"outlinecolor", 0, [0,0,0]);
 		chosenMesh.ShaderActivate(true);	
-		aadd(mBossStageMeshes, chosenMesh);		
-	}
-	
-	return mBossStageMeshes;
-}
-
-
-function Level6::CreateTargetsBossStage(){
-	var targets = {};
-	var bulletId;
-	var mesh;
-	for(var i = 0; i < len(mBossStageMeshes); i++){	
-		mesh = 	mBossStageMeshes[i];
-		if(i == 0)
-			bulletId = "InvaderA";
-		if(i == 1)
-			bulletId = "InvaderB";
-		if(i == 2)
-			bulletId = "InvaderC";
-		if(i == 3)
-			bulletId = "InvaderD";
-		var color = [0,0,0];
-		mesh.ShaderGetUniformValue(0, 0, "diffuse", &color, null);
-		aadd(targets, Target(bulletId, mesh, CVmObj(mesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));
-	}
-	
+		aadd(targets, Target(bulletId, chosenMesh, CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));
+	}	
 	return targets;	
 }
 
@@ -1012,9 +995,30 @@ function Level6::DrawHUD(eye){
 
 function Level6::GenerateEnemies(){
 	mTargets = {};
-//	aadd(mTargets, CreateTargetsStage0(9));
-//	aadd(mTargets, CreateTargetsBossStage()); //n = 4
-	aadd(mTargets, CreateTargetsStage1(12));	
+	aadd(mTargets, CreateTargetsStage0(9));
+	aadd(mTargets, CreateTargetsStage1(12));
+	aadd(mTargets, CreateTargetsBossStage()); //n = 4	
+	mBackupTargets = {};
+	
+	foreach(var targetArray in mTargets){
+		var newarray = {};
+		aadd(mBackupTargets, newarray);
+		foreach(var target in targetArray){
+			aadd(newarray, target);
+		}
+	}
+}
+
+function Level6::ResetTargets(){
+	mTargets = {};	
+	foreach(var targetArray in mBackupTargets){
+		var newarray = {};
+		aadd(mTargets, newarray);
+		foreach(var target in targetArray){
+			target.ResetState();
+			aadd(newarray, target);
+		}
+	}
 }
 
 
@@ -1129,7 +1133,7 @@ function Level6::CheckPickupGuns(){
 function Level6::UpdateWallHoles(){
 	for(var i = 0; i < len(mWallsHolesObjs); i++){
 		var wallHole = mWallsHolesObjs[i];
-		if(GetTime() - wallHole[1] > mWallsHolesLife){
+		if(GetTime() - wallHole[1] > mWallsHolesLife / mTimeWarpFactor){
 			adel(mWallsHolesObjs,i);
 		}
 	}
@@ -1254,7 +1258,7 @@ function Level6::UpdateLasers(targets){
 				}    
     		}
 		}
-		else if(GetTime() - bulletShotTIme > bulletMaxLife){
+		else if(GetTime() - bulletShotTIme > bulletMaxLife / mTimeWarpFactor){
 			adel(mBulletsArray, i);
 		}
 	}

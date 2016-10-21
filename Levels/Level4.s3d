@@ -368,7 +368,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	}
 
 	mStarObjects = {};
-	var starObjectsNumber = 10;
+	var starObjectsNumber = 6;
 	
 	// Creating random star things
 	for(var i = 0; i < starObjectsNumber; i++)
@@ -408,7 +408,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	}
 		
 	mConeObjects = {};
-	var coneObjectsNumber = 10;
+	var coneObjectsNumber = 6;
 	
 	// Creating random cone things; the procedure is the same as for the star objects
 	for(var i = 0; i < coneObjectsNumber; i++)

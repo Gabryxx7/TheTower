@@ -1,5 +1,5 @@
 global var DEBUG_MODE = true;
-global var MUSIC_ON = false;
+global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
 
@@ -224,8 +224,7 @@ function GameManager::GameManager(HMD)
 	mSoundManager.AddSound("sounds/numpadCorrectCode.wav", "numpadCorrectCode");
 	mSoundManager.AddSound("sounds/numpadWrongCode.wav", "numpadWrongCode");
 	
-	if(MUSIC_ON)
-		mSoundManager.PlayMusic();
+	
 	
 	mLights = {};
 	
@@ -363,6 +362,9 @@ function GameManager::GameManager(HMD)
 
 		mAnimator.CreateGenericTransition(mFadeAnimationID, 1.0, 0.0, 3.0);
 	}
+	
+	if(MUSIC_ON)
+		mSoundManager.PlayMusic();
 	
 	// Creating the position circle object, used for the teleportation feature
 	mPositionCircleRadius = 1.0 * SCALE_FACTOR;

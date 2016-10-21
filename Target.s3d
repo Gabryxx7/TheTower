@@ -23,7 +23,6 @@ class Target{
 	var mAnimator;
 	
 	var mKilled;
-	var mKilledTime;
 	
 	var mLaserSpeed;
 	var mLaserMaxDistance;
@@ -43,7 +42,7 @@ class Target{
 	IsCollidingBBoxOnly(startPos, endPos);
 	GetLives();
 	Create();
-	Recreate();
+	ResetState();
 	RemoveLife(amount);
 	Update(mMainRoom);
 	UpdateTransition(mMainRoom);
@@ -90,7 +89,6 @@ function Target::Target(ID, mesh, obj, lives, shootDelay, color, hitColor, laser
 	mHitTime = 0;
 	mShootTime = 0;
 	
-	mKilledTime = -1;
 	mKilled = false;
 	
 	if(mRotating){		
@@ -133,12 +131,10 @@ function Target::GetLives(){
 	return mLives;
 }
 
-function Target::Recreate(){
+function Target::ResetState(){
+	mBulletIndex = 0;
 	mLives = mTotalLives;
-	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mScalingTransitionTime, false, 3);
-	mKilledTime = -1;
-	mKilled = false;
-	
+	mKilled = false;	
 }
 
 function Target::RemoveLife(amount){
@@ -160,7 +156,6 @@ function Target::Update(mMainRoom){
 
 function Target::Kill(){
 	mKilled = true;
-	mKilledTime = GetTime();
 	mAnimator.CreateScalingTransition(mObj, [1, 1, 1], [0, 0, 0], mScalingTransitionTime, false, 3);
 }
 
@@ -216,7 +211,7 @@ function Target::GetMesh(){
 }
 
 function Target::IsDead(){
-	return mKilled && GetTime() - mKilledTime > (mScalingTransitionTime*1000);
+	return mKilled && !mAnimator.HaveTransition(mObj,2);
 }
 
 function Target::Shoot(cameraPosition){
@@ -253,5 +248,5 @@ function Target::IsCollidingBBox(object){
 }
 
 function Target::Create(){
-	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mScalingTransitionTime*2, false, 1);
+	mAnimator.CreateScalingTransition(mObj, [0.0, 0.0, 0.0], [1,1,1], mScalingTransitionTime*2, false, 3);
 }

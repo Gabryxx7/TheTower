@@ -137,7 +137,7 @@ function LevelMenu::LevelMenu(isVRon, inputManager, soundManager, mLevels, eleva
 {		
 	mElevator = elevator;
 	mIsVRon = isVRon;	
-	debugVrOn = true;
+	debugVrOn = false;
 	
 	//Ampl: 70.6002 spacing: 0 size: 285.495 xP: 0.925 yp: 0.88 level: -200 viewDist: 493 velocity: -6.2
 
