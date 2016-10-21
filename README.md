@@ -1,6 +1,6 @@
 #TheTower
 ![alt text](https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png "The Tower Logo")
-<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png" alt="The Tower Logo" style="width: 200px;"/>
+<img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png" alt="The Tower Logo" style="width: 50px;"/>
 Virtual Reality game using XVR engine and HTC Vive, final project of the "Ambienti Virtuali" course
 
 The main idea of the game is a puzzle, a tower with many different levels whose completion will open the elevator's doors to reach the next level.
