@@ -40,6 +40,9 @@ class Gun{
 	var mID;
 	var mBulletIndex;
 	
+	var mSoundManager;
+	var mShootingSoundIndex;
+	
 	IsShooting();
 	UpdateGun();
 	SetRotationMatrix(mat);
@@ -79,9 +82,11 @@ class Gun{
 	GetBulletPower();	
 	GetBUlletCOlors();
 	GetID();
+	GetSoundManager();
+	GetShootingSoundIndex();
 };
 
-function Gun::Gun(ID, meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId){
+function Gun::Gun(ID, meshName, shootingDelay, recoilDepth, bulletMesh, bulletSpeed, bulletMaxDistance, bulletMaxLife, bulletColors, bulletPower, shootType, singleShot, animator, animationId, soundManager, shootingSoundIndex){
 	mDelayAnimFactor = 350;
 	mSwitchGunTime = 0.15;	
 	mColorIndex = 0;	
@@ -114,6 +119,9 @@ function Gun::Gun(ID, meshName, shootingDelay, recoilDepth, bulletMesh, bulletSp
 		mAnimator = animator;
 		mBulletPower = bulletPower;			
 		mBulletColors = valtype(bulletColors[0]) == "A" || valtype(bulletColors[0]) == "V" ? bulletColors : {bulletColors};
+		mSoundManager = soundManager;
+		mShootingSoundIndex = shootingSoundIndex != Void ? shootingSoundIndex : -1;
+		
 		mID = ID;
 	}
 	else{
@@ -135,6 +143,8 @@ function Gun::Gun(ID, meshName, shootingDelay, recoilDepth, bulletMesh, bulletSp
 		mAnimator = null;
 		mBulletPower = 0;			
 		mBulletColors = [0,0,0];	
+		mSoundManager = null;
+		shootingSoundIndex = -1;
 	}
 }
 
@@ -268,6 +278,9 @@ function Gun::Shoot(){
 		}	
 	}
 	
+	if(len(ret) > 0 && mShootingSOundIndex > 0)
+		mSoundManager.PlaySOund(mShootingSOundIndex, true, 1);
+		
 	return ret;
 }
 
@@ -404,6 +417,8 @@ function Gun::Copy(otherGun, oldObj){
 	mID = otherGun.GetID();
 	mColorIndex = 0;	
 	mIsShooting = false;
+	mSoundManager = otherGun.GetSoundManager();
+	mShootingSoundIndex = otherGun.GetShootingSoundIndex();
 }
 
 function Gun::GetID(){
@@ -493,4 +508,12 @@ function Gun::IsSwitching(){
 
 function Gun::GetPosition(){
 	return mGunObj.GetPosition();
+}
+
+function Gun::GetSoundManager(){
+	return mSoundManager;
+}
+
+function Gun::GetShootingSoundIndex(){
+	return mShootingSoundIndex;
 }

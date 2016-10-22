@@ -206,27 +206,27 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 	var bulletDistance = 1000;
 	var bulletLife = 5000;
 	var bulletSpeed = 25;
-	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 901));
-	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 902));
+	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 901, mSoundManager, 15));
+	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 902, mSoundManager, 15));
 
 	foreach(var gun in mGuns){
 		aadd(mControllersBeingUsedIndex, 0);
 	}		
 	
-	var gun1 = Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 900);
+	var gun1 = Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 900, mSoundManager, 15);
 	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[0], gun1);	
 		
 	var colors = GenerateColors(0.025);
-	gun1 = Gun("Mgun", "Meshes/Weapons/V2/MachineGun.AAM", shootingDelay/3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000);
+	gun1 = Gun("Mgun", "Meshes/Weapons/V2/MachineGun.AAM", shootingDelay/2.5, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000, mSoundManager, 17);
 	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[1], gun1);	
 	
-	gun1 = Gun("Cannon", "Meshes/Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 1, 2, true, mAnimator, 3000);
+	gun1 = Gun("Cannon", "Meshes/Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 1, 2, true, mAnimator, 3000, mSoundManager, 16);
 	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition(), 0, [1,0,0]);	
 	aadd(mGunsEventTriggers[2], gun1);	
 	
-	gun1 = Gun("Shotgun", "Meshes/Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.5, 1, false, mAnimator, 4000);
+	gun1 = Gun("Shotgun", "Meshes/Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.5, 1, false, mAnimator, 4000, mSoundManager, 16);
 	gun1.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition(), 0, [1,0,0]);
 	aadd(mGunsEventTriggers[3], gun1);	
 	
@@ -589,12 +589,21 @@ function Level6::UpdateLogic(dt)
 			CheckPickupGuns();	
 			UpdateLasers(mTargets[0]);
 			
-			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2) || KeyPressed("T"))
+			var oldWarpFactor = mTimeWarpFactor;
+			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2) || KeyPressed("T")){
 				mTimeWarpFactor = 0.2;
-			else
-				mTimeWarpFactor = 1.0; 
-				
-			mAnimator.ChangeScaleFactors(mTimeWarpFactor);
+			}else{
+				mTimeWarpFactor = 1.0;				
+			}
+			
+			if(oldWarpFactor < mTimeWarpFactor){
+				mSoundManager.PlaySound(8, true, 1);
+				mAnimator.ChangeScaleFactors(mTimeWarpFactor);				
+			}
+			else if(oldWarpFactor > mTimeWarpFactor){				
+				mSoundManager.PlaySound(7, true, 1);
+				mAnimator.ChangeScaleFactors(mTimeWarpFactor);	
+			}
 			
 			if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
 				mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
@@ -938,7 +947,7 @@ function Level6::CreateTargetsBossStage(){
 		chosenMesh.ShaderSetParameter(0,"alpha", 0, 1.0);
 		chosenMesh.ShaderSetParameter(0,"outlinecolor", 0, [0,0,0]);
 		chosenMesh.ShaderActivate(true);	
-		aadd(targets, Target(bulletId, chosenMesh, CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true));
+		aadd(targets, Target(bulletId, chosenMesh, CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true, mSoundManager, 9, 11+i, 10));
 	}	
 	return targets;	
 }
@@ -1143,7 +1152,7 @@ function Level6::UpdateWallHoles(){
 
 function Level6::UpdateLasers(targets){
 	var stageTargets = targets == Void ? {} : targets;
-	for(var i = len(mBulletsArray)-1; i >= 0 && len(mBulletsArray) > 0; i--){
+	for(var i = len(mBulletsArray)-1; i >= 0; i--){
 		var bulletObj = mBulletsArray[i].GetObj();
 		var bulletMaxLife = mBulletsArray[i].GetMaxLife();
 		var bulletShotTIme = mBulletsArray[i].GetShotTime();

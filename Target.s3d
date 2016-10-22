@@ -21,6 +21,7 @@ class Target{
 	var mLaserMesh;
 	
 	var mAnimator;
+	var mSoundManager;
 	
 	var mKilled;
 	
@@ -36,6 +37,11 @@ class Target{
 	var mWithBorders;
 	var mID;
 	var mBulletIndex;
+	
+	
+	var mShootingSoundIndex;
+	var mMovingSoundIndex;
+	var mDyingSoundIndex;
 	
 	Draw();
 	GetObj();
@@ -56,8 +62,9 @@ class Target{
 	IsCollidingBBox(object);
 };
 
-function Target::Target(ID, mesh, obj, lives, shootDelay, color, hitColor, laserColor, speed, hasLasers, moving, rotating, colorTransition, laserSpeed, laserMesh, laserMaxDistance, laserMaxLife, animator, withBorders){
+function Target::Target(ID, mesh, obj, lives, shootDelay, color, hitColor, laserColor, speed, hasLasers, moving, rotating, colorTransition, laserSpeed, laserMesh, laserMaxDistance, laserMaxLife, animator, withBorders, soundManager, shootingSoundIndex, movingSoundIndex, dyingSoundIndex){
 	mAnimator = animator; 
+	mSoundManager = soundManager;
 	mMesh = mesh;
 	mObj = obj;
 	mTotalLives = lives;
@@ -73,6 +80,13 @@ function Target::Target(ID, mesh, obj, lives, shootDelay, color, hitColor, laser
 	mRotating = rotating;
 	mColorTransition = colorTransition;
 	mWithBorders = withBorders == Void ? false : withBorders;
+	
+	if(shootingSoundIndex != Void){
+	}
+	
+	mShootingSoundIndex = shootingSoundIndex != Void ? shootingSoundIndex : -1;
+	mMovingSoundIndex = movingSoundIndex != Void ? movingSoundIndex : -1;
+	mDyingSoundIndex = dyingSoundIndex != Void ? dyingSoundIndex : -1;
 	
 	mLaserSpeed = laserSpeed;
 	mLaserMesh = laserMesh;
@@ -157,6 +171,10 @@ function Target::Update(mMainRoom){
 function Target::Kill(){
 	mKilled = true;
 	mAnimator.CreateScalingTransition(mObj, [1, 1, 1], [0, 0, 0], mScalingTransitionTime, false, 3);
+	
+	
+	if(mDyingSoundIndex > 0)
+		mSoundManager.PlaySound(mDyingSoundIndex, true, 1);
 }
 
 function Target::UpdateTransition(mMainRoom){
@@ -183,7 +201,9 @@ function Target::UpdateTransition(mMainRoom){
 		pos.z = mMainRoom.IsPointInRoom(newPosZ) ? newPosZ.z : targetPos.z - roomDepthHalved;
 
 		var time = 3.0;
-	
+		
+		if(mMovingSoundIndex > 0)
+			mSoundManager.PlaySound(mMovingSoundIndex, true, 1);
 		mAnimator.CreateTransition(mObj, mObj.GetPosition(), [posX, posY, posZ], mSpeed, false, 2);		
 	}
 }
@@ -237,7 +257,8 @@ function Target::Shoot(cameraPosition){
 		laserObj.SetRotation(angle, axis.x, axis.y, axis.z);
 		
 		mAnimator.CreateTransition(laserObj, pos, [cameraPosition.x-pos.x, cameraPosition.y-pos.y, cameraPosition.z-pos.z]*mLaserMaxDistance, mLaserSpeed, false, 0);
-		
+		if(mShootingSoundIndex > 0)
+			mSoundManager.PlaySound(mShootingSoundIndex, true, 1);
 		return Bullet(laserObj, GetTime(), mLaserMaxLife, true, 1, mLaserColor, mID+" "+str(mBulletIndex++));
 	}
 	return null;

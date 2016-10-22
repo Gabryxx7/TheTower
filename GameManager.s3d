@@ -220,6 +220,17 @@ function GameManager::GameManager(HMD)
 	mSoundManager.AddSound("sounds/Si5.wav", 4);
 	mSoundManager.AddSound("sounds/Do#6.wav", 5);
 	mSoundManager.AddSound("sounds/Mi7.wav", 6);
+	mSoundManager.AddSound("sounds/WarpIn.wav", 7);
+	mSoundManager.AddSound("sounds/WarpOut.wav", 8);
+	mSoundManager.AddSound("sounds/Invaders/shoot.wav", 9);
+	mSoundManager.AddSound("sounds/Invaders/invaderkilled.wav", 10);
+	mSoundManager.AddSound("sounds/Invaders/fastinvader1.wav", 11);
+	mSoundManager.AddSound("sounds/Invaders/fastinvader2.wav", 12);
+	mSoundManager.AddSound("sounds/Invaders/fastinvader3.wav", 13);
+	mSoundManager.AddSound("sounds/Invaders/fastinvader4.wav", 14);
+	mSoundManager.AddSound("sounds/Weapons/LaserPistol_fire.wav", 15);
+	mSoundManager.AddSound("sounds/Weapons/machinegun.wav", 16);
+	mSoundManager.AddSound("sounds/Weapons/pistol2.wav", 17);
 	mSoundManager.AddSound("sounds/numpadBeep.wav", "numpadBeep");
 	mSoundManager.AddSound("sounds/numpadCorrectCode.wav", "numpadCorrectCode");
 	mSoundManager.AddSound("sounds/numpadWrongCode.wav", "numpadWrongCode");
