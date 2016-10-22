@@ -85,6 +85,7 @@ class Level6
 	var mTranslateFactor;
 		
 	var mWallsHolesObjs;
+	var mHoleMesh;
 	var mWallsHolesLife;
 	
 	var mCameraHudObj;
@@ -271,7 +272,8 @@ function Level6::Level6(isVRon, inputManager, soundManager)
 
 	mBulletsArray = {};	
 	mWallsHolesObjs = {};
-	mWallsHolesLife = 2500;
+	mHoleMesh = CvmNewMesh(VRP_CIRCLE, 30, 0.05*SCALE_FACTOR, 1);
+	mWallsHolesLife = 4000;
 	mCurrentStage = 0;
 	
 	mEnemyLaserSpeed = 15;
@@ -1187,7 +1189,7 @@ function Level6::UpdateLasers(targets){
 				// I move the point a bit towards the laser original direction, otherwise the hole object intersects the wall
 				contactPoint = contactPoint + direction * 0.1 * SCALE_FACTOR;
 				
-				var holeObj = CvmObj(CvmNewMesh(VRP_CIRCLE, 30, 0.05*SCALE_FACTOR, 1));
+				var holeObj = CvmObj(mHoleMesh);
 				
 				// Since the center of the box is at its feet, moving it at the coordinates of the previous point and then applying the rotation works perfectly
 				holeObj.SetPosition(contactPoint);
@@ -1239,14 +1241,14 @@ function Level6::UpdateLasers(targets){
 				adel(mBulletsArray, i);
 			}    				
 		}
-		else if(!isEnemyBullet){    				
-    		for(var j = 0; j < len(stageTargets); j++)
+		else if(!isEnemyBullet){ 
+			var hasBeenHit = false;   				
+    		for(var j = 0; j < len(stageTargets) && !hasBeenHit; j++)
     		{		    			
     			var target = stageTargets[j];    			
-    			var hasBeenHit = target.IsCollidingBBox(bulletObj);
+    			hasBeenHit = target.IsCollidingBBox(bulletObj);
     			
-    			if(hasBeenHit){ //if the laser hit something or has been in the system for too long
-    			
+    			if(hasBeenHit){ //if the laser hit something or has been in the system for too long    			
 					if(target.Hit() && target.RemoveLife(bulletPower) <= 0){
 						outputln("ENEMY KILLED");
 						target.Kill();
