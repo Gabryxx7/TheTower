@@ -596,14 +596,12 @@ function Level6::UpdateLogic(dt)
 				mTimeWarpFactor = 1.0;				
 			}
 			
-			if(oldWarpFactor < mTimeWarpFactor){
-				mSoundManager.PlaySound(8, true, 1);
-				mAnimator.ChangeScaleFactors(mTimeWarpFactor);				
-			}
-			else if(oldWarpFactor > mTimeWarpFactor){				
+			if(oldWarpFactor < mTimeWarpFactor)
+				mSoundManager.PlaySound(8, true, 1);			
+			else if(oldWarpFactor > mTimeWarpFactor)
 				mSoundManager.PlaySound(7, true, 1);
-				mAnimator.ChangeScaleFactors(mTimeWarpFactor);	
-			}
+			
+			mAnimator.ChangeScaleFactors(mTimeWarpFactor);	
 			
 			if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
 				mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
