@@ -1,35 +1,34 @@
+#define STATUS_ELEVATOR_MOVING 0
+#define STATUS_ELEVATOR_ARRIVED 1
+#define STATUS_LEVEL_STARTED 2
+#define STATUS_LEVEL_ENDING 3
+
+/*
+ * This level is strictly related to Level1; most of the things were copied and pasted. Comments will be on the parts that are different
+ */
 class Level5
 {
+	var mTexture;
 	var mIsVRon;
-	var debugVrOn;
+	var mDebugVrOn;
 	
-	// Booleans that indicate if the level is starting or ending
-	var mStarting;
 	var mEnding;
 	var mIsLevelCompleted;
 	var mEndTimer;
-	var mLevelStatus;
-	
-	// When the player steps into the elevator, this constant hold the time (in milliseconds) until the next level is rendered
 	var mTimeToEnd;
 	
-	// Manager for user inputs
+	var mLevelStatus;
+	
 	var mInputManager;
-	
-	// "Animator" object; used to create transitions and rotations for the objects
 	var mAnimator;
-	
-	// "SoundManager" object; used to play the music and sounds. May need to move this to the "GameManager" class in the future, since it's more like a global thing
 	var mSoundManager;
 	
-	// Active camera
 	var mCamera;
+	var cameraPosition;
 	
-	// Lights used to render the scene. mLight0 is used to render the portals' rooms, while mLight1 is used to render the "normal" scene
 	var mLight0;
-	var mLight1;	
+	var mLight1;
 	var mLight2;
-	
 	var mLight0Position;
 	var mLight1Position;
 	var mLight2Position;
@@ -37,175 +36,330 @@ class Level5
 	var mLight1Diffuse;
 	var mLight2Diffuse;
 	
-	// "Room" object that contains the whole room
 	var mMainRoom;
-	
-	// Arrays that contain the reference to the portal rooms, the portal frames (i.e. the rectangle's where we can see the portals' rooms) 
-	// and the normals of the frames
-	var mPortalFrames;
-	var mPortalFramesNormals;
-	var mPortalFramesGlassWalls;	
-	// This array contains the reference to the currently visible portal's frames
-	var mCurrentlyVisiblePortalFrames;
-		
-	// Booleans that indicate whether the elevator has appeared and if it's already open or not
-	var mIsElevatorPresent;
-	var mIsElevatorOpen;
-	
-	// "Room" object that represent the elevator
-	var mElevator;	
+	var mElevator;
 	
 	var mElevatorFinalPosition;
 	var mElevatorTravelDistance;
 	var mElevatorTravelTime;
-	var mCameraYoffset;	
-	var mOpenglTranslationOffset;	
+	var mCameraYoffset;
+	
+	var mOpenglTranslationOffset;
 	var mPreviousOpenglTranslationOffset;
 	
-	// Vive controllers
 	var mControllersArray;
+	var mGuns;
+	var mViveGun;
+	
+	var mDrawingShader;
+
+	var mBulletsArray;
+	var mEnemySpeed;
+	var mEnemyLaserSpeed;
+	var mEnemyLaserMesh;
+	
+	var mTargets;
+	var mBackupTargets;
+	var mAnimatingTargets;
+	var mCurrentStage;
+	
+	var mControllersBeingUsedIndex;
+	
+	var mCounterPositions;
+	var mCounterBox;
+	var mCounterRandomMeshes;
+	var mCounter;
+	var mLastCounterUpdate;
+	var mCounterShader;
+	var mBorderShader;
+	
+	var mApplyPostProcessing;
+	var mPostProcessingBlurShader;
+	var mPostProcessingBlurShaderPasses;
+	var mPostProcessingBlurTimer;
+	
+	var mDebugController;
+	var mDebugControllerHidden;
+	var mDebugKeyHit;
 	
 	var mTranslateFactor;
-
-	var mWalls;
-	var timeFromLastKey;
-	var mAnimations;
-	var mAnimatingWalls;
-	var mWallsAnimationTime;
+		
+	var mWallsHolesObjs;
+	var mHoleMesh;
+	var mWallsHolesLife;
 	
-	var controllerPressing;
+	var mCameraHudObj;
+	var mCameraHudColorAnimId;
+	var mCameraHitBoxObj;
+	var mCameraHitBoxSize;
+	var mCameraHitBoxHeight;
 	
-	// Private functions	
+	var mCameraHudLife;
+	var mLife;
+	var mDefaultLife;
+	var mGunsEventTriggers;
+	var mPowerSphereRadius;
+	var mIsGunInsideTrigger;
+	
+	var mTimeBeforeReset;
+	var mLostTime;
+	var mLastCounter;
+	var mLightColorTransitionId;
+	
+	var mTimeWarpFactor;
+	
+	// Private functions
+	HandleGuns();
+	UpdateWallHoles();
+	CheckPickupGuns();
+	UpdateLasers(targets);
+	UpdateEnemies(targets);
+	UpdateStageStatus();
+	CounterKeyboardTesting();
+	UpdateCounter(num, toRandomPos);
+	
 	// Public functions
-	Init(lights, lightsDiffuse, elevator, openglTransformOffset);
+	Init(lights, elevator, openglTranslationOffset, prevLightDiffuse);
 	Render();
 	UpdateLogic(dt);
 	IsLevelCompleted();
-	GetElevator();
 	IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal, isWall);
 	GetOpenglTransformOffset();
 	SetOpenglTransformOffset(mOpenglTranslationOffset);
 	SetupOpenglLights();
+	GetLightDiffuse();
 	GetLevelPreview();
 	GetLevelName();
-	GetLightDiffuse();
-	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);
-	DrawHUD();
+	ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters);		
+	CreateTargetsStage0(numTargets);
+	CreateTargetsStage1(numTargets);
+	CreateTargetsBossStage();
+	DrawHUD(eye);
+	GenerateEnemies();
+	ResetTargets();
 };
 
-
-/*
- * Constructor. Takes as parameter the input manager of the application
- */
 function Level5::Level5(isVRon, inputManager, soundManager)
 {
 	mIsVRon = isVRon;
-	debugVrOn = false;
-	controllerPressing = -1;
+	mDebugVrOn = true;
 	
 	mInputManager = inputManager;
 	mSoundManager = soundManager;
 	
-	mTranslateFactor = [0.0, 0.0, -20.0 * SCALE_FACTOR];
-	mControllersArray = {};
-	if(debugVrOn){
-		aadd(mControllersArray, ViveController(1));
-		aadd(mControllersArray, ViveCOntroller(2));
-	}
-	else if(isVrOn){		
-		aadd(mControllersArray, mInputManager.GetController(1));
-		aadd(mControllersArray, mInputManager.GetController(2));
-	}
-		
-	// Creating the object that will handle transitions and rotations of objects
-	mAnimator = Animator();
+	mTranslateFactor = [0, 0, -20 * SCALE_FACTOR];
 	
-	// Creating the main room
-	mMainRoom = Room(ROOM_FAR_WALL_WIDTH, ROOM_SIDE_WALL_WIDTH, ROOM_HEIGHT, true, 1, 2, true, true, true);
-	
-	mMainRoom.Translate(mTranslateFactor.x,  mTranslateFactor.y, mTranslateFactor.z);
-		
-	// At start, the elevator is not present, nor its doors are open
-	mIsElevatorPresent = false;
-	mIsElevatorOpen = false;
-	
-	var wallSize = [1.4*SCALE_FACTOR, 1.4*SCALE_FACTOR, 10*SCALE_FACTOR];
-	var spacing = 0.7*SCALE_FACTOR;
-	var amount = [10, 10];
-//	var amount = [36, 15];
-	
-	mWalls = {};
-	var wallOffset = [0*SCALE_FACTOR, wallSize.y/2+spacing/2, 0*SCALE_FACTOR];
-	var wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, -(ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,1, [1, 0.7, 0.7], [0,0,1]));
-
-	wallPos = [-(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2), 0*SCALE_FACTOR, (ROOM_SIDE_WALL_WIDTH/2+wallSize.z*0.4)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,-1, [0.7, 1, 0.7], [1,0,1]));
-	
-	wallPos = [-ROOM_FAR_WALL_WIDTH/2-wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x)/2] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,2, [0.7, 0.7, 1], [1,0,0]));
-
-	wallPos = [+ROOM_FAR_WALL_WIDTH/2+wallSize.z*0.4, 0*SCALE_FACTOR, -(wallSize.x+spacing)/2 -(spacing+wallSize.x)*(amount.x/2)] + mTranslateFactor;
-	aadd(mWalls, ButtonsWall(mAnimator, wallSize, spacing, wallPos, wallOffset, amount,-2, [0.7, 1, 1], [1,1,0]));
-	
-	foreach(var wall in mWalls){
-		wall.ComputeAnimations(5);
-		wall.ComputeCode(1, [0,5]); //first param: number of buttons to press, second param: row range
-	}
-	
-	timeFromLastKey = 0;
-	mAnimations = {false, false, false, false};
-	mWallsAnimationTime = -1;
-	mAnimatingWalls = 0;
-	
-}
-
-function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset){
-	
-	mOpenglTranslationOffset = openglTransformOffset;
-	
-	foreach(var light in lights)
-		light.Disable();
-	
-	mLight0Diffuse = [1,1,1];
-	mLight1Diffuse = [0.9,0.5,0.2];
-	mLight2Diffuse = [0.2,0.8,1.3];
-	
-	mLight0 = lights[0];
-	mLight0.SetDiffuse(mLight0Diffuse);
-	mLight0.Enable();
-	
-	mLight1 = lights[1];
-	mLight1.SetDiffuse(mLight1Diffuse);
-	mLight1.Enable();
-	
-	mLight2 = lights[2];
-	mLight2.SetDiffuse(mLight2Diffuse);
-	mLight2.Enable();
-	
-	mElevator = elevator;
-	
-	mCamera = mInputManager.GetActiveCamera();
-
 	mEnding = false;
 	mIsLevelCompleted = false;
 	mTimeToEnd = 2500;
 	
+	mTimeWarpFactor = 1.0;
+		
+	mAnimator = Animator();
+	
+	mMainRoom = Room(ROOM_FAR_WALL_WIDTH*1.25, ROOM_SIDE_WALL_WIDTH*1.25, ROOM_HEIGHT*1.25, true, 0, 2);
+	mMainRoom.Translate(mTranslateFactor.x, mTranslateFactor.y, mTranslateFactor.z);
+	
+	mDrawingShader = CVmShaderProgram("Shaders/drawingShader.glsl");
+	mCounterShader = CVmShaderProgram("void main(void) { gl_Position = ftransform(); }", "uniform vec3 color; uniform float alpha; void main (void) { gl_FragColor = vec4(color, alpha); }", true);
+	mBorderShader = CvmShaderProgram("Shaders/SimpleColorSHader.glsl");
+		
+	mApplyPostProcessing = false;
+	mPostProcessingBlurShader = CVmShaderProgram("Shaders/postProcessingBlurShader.glsl");
+	mPostProcessingBlurShaderPasses = 1;
+	mPostProcessingBlurTimer = 0;
+		
+	mControllersBeingUsedIndex = {};	
+	mControllersArray = {};	
+	
+	mGunsEventTriggers = {};
+	var size = 8*SCALE_FACTOR;
+	var cornerx = mMainRoom.GetRoomWidth()/2;
+	var cornerz = mMainRoom.GetRoomDepth()/2;
+	var offy = 5*SCALE_FACTOR;
+
+	mIsGunInsideTrigger = {false, false};
+	mPowerSphereRadius = 2*SCALE_FACTOR;
+	var gunSphereMesh = CvmNewMesh(VRP_SPHERE, 30, mPowerSphereRadius, 1);
+	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
+	mGunsEventTriggers[0][0].SetPosition([cornerx-size, offy, cornerz-size*2] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
+	mGunsEventTriggers[1][0].SetPosition([-cornerx+size/2, offy, -cornerz] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
+	mGunsEventTriggers[2][0].SetPosition([-cornerx+size/2, offy, cornerz-size*2] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
+	mGunsEventTriggers[3][0].SetPosition([cornerx-size, offy, -cornerz] + mTranslateFactor);
+	aadd(mGunsEventTriggers, {CvmObj(gunSphereMesh)});
+	mGunsEventTriggers[4][0].SetPosition([0, offy, -mMainRoom.GetRoomWidth()/2+size] + mTranslateFactor);
+	
+	var mLaserLength = 1.5;
+	var mLaserWidth = 0.035;
+	var mLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
+	var mLaserMeshSphere = CvmNewMesh(VRP_SPHERE, 30, 0.08*SCALE_FACTOR, 1);
+	var recSize = [0.02*SCALE_FACTOR, 0.2*SCALE_FACTOR, 0.4*SCALE_FACTOR];
+	var mLaserMeshRectangle = CVmNewMesh(VRP_BOX, 1, [-recSize.x/2, -recSize.y/2, -recSize.z/2], [recSize.x/2, recSize.y/2, recSize.z/2]);
+	mLaserMesh.Rotate(90,1,0,0);
+	
+	mGuns = {};
+	var shootingDelay = 100.0;
+	var recoil = 0.2*SCALE_FACTOR;
+	var bulletDistance = 1000;
+	var bulletLife = 5000;
+	var bulletSpeed = 25;
+	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 901, mSoundManager, 15));
+	aadd(mGuns, Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 902, mSoundManager, 15));
+
+	foreach(var gun in mGuns){
+		aadd(mControllersBeingUsedIndex, 0);
+	}		
+	
+	var gun1 = Gun("Pistol", "Meshes/Weapons/V2/SciFiGun.AAM", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 2, 0, true, mAnimator, 900, mSoundManager, 15);
+	gun1.CreatePickupPoint(mGunsEventTriggers[0][0].GetPosition(), 0, [1,0,0]);	
+	aadd(mGunsEventTriggers[0], gun1);	
+		
+	var colors = GenerateColors(0.025);
+	gun1 = Gun("Mgun", "Meshes/Weapons/V2/MachineGun.AAM", shootingDelay/2.5, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, colors, 0.5, 0, false, mAnimator, 2000, mSoundManager, 17);
+	gun1.CreatePickupPoint(mGunsEventTriggers[1][0].GetPosition(), 0, [1,0,0]);	
+	aadd(mGunsEventTriggers[1], gun1);	
+	
+	gun1 = Gun("Cannon", "Meshes/Weapons/V2/bGUN02h.AAM", shootingDelay*3, recoil, mLaserMeshRectangle, bulletSpeed, bulletDistance, bulletLife, [0,0,1], 1, 2, true, mAnimator, 3000, mSoundManager, 16);
+	gun1.CreatePickupPoint(mGunsEventTriggers[2][0].GetPosition(), 0, [1,0,0]);	
+	aadd(mGunsEventTriggers[2], gun1);	
+	
+	gun1 = Gun("Shotgun", "Meshes/Weapons/V2/bGUN03h.AAM", shootingDelay*3, recoil, mLaserMeshSphere, bulletSpeed, bulletDistance, bulletLife, [0,1,0], 0.5, 1, false, mAnimator, 4000, mSoundManager, 16);
+	gun1.CreatePickupPoint(mGunsEventTriggers[3][0].GetPosition(), 0, [1,0,0]);
+	aadd(mGunsEventTriggers[3], gun1);	
+	
+	gun1 = Gun("Vive", "Meshes/Vive_Controller_Mesh/Exported/Full_Body/vr_controller_vive_1_5.aam", shootingDelay, recoil, mLaserMesh, bulletSpeed/2, bulletDistance, bulletLife, [1,0,0], 3, 0, true, mAnimator, 900);
+	gun1.CreatePickupPoint(mGunsEventTriggers[4][0].GetPosition(), 0, [1,0,0]);
+	mViveGun = gun1;
+	aadd(mGunsEventTriggers[4], gun1);	
+	
+	if(mIsVRon)
+	{
+		aadd(mControllersArray, mInputManager.GetController(1));
+		aadd(mControllersArray, mInputManager.GetController(2));
+		mGuns[0].LinkToController(mControllersArray[0]);
+		mGuns[1].LinkToController(mControllersArray[1]);
+	}
+	else if(mDebugVrOn)
+	{
+		aadd(mControllersArray, ViveController(1));
+		aadd(mControllersArray, ViveController(2));
+		mGuns[0].LinkToController(mControllersArray[0]);
+		mGuns[1].LinkToController(mControllersArray[1]);
+				
+		mDebugController = mControllersArray[0];
+		mDebugControllerHidden = false;
+		mDebugKeyhit = false;
+	}
+	
+	mCounter = 0;
+	mLastCounterUpdate = 0;
+	mCounterPositions = {};
+	var cubeSizes = 2.5 *SCALE_FACTOR;
+	var cubeSpacing = 0.15 *SCALE_FACTOR;
+	var numberSpacing = 1*SCALE_FACTOR;
+	mCounterBox = [6*(cubeSizes+cubeSpacing)/2, 10*(cubeSizes+cubeSpacing)/2, 6*(cubeSizes+cubeSpacing)/2];
+	var digitWidth = 6*(cubeSizes+cubeSpacing)-cubeSpacing;
+	var counterMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+	mCounterRandomMeshes = {};
+	aadd(mCounterPositions, [digitWidth/2+numberSpacing/2, 8*SCALE_FACTOR, -mMainRoom.GetRoomWidth()/2-cubeSizes]+mTranslateFactor);
+	aadd(mCounterPositions, mCounterPositions[0]-[digitWidth+numberSpacing,0,0]);
+	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[0], [0.8,0.2,0.2], cubeSizes, cubeSpacing, -1));
+	aadd(mCounterRandomMeshes, RandomMeshes(counterMesh, 54, mCounterBox, mCounterPositions[1], [0.2,0.4,1], cubeSizes,cubeSpacing, -1));
+	UpdateCounter(0, false);
+
+	mBulletsArray = {};	
+	mWallsHolesObjs = {};
+	mHoleMesh = CvmNewMesh(VRP_CIRCLE, 30, 0.05*SCALE_FACTOR, 1);
+	mWallsHolesLife = 4000;
+	mCurrentStage = 0;
+	
+	mEnemyLaserSpeed = 15;
+	mEnemySpeed = 5.0;
+	mEnemyLaserMesh = CvmNewMesh(VRP_CYLINDER, 30, mLaserWidth*SCALE_FACTOR, -mLaserLength*SCALE_FACTOR, 1);
+	
+	GenerateEnemies();
+	
+	mCameraHudColorAnimId = 9876;
+	mCameraHitBoxSize = 1.5*SCALE_FACTOR;
+	mCameraHitBoxHeight = 3.0 * SCALE_FACTOR;
+	mCameraHitBoxObj = CvmObj(CVmNewMesh(VRP_BOX, 1, [-mCameraHitBoxSize/2, -mCameraHitBoxHeight/2, -mCameraHitBoxSize], [mCameraHitBoxSize/2, mCameraHitBoxHeight/2, mCameraHitBoxSize]));	
+	
+	var txt = CVmText();
+	txt.Load("+");
+	txt.SetColor(1,1,0);
+	
+	mCameraHudLife = CvmText();
+	mDefaultLife = 100;
+//	mLife = mDefaultLife;
+	mLife = 5;
+	mCameraHudLife.Load(str(mLife));
+	
+	var obj1 = CvmObj();
+	var obj2 = CvmObj();
+	obj1.LinkToText(txt);	
+	obj2.LinkToText(mCameraHudLife);
+	
+	mCameraHudObj = CVmObj();	
+	mCameraHudObj.AddChild(obj1,0,0,0);	
+	mCameraHudObj.AddChild(obj2, 0.7, 0,0);
+	mCameraHudObj.SetScale(0.07, 0.1, 0.0);
+	
+	mAnimatingTargets = {};
+	mTimeBeforeReset = 3000;
+	mLostTime = -1;
+	mLastCounter = 0;
+	mLightColorTransitionId = 8957;
+}
+
+
+ 
+ function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset)
+{	
+	mOpenglTranslationOffset = openglTransformOffset;
+	
+	foreach(var light in lights)
+		light.Disable();
+		
+//	mLight0Diffuse = [1, 1, 1];
+//	mLight1Diffuse = [0.612865, 0.0750434, 1.08279];
+//	mLight2Diffuse = [0.172785, 1.00443, 0.488585];
+	mLight0Diffuse = [1.5, 1.5, 2.5];
+	mLight1Diffuse = [1.02546, 0.509065, 0.903289];
+	mLight2Diffuse = [0.0861419, 0.488434, 1.27123];
+	
+	mLight0 = lights[0];
+	mLight0.SetDiffuse(mLight0Diffuse.x, mLight0Diffuse.y, mLight0Diffuse.z);
+	mLight0.Enable();
+	
+	mLight1 = lights[1];
+	mLight1.SetDiffuse(mLight1Diffuse.x, mLight1Diffuse.y, mLight1Diffuse.z);
+	mLight1.Enable();
+	
+	mLight2 = lights[2];
+	mLight2.SetDiffuse(mLight2Diffuse.x, mLight2Diffuse.y, mLight2Diffuse.z);
+	mLight2.Enable();
+	
+		
+	mElevator = elevator;
+	
+	mCamera = mInputManager.GetActiveCamera();
+	
 	mElevatorTravelDistance = 100.0 * SCALE_FACTOR;
 	mElevatorTravelTime = !DEBUG_MODE ? 15.0 : 1.5;
-
-	mElevatorFinalPosition = mElevator.GetPosition()+[0,0.005*SCALE_FACTOR, 0];
 	
-	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
-	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0] + mTranslateFactor);
+	mElevatorFinalPosition = mElevator.GetPosition();
+	
+	mLight1.SetPosition(mLight1.GetPosition() - [0, mElevatorTravelDistance, 0]);
+	mLight2.SetPosition(mLight2.GetPosition() - [0, mElevatorTravelDistance, 0]);
 	
 	mLight0Position = mLight0.GetPosition();
 	mLight1Position = mLight1.GetPosition();
 	mLight2Position = mLight2.GetPosition();
-		
+	
 	mAnimator.CreateTransition(mElevator, mElevatorFinalPosition + [0, -mElevatorTravelDistance, 0], mElevatorFinalPosition, mElevatorTravelTime, false);
-	mAnimator.CreateRotationAroundPointTransition(mLight1, mElevator.GetPosition()-[32*SCALE_FACTOR, 0, 0*SCALE_FACTOR],  mElevator.GetPosition(), 240, true, true, true);
-	mAnimator.CreateRotationAroundPointTransition(mLight2, mElevator.GetPosition()+[32*SCALE_FACTOR, 0, 0*SCALE_FACTOR],  mElevator.GetPosition(), 240, true, true, false);
 	
 	mCameraYoffset = mElevatorTravelDistance / mElevatorTravelTime;
 	mPreviousOpenglTranslationOffset = mOpenglTranslationOffset; 
@@ -213,10 +367,18 @@ function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset){
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
 	
+	// I move the room a bit so that the elevator is completely in the center of the room
+	mMainRoom.Translate(-mElevator.GetRoomDepth() / 2.0 + 3.0 * SCALE_FACTOR, 0, -mElevator.GetRoomWidth() / 2.0);
+	
+	// I set now the position of a text that needed to know where the elevator was
+//	mFrontText.SetPosition([0, 7.0 * SCALE_FACTOR, mMainRoom.GetRoomDepth()/2 - 0.1 * SCALE_FACTOR -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
+//	mBackText.SetPosition(mElevatorFinalPosition + [0.1 * SCALE_FACTOR, 1 * SCALE_FACTOR, -0.1 * SCALE_FACTOR]);
+//	mLeftText.SetPosition([mMainRoom.GetRoomWidth()/2 - 2.1 * SCALE_FACTOR, 7.0 * SCALE_FACTOR, -mElevator.GetRoomWidth() / 2.0] + mTranslateFactor);
+	
 	mAnimator.CreateLightColorTransition(GL_LIGHT1, lightsDiffuse[1], mLight1Diffuse, mElevatorTravelTime);
 	mAnimator.CreateLightColorTransition(GL_LIGHT2, lightsDiffuse[2], mLight2Diffuse, mElevatorTravelTime);
-	
 }
+
 
 /* ****************************************************** *
  * **************** RENDER METHODS ********************** *
@@ -227,13 +389,11 @@ function Level5::Init(lights, lightsDiffuse, elevator, openglTransformOffset){
  * Render method
  */
 function Level5::Render()
-{			
-	// To avoid problems with the lights when using teleportation and the Vive, I reset the light's position to their current place at each frame		
+{	
 	glLight(GL_LIGHT0, GL_POSITION, [mLight0Position.x, mLight0Position.y, mLight0Position.z, 1.0]); 
  	glLight(GL_LIGHT1, GL_POSITION, [mLight1Position.x, mLight1Position.y, mLight1Position.z, 1.0]); 
- 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);
-
-// And the elevator, which is hidden at the start (so the draw won't do a thing at first)
+ 	glLight(GL_LIGHT2, GL_POSITION, [mLight2Position.x, mLight2Position.y, mLight2Position.z, 1.0]);	
+	
 	mElevator.Draw();
 	
 	switch(mLevelStatus)
@@ -241,31 +401,90 @@ function Level5::Render()
 		case STATUS_ELEVATOR_MOVING:
 			break;
 		case STATUS_ELEVATOR_ARRIVED:
-		case STATUS_LEVEL_ENDING:
+		case STATUS_LEVEL_ENDING:		
 		case STATUS_LEVEL_STARTED:
-		{
-			foreach(var wall in mWalls)
-				wall.Draw();
-			
-			// We draw the main room
+		{		
 			mMainRoom.Draw();
+			
+			if(len(mTargets) > 0){
+				foreach(var target in mTargets[0])
+					target.Draw();				
+			}
+			
+			if(len(mAnimatingTargets) > 0){
+				foreach(var target in mAnimatingTargets)
+					target.Draw();				
+			}
+				
+			mCounterShader.Start();
+				mCounterShader.SetParameter("alpha", 1.0);
+
+				foreach(var bullet in mBulletsArray){
+					mCounterShader.SetParameter("color", bullet.GetColor());
+					bullet.Draw();	
+				}
+				
+//				mCameraHitBoxObj.DrawBoundingBox();
+				
+				mCounterShader.SetParameter("color", [0,0,0]);
+				foreach(var wallHole in mWallsHolesObjs)
+					wallHole[0].Draw();
+			
+				for(var i = 0; i < len(mCounterRandomMeshes); i++){
+					foreach(var obj in mCounterRandomMeshes[i].GetObjs()){
+						mCounterShader.SetParameter("color", mCounterRandomMeshes[i].GetColor());
+						obj.Draw();
+						mCounterShader.SetParameter("color", [0,0,0]);
+						glLineWidth(2.0);
+						obj.Draw(VR_BBOX_ONLY);
+					}			
+				}
+				
+				
+			mCounterShader.Stop();
+			
+			
+			for(var i = 0; i < len(mGuns); i++){
+				if(mGuns[i].GetID() == "Vive" && !mGuns[i].IsSwitching()){
+					if(mIsVrOn || mDebugVrOn){
+//						outputln("DRAWING CONTROLLER");
+						mControllersArray[i].Draw();						
+					}
+				}
+				else{
+					mGuns[i].Draw();
+				}
+			}
+				
+			foreach(var trigger in mGunsEventTriggers){
+				trigger[1].Draw();
+				
+				mBorderShader.Start();
+					mBorderShader.SetParameter("alpha", 0.15);
+					mBorderShader.SetParameter("outlinecolor", [1,1,0]);
+					mBorderShader.SetParameter("outline", 0);
+					glCullFace (GL_FRONT);
+					trigger[0].SetScale(1.05, 1.05, 1.05);
+					trigger[0].Draw();
+					mBorderShader.SetParameter("alpha", 0.12);
+					mBorderShader.SetParameter("outline", 1);
+					mBorderShader.SetParameter("diffuse", [0.5,0.5,1]);
+					glCullFace (GL_BACK);  
+					trigger[0].SetScale(1,1,1);
+					trigger[0].Draw();
+				mBorderShader.Stop();
+			}
+			
 			break;
-		}
-	}
-	
-	if(mIsVRon || debugVrOn){
-		foreach(var controller in mControllersArray){
-			controller.Draw();
-//			controller.DrawBoundingBox();			
 		}
 	}
 }
 
+
 /* ****************************************************** *
  * **************** LOGIC METHODS ********************** *
  * ****************************************************** */
- 
- 
+  
 /*
  * Updates the logic of the game
  * 
@@ -273,37 +492,44 @@ function Level5::Render()
  */
 function Level5::UpdateLogic(dt)
 {
-	
-	// First off, let's update the player's position and orientation and the controllers (if they're not present nothing will be done)
 	mInputManager.UpdateCamera();
 	mInputManager.UpdateControllers(mOpenglTranslationOffset);
 	
-	// Getting the camera position, minus the opengl offset used for teleporting
-	var cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	// Debug function used to change the color of the lights in the room when certain keys are pressed
+	UpdateLightsColor(&mLight1Diffuse, &mLight2Diffuse);
 	
-	if(debugVrOn && !mIsVrOn){
-		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 2.5 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
-		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 2.5 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);
+	cameraPosition = mCamera.GetPosition() - mOpenglTranslationOffset;
+	
+	// I put the controller in front of the camera, for the debugging purposes, if VR isn't on
+	if(!mIsVRon && mDebugVrOn)
+	{
+		mControllersArray[0].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+		mControllersArray[1].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+		mControllersArray[0].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR - [0.5*SCALE_FACTOR,0,0]);
+		mControllersArray[1].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 3 * SCALE_FACTOR + [0.5*SCALE_FACTOR,0,0]);	
+	}
+	else if(!mIsVrOn && !mDebugVrOn){
+		for(var i = 0; i < len(mGuns); i++){
+			mGuns[i].SetRotationMatrix(MatrixInverse_4(mCamera.GetRotationMatrix()));
+			mGuns[i].SetPosition(mCamera.GetPosition() - mOpenglTranslationOffset + mCamera.GetDirection() * 1.2 * SCALE_FACTOR + [-0.5*(i-len(mGuns)/2)*SCALE_FACTOR,-0.5*SCALE_FACTOR,0]);			
+		}
 	}
 	
+//	mCameraHitBoxObj.SetPosition(cameraPosition-[0,0.1*SCALE_FACTOR,0]);
+	mCameraHitBoxObj.SetRotationMatrix(mCamera.GetRotationMatrix());
+	mCameraHitBoxObj.SetPosition(cameraPosition - [0, mCameraHitBoxHeight / 4.0, 0]);
 	
-//	// Checking if the new position of the camera is allowed (i.e. if it's in the room and if it isn't inside any object); if not, 
-//	// I restore the previous porision. Very badly written code
-//	if(!mIsVRon && !mMainRoom.IsPointInRoom(cameraPosition))
-//		mInputManager.RestoreCameraPosition();
-//	else if(!mIsVRon && (cameraPosition.x >= mPortalsBoxLowerCorner.x - 0.8 * SCALE_FACTOR && cameraPosition.x <= mPortalsBoxUpperCorner.x + 0.8 * SCALE_FACTOR) &&
-//       	   (cameraPosition.z <= mPortalsBoxLowerCorner.z + 0.8 * SCALE_FACTOR && cameraPosition.z >= mPortalsBoxUpperCorner.z - 0.8 * SCALE_FACTOR) &&
-//       	    !mIsElevatorPresent)
-//   	    mInputManager.RestoreCameraPosition();
-//
-//    // If the level is ending (i.e. the player is inside the elevator) I make sure that the camera doesn't go out
-//    if(!mIsVRon && mEnding && !mElevator.IsPointInElevator(cameraPosition))
-//    	mInputManager.RestoreCameraPosition();
-    	
-    switch(mLevelStatus)
+	CounterKeyboardTesting();
+	
+	switch(mLevelStatus)
 	{
 		case STATUS_ELEVATOR_MOVING: 
 		{			
+			if(mAnimator.HaveTransition(GL_LIGHT1, 5))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT1, 5);
+			if(mAnimator.HaveTransition(GL_LIGHT2, 5))
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(GL_LIGHT2, 5);
+			
 		    if(!mIsVRon && !mElevator.IsPointInElevator(cameraPosition))
 		    	mInputManager.RestoreCameraPosition();
 			
@@ -311,9 +537,9 @@ function Level5::UpdateLogic(dt)
 
 			if(abs(elevatorPos.y) < (mElevatorFinalPosition.y + mElevatorTravelDistance)/2.0)
 			{
-				mLight0Position = [-10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
-				mLight1Position = [0, 10.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR] + mTranslateFactor;
-				mLight2Position = [0, 10.0 * SCALE_FACTOR, -20.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight0Position = [-0.0 * SCALE_FACTOR, 10.0 * SCALE_FACTOR, 0.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight1Position = [25*SCALE_FACTOR, 10.0 * SCALE_FACTOR, 25.0 * SCALE_FACTOR] + mTranslateFactor;
+				mLight2Position = [-25*SCALE_FACTOR, 10.0 * SCALE_FACTOR, -25.0 * SCALE_FACTOR] + mTranslateFactor;
 				
 				mLight0.SetPosition(mLight0Position);
 				mLight1.SetPosition(mLight1Position);
@@ -339,8 +565,7 @@ function Level5::UpdateLogic(dt)
 			}
 	
 			break;
-		}	
-		
+		}		
 		case STATUS_ELEVATOR_ARRIVED:
 		{
 			if(!mElevator.IsPointInElevator(cameraPosition))
@@ -355,194 +580,112 @@ function Level5::UpdateLogic(dt)
 			}
 			
 			break;
-		}	
-		
+		}
+		// Case where the player is out of the elevator. It's the main status of the level
 		case STATUS_LEVEL_STARTED:
-		{
-			//Immediate Level completion
-			if(KeyPressed("F")){
-				for(var i = 0; i < len(mWalls); i++){
-					mWalls[i].StartAnimation();
-					mAnimatingWalls += 1;	
-					if(mAnimatingWalls == len(mWalls)){
-						outputln("LEVEL COMPLETED");
-						mWallsAnimationTime = GetTime();
-						mAnimatingWalls = 0;	
-						// I switch status
-						mLevelStatus = STATUS_LEVEL_ENDING;
-					}					
-				}
+		{				
+			HandleGuns();   
+			UpdateWallHoles();
+			CheckPickupGuns();	
+			UpdateLasers(mTargets[0]);
+			
+			var oldWarpFactor = mTimeWarpFactor;
+			if(mInputManager.IsGripPressed(1) || mInputManager.IsGripPressed(2) || KeyPressed("T")){
+				mTimeWarpFactor = 0.2;
+			}else{
+				mTimeWarpFactor = 1.0;				
 			}
 			
-			mLight1Position = mLight1.GetPosition();
-			mLight2Position = mLight2.GetPosition();
+			if(oldWarpFactor < mTimeWarpFactor)
+				mSoundManager.PlaySound(8, true, 1);			
+			else if(oldWarpFactor > mTimeWarpFactor)
+				mSoundManager.PlaySound(7, true, 1);
 			
-			//For each wall
-			var wallFound = false;
-			for(var i = 0; i < len(mWalls) && !wallFound; i++){
-				if(!mWalls[i].IsCompleted()){ //If it is not completed
-					if(mIsVrOn || debugVrOn){
-						var range = 1; //I check whether the camera or the vive is in the range of an active button or not
-						var minDistance = range;
-						var closerControllerIndex = -1;
-						
-						if(controllerPressing < 0){
-							for(var j = 0; j < len(mControllersArray); j++){
-								var controllerDistance = mWalls[i].IsInRangeOfActiveButton(mControllersArray[j].GetPosition(), range);
-	
-								if(controllerDistance <= minDistance){
-									mControllersArray[j].SetActionAvailable(true);
-									minDistance = controllerDistance;
-									closerControllerIndex = j;	
-									wallFound = true;			
-								}
-								else{
-									mControllersArray[j].SetActionAvailable(false);								
-								}			
-							}
-						}
-						
-						if(closerControllerIndex != -1 || controllerPressing >= 0){
-							var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
-							mControllersArray[checkingController].SetActionAvailable(true);
-							
-//							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
-							if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
-								controllerPressing = checkingController;
-								mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
-							}
-							else{
-								controllerPressing = -1;			
-								mWalls[i].StopMoving();	
-							}						
-						}		
+			mAnimator.ChangeScaleFactors(mTimeWarpFactor);	
+			
+			if(mAnimator.HaveTransition(mLightColorTransitionId, 6))
+				mLight0Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId, 6);
+				
+			if(mAnimator.HaveTransition(mLightColorTransitionId+1, 6))
+				mLight1Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+1, 6);
+				
+			if(mAnimator.HaveTransition(mLightColorTransitionId+2, 6))
+				mLight2Diffuse = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+2, 6);
+				
+			if(mLostTime > 0){
+				if(mAnimator.HaveTransition(mLightColorTransitionId+3, 6)){
+					mLife = mAnimator.GetCurrentStateInTransition(mLightColorTransitionId+3, 6);
+					mCameraHudLife.Load(str(Int(mLife)));				
+				}				
+				
+				var timeBetweenCountersUpdate = (mTimeBeforeReset / mTimeWarpFactor)/(mLastCounter > 0 ? mLastCounter : 1);		
+				if(GetTime() - mLostTime > timeBetweenCountersUpdate){	
+					if(mCounter > 0){
+						--mCounter;
+						UpdateCounter(mCounter, true);					
 					}
-					else{
-						var range = 2.5; //I check whether the camera or the vive is in the range of an active button or not
-						if(mWalls[i].IsInRangeOfActiveButton(cameraPosition, range) <= range){
-							if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
-								mWalls[i].MoveButtonInRange(cameraPosition, false);						
-							}
-							else{	
-								mWalls[i].StopMoving();
-							}
-						}
-					}
-						
-					if(mWalls[i].IsCompleted()){
-						outputln("Wall " + str(i) +" COMPLETED");
-					}
+					mLostTime = GetTime();
+										
+					if(mCounter <= 0){
+						mLostTime = -1;	
+						ResetTargets();
+						foreach(var target in mTargets[0])
+							target.Create();
+					}								
 				}
-				else{
-					if(!mWalls[i].IsAnimating()){
-						if(mWalls[i].IsNotInWallRange(cameraPosition, 5*SCALE_FACTOR)){
-							mWalls[i].StartAnimation();
-							mAnimatingWalls += 1;	
-							if(mAnimatingWalls == len(mWalls)){
-								mWallsAnimationTime = GetTime();
-								mAnimatingWalls = 0;	
-								// I switch status
-								mLevelStatus = STATUS_LEVEL_ENDING;
-							}	
-						}
-					}			
-				}
+			}		
+		 	else{
+    			UpdateEnemies(mTargets[0]);    			
+		 		UpdateStageStatus();		
 			}
+						
+			if(mApplyPostProcessing)
+    		{
+    			if(GetTime() - mPostProcessingBlurTimer > 0.1)
+    			{
+    				mPostProcessingBlurTimer = GetTime();
+    				mPostProcessingBlurShaderPasses++;
+    				
+    				if(mPostProcessingBlurShaderPasses >= 30)
+		    			mApplyPostProcessing = false;
+    			}
+    		}    		
 			break;
 		}
+		// Case where the level is ending: the only thing missing is the player inside the elevator
 		case STATUS_LEVEL_ENDING:
-		{
-			
-			if(mWallsAnimationTime > 0 && GetTime() - mWallsAnimationTime > 500 && mAnimatingWalls < len(mWalls)){
-				mWalls[mAnimatingWalls].StopAnimation();
-				mWalls[mAnimatingWalls].EnableFreePlay();
-				mAnimatingWalls++;
-				mWallsAnimationTime = GetTime();
+		{			
+			HandleGuns();   
+			UpdateWallHoles();
+			CheckPickupGuns();	
+			UpdateLasers();
 				
-				if(mAnimatingWalls >= len(mWalls)-1){
-					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-					
-					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
-					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);					
-				}
-			}
 			// I check if the player goes inside the elevator. Note: I'm not checking that he enter from the doors; he can pass through walls right now
-			if(mAnimatingWalls >= len(mWalls)-1){
-				if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
-				{
-					var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
-					var rightDoorPos = mElevator.GetRightDoor().GetPosition();
-	
-					mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
-					mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
-									
-					// If the player is in, I start the timer to end the level
-					mEnding = true;
-					mEndTimer = GetTime();
-				}
-				else{
-					var wallFound = false;
-					for(var i = 0; i < len(mWalls) && !wallFound; i++){
-						if(mIsVrOn || debugVrOn){
-							var range = 1; //I check whether the camera or the vive is in the range of an active button or not
-							var minDistance = range;
-							var closerControllerIndex = -1;
-							
-							if(controllerPressing < 0){
-								for(var j = 0; j < len(mControllersArray); j++){
-									var controllerDistance = mWalls[i].ActivateClosestButton(mControllersArray[j].GetPosition(), range);
-		
-									if(controllerDistance <= minDistance){
-										mControllersArray[j].SetActionAvailable(true);
-										minDistance = controllerDistance;
-										closerControllerIndex = j;	
-										wallFound = true;			
-									}
-									else{
-										mControllersArray[j].SetActionAvailable(false);								
-									}			
-								}
-							}
-							
-							if(closerControllerIndex != -1 || controllerPressing >= 0){
-								var checkingController = closerControllerIndex == -1 ? controllerPressing : closerControllerIndex;
-								mControllersArray[checkingController].SetActionAvailable(true);
-//							if(((checkingController == 0 && KeyPressed("1")) || checkingCOntroller == 1 && KeyPressed("2"))){
-								if(mInputManager.IsPressingPrimaryButton(mControllersArray[checkingController].GetIndex())){ //If it is in a range, I check if the button is being pressed
-									controllerPressing = checkingController;
-									mWalls[i].MoveButtonInRange(mControllersArray[checkingController].GetPosition(), true, mControllersArray[checkingController], mInputManager);						
-								}
-								else{
-									controllerPressing = -1;			
-									mWalls[i].StopMoving();	
-								}						
-							}		
-						}
-						else{
-							var range = 2.5; //I check whether the camera or the vive is in the range of an active button or not
-							if(mWalls[i].ActivateClosestButton(cameraPosition, range) <= range){
-								if(mInputManager.IsPressingPrimaryButton()){ //If it is in a range, I check if the button is being pressed
-									mWalls[i].MoveButtonInRange(cameraPosition, false);						
-								}
-								else{	
-									mWalls[i].StopMoving();
-								}
-							}
-						}
-					}
-				}			
+			if(mElevator.IsPointInElevator(cameraPosition) && !mEnding)
+			{
+				var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+				var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+
+				mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorClosedPosition(), 2.0, false);
+				mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorClosedPosition(), 2.0, false);
+								
+				// If the player is in, I start the timer to end the level
+				mEnding = true;
+				mEndTimer = GetTime();
 			}
 			
 			// If the game is ending and it's been a while (so the doors of the elevator are closed now), I save the fact that the level has been completed
-			if(mEnding && GetTime() - mEndTimer > mTimeToEnd)
+			if(mEnding && GetTime() - mEndTimer > mTimeToEnd){
 				mIsLevelCompleted = true;
-				
-							
+				foreach(var controller in mControllersArray){					
+					controller.SetActionAvailable(false);
+				}
+			}
+			
 			break;
 		}
 	}
-	
+		
 	// I update the methods of the managers
 	mAnimator.UpdateTransitions(dt);
 	mSoundManager.UpdateMusic(dt);
@@ -563,13 +706,15 @@ function Level5::IsPointedPositionValid(rayOrigin, rayEnd, contactPoint, normal,
 
 	intersectedPlane = mElevator.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
 
-	if(intersectedPlane == -1)
+	if(intersectedPlane == -1 || intersectedPlane == -2)
 		intersectedPlane = mMainRoom.CheckIntersection(rayOrigin, rayEnd, &contactPoint, &normal);
+		
 		
 	isWall = true;
 	
 	return intersectedPlane == 0;
 }
+
 
 /*
  * Method called by the GameManager to check if the level is completed
@@ -586,17 +731,8 @@ function Level5::GetOpenglTransformOffset()
 
 function Level5::SetOpenglTransformOffset(openglTransformOffset)
 {
-	mOpenglTranslationOffset = openglTransformOffset; 
+	mOpenglTranslationOffset = openglTransformOffset;
 }
-
-/*
- * Method called by the GameManager to check if the level is completed
- */
-function Level5::GetElevator()
-{
-	return mElevator;
-}
-
 
 function Level5::SetupOpenglLights()
 {
@@ -614,27 +750,573 @@ function Level5::SetupOpenglLights()
 	glLight(GL_LIGHT2, GL_DIFFUSE, mLight2Diffuse);
 }
 
+function Level5::GetLightDiffuse(){
+	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
+}
 
 function Level5::GetLevelPreview(){
 	return CVmTexture("Textures/Level5Prev.png");;
 }
 
 function Level5::GetLevelName(){
-	return "Wall";
-}
-
-function Level5::GetLightDiffuse(){
-	return {mLight0Diffuse, mLight1Diffuse, mLight2Diffuse};
+	return "War";
 }
 
 function Level5::ApplyPostProcessing(postProcessingShader, passes, postProcessingShaderParametersStrings, postProcessingShaderParameters)
 {
-	return false;
-}
-
-
-function Level5::DrawHUD(){
+//	var hasToApplyBlur = mApplyPostProcessing;
+	var hasToApplyBlur = false;
 	
+	if(hasToApplyBlur)
+	{
+		postProcessingShader = mPostProcessingBlurShader;
+		
+		var viewport = array(4);
+		viewport = glget(GL_VIEWPORT);
+		
+		var screenWidth = viewport[2];
+		var screenHeight = viewport[3];
+		
+		aadd(postProcessingShaderParametersStrings, "resolution");
+		aadd(postProcessingShaderParameters, [screenWidth, screenHeight]);
+		
+		passes = mPostProcessingBlurShaderPasses;
+	}
+	
+	return hasToApplyBlur;
+}
+
+function Level5::UpdateCounter(num, toRandomPos){
+	var digits = {};
+	if(num > 9){
+		aadd(digits, num/10);
+		aadd(digits, num%10);
+	}
+	else{
+		aadd(digits, 0);
+		aadd(digits, num);
+	}
+	
+	for(var j = 0; j < len(mCounterRandomMeshes); j++){
+		var finalPos = mCounterRandomMeshes[j].GenerateFinalPositions(digits[j], mCounterPositions[j]);
+		var objs = mCounterRandomMeshes[j].GetObjs();
+		for(var i = 0; i < len(objs); i++){				
+			objs[i].SetRotation(0,1,0,0);
+			objs[i].SetRotation(0,0,1,0);
+			objs[i].SetRotation(0,0,0,1);
+			if(toRandomPos){
+				var randomPos = mCounterRandomMeshes[j].GenerateRandomPositions(mCounterBox, mCounterPositions[len(mCounterRandomMeshes)-j-1]); 
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), {randomPos,finalPos[i]}, 0.1, false, 1);
+			}else
+				mAnimator.CreateTransition(objs[i], objs[i].GetPosition(), finalPos[i], 0.2, false, 1);
+		}
+	}
+}
+
+function Level5::CounterKeyboardTesting(){
+	var updated = false;
+	var toRandomPos = false;
+	if(KeyPressed("0")){			
+		if(GetTime() - mLastCounterUpdate > 150){
+			mCounter = (mCounter+1) % 100;
+			mLastCounterUpdate = GetTime();	
+			updated = true;		
+			toRandomPos = true;
+		}			
+	}
+	else if(KeyPressed("9")){
+		if(GetTime() - mLastCounterUpdate > 150){
+			mCounter = (mCounter-1 >= 0) ? mCounter-1 : mCounter;
+			mLastCounterUpdate = GetTime();	
+			updated = true;		
+			toRandomPos = true;		
+		}
+	}else if(KeyPressed("2")){
+		if(GetTime() - mLastCounterUpdate > 150){
+			mCounter = (mCounter+1) % 100;
+			mLastCounterUpdate = GetTime();	
+			updated = true;				
+		}
+		
+	}else if(KeyPressed("1")){
+		if(GetTime() - mLastCounterUpdate > 150){
+			mCounter = (mCounter-1 >= 0) ? mCounter-1 : mCounter;
+			mLastCounterUpdate = GetTime();	
+			updated = true;				
+		}
+	}	
+	
+	if(updated)
+		UpdateCounter(mCounter, toRandomPos);
+}
+
+function Level5::CreateTargetsStage0(numTargets){
+	var targets = {};
+	var cubeSizes = 3.5*SCALE_FACTOR;	
+	var bulletid;
+	
+	for(var i = 0; i < numTargets; i++){		
+		var chosenMesh;
+		switch(Rand(2)){
+			case 0:{
+				chosenMesh = CVmNewMesh(VRP_BOX, 1, [-cubeSizes/2, -cubeSizes/2, 0], [cubeSizes/2, cubeSizes/2, 0], cubeSizes);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
+				bulletid = "Cube";
+				break;				
+			}case 1:{
+				chosenMesh = CVmNewMesh(VRP_PYRAMID, 4, cubeSizes*1.25, cubeSizes*1.25);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
+				bulletid = "Pyramid";
+				break;				
+			}case 2:{
+				chosenMesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes, 1);
+				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
+				bulletid = "Sphere";
+				break;				
+			}
+		}
+		var targetObj = CVmObj(chosenMesh);
+		
+		var roomPos = mMainRoom.GetPosition();		
+		var roomWidth = mMainRoom.GetRoomWidth();
+		var roomHeight = mMainRoom.GetRoomHeight();
+		var roomDepth = mMainRoom.GetRoomDepth();
+		
+		var posX = (roomPos.x - roomWidth / 2.0) + Rand(roomWidth - 10.0 * SCALE_FACTOR);
+		var posY = (roomPos.y - roomHeight / 2.0 +  5.0 * SCALE_FACTOR) + Rand(roomHeight - 10.0 * SCALE_FACTOR);
+		var posZ = (roomPos.z) + Rand(roomDepth - 10.0 * SCALE_FACTOR);
+		
+		targetObj.SetPosition([posX, posY, posZ]);
+		aadd(targets, Target(bulletid, chosenMesh, targetObj, 2, 500, [1,1,0], [1,0,0], [1,0,0], mEnemySpeed*1.4, false, false, true, true, mEnemyLaserSpeed/2, mEnemyLaserMesh, 20, 5000, mAnimator, false));
+	}
+	return targets;
 }
 
 
+function Level5::CreateTargetsStage1(numTargets){
+	var targets = {};
+	// Creating random star things
+	for(var i = 0; i < numTargets; i++)
+	{
+		// To create the star object I use a function from the "Utils" file
+		var color1 = [Rand(10) / 10.0, Rand(10) / 10.0, Rand(10) / 10.0];
+		var star = StarThing(mMainRoom.GetLightsRange().x, mMainRoom.GetLightsRange().y, null, null, color1, [1,1,1]);		
+		aadd(targets, Target("Star"+str(i), star.GetMesh(), star.GetObj(), 5, 3000+(i*600), [1,1,1], [1,0,0], [1,0,0], mEnemySpeed, true, true, true, false, mEnemyLaserSpeed, mEnemyLaserMesh, 20, 5000, mAnimator, false));
+	}
+	
+	return targets;
+}
+
+function Level5::CreateTargetsBossStage(){
+	var targets = {};
+	var bulletId;
+	var chosenMesh;
+	var color;
+	for(var i = 0; i < 4; i++){	
+		switch(i){
+			case 0:{		
+				bulletId = "InvaderA";		
+				chosenMesh = CVmNewMesh("Meshes/Enemies/S1.AAM");
+				chosenMesh.Scale(1.1, 1.1, 1.1);
+				color = [0.2,0.1,1];
+				break;				
+			}case 1:{
+				bulletId = "InvaderB";
+				chosenMesh = CVmNewMesh("Meshes/Enemies/S2.AAM");
+				chosenMesh.Scale(0.2, 0.2, 0.2);
+				color = [1,1,0];
+				break;				
+			}case 2:{
+				bulletId = "InvaderC";
+				chosenMesh = CVmNewMesh("Meshes/Enemies/S3.AAM");
+				chosenMesh.Scale(0.2, 0.2, 0.2);
+				color = [0,1,0.2];
+				break;				
+			}case 3:{
+				bulletId = "InvaderD";
+				chosenMesh = CVmNewMesh("Meshes/Enemies/S5.AAM");
+				chosenMesh.Scale(0.1, 0.1, 0.1);
+				color = [0,1,1];
+				break;				
+			}
+		}
+		chosenMesh.ShaderAdd("Shaders/SimpleColorShader.glsl", 0);
+		chosenMesh.ShaderSetParameter(0,"diffuse", 0, color);
+		chosenMesh.ShaderSetParameter(0,"alpha", 0, 1.0);
+		chosenMesh.ShaderSetParameter(0,"outlinecolor", 0, [0,0,0]);
+		chosenMesh.ShaderActivate(true);	
+		aadd(targets, Target(bulletId, chosenMesh, CVmObj(chosenMesh), 30, 2500, color, [1,0,0], color, mEnemySpeed*2, true, true, true, false, mEnemyLaserSpeed*2, mEnemyLaserMesh, 20, 5000, mAnimator, true, mSoundManager, 9, 11+i, 10));
+	}	
+	return targets;	
+}
+
+function Level5::DrawHUD(eye){
+	if(!mIsVrOn)
+		mCameraHudObj.SetPosition(-0.99,-0.99,0.0);
+	else{
+		if(eye == 1)
+			mCameraHudObj.SetPosition(-0.35,-0.40,0.0);
+		else if(eye == 2){
+			mCameraHudObj.SetPosition(-0.46,-0.40,0.0);			
+		}
+	}
+	var viewport = array(4);
+	viewport = glget(GL_VIEWPORT);
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, viewport[2], viewport[4], 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    
+    glEnable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    
+    glDisable( GL_LIGHTING );
+    
+    
+	var color = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId, 6);
+	var alpha = mAnimator.GetCurrentStateInTransition(mCameraHudColorAnimId+1, 6);
+	if(color == Void || alpha == Void){
+		color = [1,1,1];
+		alpha = 0.0;			
+	}
+	
+	mCameraHudObj.Draw();
+    
+    glBegin(GL_QUADS);
+	    glColor(color.r, color.g, color.b, alpha);
+	    glVertex(-1.0, -1.0);
+	    glVertex(1.0, -1.0);
+	    glVertex(1.0, 1.0);
+	    glVertex(-1.0, 1.0);
+	glEnd();
+	
+	glMatrixMode(GL_PROJECTION);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	
+	glEnable( GL_LIGHTING );
+}
+
+function Level5::GenerateEnemies(){
+	mTargets = {};
+	aadd(mTargets, CreateTargetsStage0(9));
+	aadd(mTargets, CreateTargetsStage1(12));
+	aadd(mTargets, CreateTargetsBossStage()); //n = 4	
+	mBackupTargets = {};
+	
+	foreach(var targetArray in mTargets){
+		var newarray = {};
+		aadd(mBackupTargets, newarray);
+		foreach(var target in targetArray){
+			aadd(newarray, target);
+		}
+	}
+}
+
+function Level5::ResetTargets(){
+	mTargets = {};	
+	foreach(var targetArray in mBackupTargets){
+		var newarray = {};
+		aadd(mTargets, newarray);
+		foreach(var target in targetArray){
+			target.ResetState();
+			aadd(newarray, target);
+		}
+	}
+}
+
+
+
+/*
+ * This method works the same as the one in Level1, except for the array of controllers used to check the points
+ */
+function Level5::HandleGuns()
+{
+	if(KeyPressed("z")){	
+		mGuns[0].Copy(mViveGun);
+		mGuns[0].SwitchGunAnimation();
+	}	
+	
+	if(KeyPressed("x")){
+		mGuns[1].Copy(mViveGun);
+		mGuns[1].SwitchGunAnimation();
+	}	
+				
+	// Now I check if the player is drawing; I first check if he pressed a button
+	var gunsBullets = {{},{}};
+	for(var i = 0; i < len(mGuns); i++){
+		var gun = mGuns[i];
+		gun.UpdateGun();
+		
+		if(gun.GetID() != "Vive"){
+			var isPressing = false;
+			if(mIsVrOn || mDebugVrOn){
+				isPressing = mInputManager.IsPressingPrimaryButton(mControllersArray[i].GetIndex());
+//				isPressing = i == 0 ? KeyPressed("E") : KeyPressed("Q"); 
+			}
+			else{
+				isPressing = mInputManager.IsPressingPrimaryButton();
+//				isPressing = i == 0 ? KeyPressed("E") : KeyPressed("Q"); 
+			}
+						
+			if(isPressing){
+				if(gun.IsSingleShot()){
+					if(mControllersBeingUsedIndex[i] == 0){
+						mControllersBeingUsedIndex[i] = i+1;
+						gunsBullets[i] = gun.Shoot();	
+					}			
+				}
+				else{
+					gunsBullets[i] = gun.Shoot();	
+				}
+				
+				if(len(gunsBullets[i]) > 0 && mIsVrOn){
+					mInputManager.VibrateController(mControllersArray[i].GetIndex(), 500);
+				}			
+			}
+			else if(mControllersBeingUsedIndex[i] != 0){
+				mControllersBeingUsedIndex[i] = 0;
+			}		
+		}
+	}
+	
+	foreach(var gunBullets in gunsBullets){
+		foreach(var bullet in gunBullets){
+			if(bullet != Void){
+				aadd(mBulletsArray, bullet);
+			}
+		}	
+	}
+}
+
+function Level5::CheckPickupGuns(){
+	var isGunInsideOneTrigger = {};
+	var isGunNearOneTrigger = {};	
+	foreach(var gun in mGuns){
+		aadd(isGunInsideOneTrigger, false);
+		aadd(isGunNearOneTrigger, false);
+	}	
+		
+	for(var i = 0; i < len(mGuns); i++){
+		var gun = mGuns[i];
+		foreach(var trigger in mGunsEventTriggers){
+			var distance = Modulus(trigger[0].GetPosition()-gun.GetPosition());
+			if(distance <= mPowerSphereRadius*1.5){
+				isGunNearOneTrigger[i] = true;
+				if(distance <= mPowerSphereRadius){
+					isGunInsideOneTrigger[i] = true;								
+					if(!mIsGunInsideTrigger[i]){
+						mIsGunInsideTrigger[i] = true;
+						if(trigger[1].GetID() != gun.GetID()){
+							gun.Copy(trigger[1]);	
+							gun.SwitchGunAnimation();	
+							if(mIsVrOn || mDebugVrOn)
+								gun.LinkToController(mControllersArray[i]);								
+						}
+					}							
+				}
+			}
+		}
+	}
+	
+	for(var i = 0; i < len(mGuns); i++){
+		if(mGuns[i].GetID() == "Vive"){
+			if(mIsVrOn || mDebugVrOn)
+				mControllersArray[i].SetActionAvailable(isGunNearOneTrigger[i]);
+		}
+		else{
+			mGuns[i].SetActionAvailable(isGunNearOneTrigger[i]);
+		}
+	}
+	
+	for(var i = 0; i < len(isGunInsideOneTrigger); i++){
+		mIsGunInsideTrigger[i] = isGunInsideOneTrigger[i];
+	}
+}
+
+function Level5::UpdateWallHoles(){
+	for(var i = 0; i < len(mWallsHolesObjs); i++){
+		var wallHole = mWallsHolesObjs[i];
+		if(GetTime() - wallHole[1] > mWallsHolesLife / mTimeWarpFactor){
+			adel(mWallsHolesObjs,i);
+		}
+	}
+}
+
+function Level5::UpdateLasers(targets){
+	var stageTargets = targets == Void ? {} : targets;
+	for(var i = len(mBulletsArray)-1; i >= 0; i--){
+		var bulletObj = mBulletsArray[i].GetObj();
+		var bulletMaxLife = mBulletsArray[i].GetMaxLife();
+		var bulletShotTIme = mBulletsArray[i].GetShotTime();
+		var bulletPower = mBulletsArray[i].GetPower();
+		var isEnemyBullet = mBulletsArray[i].IsEnemy();
+		var bulletId = mBulletsArray[i].GetId();
+		
+		var isPointValid = mMainRoom.IsPointInRoom(bulletObj.GetPosition()) && !mElevator.IsPointInElevator(bulletObj.GetPosition());
+		
+		if(!isPointValid){
+			
+			var contactPoint;
+			var normal;
+			var isWall;
+			
+			// I have to find out the direction of the bullet; I do so considering another point of the bullet and subtracting with the origin
+			var direction = Norm(bulletObj.GetPosition() - bulletObj.LocalToWorld([0, 0, -1]));
+			
+			var rayStart;
+			var rayEnd;
+			
+			// To find the intersection I consider an infinite ray along the direction of the bullet, but there is a problem: if we're intersecting
+		    // with the elevator, the ray must go in the opposite direction, otherwise it basically finds the intersection not in the wall
+		    // the bullet hit but as if it passed through the wall and hit the wall after it
+			if(mElevator.IsPointInElevator(bulletObj.GetPosition()))
+			{
+				rayStart = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+				rayEnd = bulletObj.GetPosition() - direction * mCamera.GetZFar();
+			}
+			else
+			{
+				rayStart = bulletObj.GetPosition() - direction * mCamera.GetZFar();
+				rayEnd = bulletObj.GetPosition() + direction * mCamera.GetZFar();
+			}
+			
+			// I check the intersection with a wall, using as raycast the ray that starts at the point of the laser cone and ends
+			// at the base of the cone
+			IsPointedPositionValid(rayStart, rayEnd, &contactPoint, &normal, &isWall);
+			
+			// If a contact point was found, I use that point
+			if(contactPoint != Void)
+			{
+				// I move the point a bit towards the laser original direction, otherwise the hole object intersects the wall
+				contactPoint = contactPoint + direction * 0.1 * SCALE_FACTOR;
+				
+				var holeObj = CvmObj(mHoleMesh);
+				
+				// Since the center of the box is at its feet, moving it at the coordinates of the previous point and then applying the rotation works perfectly
+				holeObj.SetPosition(contactPoint);
+				
+				// I check the normal vector in order to rotate the circle accordingly
+				if(abs(normal.x) == 1)
+					holeObj.SetRotation(90, 0, 0, 1);
+				else if(abs(normal.z) == 1)
+					holeObj.SetRotation(90, 1, 0, 0);
+				else
+					holeObj.SetRotation(0, 0, 1, 0);
+					
+				aadd(mWallsHolesObjs, {holeObj, GetTime()});
+			}
+			
+			adel(mBulletsArray, i);
+		}
+		else if(isEnemyBullet){
+//			var cameraHasBeenHit = mCameraHitBoxObj.IsCollidingBBox(bulletObj);
+			var rayStart = bulletObj.GetPosition();
+			var rayEnd = bulletObj.LocalToWorld([0, 1 * SCALE_FACTOR, 0]);
+			
+			var cameraHasBeenHit = mCameraHitBoxObj.IsColliding(rayStart, rayEnd);
+
+			if(cameraHasBeenHit){
+//				outputln("CAMERA HAS BEEN HIT, life " + str(mLife) + " - " +str(bulletPower)+" = " + str(Int(mLife - bulletPower)));
+				mLife = Int(mLife - bulletPower);
+				mCameraHudLife.Load(str(mLife));
+				mAnimator.CreateGenericTransition(mCameraHudColorAnimId, [1,1,1], {[1,0,0], [1,1,1]}, 0.4);
+				mAnimator.CreateGenericTransition(mCameraHudColorAnimId+1, 0, {0.3, 0}, 0.4);
+				
+				mApplyPostProcessing = true;
+				mPostProcessingBlurTimer = GetTime();
+				mPostProcessingBlurShaderPasses = 0;
+				
+				if(mLife <= 0){
+					foreach(var target in mTargets[0]){
+						target.Kill();
+						aadd(mAnimatingTargets, target);
+					}
+					mAnimator.CreateGenericTransition(mLightColorTransitionId, mLight0Diffuse, {[1,0,0], mLight0Diffuse}, mTimeBeforeReset/1000);
+					mAnimator.CreateGenericTransition(mLightColorTransitionId+1, mLight1Diffuse, {[1,0,0], mLight1Diffuse}, mTimeBeforeReset/1000);
+					mAnimator.CreateGenericTransition(mLightColorTransitionId+2, mLight2Diffuse, {[1,0,0], mLight2Diffuse}, mTimeBeforeReset/1000);
+					mAnimator.CreateGenericTransition(mLightColorTransitionId+3, 0, mDefaultLife+1, mTimeBeforeReset/1000);
+					mLastCounter = mCounter;
+					mLostTime = GetTime();					
+				}
+				
+				adel(mBulletsArray, i);
+			}    				
+		}
+		else if(!isEnemyBullet){ 
+			var hasBeenHit = false;   				
+    		for(var j = 0; j < len(stageTargets) && !hasBeenHit; j++)
+    		{		    			
+    			var target = stageTargets[j];    			
+    			hasBeenHit = target.IsCollidingBBox(bulletObj);
+    			
+    			if(hasBeenHit){ //if the laser hit something or has been in the system for too long    			
+					if(target.Hit() && target.RemoveLife(bulletPower) <= 0){
+						outputln("ENEMY KILLED");
+						target.Kill();
+    					mCounter = (mCounter + 1) % 100;
+						UpdateCounter(mCounter, false);	
+					}
+					
+					adel(mBulletsArray, i);
+				}    
+    		}
+		}
+		else if(GetTime() - bulletShotTIme > bulletMaxLife / mTimeWarpFactor){
+			adel(mBulletsArray, i);
+		}
+	}
+}
+
+function Level5::UpdateEnemies(targets){
+	var stageTargets = targets == Void ? {} : targets;
+	for(var i = 0; i < len(stageTargets); i++)
+	{    			  
+		var target = stageTargets[i];		
+//		var enemyBullet = target.Shoot(cameraPosition);
+		var enemyBullet = target.Shoot(mCameraHitBoxObj.GetPosition());
+		if(enemyBullet != Void){
+			aadd(mBulletsArray, enemyBullet);	
+		}    			
+		target.Update(mMainRoom);
+		
+		if(target.IsDead())
+			adel(stageTargets, i);
+	}
+	
+	for(var i = 0; i < len(mAnimatingTargets); i++){
+		if(mAnimatingTargets[i].IsDead())
+			adel(mAnimatingTargets, i);
+	}
+}
+
+
+function Level5::UpdateStageStatus(){
+	if(len(mTargets[0]) < 1){
+		mCurrentStage++;
+		adel(mTargets, 0);
+		if(len(mTargets) <= 0){
+			outputln("ALL TARGETS KILLED");
+			var leftDoorPos = mElevator.GetLeftDoor().GetPosition();
+			var rightDoorPos = mElevator.GetRightDoor().GetPosition();
+			
+			mAnimator.CreateTransition(mElevator.GetLeftDoor(), leftDoorPos, mElevator.GetLeftDoorOpenPosition(), 2.0, false);
+			mAnimator.CreateTransition(mElevator.GetRightDoor(), rightDoorPos, mElevator.GetRightDoorOpenPosition(), 2.0, false);
+			foreach(var gun in mGuns){
+				gun.Copy(mViveGun);
+				if(mIsVrON || mDebugVrOn)
+					gun.SwitchGunAnimation();
+			}
+			mLevelStatus = STATUS_LEVEL_ENDING;
+		}
+		else{
+			foreach(var target in mTargets[0])
+				target.Create();
+		}
+	}	
+}

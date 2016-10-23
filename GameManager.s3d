@@ -1,4 +1,4 @@
-global var DEBUG_MODE = true;
+global var DEBUG_MODE = false;
 global var MUSIC_ON = true;
 global var MUSICFX_ON = true;
 global var SCALE_FACTOR = 0.2;
@@ -32,9 +32,9 @@ global var SCALE_FACTOR = 0.2;
 #include "Levels/Level1.s3d"
 #include "Levels/Level2.s3d"
 #include "Levels/Level3.s3d"
+#include "Levels/Level6.s3d"
 #include "Levels/Level4.s3d"
 #include "Levels/Level5.s3d"
-#include "Levels/Level6.s3d"
 #include "InputManagers/InputManager.s3d"
 
 
@@ -356,17 +356,17 @@ function GameManager::GameManager(HMD)
 		aadd(levelSelectors, {"Colors", CVmTexture("Textures/Level1Prev.png")});
 		aadd(levelSelectors, {"Ghost", CVmTexture("Textures/Level2Prev.png")});
 		aadd(levelSelectors, {"Chaos", CVmTexture("Textures/Level3Prev.png")});
-		aadd(levelSelectors, {"Wall", CVmTexture("Textures/Level5Prev.png")});
-		aadd(levelSelectors, {"War", CVmTexture("Textures/Level6Prev.png")});
-		aadd(levelSelectors, {"Timing", CVmTexture("Textures/Level4Prev.png")});
+		aadd(levelSelectors, {"Wall", CVmTexture("Textures/Level4Prev.png")});
+		aadd(levelSelectors, {"War", CVmTexture("Textures/Level5Prev.png")});
+		aadd(levelSelectors, {"Timing", CVmTexture("Textures/Level6Prev.png")});
 		
 		aadd(mLevels, mLevel0);
 		aadd(mLevels, Level1(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level2(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level3(mIsVRon, mInputManager, mSoundManager));
+		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level5(mIsVRon, mInputManager, mSoundManager));
 		aadd(mLevels, Level6(mIsVRon, mInputManager, mSoundManager));
-		aadd(mLevels, Level4(mIsVRon, mInputManager, mSoundManager));
 		
 		mCurrentLevel = LevelMenu(mIsVRon, mInputManager, mSoundManager, levelSelectors, mElevator);
 		mCurrentLevel.Init(mLights, mElevator, &mOpenglTranslationOffset);

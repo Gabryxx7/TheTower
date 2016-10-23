@@ -19,7 +19,6 @@ var oldTime = 0;
 var newTime = 0;
 var dt = 0;
 
-/* Download essential files for game menus */
 function OnDownload()
 {
 	FileDownload("Shaders/silhouetteShader.glsl");
@@ -55,7 +54,7 @@ function OnDownload()
 	FileDownload("Meshes/Vive_Controller_Mesh/Exported/Trigger/trigger.aam");
 }
 
-/* Init system - Start GameManager */
+/* Init system - Starts GameManager */
 function OnInit(params)
 {
 	SetLocalDir("");	
@@ -107,7 +106,6 @@ function OnTimer()
 	mGameManager.UpdateLogic(dt);
 }
 
-/* get rid of warnings by declaring required functions */
 function OnExit()
 {
 }
