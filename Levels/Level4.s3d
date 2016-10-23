@@ -150,7 +150,7 @@ function Level4::Level4(isVRon, inputManager, soundManager)
 	
 	foreach(var wall in mWalls){
 		wall.ComputeAnimations(5);
-		wall.ComputeCode(1, [0,5]); //first param: number of buttons to press, second param: row range
+		wall.ComputeCode(3, [0,5]); //first param: number of buttons to press, second param: row range
 	}
 	
 	timeFromLastKey = 0;
