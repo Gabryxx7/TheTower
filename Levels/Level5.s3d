@@ -869,7 +869,7 @@ function Level5::CreateTargetsStage0(numTargets){
 				bulletid = "Pyramid";
 				break;				
 			}case 2:{
-				chosenMesh = CVmNewMesh(VRP_SPHERE, 10, cubeSizes, 1);
+				chosenMesh = CVmNewMesh(VRP_SPHERE, 30, cubeSizes, 1);
 				AddToonShaderToMesh(chosenMesh, [1,1,1], [1,1,0], [0.4, 0.4, 0.4], 100, 0, 2, SCALE_FACTOR, 1.0);
 				bulletid = "Sphere";
 				break;				
