@@ -289,15 +289,6 @@ function Level3::Level3(isVRon, inputManager, soundManager)
 	mOpenglTranslationOffset.y += mElevatorTravelDistance;
 	
 	mLevelStatus = STATUS_ELEVATOR_MOVING;
-//	///// CONTAINER BOX GENERATION /////
-//	var boxBordersThickness =  0.5*SCALE_FACTOR;
-//	var boxWidth = roomWidthSide/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
-//	var boxHeight = roomHeight/2 - boxBordersThickness - (0.1*SCALE_FACTOR);
-//	var boxThickness = 10*SCALE_FACTOR;
-//	var boxPosition = [0, 0, mMainRoom.GetPosition().z + roomWidthSide - boxThickness*2 - boxBordersThickness - (0.1*SCALE_FACTOR)];
-//	box = GlassBox(boxWidth, boxHeight, boxThickness,  boxBordersThickness);
-//	box.SetPosition(boxPosition);
-	/////////////////////////////////////////////////////////
 	
 	///// PATHS + RANDOM MESHES GENERATION /////
 	var tilesSize = [roomWidthSide*0.0245, roomWidthSide*0.003]; //width x height
