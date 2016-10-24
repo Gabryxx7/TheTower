@@ -294,7 +294,7 @@ function Level5::Level5(isVRon, inputManager, soundManager)
 	mCameraHudLife = CvmText();
 	mDefaultLife = 100;
 //	mLife = mDefaultLife;
-	mLife = 5;
+	mLife = 50;
 	mCameraHudLife.Load(str(mLife));
 	
 	var obj1 = CvmObj();
