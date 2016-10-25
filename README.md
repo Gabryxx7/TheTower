@@ -2,6 +2,8 @@
 <img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png" alt="The Tower Logo" width="250"/><br/>
 Virtual Reality game using XVR engine and HTC Vive, final project of the "Ambienti Virtuali" course
 
+<h2><a href="https://gabryxx7.github.io/slides.html"> TheTower Project Presentation </a></h2>
+
 The main idea of the game is a puzzle, a tower with many different levels whose completion will open the elevator's doors to reach the next level.
 
 ###Levels
@@ -87,3 +89,91 @@ A lot of different Shaders have been defined, I will list the most used:
 	
 All of the sounds were generated with sound generators or professional programs
 All of the meshes were exported in AAM format with blender 2.49b version, and were moslty found on sketchfab.com and properly modified.
+
+##How to play it
+1. Download the XVR engine from http://www.vrmedia.it/wiki/index.php?title=Downloads
+2. Download the project
+3. Import che project (mantaining the folder structure) into XVR engine
+4. Build and play
+
+##Technical examples
+###Animator Tutorial
+It is possible to create animations (that will immediately start, right after the creation) using the animator, in the following way:
+```javascript
+var mAnimator = Animator(); //Initialize animator
+
+//Functions to create a new animation that will automatically start
+mAnimator.CreateTransition(object, startingPos, endingPos, time, loop, easingType);
+mAnimator.CreateRotatingTransition(object, startingAngle, finalAngle, axis, time, loop, reverse);
+mAnimator.CreateScalingTransition(object, startingScale, endingScale, time, loop, easingType);
+mAnimator.CreateRotationAroundPointTransition(object, startingPoint, centerPoint, period, loop, randomness, clockwise);
+mAnimator.CreateToonShaderColorTransition(mesh, startingColor, endingColor, time, loop, easingType);
+mAnimator.CreateLightColorTransition(openglLight, startingColor, endingColor, time, easingType);
+mAnimator.CreateGenericTransition(transitionId, startingValue, endingValue, time, easingType);
+
+
+GetCurrentStateInTransition(object, transitionType); //Returns the value of the animations (position, rotation ecc...)
+ChangeScaleFactors(newFactor); //Makes ALL the active animations faster or slower (default factor 1.0)
+RemoveTransitionByObject(object, isRotating); //Remove an active transition from an object
+HaveTransition(object, isType); //Return true if the object passed has an animation associated
+
+InvertTransitions();
+
+/** MOST IMPORTANTLY **/
+/** This function must be called at every game loop in order to update the animation values
+like positions, rotations, scaling ecc... The new value is computed every time 
+dt is the difference between the lastTime the function has been called and the actual time **/
+UpdateTransitions(dt);
+```
+
+###Vive Controllers Tutorial
+The vive controllers are actually managed by 2 classes:
+- ViveManager: This class updates the controller matrix and its button states by calling the relative functions on the DLL. It will also update the camera associated with the hmd in order to reflect rotation and position in the real life.
+- ViveController: This class manages the actual Object which is made up of the different meshes of the controller parts (body, touchpad, trigger button...). Its function UpdateStatus() will update the controller object to reflect user actions:
+	- Will show a small sphere where the user is touching the touchpad
+	- The trigger will be tilted according to the amount of pressure the user is using
+	- Each button will be pressed according to its states
+
+The ViveManager initializes two different ViveController istances and will update their values at each game loop, which is why it is needed to call the updateCOntrollers() and updateCamera() methods at each loop.
+
+```javascript
+function Init(){
+	var mHMD = CVmExternDLL( "FrancoDLL.dll" );
+	var mViveManager = ViveManager(mHMD);
+	mViveManager.SetActiveCamera(mCamera);
+
+	//We'll now get the controllers in order to draw them when we need
+	var mControllers = [mViveManager.GetController(1), mViveManager.GetCOntroller(2)];
+}
+
+function UpdateLogic(){
+	mViveManager.UpdateCamera();
+	
+	
+	//The vive Manager will also update the visual status of the controller by calling controller.UpdateStatus()
+	//for each controller, so there no need to do it manually, just draw the controller!
+	mViveManager.UpdateControllers(mOpenglTranslationOffset);
+	
+	foreach(var controller in mControllers){	
+		mViveManager.IsPressingPrimaryButton(controller.GetIndex());
+		mViveManager.IsPressingSecondaryButton(controller.GetIndex());
+		mViveManager.IsGripPressed(controller.GetIndex());
+		mViveManager.HasPressedMenuButton(controller.GetIndex());
+		mViveManager.VibrateController(controller.GetIndex(), microseconds);
+		
+		controller.SetActionAvailable(isActionAvailable); //Will show a yellow border around the controller
+	}
+}
+
+function Render(){
+	foreach(var controller in mControllers){
+		controller.Draw();	
+	}
+}
+```
+
+A presentation about the project can be seen at:
+https://gabryxx7.github.io/slides.html
+
+While the code of the presentation itself can be found at:
+https://github.com/Gabryxx7/TheTowerPresentation
