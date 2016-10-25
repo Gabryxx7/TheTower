@@ -51,11 +51,11 @@ The game mechanics are managed and organized by:
 	3. Vive controllers: The ViveManager class is a bit more complex. It takes care of updating the controllers positions and rotations and buttons statuses from OpenVr (Through the FrancoDLL wrapper). It can also send vibration inputs to the controllers (limited by OpenVR), and get info about the chaperone.
 	
 - **SoundManager**: Self explanatory, it manages the sounds and music in the game
-- **ViveController**: Create a Vive Controller Obj (Mostly used by the ViveManager) that will take care of:
-	-Updating the status of the controller like:
-		- Visual feedback of botton status (e.g touchpad coordinates or grip pressure)
-	-Computing the correct BoundingBox
-	-Highlighting the controller when an action is available
+- **ViveController**: Create a Vive Controller Obj (Mostly used by the ViveManager) that will take care of
+	- Updating the status of the controller like:
+	- Visual feedback of botton status (e.g touchpad coordinates or grip pressure)
+	- Computing the correct BoundingBox
+	- Highlighting the controller when an action is available
 
 
 - **Animator**: One of the most important classes in the game which allows to create customizable animations.	 
