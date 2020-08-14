@@ -1,4 +1,4 @@
-#TheTower<br/>
+# TheTower<br/>
 <img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/thetower.png" alt="The Tower Logo" width="250"/><br/>
 Virtual Reality game using XVR engine and HTC Vive, final project of the "Ambienti Virtuali" course
 
@@ -6,7 +6,7 @@ Virtual Reality game using XVR engine and HTC Vive, final project of the "Ambien
 
 The main idea of the game is a puzzle, a tower with many different levels whose completion will open the elevator's doors to reach the next level.
 
-###Levels
+### Levels
 The game has actually a total of **8 levels**:
 
 - **LevelMenu**: This level will show a list of all the levels allowing the player to choose one of the levels to play.
@@ -32,7 +32,7 @@ The game has actually a total of **8 levels**:
 - **Level6**: This one is tricky and will lead to the end of the game.<br/>
 <img src="https://github.com/Gabryxx7/TheTower/blob/master/Textures/Level4Prev.png" alt="Level 4 Prev" width="150"/>
 	
-###Main Classes
+### Main Classes
 Classes for more complex objects were created such as:
 - **Virtual Keyboard and Numpad**: These two classes defines an input device in the 3d world in order to insert codes or text for game mechanics
 - **Drawing Connectors**: Light color cones used in level1 and level2
@@ -41,7 +41,7 @@ Classes for more complex objects were created such as:
 - **RandomMeshes**: This class generate a random set of elements given room coordinate, each one with its own random animations
 - **TilesPath**: This class allows the player to create a path of meshes by defining turning points and number of steps in an array of directions. Customizable in distance between tiles, tiles size ecc...
 
-###Game Managers
+### Game Managers
 The game mechanics are managed and organized by:
 
 - **GameManager**: This class will call the levels cosntructor, Init() function, Render() function and UpdateLogicFunction(), with some other features not level-specific (teleportation or level switching)
@@ -81,7 +81,7 @@ The game mechanics are managed and organized by:
 		- Remove animation given the obj or the animationID (if generic) associated with the animation
 		- Check whether the object or an animationID has or not an animation associated
 
-###Shaders
+### Shaders
 A lot of different Shaders have been defined, I will list the most used:
 - **ToonShader**: The one that gives the cartoonish feeling
 - **DrawingShader**: Used for 3d drawing
@@ -90,14 +90,14 @@ A lot of different Shaders have been defined, I will list the most used:
 All of the sounds were generated with sound generators or professional programs
 All of the meshes were exported in AAM format with blender 2.49b version, and were moslty found on sketchfab.com and properly modified.
 
-##How to play it
+## How to play it
 1. Download the XVR engine from http://www.vrmedia.it/wiki/index.php?title=Downloads
 2. Download the project
 3. Import che project (mantaining the folder structure) into XVR engine
 4. Build and play
 
-##Technical examples
-###Animator Tutorial
+## Technical examples
+### Animator Tutorial
 It is possible to create animations (that will immediately start, right after the creation) using the animator, in the following way:
 ```javascript
 var mAnimator = Animator(); //Initialize animator
@@ -126,7 +126,7 @@ dt is the difference between the lastTime the function has been called and the a
 UpdateTransitions(dt);
 ```
 
-###Vive Controllers Tutorial
+### Vive Controllers Tutorial
 The vive controllers are actually managed by 2 classes:
 - ViveManager: This class updates the controller matrix and its button states by calling the relative functions on the DLL. It will also update the camera associated with the hmd in order to reflect rotation and position in the real life.
 - ViveController: This class manages the actual Object which is made up of the different meshes of the controller parts (body, touchpad, trigger button...). Its function UpdateStatus() will update the controller object to reflect user actions:
